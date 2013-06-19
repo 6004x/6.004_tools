@@ -87,7 +87,8 @@ BSim.Beta.Instructions = {};
     };
 
     I[M.CMPLT] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) < this.readRegister(b));
+        console.log(this.readRegister(b) + " < " + this.readRegister(a));
+        this.writeRegister(c, this.readRegister(b) < this.readRegister(a));
     };
 
     I[M.CMPLTC] = function(a, c, literal) {
