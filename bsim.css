@@ -1,0 +1,9 @@
+#registers .label {
+    color: gray;
+    text-align: right;
+}
+
+#registers {
+    font-family: Menlo, Monaco, monospace;
+    border: 1px solid gray;
+}
