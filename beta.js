@@ -70,20 +70,13 @@ BSim.Beta = function(mem_size) {
     };
 
     this.decodeInstruction = function(instruction) {
-        var has_literal = !!((instruction >> 30) & 1);
         var opcode = (instruction >> 26) & 0x3F;
         var rc = (instruction >> 21) & 0x1F;
         var ra = (instruction >> 16) & 0x1F;
         var rb = (instruction >> 11) & 0x1F;
         var literal = this.signExtend16(instruction & 0xFFFF);
-        if(has_literal) {
-            rb = null;
-        } else {
-            literal = null;
-        }
 
         return {
-            has_literal: has_literal,
             opcode: opcode,
             ra: ra,
             rb: rb,
@@ -98,19 +91,21 @@ BSim.Beta = function(mem_size) {
             throw "done";
         }
         var decoded = this.decodeInstruction(instruction);
-        //console.log(decoded);
         var op = BSim.Beta.Opcodes[decoded.opcode];
         if(!op) {
             // Illegal opcode.
             this.handleIllegalInstruction(decoded);
         }
+        if(op.privileged && !(this.mPC & SUPERVISOR_BIT)) {
+            console.log("Called privileged instruction " + op.name + " while not in supervisor mode.");
+            this.handleIllegalInstruction(decoded);
+        }
         this.mPC += 4;
-        //console.log("New PC: " + this.mPC);
-        if(decoded.has_literal) {
-            console.log(op.name + "(R" + decoded.ra + ", " + decoded.literal + ", R" + decoded.rc + ")");
+        if(op.has_literal) {
+            // console.log(op.name + "(R" + decoded.ra + ", " + decoded.literal + ", R" + decoded.rc + ")");
             op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
         } else {
-            console.log(op.name + "(R" + decoded.ra + ", R" + decoded.rb + ", R" + decoded.rc + ")");
+            // console.log(op.name + "(R" + decoded.ra + ", R" + decoded.rb + ", R" + decoded.rc + ")");
             op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
         }
     };

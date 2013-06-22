@@ -1,10 +1,25 @@
 BSim.Beta.Opcodes = {};
 
+/*
+ * betaop() takes one argument that should completely define an opcode.
+ * It is an object with the following fields:
+ *
+ * opcode: numeric opcode (mandatory)
+ * name: mnemonic for the opcode (mandatory)
+ * exec: function that implements the opcode.
+ *       Although it is redundant, do include the opcode name as an identifier. It shows in the profiler
+ *       an back traces; if omitted you just get either 'exec' or '(anonymous function)'.
+ * disassemble: returns a string giving the disassembly of the instruction (optional)
+ * privileged: true if the opcode can only be used in supervisor mode (optional; default false)
+ * has_literal: true if the opcode takes a literal instead of a register (optional; defualt false)
+ */
+
 // Build up our opcode table.
 (function() {
     var betaop = function(op) {
         // Unify shorthand.
         if(!op.privileged) op.privileged = false;
+        if(!op.has_literal) op.has_literal = false;
         // Insert it into useful places.
         BSim.Beta.Opcodes[op.opcode] = op;
     };
@@ -20,6 +35,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x30,
         name: 'ADDC',
+        has_literal: true,
         exec: function ADDC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) + literal);
         }
@@ -36,6 +52,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x38,
         name: 'ANDC',
+        has_literal: true,
         exec: function ANDC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) & literal);
         }
@@ -44,22 +61,26 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x1C,
         name: 'BEQ',
+        has_literal: true,
         exec: function BEQ(a, literal, c) {
-            this.writeRegister(c, this.getPC());
+            var pc = this.getPC();
             if(this.readRegister(a) === 0) {
-                this.setPC(this.getPC() + 4*literal, false);
+                this.setPC(pc + 4*literal, false);
             }
+            this.writeRegister(c, pc);
         }
     });
 
     betaop({
         opcode: 0x1D,
         name: 'BNE',
+        has_literal: true,
         exec: function BNE(a, literal, c) {
-            this.writeRegister(c, this.getPC());
+            var pc = this.getPC();
             if(this.readRegister(a) !== 0) {
-                this.setPC(this.getPC() + 4*literal, false);
+                this.setPC(pc + 4*literal, false);
             }
+            this.writeRegister(c, pc);
         }
     });
 
@@ -74,6 +95,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x34,
         name: 'CMPEQC',
+        has_literal: true,
         exec: function CMPEQC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) == literal);
         }
@@ -90,6 +112,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode:  0x36,
         name: 'CMPLEC',
+        has_literal: true,
         exec: function CMPLEC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) <= literal);
         }
@@ -99,14 +122,15 @@ BSim.Beta.Opcodes = {};
         opcode: 0x25,
         name: 'CMPLT',
         exec: function CMPLT(a, b, c) {
-            this.writeRegister(c, this.readRegister(b) < this.readRegister(a));
+            this.writeRegister(c, this.readRegister(a) < this.readRegister(b));
         }
     });
 
     betaop({
         opcode: 0x35,
         name: 'CMPLTC',
-        exec: function(a, literal, c) {
+        has_literal: true,
+        exec: function CMPLTC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) < literal);
         }
     });
@@ -114,7 +138,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x23,
         name: 'DIV',
-        exec: function(a, b, c) {
+        exec: function DIV(a, b, c) {
             this.writeRegister(c, (this.readRegister(a) / this.readRegister(b))|0);
         }
     });
@@ -122,15 +146,16 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x33,
         name: 'DIVC',
-        exec: function(a, literal, c) {
-            this.writeRegister(c, (this.readRegister(c) / literal)|0);
+        has_literal: true,
+        exec: function DIVC(a, literal, c) {
+            this.writeRegister(c, (this.readRegister(a) / literal)|0);
         }
     });
 
     betaop({
         opcode: 0x1B,
         name: 'JMP',
-        exec: function(a, b, c) {
+        exec: function JMP(a, b, c) {
             this.writeRegister(c, this.getPC());
             this.setPC(this.readRegister(a));
         }
@@ -139,7 +164,8 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x18,
         name: 'LD',
-        exec: function(a, literal, c) {
+        has_literal: true,
+        exec: function LD(a, literal, c) {
             this.writeRegister(c, this.readWord(this.readRegister(a) + literal));
         }
     });
@@ -147,7 +173,8 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x1F,
         name: 'LDR',
-        exec: function(a, literal, c) {
+        has_literal: true,
+        exec: function LDR(a, literal, c) {
             this.writeRegister(c, this.readWord(this.getPC() + 4*literal));
         }
     });
@@ -155,7 +182,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x22,
         name: 'MUL',
-        exec: function(a, b, c) {
+        exec: function MUL(a, b, c) {
             this.writeRegister(c, this.readRegister(a) * this.readRegister(b));
         }
     });
@@ -163,7 +190,8 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x32,
         name: 'MULC',
-        exec: function(a, literal, c) {
+        has_literal: true,
+        exec: function MULC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) * literal);
         }
     });
@@ -171,7 +199,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x29,
         name: 'OR',
-        exec: function(a, b, c) {
+        exec: function OR(a, b, c) {
             this.writeRegister(c, this.readRegister(a) | this.readRegister(b));
         }
     });
@@ -179,7 +207,8 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x39,
         name: 'ORC',
-        exec: function(a, literal, c) {
+        has_literal: true,
+        exec: function ORC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) | literal);
         }
     });
@@ -187,7 +216,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x2C,
         name: 'SHL',
-        exec: function(a, b, c) {
+        exec: function SHL(a, b, c) {
             this.writeRegister(c, this.readRegister(a) << this.readRegister(b));
         }
     });
@@ -195,7 +224,8 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x3C,
         name: 'SHLC',
-        exec: function(a, literal, c) {
+        has_literal: true,
+        exec: function SHLC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) << literal);
         }
     });
@@ -203,7 +233,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x2D,
         name: 'SHR',
-        exec: function(a, b, c) {
+        exec: function SHR(a, b, c) {
             this.writeRegister(c, this.readRegister(a) >>> this.readRegister(b));
         }
     });
@@ -211,7 +241,8 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x3D,
         name: 'SHRC',
-        exec: function(a, literal, c) {
+        has_literal: true,
+        exec: function SHRC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) >>> literal);
         }
     });
@@ -219,7 +250,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x2E,
         name: 'SRA',
-        exec: function(a, b, c) {
+        exec: function SRA(a, b, c) {
             this.writeRegister(c, this.readRegister(a) >> this.readRegister(b));
         }
     });
@@ -227,7 +258,8 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x3E,
         name: 'SRAC',
-        exec: function(a, literal, c) {
+        has_literal: true,
+        exec: function SRAC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) >> literal);
         }
     });
@@ -235,7 +267,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x21,
         name: 'SUB',
-        exec: function(a, b, c) {
+        exec: function SUB(a, b, c) {
             this.writeRegister(c, this.readRegister(a) - this.readRegister(b));
         }
     });
@@ -243,7 +275,8 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x31,
         name: 'SUBC',
-        exec: function(a, literal, c) {
+        has_literal: true,
+        exec: function SUBC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) - literal);
         }
     });
@@ -251,7 +284,8 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x19,
         name: 'ST',
-        exec: function(a, literal, c) { // These are intentionally swapped.
+        has_literal: true,
+        exec: function ST(a, literal, c) { // These are intentionally swapped.
             this.writeWord(this.readRegister(a) + literal, this.readRegister(c));
         }
     });
@@ -259,7 +293,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x2A,
         name: 'XOR',
-        exec: function(a, b, c) {
+        exec: function XOR(a, b, c) {
             this.writeRegister(c, this.readRegister(a) ^ this.readRegister(b));
         }
     });
@@ -267,7 +301,8 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x3A,
         name: 'XORC',
-        exec: function(a, literal, c) {
+        has_literal: true,
+        exec: function XORC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) ^ literal);
         }
     });
@@ -275,7 +310,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x2B,
         name: 'XNOR',
-        exec: function(a, b, c) {
+        exec: function XNOR(a, b, c) {
             this.writeRegister(c, ~(this.readRegister(a) ^ this.readRegister(b)));
         }
     });
@@ -283,8 +318,31 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x3B,
         name: 'XNORC',
-        exec: function(a, b, c) {
+        exec: function XNORC(a, b, c) {
             this.writeRegister(c, ~(this.readRegister(a) ^ literal));
+        }
+    });
+
+    // Privileged instructions
+    betaop({
+        opcode: 0x00,
+        name: 'PRIV_OP',
+        has_literal: true,
+        privileged: true,
+        exec: function PRIV_OP(a, literal, c) {
+            switch(literal) {
+                case 0: // HALT
+                    throw "HALT";
+                    break;
+                case 2: // WRCHAR
+                    $('#output').append(document.createTextNode(String.fromCharCode(this.readRegister(a))));
+                    break;
+                case 6:
+                    this.writeRegister(c, Math.floor(Math.random() * Math.pow(2, 32)));
+                    break;
+                default:
+                    this.handleIllegalInstruction();
+            }
         }
     });
 })();
