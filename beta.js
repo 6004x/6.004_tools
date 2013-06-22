@@ -8,20 +8,16 @@ BSim.Beta = function(mem_size) {
     BP = 27;
     SUPERVISOR_BIT = 0x80000000;
 
-    public = {};
-
     this.loadBytes = function(bytes) {
         for(var i = 0; i < bytes.length; ++i) {
             this.writeByte(i, bytes[i]);
         }
-    }
-    public.loadBytes = this.loadBytes;
+    };
 
     this.readByte = function(address) {
         address &= ~SUPERVISOR_BIT; // Drop supervisor bit
         return this.mMemory[address];
-    }
-    public.readByte = this.readByte;
+    };
 
     this.readWord = function(address) {
         return (
@@ -29,44 +25,39 @@ BSim.Beta = function(mem_size) {
             (this.readByte(address+2) << 16) |
             (this.readByte(address+1) << 8)  |
             this.readByte(address+0)
-        )
-    }
-    public.readWord = this.readWord;
+        );
+    };
 
     this.writeByte = function(address, value) {
         address &= ~SUPERVISOR_BIT;
         this.mMemory[address] = value;
-    }
-    public.writeByte = this.writeByte;
+    };
 
     this.writeWord = function(address, value) {
         this.writeByte(address + 3, (value >>> 24) & 0xFF);
         this.writeByte(address + 2, (value >>> 16) & 0xFF);
         this.writeByte(address + 1, (value >>> 8) & 0xFF);
         this.writeByte(address + 0, (value & 0xFF));
-    }
-    public.writeWord = this.writeWord;
+    };
 
     this.readRegister = function(register) {
         if(register == 31) return 0;
         return this.mRegisters[register];
-    }
-    public.readRegister = this.readRegister;
+    };
 
     this.writeRegister = function(register, value) {
         if(register == 31) return;
         this.mRegisters[register] = value;
-    }
-    public.writeRegister = this.writeRegister;
+    };
 
     this.setPC = function(address, allow_supervisor) {
         if(!(this.mPC & SUPERVISOR_BIT) && !allow_supervisor) address &= ~SUPERVISOR_BIT;
         this.mPC = address & 0xFFFFFFFC;
-    }
+    };
 
     this.getPC = function() {
         return this.mPC;
-    }
+    };
 
     this.signExtend16 = function(value) {
         value &= 0xFFFF;
@@ -74,7 +65,7 @@ BSim.Beta = function(mem_size) {
             value = value - 0x10000;
         }
         return value;
-    }
+    };
 
     this.decodeInstruction = function(instruction) {
         var has_literal = !!((instruction >> 30) & 1);
@@ -98,28 +89,27 @@ BSim.Beta = function(mem_size) {
             rc: rc,
             literal: literal
         };
-    }
+    };
 
     this.runCycle = function() {
         var instruction = this.readWord(this.mPC);
         var decoded = this.decodeInstruction(instruction);
         console.log(decoded);
-        var fn = BSim.Beta.Instructions[decoded.opcode];
-        if(!fn) {
+        var op = BSim.Beta.Opcodes[decoded.opcode];
+        if(!op) {
             // Illegal opcode.
             this.handleIllegalInstruction(decoded);
         }
         this.mPC += 4;
         console.log("New PC: " + this.mPC);
         if(decoded.has_literal) {
-            console.log("Calling opcodec " + decoded.opcode);
-            fn.call(this, decoded.ra, decoded.rc, decoded.literal);
+            console.log(op.name + "(" + decoded.ra + ", " + decoded.literal + ", " + decoded.rc + ")");
+            op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
         } else {
-            console.log("Calling opcode " + decoded.opcode);
-            fn.call(this, decoded.ra, decoded.rb, decoded.rc);
+            console.log(op.name + "(" + decoded.ra + ", " + decoded.rb + ", " + decoded.rc + ")");
+            op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
         }
-    }
-    public.runCycle = this.runCycle;
+    };
 
     return this;
 };

@@ -1,186 +1,290 @@
-BSim.Beta.Mnemonics = {
-    ADD: 0x20,
-    ADDC: 0x30,
-    AND: 0x28,
-    ANDC: 0x38,
-    BEQ: 0x1C,
-    BNE: 0x1D,
-    CMPEQ: 0x24,
-    CMPEQC: 0x34,
-    CMPLE: 0x26,
-    CMPLEC: 0x36,
-    CMPLT: 0x25,
-    CMPLTC: 0x35,
-    DIV: 0x23,
-    DIVC: 0x33,
-    JMP: 0x1B,
-    LD: 0x18,
-    LDR: 0x1F,
-    MUL: 0x22,
-    MULC: 0x32,
-    OR: 0x29,
-    ORC: 0x39,
-    SHL: 0x2C,
-    SHLC: 0x3C,
-    SHR: 0x2D,
-    SHRC: 0x3D,
-    SRA: 0x2E,
-    SRAC: 0x3E,
-    SUB: 0x21,
-    SUBC: 0x31,
-    ST: 0x19,
-    XOR: 0x2A,
-    XORC: 0x3A,
-    XNOR: 0x2B,
-    XNORC: 0x3B
-}
+BSim.Beta.Opcodes = {};
 
-BSim.Beta.Instructions = {};
-
+// Build up our opcode table.
 (function() {
-    var M = BSim.Beta.Mnemonics;
-    var I = BSim.Beta.Instructions;
-    I[M.ADD] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) + this.readRegister(b));
+    var betaop = function(op) {
+        // Unify shorthand.
+        if(!op.privileged) op.privileged = false;
+        // Insert it into useful places.
+        BSim.Beta.Opcodes[op.opcode] = op;
     };
 
-    I[M.ADDC] = function(a, c, literal) {
-        console.log("ADDC(" + a + ", " + literal + ", " + c + ")");
-        console.log(this, a, c, literal);
-        this.writeRegister(c, this.readRegister(a) + literal);
-    };
-
-    I[M.AND] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) & this.readRegister(b));
-    };
-
-    I[M.ANDC] = function(a, c, literal) {
-        this.writeRegister(c, this.readRegister(a) & literal);
-    };
-
-    I[M.BEQ] = function(a, c, literal) {
-        if(this.readRegister(a) === 0) {
-            this.setPC(this.getPC() + 4*literal, false);
+    betaop({
+        opcode: 0x20,
+        name: 'ADD',
+        exec: function ADD(a, b, c) {
+            this.writeRegister(c, this.readRegister(a) + this.readRegister(b));
         }
-    };
+    });
 
-    I[M.BNE] = function(a, c, literal) {
-        if(this.readRegister(a) !== 0) {
-            this.setPC(this.getPC() + 4*literal, false);
+    betaop({
+        opcode: 0x30,
+        name: 'ADDC',
+        exec: function ADDC(a, literal, c) {
+            console.log("ADDC(" + a + ", " + literal + ", " + c + ")");
+            console.log(this, a, c, literal);
+            this.writeRegister(c, this.readRegister(a) + literal);
         }
-    };
+    });
 
-    I[M.CMPEQ] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) == this.readRegister(b));
-    };
+    betaop({
+        opcode: 0x28,
+        name: 'AND',
+        exec: function AND(a, b, c) {
+            this.writeRegister(c, this.readRegister(a) & this.readRegister(b));
+        }
+    });
 
-    I[M.CMPEQC] = function(a, c, literal) {
-        this.writeRegister(c, this.readRegister(a) == literal);
-    };
+    betaop({
+        opcode: 0x38,
+        name: 'ANDC',
+        exec: function ANDC(a, literal, c) {
+            this.writeRegister(c, this.readRegister(a) & literal);
+        }
+    });
 
-    I[M.CMPLE] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) <= this.readRegister(b));
-    };
+    betaop({
+        opcode: 0x1C,
+        name: 'BEQ',
+        exec: function BEQ(a, literal, c) {
+            if(this.readRegister(a) === 0) {
+                this.setPC(this.getPC() + 4*literal, false);
+            }
+        }
+    });
 
-    I[M.CMPLEC] = function(a, c, literal) {
-        this.writeRegister(c, this.readRegister(a) <= literal);
-    };
+    betaop({
+        opcode: 0x1D,
+        name: 'BNE',
+        exec: function BNE(a, literal, c) {
+            if(this.readRegister(a) !== 0) {
+                this.setPC(this.getPC() + 4*literal, false);
+            }
+        }
+    });
 
-    I[M.CMPLT] = function(a, b, c) {
-        console.log(this.readRegister(b) + " < " + this.readRegister(a));
-        this.writeRegister(c, this.readRegister(b) < this.readRegister(a));
-    };
+    betaop({
+        opcode: 0x24,
+        name: 'CMPEQ',
+        exec: function CMPEQ(a, b, c) {
+            this.writeRegister(c, this.readRegister(a) == this.readRegister(b));
+        }
+    });
 
-    I[M.CMPLTC] = function(a, c, literal) {
-        this.writeRegister(c, this.readRegister(a) < literal);
-    };
+    betaop({
+        opcode: 0x34,
+        name: 'CMPEQC',
+        exec: function CMPEQC(a, literal, c) {
+            this.writeRegister(c, this.readRegister(a) == literal);
+        }
+    });
 
-    I[M.DIV] = function(a, b, c) {
-        this.writeRegister(c, (this.readRegister(a) / this.readRegister(b))|0);
-    };
+    betaop({
+        opcode: 0x26,
+        name: 'CMPLE',
+        exec: function CMPLE(a, b, c) {
+            this.writeRegister(c, this.readRegister(a) <= this.readRegister(b));
+        }
+    });
 
-    I[M.DIVC] = function(a, c, literal) {
-        this.writeRegister(c, (this.readRegister(c) / literal)|0);
-    };
+    betaop({
+        opcode:  0x36,
+        name: 'CMPLEC',
+        exec: function CMPLEC(a, literal, c) {
+            this.writeRegister(c, this.readRegister(a) <= literal);
+        }
+    });
 
-    I[M.JMP] = function(a, c) {
-        this.writeRegister(c, this.getPC());
-        this.setPC(this.readRegister(a));
-    };
+    betaop({
+        opcode: 0x25,
+        name: 'CMPLT',
+        exec: function CMPLT(a, b, c) {
+            this.writeRegister(c, this.readRegister(b) < this.readRegister(a));
+        }
+    });
 
-    I[M.LD] = function(a, c, literal) {
-        this.writeRegister(c, this.readWord(this.readRegister(a) + literal));
-    };
+    betaop({
+        opcode: 0x35,
+        name: 'CMPLTC',
+        exec: function(a, literal, c) {
+            this.writeRegister(c, this.readRegister(a) < literal);
+        }
+    });
 
-    I[M.LDR] = function(a, c, literal) {
-        this.writeRegister(c, this.readWord(this.getPC() + 4*literal));
-    };
+    betaop({
+        opcode: 0x23,
+        name: 'DIV',
+        exec: function(a, b, c) {
+            this.writeRegister(c, (this.readRegister(a) / this.readRegister(b))|0);
+        }
+    });
 
-    I[M.MUL] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) * this.readRegister(b));
-    };
+    betaop({
+        opcode: 0x33,
+        name: 'DIVC',
+        exec: function(a, literal, c) {
+            this.writeRegister(c, (this.readRegister(c) / literal)|0);
+        }
+    });
 
-    I[M.MULC] = function(a, c, literal) {
-        this.writeRegister(c, this.readRegister(a) * literal);
-    };
+    betaop({
+        opcode: 0x1B,
+        name: 'JMP',
+        exec: function(a, b, c) {
+            this.writeRegister(c, this.getPC());
+            this.setPC(this.readRegister(a));
+        }
+    });
 
-    I[M.OR] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) | this.readRegister(b));
-    };
+    betaop({
+        opcode: 0x18,
+        name: 'LD',
+        exec: function(a, literal, c) {
+            this.writeRegister(c, this.readWord(this.readRegister(a) + literal));
+        }
+    });
 
-    I[M.ORC] = function(a, c, literal) {
-        this.writeRegister(c, this.readRegister(a) | literal);
-    };
+    betaop({
+        opcode: 0x1F,
+        name: 'LDR',
+        exec: function(a, literal, c) {
+            this.writeRegister(c, this.readWord(this.getPC() + 4*literal));
+        }
+    });
 
-    I[M.SHL] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) << this.readRegister(b));
-    };
+    betaop({
+        opcode: 0x22,
+        name: 'MUL',
+        exec: function(a, b, c) {
+            this.writeRegister(c, this.readRegister(a) * this.readRegister(b));
+        }
+    });
 
-    I[M.SHLC] = function(a, c, literal) {
-        this.writeRegister(c, this.readRegister(a) << literal);
-    };
+    betaop({
+        opcode: 0x32,
+        name: 'MULC',
+        exec: function(a, literal, c) {
+            this.writeRegister(c, this.readRegister(a) * literal);
+        }
+    });
 
-    I[M.SHR] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) >>> this.readRegister(b));
-    };
+    betaop({
+        opcode: 0x29,
+        name: 'OR',
+        exec: function(a, b, c) {
+            this.writeRegister(c, this.readRegister(a) | this.readRegister(b));
+        }
+    });
 
-    I[M.SHRC] = function(a, c, literal) {
-        this.writeRegister(c, this.readRegister(a) >>> literal);
-    };
+    betaop({
+        opcode: 0x39,
+        name: 'ORC',
+        exec: function(a, literal, c) {
+            this.writeRegister(c, this.readRegister(a) | literal);
+        }
+    });
 
-    I[M.SRA] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) >> this.readRegister(b));
-    };
+    betaop({
+        opcode: 0x2C,
+        name: 'SHL',
+        exec: function(a, b, c) {
+            this.writeRegister(c, this.readRegister(a) << this.readRegister(b));
+        }
+    });
 
-    I[M.SRAC] = function(a, c, literal) {
-        this.writeRegister(c, this.readRegister(a) >> literal);
-    };
+    betaop({
+        opcode: 0x3C,
+        name: 'SHLC',
+        exec: function(a, literal, c) {
+            this.writeRegister(c, this.readRegister(a) << literal);
+        }
+    });
 
-    I[M.SUB] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) - this.readRegister(b));
-    };
+    betaop({
+        opcode: 0x2D,
+        name: 'SHR',
+        exec: function(a, b, c) {
+            this.writeRegister(c, this.readRegister(a) >>> this.readRegister(b));
+        }
+    });
 
-    I[M.SUBC] = function(a, c, literal) {
-        this.writeRegister(c, this.readRegister(a) - literal);
-    };
+    betaop({
+        opcode: 0x3D,
+        name: 'SHRC',
+        exec: function(a, literal, c) {
+            this.writeRegister(c, this.readRegister(a) >>> literal);
+        }
+    });
 
-    I[M.ST] = function(a, c, literal) {
-        this.writeWord(a + literal, c);
-    };
+    betaop({
+        opcode: 0x2E,
+        name: 'SRA',
+        exec: function(a, b, c) {
+            this.writeRegister(c, this.readRegister(a) >> this.readRegister(b));
+        }
+    });
 
-    I[M.XOR] = function(a, b, c) {
-        this.writeRegister(c, this.readRegister(a) ^ this.readRegister(b));
-    };
+    betaop({
+        opcode: 0x3E,
+        name: 'SRAC',
+        exec: function(a, literal, c) {
+            this.writeRegister(c, this.readRegister(a) >> literal);
+        }
+    });
 
-    I[M.XORC] = function(a, c, literal) {
-        this.writeRegister(c, this.readRegister(a) ^ literal);
-    };
+    betaop({
+        opcode: 0x21,
+        name: 'SUB',
+        exec: function(a, b, c) {
+            this.writeRegister(c, this.readRegister(a) - this.readRegister(b));
+        }
+    });
 
-    I[M.XNOR] = function(a, b, c) {
-        this.writeRegister(c, ~(this.readRegister(a) ^ this.readRegister(b)));
-    };
+    betaop({
+        opcode: 0x31,
+        name: 'SUBC',
+        exec: function(a, literal, c) {
+            this.writeRegister(c, this.readRegister(a) - literal);
+        }
+    });
 
-    I[M.XNORC] = function(a, c, literal) {
-        this.writeRegister(c, ~(this.readRegister(a) ^ literal));
-    };
+    betaop({
+        opcode: 0x19,
+        name: 'ST',
+        exec: function(a, literal, c) {
+            this.writeWord(a + literal, c);
+        }
+    });
+
+    betaop({
+        opcode: 0x2A,
+        name: 'XOR',
+        exec: function(a, b, c) {
+            this.writeRegister(c, this.readRegister(a) ^ this.readRegister(b));
+        }
+    });
+
+    betaop({
+        opcode: 0x3A,
+        name: 'XORC',
+        exec: function(a, literal, c) {
+            this.writeRegister(c, this.readRegister(a) ^ literal);
+        }
+    });
+
+    betaop({
+        opcode: 0x2B,
+        name: 'XNOR',
+        exec: function(a, b, c) {
+            this.writeRegister(c, ~(this.readRegister(a) ^ this.readRegister(b)));
+        }
+    });
+
+    betaop({
+        opcode: 0x3B,
+        name: 'XNORC',
+        exec: function(a, b, c) {
+            this.writeRegister(c, ~(this.readRegister(a) ^ literal));
+        }
+    });
 })();
