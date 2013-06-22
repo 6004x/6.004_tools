@@ -21,8 +21,6 @@ BSim.Beta.Opcodes = {};
         opcode: 0x30,
         name: 'ADDC',
         exec: function ADDC(a, literal, c) {
-            console.log("ADDC(" + a + ", " + literal + ", " + c + ")");
-            console.log(this, a, c, literal);
             this.writeRegister(c, this.readRegister(a) + literal);
         }
     });
@@ -47,6 +45,7 @@ BSim.Beta.Opcodes = {};
         opcode: 0x1C,
         name: 'BEQ',
         exec: function BEQ(a, literal, c) {
+            this.writeRegister(c, this.getPC());
             if(this.readRegister(a) === 0) {
                 this.setPC(this.getPC() + 4*literal, false);
             }
@@ -57,6 +56,7 @@ BSim.Beta.Opcodes = {};
         opcode: 0x1D,
         name: 'BNE',
         exec: function BNE(a, literal, c) {
+            this.writeRegister(c, this.getPC());
             if(this.readRegister(a) !== 0) {
                 this.setPC(this.getPC() + 4*literal, false);
             }
@@ -251,8 +251,8 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x19,
         name: 'ST',
-        exec: function(a, literal, c) {
-            this.writeWord(a + literal, c);
+        exec: function(a, literal, c) { // These are intentionally swapped.
+            this.writeWord(this.readRegister(a) + literal, this.readRegister(c));
         }
     });
 

@@ -1,7 +1,7 @@
 BSim.Beta = function(mem_size) {
     this.mMemory = new Uint8Array(mem_size);
     this.mRegisters = new Int32Array(32);
-    this.mPC = 0;
+    this.mPC = 0x80000000;
     XP = 30;
     SP = 29;
     LP = 28;
@@ -20,6 +20,7 @@ BSim.Beta = function(mem_size) {
     };
 
     this.readWord = function(address) {
+        address &= ~SUPERVISOR_BIT;
         return (
             (this.readByte(address+3) << 24) |
             (this.readByte(address+2) << 16) |
@@ -34,6 +35,7 @@ BSim.Beta = function(mem_size) {
     };
 
     this.writeWord = function(address, value) {
+        address &= ~SUPERVISOR_BIT;
         this.writeByte(address + 3, (value >>> 24) & 0xFF);
         this.writeByte(address + 2, (value >>> 16) & 0xFF);
         this.writeByte(address + 1, (value >>> 8) & 0xFF);
@@ -71,11 +73,10 @@ BSim.Beta = function(mem_size) {
         var has_literal = !!((instruction >> 30) & 1);
         var opcode = (instruction >> 26) & 0x3F;
         var rc = (instruction >> 21) & 0x1F;
-        var rb = (instruction >> 16) & 0x1F;
-        var ra = (instruction >> 11) & 0x1F;
+        var ra = (instruction >> 16) & 0x1F;
+        var rb = (instruction >> 11) & 0x1F;
         var literal = this.signExtend16(instruction & 0xFFFF);
         if(has_literal) {
-            ra = rb;
             rb = null;
         } else {
             literal = null;
@@ -93,20 +94,23 @@ BSim.Beta = function(mem_size) {
 
     this.runCycle = function() {
         var instruction = this.readWord(this.mPC);
+        if(instruction === 0) {
+            throw "done";
+        }
         var decoded = this.decodeInstruction(instruction);
-        console.log(decoded);
+        //console.log(decoded);
         var op = BSim.Beta.Opcodes[decoded.opcode];
         if(!op) {
             // Illegal opcode.
             this.handleIllegalInstruction(decoded);
         }
         this.mPC += 4;
-        console.log("New PC: " + this.mPC);
+        //console.log("New PC: " + this.mPC);
         if(decoded.has_literal) {
-            console.log(op.name + "(" + decoded.ra + ", " + decoded.literal + ", " + decoded.rc + ")");
+            console.log(op.name + "(R" + decoded.ra + ", " + decoded.literal + ", R" + decoded.rc + ")");
             op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
         } else {
-            console.log(op.name + "(" + decoded.ra + ", " + decoded.rb + ", " + decoded.rc + ")");
+            console.log(op.name + "(R" + decoded.ra + ", R" + decoded.rb + ", R" + decoded.rc + ")");
             op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
         }
     };

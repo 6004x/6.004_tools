@@ -3,7 +3,7 @@
     text-align: right;
 }
 
-#registers {
+#registers, #pc {
     font-family: Menlo, Monaco, monospace;
     border: 1px solid gray;
 }
