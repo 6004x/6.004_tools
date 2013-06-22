@@ -101,11 +101,10 @@ BSim.Beta = function(mem_size) {
             this.handleIllegalInstruction(decoded);
         }
         this.mPC += 4;
+        // console.log(op.disassemble(decoded));
         if(op.has_literal) {
-            // console.log(op.name + "(R" + decoded.ra + ", " + decoded.literal + ", R" + decoded.rc + ")");
             op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
         } else {
-            // console.log(op.name + "(R" + decoded.ra + ", R" + decoded.rb + ", R" + decoded.rc + ")");
             op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
         }
     };

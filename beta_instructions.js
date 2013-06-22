@@ -16,10 +16,42 @@ BSim.Beta.Opcodes = {};
 
 // Build up our opcode table.
 (function() {
+    // Gives a register its best name
+    var name_register = function(reg) {
+        var special = {
+            27: 'BP',
+            28: 'LP',
+            29: 'SP',
+            30: 'CP'
+        };
+        if(special[reg]) return special[reg];
+        else return 'R' + reg;
+    }
+    // The generic dissasembly functions
+    var generic_disassemble = function(op, a, b, c) {
+        return op.name + "(" + name_register(a) + ", " + name_register(b) + ", " + name_register(c) + ")";
+    };
+
+    var generic_disassemblec = function(op, a, literal, c) {
+        return op.name + "(" + name_register(a) + ", " + literal + ", " + name_register(c) + ")";
+    };
+
     var betaop = function(op) {
         // Unify shorthand.
         if(!op.privileged) op.privileged = false;
         if(!op.has_literal) op.has_literal = false;
+        if(!op.disassemble) {
+            // op.disassemble = function() {return '';};
+            if(!op.has_literal) {
+                op.disassemble = function(decoded) {
+                    return generic_disassemble(op, decoded.ra, decoded.rb, decoded.rc);
+                };
+            } else {
+                op.disassemble = function(decoded) {
+                    return generic_disassemblec(op, decoded.ra, decoded.literal, decoded.rc);
+                };
+            }
+        }
         // Insert it into useful places.
         BSim.Beta.Opcodes[op.opcode] = op;
     };
@@ -29,6 +61,10 @@ BSim.Beta.Opcodes = {};
         name: 'ADD',
         exec: function ADD(a, b, c) {
             this.writeRegister(c, this.readRegister(a) + this.readRegister(b));
+        },
+        disassemble: function(op) {
+            if(op.rb == 31) return "MOVE(" + name_register(op.ra) + ", " + name_register(op.rc) + ")";
+            else return "ADD(" + name_register(op.ra) + ", " + name_register(op.rc) + ", " + name_register(op.rc) + ")";
         }
     });
 
@@ -38,6 +74,10 @@ BSim.Beta.Opcodes = {};
         has_literal: true,
         exec: function ADDC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) + literal);
+        },
+        disassemble: function(op) {
+            if(op.ra == 31) return "CMOVE(" + op.literal + ", " + name_register(op.rc) + ")";
+            else return "ADDC(" + name_register(op.ra) + ", " + op.literal + ", " + name_register(op.rc) + ")";
         }
     });
 
@@ -158,6 +198,10 @@ BSim.Beta.Opcodes = {};
         exec: function JMP(a, b, c) {
             this.writeRegister(c, this.getPC());
             this.setPC(this.readRegister(a));
+        },
+        disassemble: function(op) {
+            if(op.rc == 31) return "JMP(" + name_register(op.ra) + ")";
+            else return "JMP(" + name_register(op.ra) + ", " + name_register(op.rc) + ")";
         }
     });
 
@@ -333,7 +377,6 @@ BSim.Beta.Opcodes = {};
             switch(literal) {
                 case 0: // HALT
                     throw "HALT";
-                    break;
                 case 2: // WRCHAR
                     $('#output').append(document.createTextNode(String.fromCharCode(this.readRegister(a))));
                     break;
@@ -343,6 +386,11 @@ BSim.Beta.Opcodes = {};
                 default:
                     this.handleIllegalInstruction();
             }
+        },
+        disassemble: function(op) {
+            var ops = ["HALT()", "RDCHAR()", "WRCHAR()", "CYCLE()", "TIME()", "CLICK()", "RANDOM()", "SEED()", "SERVER()"];
+            if(op.literal >= 0 && op.literal < ops.length) return ops[op.literal];
+            else return "illop";
         }
     });
 })();
