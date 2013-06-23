@@ -1,12 +1,23 @@
 BSim.Beta = function(mem_size) {
-    this.mMemory = new Uint8Array(mem_size);
-    this.mRegisters = new Int32Array(32);
-    this.mPC = 0x80000000;
-    XP = 30;
-    SP = 29;
-    LP = 28;
-    BP = 27;
-    SUPERVISOR_BIT = 0x80000000;
+    "use strict";
+    var self = this;
+    var mMemory = new Uint8Array(mem_size);
+    var mRegisters = new Int32Array(32);
+    var mRunning = false; // Only true when calling run(); not executeCycle().
+
+    // We use these in the 'running' state so we can batch DOM updates,
+    // on the theory that changing object properties is cheap but changing DOM
+    // nodes is expensive. Changes are thus cached in here until the end of the
+    // quantum, then shipped off to anything that cares and cleared.
+    // When not in run mode (i.e. mRunning is false and stepping through),
+    // changes are signalled immediately and these are not used.
+    var mChangedRegisters = {};
+    var mChangedWords = {};
+
+    var mPC = 0x80000000;
+    var SUPERVISOR_BIT = 0x80000000;
+
+    _.extend(this, Backbone.Events);
 
     this.loadBytes = function(bytes) {
         for(var i = 0; i < bytes.length; ++i) {
@@ -16,7 +27,7 @@ BSim.Beta = function(mem_size) {
 
     this.readByte = function(address) {
         address &= ~SUPERVISOR_BIT; // Drop supervisor bit
-        return this.mMemory[address];
+        return mMemory[address];
     };
 
     this.readWord = function(address) {
@@ -31,34 +42,45 @@ BSim.Beta = function(mem_size) {
 
     this.writeByte = function(address, value) {
         address &= ~SUPERVISOR_BIT;
-        this.mMemory[address] = value;
+        mMemory[address] = value;
     };
 
     this.writeWord = function(address, value) {
+        value |= 0; // force to int.
         address &= ~SUPERVISOR_BIT;
         this.writeByte(address + 3, (value >>> 24) & 0xFF);
         this.writeByte(address + 2, (value >>> 16) & 0xFF);
         this.writeByte(address + 1, (value >>> 8) & 0xFF);
+
         this.writeByte(address + 0, (value & 0xFF));
+
+        if(!mRunning) this.trigger('change:word', address, value);
+        else mChangedWords[address] = value;
     };
 
     this.readRegister = function(register) {
         if(register == 31) return 0;
-        return this.mRegisters[register];
+        return mRegisters[register];
     };
 
     this.writeRegister = function(register, value) {
+        value |= 0; // force to int.
         if(register == 31) return;
-        this.mRegisters[register] = value;
+        mRegisters[register] = value;
+
+        if(!mRunning) this.trigger('change:register', register, value);
+        else mChangedRegisters[register] = value;
     };
 
     this.setPC = function(address, allow_supervisor) {
-        if(!(this.mPC & SUPERVISOR_BIT) && !allow_supervisor) address &= ~SUPERVISOR_BIT;
-        this.mPC = address & 0xFFFFFFFC;
+        if(!(mPC & SUPERVISOR_BIT) && !allow_supervisor) address &= ~SUPERVISOR_BIT;
+        mPC = address & 0xFFFFFFFC; // Only multiples of four are valid.
+
+        if(!mRunning) this.trigger('change:pc', address);
     };
 
     this.getPC = function() {
-        return this.mPC;
+        return mPC;
     };
 
     this.signExtend16 = function(value) {
@@ -85,28 +107,88 @@ BSim.Beta = function(mem_size) {
         };
     };
 
-    this.runCycle = function() {
-        var instruction = this.readWord(this.mPC);
+    // This is similar to pulsing the RESET line; it resets the program counter,
+    // but doesn't do an awful lot else.
+    this.reset = function() {
+        this.setPC(SUPERVISOR_BIT, true);
+    };
+
+    // Executes a single instruction (this is not a fancy beta).
+    // Returns false if execution should halt; otherwise the return
+    // value is undefined (but may well be 'undefined').
+    // Use ===.
+    this.executeCycle = function() {
+        var instruction = this.readWord(mPC);
         if(instruction === 0) {
-            throw "done";
+            return false;
         }
         var decoded = this.decodeInstruction(instruction);
         var op = BSim.Beta.Opcodes[decoded.opcode];
         if(!op) {
             // Illegal opcode.
-            this.handleIllegalInstruction(decoded);
+            return this.handleIllegalInstruction(decoded);
         }
-        if(op.privileged && !(this.mPC & SUPERVISOR_BIT)) {
+        if(op.privileged && !(mPC & SUPERVISOR_BIT)) {
             console.log("Called privileged instruction " + op.name + " while not in supervisor mode.");
             this.handleIllegalInstruction(decoded);
         }
-        this.mPC += 4;
+        mPC += 4;
+        if(!mRunning) this.trigger('change:pc', mPC);
         // console.log(op.disassemble(decoded));
         if(op.has_literal) {
-            op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
+            return op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
         } else {
-            op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
+            return op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
         }
+    };
+
+    // Runs the program to completion (if it terminates) or until stopped using
+    // stop(). Yields to the UI every `quantum` emulated cycles.
+    // When run using this function, the emulator does not issue standard change events,
+    // instead issuing a change:all event after each quantum and when stopping
+    // (even if nothing actually changed).
+    // This function is non-blocking.
+    this.run = function(quantum) {
+        this.trigger('run:start');
+        mRunning = true;
+        setTimeout(function run_inner() {
+            // Bail out if we're not supposed to run any more.
+            if(!mRunning) {
+                self.trigger('run:stop');
+                return;
+            }
+            var i = quantum;
+            // Execute quantum cycles, then yield for the UI.
+            while(i--) {
+                // This means we should terminate.
+                if(self.executeCycle() === false) {
+                    mRunning = false;
+                    break;
+                }
+            }
+            // Now relay all the changes that occurred during our quantum.
+            self.trigger('change:bulk:word', mChangedWords);
+            self.trigger('change:bulk:register', mChangedRegisters);
+            self.trigger('change:pc', mPC);
+            mChangedRegisters = {};
+            mChangedWords = {};
+
+            // Run again.
+            _.defer(run_inner);
+        }, 1);
+    };
+
+    this.stop = function() {
+        mRunning = false;
+    };
+
+    this.isRunning = function() {
+        return mRunning;
+    };
+
+    // Returns memory size in bytes.
+    this.memorySize = function() {
+        return mMemory.length;
     };
 
     return this;

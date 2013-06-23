@@ -1,105 +1,28 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta charset="utf-8">
         <title>BSim Test</title>
-        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore.js"></script>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
         <script type="text/javascript" src="bsim.js"></script>
+        <script type="text/javascript" src="bsim_common.js"></script>
         <script type="text/javascript" src="beta.js"></script>
         <script type="text/javascript" src="beta_instructions.js"></script>
+        <script type="text/javascript" src="regfile_view.js"></script>
+        <script type="text/javascript" src="controls.js"></script>
         <script type="text/javascript" src="projcheckoff.js"></script>
-        <script type="text/javascript" src="execution.js"></script>
+        <script type="text/javascript" src="tty.js"></script>
+        <script type="text/javascript" src="disassembled_view.js"></script>
         <link rel="stylesheet" type="text/css" href="bsim.css">
     </head>
     <body>
         <div id="beta-execution">
-            <div id="controls">
-                <button id="step-forward">Step</button>
-                <button id="run-toggle">Run</button>
-            </div>
-            <table id="registers">
-                <tr>
-                    <td class="label">R0</td>
-                    <td class="value" data-register="0">00000000</td>
-                    <td class="label">R8</td>
-                    <td class="value" data-register="8">00000000</td>
-                    <td class="label">R16</td>
-                    <td class="value" data-register="16">00000000</td>
-                    <td class="label">R24</td>
-                    <td class="value" data-register="24">00000000</td>
-                </tr>
-                <tr>
-                    <td class="label">R1</td>
-                    <td class="value" data-register="1">00000000</td>
-                    <td class="label">R9</td>
-                    <td class="value" data-register="9">00000000</td>
-                    <td class="label">R17</td>
-                    <td class="value" data-register="17">00000000</td>
-                    <td class="label">R25</td>
-                    <td class="value" data-register="25">00000000</td>
-                </tr>
-                <tr>
-                    <td class="label">R2</td>
-                    <td class="value" data-register="2">00000000</td>
-                    <td class="label">R10</td>
-                    <td class="value" data-register="10">00000000</td>
-                    <td class="label">R18</td>
-                    <td class="value" data-register="18">00000000</td>
-                    <td class="label">R26</td>
-                    <td class="value" data-register="26">00000000</td>
-                </tr>
-                <tr>
-                    <td class="label">R3</td>
-                    <td class="value" data-register="3">00000000</td>
-                    <td class="label">R11</td>
-                    <td class="value" data-register="11">00000000</td>
-                    <td class="label">R19</td>
-                    <td class="value" data-register="19">00000000</td>
-                    <td class="label">BP</td>
-                    <td class="value" data-register="27">00000000</td>
-                </tr>
-                <tr>
-                    <td class="label">R4</td>
-                    <td class="value" data-register="4">00000000</td>
-                    <td class="label">R12</td>
-                    <td class="value" data-register="12">00000000</td>
-                    <td class="label">R20</td>
-                    <td class="value" data-register="20">00000000</td>
-                    <td class="label">LP</td>
-                    <td class="value" data-register="28">00000000</td>
-                </tr>
-                <tr>
-                    <td class="label">R5</td>
-                    <td class="value" data-register="5">00000000</td>
-                    <td class="label">R13</td>
-                    <td class="value" data-register="13">00000000</td>
-                    <td class="label">R21</td>
-                    <td class="value" data-register="21">00000000</td>
-                    <td class="label">SP</td>
-                    <td class="value" data-register="29">00000000</td>
-                </tr>
-                <tr>
-                    <td class="label">R6</td>
-                    <td class="value" data-register="6">00000000</td>
-                    <td class="label">R14</td>
-                    <td class="value" data-register="14">00000000</td>
-                    <td class="label">R22</td>
-                    <td class="value" data-register="22">00000000</td>
-                    <td class="label">XP</td>
-                    <td class="value" data-register="30">00000000</td>
-                </tr>
-                <tr>
-                    <td class="label">R7</td>
-                    <td class="value" data-register="7">00000000</td>
-                    <td class="label">R15</td>
-                    <td class="value" data-register="15">00000000</td>
-                    <td class="label">R23</td>
-                    <td class="value" data-register="23">00000000</td>
-                    <td class="label">R31</td>
-                    <td class="value" data-register="31">00000000</td>
-                </tr>
-            </table>
+            <div class="program-controls"></div>
+            <div class="regfile"></div>
+            <div class="disassembly"></div>
+            <div class="tty"></div>
         </div>
-        <p>PC: <span id="pc"></span></p>
-        <pre id="output"></div>
     </body>
 </html>

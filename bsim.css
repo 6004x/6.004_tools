@@ -1,9 +1,53 @@
-#registers .label {
+.regfile .label {
     color: gray;
     text-align: right;
 }
 
-#registers, #pc {
-    font-family: Menlo, Monaco, monospace;
+table.regfile {
     border: 1px solid gray;
+}
+
+.regfile, .disassembly, .tty {
+    font-family: Menlo, Monaco, monospace;
+    font-size: small;
+}
+
+pre.tty-output {
+    height: 100px;
+    overflow-y: auto;
+    background-color: #fafafa;
+    border: thin solid #eaeaea;
+    border-radius: 5px;
+    margin: 10px;
+    padding: 5px;
+}
+
+table.disassembly {
+    table-layout: fixed;
+    border-spacing: 0px;
+}
+
+.current-instruction {
+    background-color: #3874D7;
+    color: white;
+}
+
+div.disassembly {
+    height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 400px;
+}
+
+.disassembly td {
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.disassembly .label {
+    width: 150px;
+}
+
+.disassembly .operation {
+    width: 240px;
 }

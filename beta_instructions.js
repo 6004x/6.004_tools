@@ -17,16 +17,8 @@ BSim.Beta.Opcodes = {};
 // Build up our opcode table.
 (function() {
     // Gives a register its best name
-    var name_register = function(reg) {
-        var special = {
-            27: 'BP',
-            28: 'LP',
-            29: 'SP',
-            30: 'CP'
-        };
-        if(special[reg]) return special[reg];
-        else return 'R' + reg;
-    }
+    var name_register = BSim.Common.RegisterName;
+
     // The generic dissasembly functions
     var generic_disassemble = function(op, a, b, c) {
         return op.name + "(" + name_register(a) + ", " + name_register(b) + ", " + name_register(c) + ")";
@@ -329,7 +321,7 @@ BSim.Beta.Opcodes = {};
         opcode: 0x19,
         name: 'ST',
         has_literal: true,
-        exec: function ST(a, literal, c) { // These are intentionally swapped.
+        exec: function ST(a, literal, c) {
             this.writeWord(this.readRegister(a) + literal, this.readRegister(c));
         }
     });
@@ -376,15 +368,15 @@ BSim.Beta.Opcodes = {};
         exec: function PRIV_OP(a, literal, c) {
             switch(literal) {
                 case 0: // HALT
-                    throw "HALT";
+                    return false;
                 case 2: // WRCHAR
-                    $('#output').append(document.createTextNode(String.fromCharCode(this.readRegister(a))));
+                    this.trigger('out:text', String.fromCharCode(this.readRegister(a)));
                     break;
-                case 6:
-                    this.writeRegister(c, Math.floor(Math.random() * Math.pow(2, 32)));
+                case 6: // RANDOM
+                    this.writeRegister(c, _.random(0xFFFFFFFF));
                     break;
                 default:
-                    this.handleIllegalInstruction();
+                    return this.handleIllegalInstruction();
             }
         },
         disassemble: function(op) {
