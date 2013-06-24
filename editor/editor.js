@@ -16,7 +16,7 @@ var Editor = function(container, mode) {
         mToolbarHolder.append(group);
     };
 
-    this.focusTab = function(doc) {
+    var focusTab = function(doc) {
         doc.tab.find('a').tab('show');
         if(mCurrentDocument) mCurrentDocument.el.hide();
         doc.el.show().addClass('active');
@@ -24,11 +24,19 @@ var Editor = function(container, mode) {
         mCurrentDocument = doc;
     };
 
-    this.unfocusTab = function(doc) {
+    var unfocusTab = function(doc) {
         if(!doc) return;
         doc.el.removeClass("active").hide();
         doc.tab.removeClass('active');
-    }
+    };
+
+    this.focusTab = function(filename) {
+        focusTab(mOpenDocuments[filename]);
+    };
+
+    this.unfocusTab = function(filename) {
+        unfocusTab(mOpenDocuments[filename]);
+    };
 
     var create_cm_instance = function(container, content) {
         var cm = new CodeMirror(container[0], {
@@ -58,7 +66,7 @@ var Editor = function(container, mode) {
 
         var doc = {el: editPane, tab: tab, cm: cm};
 
-        var a = $('<a>', {href: '#' + id}).text(filename).click(function(e) { e.preventDefault(); self.focusTab(doc); });
+        var a = $('<a>', {href: '#' + id}).text(filename).click(function(e) { e.preventDefault(); focusTab(doc); });
         tab.append(a);
 
         mTabHolder.append(tab);
@@ -66,15 +74,15 @@ var Editor = function(container, mode) {
         mContainer.append(editPane);
 
         if(!_.size(mOpenDocuments) || activate) {
-            self.unfocusTab(mCurrentDocument);
-            self.focusTab(doc);
+            unfocusTab(mCurrentDocument);
+            focusTab(doc);
         }
 
         // Stash these away somewhere.
         mOpenDocuments[filename] = doc;
     };
 
-    this.tab = function(filename) {
+    this.doc = function(filename) {
         return mOpenDocuments[filename];
     };
 
