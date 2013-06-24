@@ -50,11 +50,12 @@ BSim.Beta = function(mem_size) {
 
     this.readWord = function(address) {
         address &= ~SUPERVISOR_BIT;
+        address &= 0xFFFFFFFC; // Force multiples of four.
         return (
-            (this.readByte(address+3) << 24) |
-            (this.readByte(address+2) << 16) |
-            (this.readByte(address+1) << 8)  |
-            this.readByte(address+0)
+            (self.readByte(address+3) << 24) |
+            (self.readByte(address+2) << 16) |
+            (self.readByte(address+1) << 8)  |
+            self.readByte(address+0)
         );
     };
 
@@ -66,6 +67,7 @@ BSim.Beta = function(mem_size) {
     this.writeWord = function(address, value) {
         value |= 0; // force to int.
         address &= ~SUPERVISOR_BIT;
+        address &= 0xFFFFFFFC; // Force multiples of four.
         this.writeByte(address + 3, (value >>> 24) & 0xFF);
         this.writeByte(address + 2, (value >>> 16) & 0xFF);
         this.writeByte(address + 1, (value >>> 8) & 0xFF);
@@ -136,11 +138,11 @@ BSim.Beta = function(mem_size) {
 
     // Called when any illegal instruction is executed.
     this.handleIllegalInstruction = function(decoded) {
-        if(this.inSupervisorMode()) {
+        /*if(this.inSupervisorMode()) {
             // This is "implementation defined"; we whine on any tty and then halt.
             this.trigger("out:text", "\nIllegal operation while in supervisor mode! Halting.\n");
             return false;
-        }
+        }*/
         this.writeRegister(XP, mPC);
         this.setPC(SUPERVISOR_BIT | VEC_II, true);
     };

@@ -386,6 +386,9 @@ BSim.Beta.Opcodes = {};
                 case 3:
                     this.writeRegister(0, this.getCycleCount());
                     break;
+                case 4:
+                    this.writeRegister(0, Date.now());
+                    break;
                 case 5:
                     this.writeRegister(0, this.mMouseCoords);
                     this.mMouseCoords = -1;
@@ -395,7 +398,7 @@ BSim.Beta.Opcodes = {};
                     break;
                 default:
                     throw "Unimplemented instruction " + literal;
-                    return this.handleIllegalInstruction();
+                    // return this.handleIllegalInstruction();
             }
         },
         disassemble: function(op) {
