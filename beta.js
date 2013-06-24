@@ -38,9 +38,15 @@ BSim.Beta = function(mem_size) {
     _.extend(this, Backbone.Events);
 
     this.loadBytes = function(bytes) {
+        this.stop();
+        this.reset();
         for(var i = 0; i < bytes.length; ++i) {
             this.writeByte(i, bytes[i]);
         }
+        // Update the UI with our new program.
+        this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
+        var r = _.range(0, mMemory.length, 4);
+        this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
     };
 
     this.readByte = function(address) {
