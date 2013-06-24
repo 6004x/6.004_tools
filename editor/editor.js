@@ -92,6 +92,7 @@ var Editor = function(container, mode) {
         // Do some one-time setup.
         if(!Editor.IsSetUp) {
             CodeMirror.commands.save = do_save;
+            Editor.IsSetUp = true;
         }
     };
 
