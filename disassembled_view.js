@@ -7,6 +7,7 @@ BSim.DisassebledView = function(container, beta) {
     var mValueCells = new Array(mBeta.memorySize() / 4);
     var mCurrentPC = 0;
     var mRowHeight = 0;
+    var mScrollOffset = 0;
 
     var disassemble_value = function(value) {
         var decoded = beta.decodeInstruction(value);
@@ -28,11 +29,13 @@ BSim.DisassebledView = function(container, beta) {
     };
 
     var beta_change_pc = function(new_pc) {
+        var className = 'current-instruction';
+        if(new_pc & 0x80000000) className += ' supervisor-mode';
         new_pc &= ~0x80000000;
         mTableRows[mCurrentPC/4].className = '';
-        mTableRows[new_pc/4].className = 'current-instruction';
+        mTableRows[new_pc/4].className = className;
         mCurrentPC = new_pc;
-        mContainer[0].scrollTop = (mRowHeight * (new_pc / 4)) - 50;
+        mContainer[0].scrollTop = (mRowHeight * (new_pc / 4)) - mScrollOffset;
     };
 
     var initialise = function() {
@@ -78,6 +81,7 @@ BSim.DisassebledView = function(container, beta) {
 
         mContainer.append(mTable);
         mRowHeight = $(mTableRows[0]).height();
+        mScrollOffset = $(mContainer).height() / 2 - mRowHeight / 2;
 
         mBeta.on('change:word', beta_change_word);
         mBeta.on('change:pc', beta_change_pc);

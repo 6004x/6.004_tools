@@ -369,13 +369,32 @@ BSim.Beta.Opcodes = {};
             switch(literal) {
                 case 0: // HALT
                     return false;
+                case 1: // RDCHAR
+                    if(this.mKeyboardInput === null) {
+                        this.setPC(this.getPC() - 4); // loop
+                    } else {
+                        if(this.mKeyboardInput == 13) this.mKeyboardInput = 10; // Use the expected newline.
+                        console.log("setting r0 to " + this.mKeyboardInput);
+                        this.writeRegister(0, this.mKeyboardInput);
+                        this.mKeyboardInput = null;
+                    }
+                    break;
                 case 2: // WRCHAR
-                    this.trigger('out:text', String.fromCharCode(this.readRegister(a)));
+                    var chr = String.fromCharCode(this.readRegister(a));
+                    this.trigger('out:text', chr);
+                    break;
+                case 3:
+                    this.writeRegister(0, this.getCycleCount());
+                    break;
+                case 5:
+                    this.writeRegister(0, this.mMouseCoords);
+                    this.mMouseCoords = -1;
                     break;
                 case 6: // RANDOM
                     this.writeRegister(c, _.random(0xFFFFFFFF));
                     break;
                 default:
+                    throw "Unimplemented instruction " + literal;
                     return this.handleIllegalInstruction();
             }
         },

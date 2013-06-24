@@ -32,6 +32,10 @@ table.disassembly {
     color: white;
 }
 
+.current-instruction.supervisor-mode {
+    background-color: #CC3729;
+}
+
 div.disassembly {
     height: 200px;
     overflow-y: auto;

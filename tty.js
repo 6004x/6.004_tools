@@ -1,17 +1,42 @@
 BSim.TTY = function(container, beta) {
     var mContainer = $(container);
     var mBeta = beta;
-    var mTextHolder = $('<pre class="tty-output">');
+    var mPendingText = '';
+    var mTextHolder = $('<pre class="tty-output" tabindex="0">');
 
     var initialise = function() {
         mContainer.append(mTextHolder);
 
         var text_holder = mTextHolder[0];
-        mBeta.on('out:text', function(text) {
-            // Testing suggests that this is by far the quickest way to append text.
-            text_holder.appendChild(document.createTextNode(text));
-            // Make sure whatever we just added is actually in view.
+
+        var append_text = function() {
+            text_holder.textContent += mPendingText;
+            mPendingText = '';
             text_holder.scrollTop = text_holder.scrollHeight;
+        };
+
+        // Appending text a character at a time stutters if we have lots of text.
+        // This instead batches the text up for 50ms intervals.
+        var append_text_slowly = _.throttle(append_text, 50);
+
+        var handle_new_text = function(text) {
+            mPendingText += text;
+            append_text_slowly();
+        };
+
+        mBeta.on('out:text', handle_new_text);
+
+        mContainer.keypress(function(e) {
+            beta.keyboardInterrupt(e.which);
+        });
+
+        mContainer.click(function(e) {
+            var offset = mContainer.offset();
+            var x = e.pageX - offset.left;
+            var y = e.pageY - offset.top;
+            if(x < 0) x = 0;
+            if(y < 0) y = 0; // This is not impossible.
+            beta.mouseInterrupt(x, y);
         });
     };
 

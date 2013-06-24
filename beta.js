@@ -1,9 +1,17 @@
 BSim.Beta = function(mem_size) {
     "use strict";
     var self = this;
-    var mMemory = new Uint8Array(mem_size);
+    var mMemory = new Uint8Array(mem_size); // TODO: it might make sense to use an Int32Array here.
     var mRegisters = new Int32Array(32);
     var mRunning = false; // Only true when calling run(); not executeCycle().
+    var mPC = 0x80000000;
+    var mPendingInterrupts = 0; // Used to store any pending interrupt.
+    var mCycleCount = 0;
+    var mClockCounter = 0;
+    var CYCLES_PER_TICK = 10000;
+    // These need to be public for the instructions to look at.
+    this.mMouseCoords = -1;
+    this.mKeyboardInput = null;
 
     // We use these in the 'running' state so we can batch DOM updates,
     // on the theory that changing object properties is cheap but changing DOM
@@ -14,8 +22,18 @@ BSim.Beta = function(mem_size) {
     var mChangedRegisters = {};
     var mChangedWords = {};
 
-    var mPC = 0x80000000;
+    // Mostly exception stuff.
     var SUPERVISOR_BIT = 0x80000000;
+    var XP = 30;
+    var VEC_RESET = 0;
+    var VEC_II = 4;
+    var VEC_CLK = 8;
+    var VEC_KBD = 12;
+    var VEC_MOUSE = 16;
+
+    var INTERRUPT_CLOCK = 0x02;
+    var INTERRUPT_KEYBOARD = 0x04;
+    var INTERRUPT_MOUSE = 0x08;
 
     _.extend(this, Backbone.Events);
 
@@ -107,10 +125,68 @@ BSim.Beta = function(mem_size) {
         };
     };
 
-    // This is similar to pulsing the RESET line; it resets the program counter,
-    // but doesn't do an awful lot else.
+    // This is a RESET exception, rather than actually resetting all state.
     this.reset = function() {
-        this.setPC(SUPERVISOR_BIT, true);
+        this.setPC(SUPERVISOR_BIT | VEC_RESET, true);
+    };
+
+    this.inSupervisorMode = function() {
+        return !!(mPC & SUPERVISOR_BIT);
+    };
+
+    // Called when any illegal instruction is executed.
+    this.handleIllegalInstruction = function(decoded) {
+        if(this.inSupervisorMode()) {
+            // This is "implementation defined"; we whine on any tty and then halt.
+            this.trigger("out:text", "\nIllegal operation while in supervisor mode! Halting.\n");
+            return false;
+        }
+        this.writeRegister(XP, mPC);
+        this.setPC(SUPERVISOR_BIT | VEC_II, true);
+    };
+
+    // Various interrupts.
+    // These are split into two parts: one at the time that the interrupt actually occurs,
+    // and another when the beta is able to service it (the next time it leaves supervisor mode).
+
+    // Triggers a clock interrupt
+    this.clockInterrupt = function() {
+        mPendingInterrupts |= INTERRUPT_CLOCK;
+    };
+
+    var doClockInterrupt = function() {
+        self.writeRegister(XP, mPC+4);
+        self.setPC(SUPERVISOR_BIT | VEC_CLK, true);
+        mPendingInterrupts &= ~INTERRUPT_CLOCK;
+    };
+
+    // Keyboard interrupt
+    this.keyboardInterrupt = function(character) {
+        this.mKeyboardInput = character; // TODO: buffering?
+        mPendingInterrupts |= INTERRUPT_KEYBOARD;
+        console.log(character);
+    };
+
+    var doKeyboardInterrupt = function() {
+        self.writeRegister(XP, mPC+4);
+        self.setPC(SUPERVISOR_BIT | VEC_KBD, true);
+        mPendingInterrupts &= ~INTERRUPT_KEYBOARD;
+    };
+
+    // Mouse interrupt
+    this.mouseInterrupt = function(x, y) {
+        this.mMouseCoords = ((y & 0xFFFF) << 16) | (x & 0xFFFF);
+        mPendingInterrupts |= INTERRUPT_MOUSE;
+    };
+
+    var doMouseInterrupt = function() {
+        self.writeRegister(XP, mPC+4);
+        self.setPC(SUPERVISOR_BIT | VEC_MOUSE, true);
+        mPendingInterrupts &= ~INTERRUPT_MOUSE;
+    };
+
+    this.getCycleCount = function() {
+        return mCycleCount;
     };
 
     // Executes a single instruction (this is not a fancy beta).
@@ -118,7 +194,31 @@ BSim.Beta = function(mem_size) {
     // value is undefined (but may well be 'undefined').
     // Use ===.
     this.executeCycle = function() {
+        // Check if we should fire a clock exception first.
+        if(++mClockCounter % CYCLES_PER_TICK === 0) {
+            mClockCounter = 0;
+            this.clockInterrupt();
+        }
+        // Execute interrupts.
+        // TODO: Cleanup
+        if(!this.inSupervisorMode()) {
+            if(mPendingInterrupts & INTERRUPT_CLOCK) {
+                doClockInterrupt();
+                return;
+            }
+            if(mPendingInterrupts & INTERRUPT_KEYBOARD) {
+                doKeyboardInterrupt();
+                return;
+            }
+            if(mPendingInterrupts & INTERRUPT_MOUSE) {
+                doMouseInterrupt();
+                return;
+            }
+        }
+        mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
+        // Continue on with instructions as planned.
         var instruction = this.readWord(mPC);
+        mPC += 4; // Increment this early so that we have the right reference for exceptions.
         if(instruction === 0) {
             return false;
         }
@@ -130,9 +230,8 @@ BSim.Beta = function(mem_size) {
         }
         if(op.privileged && !(mPC & SUPERVISOR_BIT)) {
             console.log("Called privileged instruction " + op.name + " while not in supervisor mode.");
-            this.handleIllegalInstruction(decoded);
+            return this.handleIllegalInstruction(decoded);
         }
-        mPC += 4;
         if(!mRunning) this.trigger('change:pc', mPC);
         // console.log(op.disassemble(decoded));
         if(op.has_literal) {

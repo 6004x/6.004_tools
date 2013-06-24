@@ -1,8 +1,9 @@
 var BSim = {};
 
 $(function() {
-    var beta = new BSim.Beta(8192); // 8kB = 2 thousand words
-    beta.loadBytes(moo);
+    var beta = new BSim.Beta(10240); // 10kB = 2.5 thousand words
+    beta.loadBytes(lab8);
+    window.beta = beta;
 
     $('.regfile').each(function() {
         new BSim.RegfileView(this, beta);
