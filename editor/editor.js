@@ -205,7 +205,7 @@ var ToolbarButton = function(icon, callback, tooltip) {
         }
         mElement = $('<button class="btn">').append(mIcon);
         if(mTooltip) {
-            mElement.tooltip({title: mTooltip, placement: 'top', delay: 100});
+            mElement.tooltip({title: mTooltip, placement: 'top', delay: 100, container: 'body'});
         }
         if(mCallback) {
             mElement.click(mCallback);
