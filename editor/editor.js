@@ -199,6 +199,8 @@ var Editor = function(container, mode) {
         // Do some one-time setup.
         if(!Editor.IsSetUp) {
             CodeMirror.commands.save = do_save;
+            CodeMirror.keyMap.macDefault['Cmd-/'] = 'toggleComment';
+            CodeMirror.keyMap.pcDefault['Ctrl-/'] = 'toggleComment';
             Editor.IsSetUp = true;
         }
     };
