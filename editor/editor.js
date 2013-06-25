@@ -5,6 +5,7 @@ var Editor = function(container, mode) {
     var mTabHolder;
     var mCurrentDocument = null;
     var mSyntaxMode = mode;
+    var mExpectedHeight = null;
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
@@ -80,11 +81,23 @@ var Editor = function(container, mode) {
 
         // Stash these away somewhere.
         mOpenDocuments[filename] = doc;
+        if(mExpectedHeight) self.setHeight(mExpectedHeight);
     };
 
     this.doc = function(filename) {
         return mOpenDocuments[filename];
     };
+
+    // Why does doing anything vertically suck so much?
+    this.setHeight = function(height) {
+        mExpectedHeight = height;
+        mContainer.height(height);
+        var offset = mCurrentDocument.el.position().top;
+        _.each(mOpenDocuments, function(doc) {
+            doc.cm.getWrapperElement().style.height = (height - offset) + 'px';
+            doc.cm.refresh();
+        });
+    }
 
     var initialise = function() {
         // Build up our editor UI.
@@ -92,6 +105,7 @@ var Editor = function(container, mode) {
         // Add some basic button groups
         self.addButtonGroup([new ToolbarButton('icon-file'), new ToolbarButton('icon-refresh'), new ToolbarButton('icon-hdd')]);
         mContainer.append(mToolbarHolder);
+        mContainer.css('position', 'relative');
 
         // Add something to hold our editor tabs
         mTabHolder = $('<ul class="nav nav-tabs">');
