@@ -6,6 +6,7 @@ var Editor = function(container, mode) {
     var mCurrentDocument = null;
     var mSyntaxMode = mode;
     var mExpectedHeight = null;
+    var mUntitledDocumentCount = 0;
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
@@ -22,6 +23,7 @@ var Editor = function(container, mode) {
         if(mCurrentDocument) mCurrentDocument.el.hide();
         doc.el.show().addClass('active');
         doc.cm.refresh();
+        doc.cm.focus();
         mCurrentDocument = doc;
     };
 
@@ -59,13 +61,18 @@ var Editor = function(container, mode) {
     }
 
     this.openTab = function(filename, content, activate) {
-        // We need this for the tabs to do anything useful.
+        var has_location = true;
+        // If no filename is given, invent one. We'll need to prompt later.
+        if(!filename) {
+            has_location = false;
+            filename = '*untitled ' + (++mUntitledDocumentCount);
+        }
         var id = _.uniqueId('edit_tab');
         var editPane = $('<div>', {'class': 'tab-pane', id: id}).hide();
         var cm = create_cm_instance(editPane, content);
         var tab = $('<li>');
 
-        var doc = {el: editPane, tab: tab, cm: cm};
+        var doc = {el: editPane, tab: tab, cm: cm, has_location: has_location};
 
         var a = $('<a>', {href: '#' + id}).text(filename).click(function(e) { e.preventDefault(); focusTab(doc); });
         tab.append(a);
@@ -99,11 +106,16 @@ var Editor = function(container, mode) {
         });
     }
 
+    var create_new_document = function() {
+        console.log("hi");
+        self.openTab(null, '', true);
+    };
+
     var initialise = function() {
         // Build up our editor UI.
         mToolbarHolder = $('<div class="btn-toolbar">');
         // Add some basic button groups
-        self.addButtonGroup([new ToolbarButton('icon-file'), new ToolbarButton('icon-refresh'), new ToolbarButton('icon-hdd')]);
+        self.addButtonGroup([new ToolbarButton('icon-file', create_new_document, "New file"), new ToolbarButton('icon-refresh'), new ToolbarButton('icon-hdd')]);
         mContainer.append(mToolbarHolder);
         mContainer.css('position', 'relative');
 
@@ -144,8 +156,11 @@ var ToolbarButton = function(icon, callback, tooltip) {
             mIcon = $('<i>').addClass(mIcon);
         }
         mElement = $('<button class="btn">').append(mIcon);
-        if(tooltip) {
-            mElement.tooltip({title: tooltip, placement: 'bottom', delay: 100});
+        if(mTooltip) {
+            mElement.tooltip({title: mTooltip, placement: 'top', delay: 100});
+        }
+        if(mCallback) {
+            mElement.click(mCallback);
         }
         container.append(mElement);
     };
