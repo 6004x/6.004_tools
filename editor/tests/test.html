@@ -8,6 +8,7 @@
         <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.js"></script>
         <script src="../editor.js"></script>
         <script src="../external/codemirror-extensions.js"></script>
+        <script src="../mode_bsim.js"></script>
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="../external/codemirror-extensions.css">
@@ -31,7 +32,7 @@
         </div>
         <script type="text/javascript">
             // Make an editor
-            var editor = new Editor('#editor-test');
+            var editor = new Editor('#editor-test', 'uasm');
             // Add some buttons to it
             editor.addButtonGroup([new ToolbarButton('Run'), new ToolbarButton('Export')]);
             // And a couple of tabs.
