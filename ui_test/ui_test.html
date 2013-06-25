@@ -31,11 +31,7 @@
                     url:'http://localhost:8080/', 
                     data:{'user':username, 'query':'filelist', 'username':username}
                 });
-                req.done(function(msg){
-                //expects file list, associative array with list of lists74
-                    addFiles(msg);
-
-                });
+                req.done(addFiles);
             }
         }
         var i=0; //counter for collapse indicators
@@ -52,7 +48,9 @@
                 console.log(name);
                 if(value.length==0){
                     console.log('.');
-                    filePaths.append($('<li></li>').append('<a href=#>'+name+'</a>'));
+                    var listVar=$('<li></li>').append('<a href=#>'+name+'</a>');
+                    listVar.on('click', getFile);
+                    filePaths.append(listVar);
                 }
                 else{
                     var collapser=$('<li></li>');
@@ -77,37 +75,47 @@
                     });
                     
                     $.each(value, function(val, name){
-                        var listVar=$('<li></li>').append('<a href=# >'+name+'</a>');
-                        listVar.on('click', function(e){
-                            var fileName=listVar.text();
-                            var folderName=collapser.find('a').text();
-                            console.log(folderName);
-                            if(fileName.indexOf('.')==-1){
-                                console.log('subfolder to expand here');
-                            }else{
-                                var req=$.ajax({
-                                    url:'http://localhost:8080/'+folderName+'/'+fileName, 
-                                    data:{'user':username, 'query':'file', 'username':username}
-                                });
-                                req.done(function(msg){
-                                    displayFile(msg);
-                                });
-                            }
-
+                            var listVar=$('<li></li>').attr({'data-parent':collapser.find('a').text()}).append('<a href=# >'+name+'</a>');
+                            console.log(val);
+                            listVar.on('click', getFile);
+                            subList.append(listVar);
                         });
-                        subList.append(listVar);
-                    });
+                    
 
                 }
                 i++;
 
             });
         }
+        function getFile(e){
+                var node=$(e.target);
+                var fileName=unescape(node.text());
+                var folderName=unescape(node.parent().attr('data-parent'));
+                console.log(folderName==null);
+                if(folderName!='undefined'){
+                    fileName=folderName+'/'+fileName;
+                }
+
+                console.log(folderName+'/'+fileName);
+                var req=$.ajax({
+                        url:'http://localhost:8080/'+fileName, 
+                        data:{'user':username, 'query':'file', 'username':username},
+                        dataType:'text'                  
+                });
+                req.done(displayFile);
+                req.always(function(r, text){
+                    console.log(text);
+                })
+
+            }
+
         function displayFile(msg){
-            console.log(msg);
+            console.log('files');
+            $('.toDisplay').val(msg);
+
         }
-        
-    });
+
+        });
     </script>
     <body>
         <div class="container-fluid">
@@ -138,8 +146,8 @@
                         <button class='btn' data-toggle="tooltip" title="CLose file" data-trigger='hover' ><i class='icon-off'></i>  </button>
                     </div>
                 </div>
-                <div class="span10">
-                    <textarea rows="5"></textarea>
+                <div class="span10 ">
+                    <textarea class="toDisplay" rows="5"></textarea>
                 </div>
             </div>
         </div>

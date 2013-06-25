@@ -10,7 +10,7 @@ my_http.createServer(function(request,response){
     sys.puts("I got kicked"); 
 
     
-    var pathname = url.parse(request.url).pathname;
+    var pathname = unescape(url.parse(request.url).pathname);
     var user=qs.parse(request.url)['username'];
     var query=qs.parse(request.url)['query'];
     sys.puts(user);
@@ -22,7 +22,7 @@ my_http.createServer(function(request,response){
     
    
        
-      path.exists(full_path, function(exists){
+      filesys.exists(full_path, function(exists){
         if(!exists){
           response.writeHeader(404, 
           {
@@ -96,12 +96,15 @@ my_http.createServer(function(request,response){
         "Access-Control-Allow-Origin":'*'
         
             });
+      console.log(data);
       response.end(data);
+      console.log('data sent');
     }
     function send_file(fname) {
-      filesys.readFile(fname,function(err,data) {
-        if (err)
+      filesys.readFile(fname,'utf8',function(err,data) {
+        if (err){console.log(err);
           next(err);
+        }
         send_json(data);
       });
     }
