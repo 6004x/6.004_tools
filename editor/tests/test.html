@@ -33,13 +33,18 @@
         </div>
         <script type="text/javascript">
             // Make an editor
-            var editor = new Editor('#editor-test', 'tsim');
+            var editor = new Editor('#editor-test', 'uasm');
             // Add some buttons to it
             editor.addButtonGroup([new ToolbarButton('Run', _.identity, 'Runs your program!'), new ToolbarButton('Export')]);
+            editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
+                editor.clearErrors();
+            })]);
             // And a couple of tabs.
             editor.openTab('foo.uasm', 'This is a file!');
-            editor.openTab('bar.uasm', 'This is a file, too.');
-            editor.openTab('active.uasm', 'This tab is forced active', true);
+            editor.openTab('bar.uasm', 'This is a file, too.\n\nBeeep\n\nBeep');
+            editor.openTab('active.tsim', 'tmsim demo tab');
+            editor.markErrorLine('bar.uasm', "Beep has only two 'e's", 2, 0);
+            editor.markErrorLine('bar.uasm', "This is wrong too!", 4, 0);
             var set_height = function() {
                 editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
             }

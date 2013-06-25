@@ -47,3 +47,25 @@
   font-size: 13px;
   line-height: 18px;
 }
+
+/* Error markers */
+.cm-error {
+    background-color: #FFE8DF;
+}
+
+.cm-error-widget {
+    text-align: right;
+    background-color: transparent;
+}
+
+.cm-error-widget span {
+    background-color: #FEAD9B;
+    margin-bottom: 0px;
+    height: 100%;
+    display: inline-block;
+    padding-left: 10px;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    font-family: 'Helvetica Neue', Helvetica, sans-serif;
+    font-size: 0.9em;
+}

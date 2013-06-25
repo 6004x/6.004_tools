@@ -9,6 +9,7 @@ var Editor = function(container, mode) {
     var mUntitledDocumentCount = 0; // The number of untitled documents (used to name the next one)
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
+    var mMarkedLines = []; // List of lines we need to clear things from when requested.
 
     this.addButtonGroup = function(buttons) {
         var group = $('<div class="btn-group">');
@@ -78,6 +79,41 @@ var Editor = function(container, mode) {
         else document = mCurrentDocument;
         if(!document) return null;
         return document.cm.getValue();
+    };
+
+    this.markErrorLine = function(filename, message, line, column) {
+        var document;
+        if(filename) document = mOpenDocuments[filename];
+        else document = mCurrentDocument;
+        if(!document) return false;
+        var cm = document.cm;
+        cm.addLineClass(line, 'background', 'cm-error');
+        cm.addLineWidget(line, create_error_widget(message), {noHScroll: true});
+        cm.scrollIntoView({line: line, ch: column});
+        var handle = cm.lineInfo(line).handle;
+        mMarkedLines.push({filename: filename, handle: handle});
+    };
+
+    this.clearErrors = function() {
+        _.each(mMarkedLines, function(value) {
+            if(mOpenDocuments[value.filename]) {
+                var cm = mOpenDocuments[value.filename].cm;
+                var line = cm.lineInfo(value.handle);
+                if(!line) return;
+                cm.removeLineClass(line.handle, "background", "cm-error");
+                _.each(line.widgets, function(widget) {
+                    widget.clear();
+                });
+            }
+        });
+        mMarkedLines = [];
+    };
+
+    var create_error_widget = function(message) {
+        var widget = $('<div class="cm-error-widget">');
+        var span = $('<span>');
+        span.text(message).appendTo(widget);
+        return widget[0];
     };
 
     var create_cm_instance = function(container, content) {
