@@ -26,7 +26,6 @@
                         state.local_functions = {name: token[0], next: state.local_functions};
                         // state.local_functions[token[0]] = true;
                     }
-                    console.log(state.local_functions);
                     state.is_macro_def = false;
                     state.is_macro_value = true;
                     state.macro_ends_at_end_of_line = true;
@@ -61,7 +60,6 @@
                     stream.eatSpace();
                     var opt = stream.match(/^[\w\d]+/);
                     var ret = 'error';
-                    console.log(opt);
                     if(opt) {
                         var valid_opts = ['clock','noclock','div','nodiv','mul','nomul','kalways','nokalways','tty','notty','annotate','noannotate'];
                         if(_.contains(valid_opts, opt[0])) {
@@ -170,9 +168,7 @@
                 }
                 // If we have no idea it is probably a variable.
                 // Apparently we don't know. Eat it.
-                // console.log("Can't figure out a symbol: ", stream.peek());
                 var something = stream.match(/^[a-zA-Z0-9_]+/);
-                console.log("Something: ", something)
                 if(something) {
                     if(has_fn(state, something)) {
                         return 'variable-2';
