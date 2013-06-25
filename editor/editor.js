@@ -68,6 +68,18 @@ var Editor = function(container, mode) {
         closeTab(mOpenDocuments[filename]);
     };
 
+    // These are convenience functions to save on fiddling with CodeMirror directly.
+
+    // If filename is given, returns the content of that file in the buffer
+    // If filename is omitted, returns the content of the current editor
+    this.content = function(filename) {
+        var document;
+        if(filename) document = mOpenDocuments[filename];
+        else document = mCurrentDocument;
+        if(!document) return null;
+        return document.cm.getValue();
+    };
+
     var create_cm_instance = function(container, content) {
         var cm = new CodeMirror(container[0], {
             indentUint: 4,
@@ -79,7 +91,7 @@ var Editor = function(container, mode) {
             indentWithTabs: true,
             styleActiveLine: true,
             value: content,
-            mode: mode
+            mode: mSyntaxMode
         });
         cm.on('save', function() {
             alert("This would save, if it had anything to save to.");
