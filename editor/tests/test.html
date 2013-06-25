@@ -9,6 +9,7 @@
         <script src="../editor.js"></script>
         <script src="../external/codemirror-extensions.js"></script>
         <script src="../modes/uasm.js"></script>
+        <script src="../modes/tsim.js"></script>
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="../external/codemirror-extensions.css">
@@ -32,7 +33,7 @@
         </div>
         <script type="text/javascript">
             // Make an editor
-            var editor = new Editor('#editor-test', 'uasm');
+            var editor = new Editor('#editor-test', 'tsim');
             // Add some buttons to it
             editor.addButtonGroup([new ToolbarButton('Run', _.identity, 'Runs your program!'), new ToolbarButton('Export')]);
             // And a couple of tabs.
