@@ -1,12 +1,12 @@
 var Editor = function(container, mode) {
     var self = this; // Tracking 'this' can be finicky; use 'self' instead.
     var mContainer = $(container);
-    var mToolbarHolder;
-    var mTabHolder;
-    var mCurrentDocument = null;
-    var mSyntaxMode = mode;
-    var mExpectedHeight = null;
-    var mUntitledDocumentCount = 0;
+    var mToolbarHolder; // Element holding the toolbar
+    var mTabHolder; // Element holding the tabs
+    var mCurrentDocument = null; // Current document object
+    var mSyntaxMode = mode; // The syntax mode for the editors
+    var mExpectedHeight = null; // The height the entire editor view (including toolbars and tabs) should maintain
+    var mUntitledDocumentCount = 0; // The number of untitled documents (used to name the next one)
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
@@ -85,7 +85,20 @@ var Editor = function(container, mode) {
             alert("This would save, if it had anything to save to.");
         });
         return cm;
-    }
+    };
+
+    var handle_change_tab_icon = function(doc) {
+        var close = doc.tab.find('.close');
+        if(!doc.cm.isClean(doc.generation)) {
+            close.text("\u25CF"); // U+25CF BLACK CIRCLE
+        } else {
+            close.text("\u00D7"); // U+00D7 MULTILPICATION SIGN
+        }
+    };
+
+    var tab_mouse_enter = function() {
+        $(this).text("\u00D7"); // U+00D7 MULTILPICATION SIGN
+    };
 
     this.openTab = function(filename, content, activate) {
         var has_location = true;
@@ -110,17 +123,28 @@ var Editor = function(container, mode) {
 
         var a = $('<a>', {href: '#' + id}).text(filename).click(function(e) { e.preventDefault(); focusTab(doc); });
         tab.append(a);
-        var close = $('<button class="close" style="margin-top: -2px; margin-left: 5px; margin-right: -7px;">&times;</button>').click(function(e) {
+        // Build us a 'close' button. It uses an X when the document is clean and a circle when dirty, except
+        // when hovered over.
+        var close = $('<button class="close">&times;</button>').click(function(e) {
             e.preventDefault();
             e.stopPropagation();
             closeTab(doc);
+        }).css({
+            'margin-top': -2,
+            'margin-left': 5,
+            'margin-right': -7
+        }).on('mouseenter', tab_mouse_enter).on('mouseleave', function() { handle_change_tab_icon(doc); });
+        cm.on('change', function() {
+            handle_change_tab_icon(doc);
         });
+        // Append all that stuff
         a.append(close);
 
         mTabHolder.append(tab);
 
         mContainer.append(editPane);
 
+        // If we have no open documents, or we were explicitly asked to activate this document, do so.
         if(!_.size(mOpenDocuments) || activate) {
             unfocusTab(mCurrentDocument);
             focusTab(doc);
@@ -128,6 +152,7 @@ var Editor = function(container, mode) {
 
         // Stash these away somewhere.
         mOpenDocuments[filename] = doc;
+        // If we know how tall we should be, arrange to make sure everything still fits in that space.
         if(mExpectedHeight) self.setHeight(mExpectedHeight);
     };
 
@@ -144,7 +169,7 @@ var Editor = function(container, mode) {
             doc.cm.getWrapperElement().style.height = (height - offset) + 'px';
             doc.cm.refresh();
         });
-    }
+    };
 
     var create_new_document = function() {
         self.openTab(null, '', true);
