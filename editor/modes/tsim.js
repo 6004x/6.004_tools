@@ -204,7 +204,7 @@
                 if(state.current_type == 'result1') {
                     var token = read_symbol(stream, state);
                     ++state.arg_count;
-                    if(!token) return error;
+                    if(!token) return 'error';
                     switch(state.arg_count) {
                     case 1:
                         return 'variable-3';
@@ -219,7 +219,7 @@
                 if(state.current_type == 'checkoff') {
                     var token = read_symbol(stream, state);
                     ++state.arg_count;
-                    if(!token) return error;
+                    if(!token) return 'error';
                     switch(state.arg_count) {
                     case 1:
                         return 'string';
