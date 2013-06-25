@@ -147,15 +147,23 @@ var Editor = function(container, mode) {
     }
 
     var create_new_document = function() {
-        console.log("hi");
         self.openTab(null, '', true);
+    };
+
+    var save_current_document = function() {
+        if(!mCurrentDocument) return;
+        do_save();
     };
 
     var initialise = function() {
         // Build up our editor UI.
         mToolbarHolder = $('<div class="btn-toolbar">');
         // Add some basic button groups
-        self.addButtonGroup([new ToolbarButton('icon-file', create_new_document, "New file"), new ToolbarButton('icon-refresh'), new ToolbarButton('icon-hdd')]);
+        self.addButtonGroup([
+            new ToolbarButton('icon-file', create_new_document, "New file"),
+            new ToolbarButton('icon-refresh'),
+            new ToolbarButton('icon-hdd', save_current_document, "Save current file")
+        ]);
         mContainer.append(mToolbarHolder);
         mContainer.css('position', 'relative');
 
