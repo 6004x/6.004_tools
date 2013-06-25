@@ -33,12 +33,39 @@ var Editor = function(container, mode) {
         doc.tab.removeClass('active');
     };
 
+    var closeTab = function(doc) {
+        if(!doc) return;
+        if(!doc.cm.isClean(doc.generation)) {
+            alert("Document has unsaved changes!\nTODO: Handle this.");
+            return;
+        }
+        // Figure out what document we should open next by taking siblings of our object.
+        var sibling = doc.tab.prev(); // Try left first
+        if(!sibling.length) sibling = doc.tab.next(); // Then try right
+        if(sibling.length) {
+            // Now we need to find the appropriate doc element.
+            // TODO: we could attach this to the tab?
+            var new_doc = _.find(_.values(mOpenDocuments), function(e) { return e.tab[0] == sibling[0];});
+            if(new_doc) {
+                focusTab(new_doc); // Focus the document, assuming we found it.
+            }
+        }
+        // Now get rid of this one.
+        delete mOpenDocuments[doc.name];
+        doc.el.remove();
+        doc.tab.remove();
+    };
+
     this.focusTab = function(filename) {
         focusTab(mOpenDocuments[filename]);
     };
 
     this.unfocusTab = function(filename) {
         unfocusTab(mOpenDocuments[filename]);
+    };
+
+    this.closeTab = function(filename) {
+        closeTab(mOpenDocuments[filename]);
     };
 
     var create_cm_instance = function(container, content) {
@@ -72,10 +99,23 @@ var Editor = function(container, mode) {
         var cm = create_cm_instance(editPane, content);
         var tab = $('<li>');
 
-        var doc = {el: editPane, tab: tab, cm: cm, has_location: has_location};
+        var doc = {
+            el: editPane, // jQuery element holding the editor
+            tab: tab, // jQuery tab element
+            cm: cm, // Editor instance
+            has_location: has_location, // Whether we know this file's name (if false, we'll need to prompt)
+            name: filename, // This file's name, temporary or otherwise
+            generation: cm.changeGeneration() // The generation at last save. We can use this to track cleanliness of document.
+        };
 
         var a = $('<a>', {href: '#' + id}).text(filename).click(function(e) { e.preventDefault(); focusTab(doc); });
         tab.append(a);
+        var close = $('<button class="close" style="margin-top: -2px; margin-left: 5px; margin-right: -7px;">&times;</button>').click(function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeTab(doc);
+        });
+        a.append(close);
 
         mTabHolder.append(tab);
 
