@@ -1,7 +1,9 @@
 var parser = (function(){
     
     function split(input_string){
-        var pattern = /\/\/|\/\*|\*\/|\*|\+|".*"|0x[0-9a-fA-F]+|0[0-7]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]+)?|\.?[A-Za-z][\w:\.,$\[\]]*|[A-Za-z][0-9] |=|\n/g; 
+        var pattern = /\/\/|\/\*|\*\/|\*|\+|".*"|0x[0-9a-fA-F]+|0[0-7]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]+)?|\.?[A-Za-z][\w:\.,$\[\]]*|=|\n/g; 
+        
+        var names = /[A-Za-z][\w,$:\[\]\.]*/;
         
         // matches, in order:
         //      an astarisk
@@ -13,28 +15,33 @@ var parser = (function(){
         //      anything wrapped in quotes
         //      an optional minus sign, zero or more digits, an optional decimal point, one or more digits, and either an optional exponent term consisting of an e or E, optional negative sign, and one or more digits; or a scale factor
         //      an optional period, followed by a letter, then any number of letters, digits, underscores, colons, dollar signs, square brackets, commas, or periods
-        //      a single letter followed by a single number
         //      a newline
         
         // comments = \/\/|\/\*|\*\/|\*
         // nums_noscale = -?\d*\.?\d+([eE]-?\d+?
         // nums_scale = -?\d*\.?\d+[TtGg(MEG)(meg)KkMmUu(MIL)(mil)NnPpF]
-        // names = [A-Za-z]?[A-Za-z][\w:,$\[\]]*
-        // shortnames = [A-Za-z][0-9] **note the space at the end**
+        // names = \.?[A-Za-z][\w:\.,$\[\]]*
         // newlines = \n/g
         
         var matched_array;
         var substrings = [];
         var lineNumber = 1;
         while ((matched_array = pattern.exec(input_string)) !== null){
+            var type;
+            if (names.test(matched_array[0])){
+                type = 'name';
+            } else {
+                type = null;   
+            }
             substrings.push({token:matched_array[0],
-                             line:lineNumber
+                             line:lineNumber,
+                             type:type
                             });
             if (matched_array[0] == "\n"){
                 lineNumber += 1;
             }
         }
-//        console.log(substrings);
+        console.log(substrings);
         return substrings;
     }
     
@@ -162,11 +169,11 @@ var raw_text = ''
 + '.plot foo.bar.baz.bim\n'
 + '//&%#blarg@!~`'
 + '0xDEADBEEF  0x12345678 10u 8ks';
-
 var test2_text = ".plot foo //comment\n+still_a_comment\nR1 0 /* random comment2 */ 1 10\n/* test */";
-
 var test3_text = "R1 0 1 10\nR2 1 2 \n+ 50";
+var test4_text = "name name2 a1 aa1 123 + \n foo.bar.biz.bam A0[3:0]\n"
 
 function test1(){parser.split(raw_text);}
 function test2(){parser.decomment(parser.line_extend(parser.split(test2_text)));}
 function test3(){parser.line_extend(parser.split(test3_text));}
+function test4(){parser.split(test4_text);}
