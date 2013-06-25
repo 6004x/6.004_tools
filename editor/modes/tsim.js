@@ -48,11 +48,11 @@
                 if(stream.eol()) state.current_type = null;
                 if(token) {
                     token = token[0];
-                    var m = token.match(/^\[.+\]$/)
+                    var m = token.match(/^\[(.+)\]$/)
                     if(m) token = m[1];
                     return token;
                 } else {
-                    token.eatWhile(/^[^\s]/);
+                    stream.eatWhile(/^[^\s]/);
                     return false;
                 }
             }
@@ -188,6 +188,7 @@
                     ++state.arg_count;
                     if(!token) return 'error';
                     if(state.arg_count == 1) return 'def';
+                    else if(token == '-') return 'keyword';
                     else if(has(state.symbols, token)) return 'variable';
                     else return 'error';
                 }
@@ -233,7 +234,7 @@
                 }
 
                 // We probably shouldn't get here.
-                token.eatWhile(/^[^\s]/);
+                stream.eatWhile(/^[^\s]/);
                 return 'error';
             },
 
