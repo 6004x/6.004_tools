@@ -210,6 +210,7 @@ var Editor = function(container, mode) {
 
     // Why does doing anything vertically suck so much?
     this.setHeight = function(height) {
+        if(!mCurrentDocument) return; // If we don't have a current document there is no height to set, so don't die over it.
         mExpectedHeight = height;
         mContainer.height(height);
         var offset = mCurrentDocument.el.position().top;
