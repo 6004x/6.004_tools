@@ -207,8 +207,12 @@ var Editor = function(container, mode) {
         if(mExpectedHeight) self.setHeight(mExpectedHeight);
     };
 
-    this.doc = function(filename) {
-        return mOpenDocuments[filename];
+    this.currentTab = function() {
+        return mCurrentDocument ? mCurrentDocument.name : null;
+    };
+
+    this.filenames = function() {
+        return _.pluck(mOpenDocuments, 'name');
     };
 
     // Why does doing anything vertically suck so much?
