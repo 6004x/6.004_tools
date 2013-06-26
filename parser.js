@@ -5,33 +5,34 @@ Analyzer (string level): removes comments and line extensions
 ************************************/
     function analyze(input_string){
         input_string += "\n";
-        var line_ext_pattern = /(\n+)(\s*\+)/g;
+        var line_ext_pattern = /\n+[\t ]*\+/g;
         // newline followed by (whitespace and) a plus
         var comment1_pattern = /\/\/.*\n/g;
-        var comment2_pattern = /\/\*.*\*\//g;
+        var comment2_pattern = /\/\*(.|\n)*?\*\//g;
         // double slash till the end of the line
         // slash-star till star-slash
         
+        function newline_track(match){
+            // replace everything that isn't a newline with a blank string
+            var replaced1 = match.replace(/[^\n\u001e]/g,"");
+            // now replace all newlines with record separators
+            return replaced1.replace(/\n/g,"\u001e");
+        }
+        
         // extend lines by replacing the line_ext_pattern with a
         // record separator for each newline.
-        var extended_string = input_string.replace(line_ext_pattern, 
-            function(match,newlines,space_plus){
-                // newlines is the string of newlines before the plus
-                // space_plus is the whitespace and plus sign
-                return newlines.replace(/\n/g,"%"/*"\u001e"*/);      
-        });
+        var extended_string = input_string.replace(line_ext_pattern, newline_track);
 //        console.log("extended string:",extended_string);
         
-        // remove single-line comments by replacing them with a blank string
-        var decommented_string = extended_string.replace(comment1_pattern,"");
+        // remove single-line comments by replacing them with a newline,
+        // since the pattern includes the newline
+        var decommented_string = extended_string.replace(comment1_pattern,
+                                                        newline_track);
         
         // remove multi-line comments by replacing them with a record
         // separator for each newline
         decommented_string = decommented_string.replace(comment2_pattern,
-            function(match,newlines){
-                // newlines is all newlines in the comment (hopefully)
-                return newlines.replace(/\n/g,"%"/*"\u001e"*/);
-            });
+                                                        newline_track);
         
         return decommented_string;
     }
@@ -299,7 +300,7 @@ var test4_text = "name name2 a1 aa1 123 + \n foo.bar.biz.bam A0[3:0]\n"
 var iter_test_array = ["[4:0]","[4:0:2]","[0:4]","[0:4:2]",
                        "[0:4:0]","[1:4:2]","[0:4:3]"];
 var line_ext_text = "hi \n foo\n\n+ bar";
-var decomment_text = "not_a_comment1\n//comment1\n+still_comment1\nnot_a_comment2/*comment2*/\n/*comment3\n\nstill_comment3*/";
+var decomment_text = "foo\n//comment1\n+still_comment1\nbar/*comment2*/\n/*comment3\n\nstill_comment3*/";
 
 function test1(){parser.split(raw_text);}
 function test2(){parser.decomment(parser.line_extend(parser.split(test2_text)));}
@@ -316,5 +317,5 @@ function test5(){
 function test6(){ parser.iter_expand(parser.split("Rtest a[0:1][2:3][4:5] ")); }
 function test7(){ return parser.iter_expand(parser.split("A[0:2] B#3 C[0:1]#2")); }
 function test8(){ return parser.decomment(parser.split("*hi \n foo \n bar *comment\n")); }
-function test9(){ console.log(parser.split(parser.analyze(raw_text))); }
+function test9(){ console.log(parser.split(parser.analyze(decomment_text))); }
 function test10(){ return parser.analyze(decomment_text); }
