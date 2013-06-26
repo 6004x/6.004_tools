@@ -68,10 +68,7 @@ CodeMirror.defineMode('jsim', function() {
                 state.sol = false;
                 if(stream.peek() == '+') {
                     stream.next();
-                    if(state.last_state == 'comment') {
-                        stream.skipToEnd();
-                        return 'comment';
-                    } else if(state.last_state == 'string') {
+                    if(state.last_state == 'string') {
                         if(eatString(stream, state)) {
                             state.last_state = null;
                         }
@@ -87,7 +84,6 @@ CodeMirror.defineMode('jsim', function() {
             state.last_state = null;
             // Eat single-line comments.
             if(stream.match('//')) {
-                state.last_state = 'comment';
                 stream.skipToEnd();
                 return 'comment';
             }
