@@ -10,6 +10,7 @@
         <script src="../external/codemirror-extensions.js"></script>
         <script src="../modes/uasm.js"></script>
         <script src="../modes/tsim.js"></script>
+        <script src="../modes/jsim.js"></script>
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="../external/codemirror-extensions.css">
@@ -33,7 +34,7 @@
         </div>
         <script type="text/javascript">
             // Make an editor
-            var editor = new Editor('#editor-test', 'uasm');
+            var editor = new Editor('#editor-test', 'jsim');
             // Add some buttons to it
             editor.addButtonGroup([new ToolbarButton('Run', _.identity, 'Runs your program!'), new ToolbarButton('Export')]);
             editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
@@ -44,7 +45,6 @@
             editor.openTab('bar.uasm', 'This is a file, too.\n\nBeeep\n\nBeep');
             editor.openTab('active.tsim', 'tmsim demo tab');
             editor.markErrorLine('bar.uasm', "Beep has only two 'e's", 2, 0);
-            editor.markErrorLine('bar.uasm', "This is wrong too!", 4, 0);
             var set_height = function() {
                 editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
             }
