@@ -19,33 +19,43 @@ Analyzer (string level): removes comments and line extensions
             return replaced1.replace(/\n/g,"\u001e");
         }
         
-        // extend lines by replacing the line_ext_pattern with a
-        // record separator for each newline.
-        var extended_string = input_string.replace(line_ext_pattern, newline_track);
-//        console.log("extended string:",extended_string);
-        
         // remove single-line comments by replacing them with a newline,
         // since the pattern includes the newline
-        var decommented_string = extended_string.replace(comment1_pattern,
-                                                        newline_track);
+        var decommented1_string = input_string.replace(comment1_pattern,
+                                                        "\n");
+        
+        // extend lines by replacing the line_ext_pattern with a
+        // record separator for each newline.
+        var extended_string = decommented1_string.replace(line_ext_pattern, newline_track);
+//        console.log("extended string:",extended_string);
+        
+        
         
         // remove multi-line comments by replacing them with a record
         // separator for each newline
-        decommented_string = decommented_string.replace(comment2_pattern,
+        var decommented2_string = extended_string.replace(comment2_pattern,
                                                         newline_track);
         
-        return decommented_string;
+        return decommented2_string;
     }
     
 /*****************************
 Splitter: splits a string into an array of tokens
 *******************************/
-    function split(input_string){
-        var pattern = /".*"|0x[0-9a-fA-F]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]*)|\.?[A-Za-z][\w:\.,$#\[\]]*|=|\n|\u001e/g; 
+    function split(input_string,filename){
+//        var pattern = /".*"|0x[0-9a-fA-F]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]*)|\.?[A-Za-z][\w:\.,$#\[\]]*|=|\n|\u001e/g; 
+        var pattern = /".*"|\.?[A-Za-z][\w:\.,$#\[\]]*|[\w\.-]+|=|\n|\u001e/g;
         
-        var names_pattern = /[A-Za-z][\w,$:\[\]\.]*/;
+        var names_pattern = /^[A-Za-z][\w,$:\[\]\.]*/;
+        var control_pattern = /^\..+/;
         var int_pattern = /\d+/;
         var exp_pattern = /-?\d*\.?\d+[eE]-?\d+/;
+        var float_pattern = /-?\d*\.\d+/;
+        var scaled_pattern = /-?\d+[A-Za-z]+/;
+        var hex_pattern = /^0[xX][0-9a-fA-F]+/;
+        var octal_pattern = /^0[0-7]+/;
+        var binary_pattern = /^0[bB][01]+/;
+        var file_pattern = /".*"/;
         var num_pattern = /-?\d*\.?\d+([A-Za-z]*|[eE]-?\d+)/;
         
         // 'pattern' matches, in order:
@@ -66,19 +76,35 @@ Splitter: splits a string into an array of tokens
         var lineNumber = 1;
         while ((matched_array = pattern.exec(input_string)) !== null){
             var type;
-            if (names_pattern.test(matched_array[0])){
+            if (file_pattern.test(matched_array[0])){
+                matched_array[0] = matched_array[0].replace(/"/g,'');
+                type = 'string';
+            } else if (names_pattern.test(matched_array[0])){
                 type = 'name';
-            } else if (int_pattern.test(matched_array[0])){
-                type = 'int';
+            } else if (control_pattern.test(matched_array[0])){
+                type = 'control'
             } else if (exp_pattern.test(matched_array[0])){
                 type = 'exp';
+            } else if (float_pattern.test(matched_array[0])){
+                type = 'float';
+            } else if (hex_pattern.test(matched_array[0])){
+                type = 'hex';
+            } else if (octal_pattern.test(matched_array[0])){
+                type = 'octal';
+            } else if (binary_pattern.test(matched_array[0])){
+                type= 'binary';
+            } else if (scaled_pattern.test(matched_array[0])){
+                type = 'scaled';
+            } else if (int_pattern.test(matched_array[0])){
+                type = 'int';
             } else {
                 type = null;   
             }
             if (!(matched_array[0]=="\u001e")){
                 substrings.push({token:matched_array[0],
                                  line:lineNumber,
-                                 type:type
+                                 type:type,
+                                 origin_file:filename
                                 });
             }
             if ((matched_array[0] == "\n")||(matched_array[0] == "\u001e")){
@@ -196,7 +222,7 @@ Iterater expander: expands iterators such as A[0:5] into the proper sequence
                 }else
                 if((iter_match_array=iterator_pattern.exec(current.token))!==null){
                     var iter_string = iter_match_array[0];
-                    console.log("iter string:",iter_string);
+//                    console.log("iter string:",iter_string);
                     var front_string = current.token.slice(0,iter_match_array.index);
                     var end_index = iter_match_array.index + iter_string.length;
                     var end_string = current.token.slice(end_index);
@@ -271,12 +297,70 @@ strings of the form '[a]', '[a+k]', '[a+2k]', ..., '[b]'
         return result;
     }
     
-    return {split:split,
-//            decomment:decomment,
-//            line_extend:line_extend,
-            iter_interpret:iter_interpret,
-            iter_expand:iter_expand,
-            analyze:analyze
+/*********************************
+Parse: takes a raw string, does decommenting/extending, tokenizes it, and expands
+iterators and duplicators
+*********************************/
+    function parse(input_string,filename){
+         return iter_expand(split(analyze(input_string),filename))
+    }
+    
+/******************************
+filename_to_contents: takes a file path and returns the string representing its 
+content
+*******************************/
+    function filename_to_contents(filename){
+//        filename = filename.replace(/"/g,'');
+        
+        console.log("filename:",filename,"pseudofiles:",pseudo_files);
+        if (pseudo_files[filename]===undefined){
+            throw "File does not exist";
+        } else {
+            return pseudo_files[filename];
+        }
+    }
+    
+/**************************
+Evaluate: takes a parsed array of tokens and evaluates its contents
+***************************/
+    function evaluate(token_array){
+        // list of filenames that have already been included
+        var included_files = []; // !!!!!!!!! set this here????????????????
+        var new_token_array = [];
+        
+        while (token_array.length > 0){
+            var current = token_array[0];
+            if (current.token == ".include"){
+                var file = token_array[1];
+                if (!(file.type == "string")){
+                    throw "Filename expected";
+                } else {
+                    var filename = file.token;
+                    if (included_files.indexOf(filename)==-1) {
+                        console.log("file not yet included :)");
+                        included_files.push(filename);
+                        
+                        var contents = filename_to_contents(filename);
+                        contents = parse(contents,filename);
+                        console.log("contents of file:",contents);
+                        token_array.shift();
+                        token_array.shift();
+                        token_array = contents.concat(token_array);
+                        console.log("updated token arary:",token_array);
+                        
+                    } else {
+                        console.log("file already included, skipping");
+                    }
+                }
+            } // !!!!!! else, other tokens to evaluate
+            
+            new_token_array.push(token_array.shift());
+        }
+        return new_token_array;
+    }
+    
+    return {parse:parse,
+            evaluate:evaluate
               }
 }());
 
@@ -300,7 +384,7 @@ var test4_text = "name name2 a1 aa1 123 + \n foo.bar.biz.bam A0[3:0]\n"
 var iter_test_array = ["[4:0]","[4:0:2]","[0:4]","[0:4:2]",
                        "[0:4:0]","[1:4:2]","[0:4:3]"];
 var line_ext_text = "hi \n foo\n\n+ bar";
-var decomment_text = "foo\n//comment1\n+still_comment1\nbar/*comment2*/\n/*comment3\n\nstill_comment3*/";
+var decomment_text = "foo\n//comment1\n+NOT_comment1\nbar/*comment2*/\n/*comment3\n\nstill_comment3*/";
 
 function test1(){parser.split(raw_text);}
 function test2(){parser.decomment(parser.line_extend(parser.split(test2_text)));}
@@ -319,3 +403,14 @@ function test7(){ return parser.iter_expand(parser.split("A[0:2] B#3 C[0:1]#2"))
 function test8(){ return parser.decomment(parser.split("*hi \n foo \n bar *comment\n")); }
 function test9(){ console.log(parser.split(parser.analyze(decomment_text))); }
 function test10(){ return parser.analyze(decomment_text); }
+function test11(){ console.log(parser.parse(
+    "2 2k 2ms 2.2 2e2 2.2e2 .2e2 0x2 0b01 02")); }
+
+var pseudo_files = {"foo":"foo bar \nbaz /*comment\ncomment2*/ bim"};
+function test12() { console.log(parser.evaluate(parser.parse('.include "foo"\n.include "foo"\nR1 a b 10',"master_file"))); }
+
+
+
+
+
+
