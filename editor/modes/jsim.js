@@ -88,7 +88,7 @@ CodeMirror.defineMode('jsim', function() {
                 return 'comment';
             }
             if(!state.in_args) {
-                if(stream.match(/^.(checkoff|connect|dc|end|global|include|model|mverify|op|options|plot|plotdef|subckt|ends|temp|tempdir|tran|verify)\b/i)) {
+                if(stream.match(/^.(checkoff|connect|dc|end|global|include|model|mverify|op|options|plot|plotdef|subckt|ends|temp|tempdir|tran|verify|gsubckt)\b/i)) {
                     state.in_args = true;
                     return 'keyword';
                 }
@@ -109,11 +109,12 @@ CodeMirror.defineMode('jsim', function() {
                 if(stream.match(/[a-z0-9_:\$\[\]\.#]+/i)) {
                     return 'variable-2';
                 }
+                if(stream.match(/^[()]/)) {
+                    return 'bracket';
+                }
+                if(stream.match(',')) return;
+                if(stream.match('=')) return 'operator';
             }
-            if(stream.match(/^[()]/)) {
-                return 'bracket';
-            }
-            if(stream.match(',')) return;
             // Give up
             if(!stream.eatWhile(/^[^\s()]/)) {
                 if(!stream.eatWhile(/^[^\s]/)) {
