@@ -100,7 +100,7 @@ var Editor = function(container, mode) {
                 var cm = mOpenDocuments[value.filename].cm;
                 var line = cm.lineInfo(value.handle);
                 if(!line) return;
-                cm.removeLineClass(line.handle, "background", "cm-error");
+                cm.removeLineClass(line.handle, "background", "cm-error-line");
                 _.each(line.widgets, function(widget) {
                     widget.clear();
                 });
