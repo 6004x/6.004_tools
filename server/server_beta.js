@@ -37,7 +37,7 @@ my_http.createServer(function(request,response){
       // no file name, return directory listing
               filesys.readdir(full_path,function(err,files) {
                 if (err) 
-                  next(err);
+                  console.log(err);//TODO why is next there
                 console.log(files)
                 var fileList={}
                 for(var i=0; i <files.length; i++){

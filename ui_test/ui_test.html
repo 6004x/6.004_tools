@@ -7,85 +7,138 @@
     <script src="http://www.parsecdn.com/js/parse-1.2.8.min.js"></script>
     <link href="../bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen"></link>
     <script src="../bootstrap/js/bootstrap.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
+    <script src="../editor/external/codemirror.js"></script>
+        <script src="../editor/editor.js"></script>
+        <script src="../editor/external/codemirror-extensions.js"></script>
+        <script src="../editor/modes/uasm.js"></script>
+        <script src="../editor/modes/tsim.js"></script>
+        <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
+         <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+        <style type="text/css">
+            .tab-pane {
+                border-bottom: 1px solid #ddd;
+                border-left: 1px solid #ddd;
+                border-right: 1px solid #ddd;
+            }
+            .nav-tabs {
+                margin-bottom: 0;
+            }
+        </style>
     </head>
     <style>
         .testDiv{
             border:solid 1px black;
         }
+        .folderStruct{
+            min-width: 170px;
+        }
     </style>
     <script>
     var username;
-    $(document).ready(
-        function (){
+    $(document).ready(function (){
         $('.btn').tooltip({'placement': 'bottom'});
-        $('#user_button').on('click', getFileList);
+        $('#user_button').on('click', function(e){getFileList($('.filePaths'), '');});
 
-        function getFileList(){
+        var editor = new Editor('.textWrapper', 'tsim');
 
+        editor.addButtonGroup([new ToolbarButton('Run', _.identity, 'Runs your program!'), new ToolbarButton('Export')]);
+        editor.openTab('foo.uasm', 'This is a file!');
+        var set_height = function() {
+                editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
+        }
+        set_height();
+        $(window).resize(set_height);
 
-             username= $('#user_input').val();
+        function getFileList(parentNode, path){
+
+            console.log(path)
+            username= $('#user_input').val();
             
             if(username){
                 console.log(username);
                 var req=$.ajax({
-                    url:'http://localhost:8080/', 
+                    url:'http://localhost:8080/'+path, 
                     data:{'user':username, 'query':'filelist', 'username':username}
                 });
-                req.done(addFiles);
+                req.done(function(fl){return addFiles(fl, parentNode, path)});
             }
         }
         var i=0; //counter for collapse indicators
-        function addFiles(fileList){
-            var filePaths=$('.filePaths');
+        function addFiles(fileList, parentNode, parentPath){
+            //testing whether username chenged or not, to change data structure
             if (username!=$('.testDiv').text()){
                 $('.testDiv').text(username);
-                filePaths.html('');
+                parentNode.html('');
                 console.log('username changed');
                 i=0;
             }
-            console.log(fileList);
-            $.each(fileList, function(name, value) {
-                console.log(name);
-                if(value.length==0){
+
+            
+            $.each(fileList, function(name, subList) {
+                
+                var collapseName='collapse'+name.replace(' ','_');
+                //collapseName is name without whitespace
+
+                // console.log(name);
+                // console.log(fileList);
+                // console.log(collapseName);
+                // console.log(name);
+                // console.log(name.replace(' ','_'));
+                if(subList.length==0){
                     console.log('.');
-                    var listVar=$('<li></li>').append('<a href=#>'+name+'</a>');
+                    var listVar=$('<li></li>').attr('data-parent', parentPath).append('<a href=#>'+name+'</a>');
                     listVar.on('click', getFile);
-                    filePaths.append(listVar);
+                    parentNode.append(listVar);
                 }
                 else{
-                    var collapser=$('<li></li>');
-                    collapser.append('<a data-toggle=collapse href=#collapse'+i+'>'+'<i class="icon-minus float-left open_indicator"></i>'+name+'</a>');
-                    filePaths.append(collapser);
-
-                    var subList=$('<ul id=collapse'+i+' class ="collapse in"></ul>');
-                    filePaths.append(subList);
-                    subList.on('shown', function(e){
-                        var arrow = collapser.find('.open_indicator')
-                        if(arrow.hasClass('icon-plus')){
-                            arrow.addClass('icon-minus')
-                            arrow.removeClass('icon-plus')
-                        }                            
-                    });
-                    subList.on('hidden', function(e){
-                        var arrow = collapser.find('.open_indicator');
-                        if(arrow.hasClass('icon-minus')){
-                            arrow.addClass('icon-plus');
-                            arrow.removeClass('icon-minus');
-                        }
-                    });
                     
-                    $.each(value, function(val, name){
-                            var listVar=$('<li></li>').attr({'data-parent':collapser.find('a').text()}).append('<a href=# >'+name+'</a>');
-                            console.log(val);
-                            listVar.on('click', getFile);
-                            subList.append(listVar);
-                        });
-                    
-
+                    addSubFolder(parentNode, parentPath, collapseName, name, subList)
                 }
-                i++;
 
             });
+        }
+
+
+        function addSubFolder(parentNode, parentPath, collapseName, folderName, subList){
+            var collapser=$('<li></li>');
+            collapser.append('<a data-toggle=collapse href=#'+collapseName+'>'+'<i class="icon-minus float-left open_indicator"></i>'+folderName+'</a>');
+            collapser.find('i').addClass(collapseName+'_collapser')
+
+            var subListUL=$('<ul id='+collapseName+' class ="collapse in"></ul>');
+            
+            subListUL.on('shown', function(e){
+                var arrow = collapser.find('.'+collapseName+'_collapser');
+                if(arrow.hasClass('icon-plus')){
+                    arrow.addClass('icon-minus')
+                    arrow.removeClass('icon-plus')
+                }                            
+            });
+            subListUL.on('hidden', function(e){
+                var arrow = collapser.find('.'+collapseName+'_collapser');
+                console.log(arrow);
+                if(arrow.hasClass('icon-minus')){
+                    arrow.addClass('icon-plus');
+                    arrow.removeClass('icon-minus');
+                }
+            });
+            var foldered=false;
+            $.each(subList, function(i, sub_name){
+                    var listVar=$('<li></li>').attr('data-parent',parentPath+'/'+folderName);           
+                    if(sub_name.indexOf('.')>-1){
+                        listVar.append('<a href=# >'+sub_name+'</a>');
+                        listVar.on('click', getFile);
+                        subListUL.append(listVar);
+                    }
+                    else if(!foldered){
+                        getFileList(listVar, parentPath+'/'+folderName);
+                        foldered=true;
+                        subListUL.append(listVar);
+                    }else
+                        console.log('foldered');
+                });
+            parentNode.append(collapser, subListUL);
+
         }
         function getFile(e){
                 var node=$(e.target);
@@ -102,19 +155,25 @@
                         data:{'user':username, 'query':'file', 'username':username},
                         dataType:'text'                  
                 });
-                req.done(displayFile);
+                req.done(function(msg){displayFile(msg, fileName);});
                 req.always(function(r, text){
                     console.log(text);
                 })
 
             }
 
-        function displayFile(msg){
+        function displayFile(msg, path){
             console.log('files');
-            $('.toDisplay').val(msg);
+            // $('.toDisplay').val(msg);
+
+            editor.openTab(path, msg, true);
 
         }
 
+        $('.refresh').on('click', function(e){
+                $('.filePaths').html('');
+                getFileList($('.filePaths'), '');
+            });
         });
     </script>
     <body>
@@ -123,12 +182,12 @@
             INPUT: <input id = 'user_input' type='text' title='username'></input>
             <button class='btn-info' id='user_button'>get filelist</button>
             <div class="row-fluid">
-                <div class="span2">
+                <div class="span2 folderStruct">
                     <div class ='btn-group group1' style='float:none, text-align:center'>
-                        <button class='btn' data-toggle="tooltip" title="Open file" data-trigger='hover' ><i class='icon-folder-open'></i>  </button>
-                        <button class='btn' data-toggle="tooltip" title="New file" data-trigger='hover' ><i class='icon-file'></i> </button>
-                        <button class='btn' data-toggle="tooltip" title="Save file" data-trigger='hover' ><i class='icon-gift'></i>  </button>
-                        <button class='btn' data-toggle="tooltip" title="CLose file" data-trigger='hover' ><i class='icon-off'></i>  </button>
+                        <button class='btn open' data-toggle="tooltip" title="Open file" data-trigger='hover' ><i class='icon-folder-open'></i>  </button>
+                        <button class='btn refresh' data-toggle="tooltip" title="refresh" data-trigger='hover' ><i class='icon-refresh'></i> </button>
+                        <button class='btn save' data-toggle="tooltip" title="Save file" data-trigger='hover' ><i class='icon-gift'></i>  </button>
+                        <button class='btn close' data-toggle="tooltip" title="CLose file" data-trigger='hover' ><i class='icon-off'></i>  </button>
                     </div>
                     <div class= 'sidebar-nav '>
                         <ul class='nav nav-list nav-stacked filePaths'>
@@ -146,8 +205,7 @@
                         <button class='btn' data-toggle="tooltip" title="CLose file" data-trigger='hover' ><i class='icon-off'></i>  </button>
                     </div>
                 </div>
-                <div class="span10 ">
-                    <textarea class="toDisplay" rows="5"></textarea>
+                <div class="span10 textWrapper">
                 </div>
             </div>
         </div>
