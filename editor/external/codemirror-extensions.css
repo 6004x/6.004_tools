@@ -55,7 +55,7 @@
 
 .cm-error-widget {
     text-align: right;
-    background-color: transparent;
+    background-color: white; /* This should match the theme's background colour. */
 }
 
 .cm-error-widget span {
@@ -64,7 +64,6 @@
     height: 100%;
     display: inline-block;
     padding-left: 10px;
-    border-top-left-radius: 10px;
     border-bottom-left-radius: 10px;
     font-family: 'Helvetica Neue', Helvetica, sans-serif;
     font-size: 0.9em;
