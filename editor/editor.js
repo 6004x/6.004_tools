@@ -10,6 +10,9 @@ var Editor = function(container, mode) {
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
+    var mMarkedLines = []; // List of lines we need to clear things from when requested.
+
+
     this.addButtonGroup = function(buttons) {
         var group = $('<div class="btn-group">');
         _.each(buttons, function(button) {
@@ -68,6 +71,54 @@ var Editor = function(container, mode) {
         closeTab(mOpenDocuments[filename]);
     };
 
+
+    // These are convenience functions to save on fiddling with CodeMirror directly.
+
+    // If filename is given, returns the content of that file in the buffer
+    // If filename is omitted, returns the content of the current editor
+    this.content = function(filename) {
+        var document;
+        if(filename) document = mOpenDocuments[filename];
+        else document = mCurrentDocument;
+        if(!document) return null;
+        return document.cm.getValue();
+    };
+
+    this.markErrorLine = function(filename, message, line, column) {
+        var document;
+        if(filename) document = mOpenDocuments[filename];
+        else document = mCurrentDocument;
+        if(!document) return false;
+        var cm = document.cm;
+        cm.addLineClass(line, 'background', 'cm-error-line');
+        cm.addLineWidget(line, create_error_widget(message), {noHScroll: true});
+        cm.scrollIntoView({line: line, ch: column});
+        var handle = cm.lineInfo(line).handle;
+        mMarkedLines.push({filename: filename, handle: handle});
+    };
+
+    this.clearErrors = function() {
+        _.each(mMarkedLines, function(value) {
+            if(mOpenDocuments[value.filename]) {
+                var cm = mOpenDocuments[value.filename].cm;
+                var line = cm.lineInfo(value.handle);
+                if(!line) return;
+                cm.removeLineClass(line.handle, "background", "cm-error-line");
+                _.each(line.widgets, function(widget) {
+                    widget.clear();
+                });
+            }
+        });
+        mMarkedLines = [];
+    };
+
+    var create_error_widget = function(message) {
+        var widget = $('<div class="cm-error-widget">');
+        var span = $('<span>');
+        span.text(message).appendTo(widget);
+        return widget[0];
+    };
+
     var create_cm_instance = function(container, content) {
         var cm = new CodeMirror(container[0], {
             indentUint: 4,
@@ -79,7 +130,7 @@ var Editor = function(container, mode) {
             indentWithTabs: true,
             styleActiveLine: true,
             value: content,
-            mode: mode
+            mode: mSyntaxMode
         });
         cm.on('save', function() {
             alert("This would save, if it had anything to save to.");
@@ -162,6 +213,9 @@ var Editor = function(container, mode) {
 
     // Why does doing anything vertically suck so much?
     this.setHeight = function(height) {
+
+        if(!mCurrentDocument) return; // If we don't have a current document there is no height to set, so don't die over it.
+
         mExpectedHeight = height;
         mContainer.height(height);
         var offset = mCurrentDocument.el.position().top;
@@ -199,6 +253,10 @@ var Editor = function(container, mode) {
         // Do some one-time setup.
         if(!Editor.IsSetUp) {
             CodeMirror.commands.save = do_save;
+
+            CodeMirror.keyMap.macDefault['Cmd-/'] = 'toggleComment';
+            CodeMirror.keyMap.pcDefault['Ctrl-/'] = 'toggleComment';
+
             Editor.IsSetUp = true;
         }
     };
