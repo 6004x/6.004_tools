@@ -1,0 +1,71 @@
+.CodeMirror-dialog {
+  position: absolute;
+  left: 0; right: 0;
+  background: white;
+  z-index: 15;
+  padding: .1em .8em;
+  overflow: hidden;
+  color: #333;
+}
+
+.CodeMirror-dialog-top {
+  border-bottom: 1px solid #eee;
+  top: 0;
+}
+
+.CodeMirror-dialog-bottom {
+  border-top: 1px solid #eee;
+  bottom: 0;
+}
+
+.CodeMirror-dialog input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 20em;
+  color: inherit;
+  font-family: monospace;
+}
+
+.CodeMirror-dialog button {
+  font-size: 70%;
+}
+
+/* Reset bootstrap styles we don't want */
+
+.CodeMirror-dialog input {
+    height: initial;
+    padding: initial;
+    margin: initial;
+    border-radius: initial;
+}
+
+/* Nicer fonts */
+
+.CodeMirror {
+  font-family: Menlo, 'Deja Vu Sans Mono', monospace;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+/* Error markers */
+.cm-error-line {
+    background-color: #FFE8DF;
+}
+
+.cm-error-widget {
+    text-align: right;
+    background-color: white; /* This should match the theme's background colour. */
+}
+
+.cm-error-widget span {
+    background-color: #FEAD9B;
+    margin-bottom: 0px;
+    height: 100%;
+    display: inline-block;
+    padding-left: 10px;
+    padding-right: 5px;
+    border-bottom-left-radius: 10px;
+    font-family: 'Helvetica Neue', Helvetica, sans-serif;
+    font-size: 0.9em;
+}
