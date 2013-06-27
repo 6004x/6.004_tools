@@ -9,7 +9,9 @@
 
 var cktsim = (function() {
 
-    // JSON circuit description: [[device_type,{port: signal, ...},{prop: value, ...}], ... ]
+    // JSON circuit description: [{type: device_type,
+    //                             connections: {port_name: signal, ...},
+    //                             properties: {prop_name: value, ...}} ... ]
     // device_type is one of
     //    "resistor"		ports: n1, n2; properties: r, name
     //    "capacitor"		ports: n1, n2; properties: c, name
@@ -218,9 +220,9 @@ var cktsim = (function() {
         var counts = {};
         for (i = netlist.length - 1; i >= 0; i -= 1) {
             component = netlist[i];
-            var type = component[0];
-            connections = component[1];
-            var properties = component[2];
+            var type = component.type;
+            connections = component.connections;
+            var properties = component.properties;
 
             counts[type] = (counts[type] || 0) + 1;
 
