@@ -1,0 +1,139 @@
+>>> Example:
+
+.global vdd
+
+.subckt inv a z drive=2
+Mpu vdd a z vdd PENH W=drive*2 L=1
+Mpd z a 0 0 NENH W=drive L=1
+.ends
+
+.subckt buffer a z
+X1 a 1 inv drive=2
+X2 1 z inv drive=4
+.ends
+
+.options A=1 B=2
+
+Xtest in out buffer
+V1 in 0 step(0,1,1n)
+
+.tran 10n
+.plot in
+.plot out
+
+>>> Data structures
+
+// list of plots, each element is a list of signals
+plots = [ ["in"], ["out"] ]
+
+// dictionary of option values
+options = {A: 1, B: 2}
+
+// list of analysis, each element is a list of [type, {p:v, ...}]
+analyses = [ {type: "tran", parameters: {tstop: "10n"}} ]
+
+// list of global signals
+globals = [ "0", "vdd" ]
+
+// dictionary of subcircuits
+subcircuits = {
+  inv: {
+    name: "inv",
+    ports: ["a", "z"],
+    properties: {drive: 2},   // 2]is an expression tree!
+    devices: [
+      { type: "pfet",
+        connections: {D: "vdd", G:"a", S: "z", B: "vdd"},
+        properties: {name: "Mpu", model: "PENH", W: ["*","drive",2], L: 1}
+      },
+      { type: "nfet",
+        connections: {D: "z", G: "a", S: "0", B: "0"},
+        properties: {name: "Mpd", model: "NENH", W: ["*","drive",2], L: 1}
+      },
+    ]
+  },
+  buffer: {
+    name: "buffer",
+    ports: ["in", "out"],
+    properties: {},
+    devices: [
+      { type: "instance",
+        connections: ["in", "1"],
+        properties: {instanceOf: "inv", name: "X1", drive: 1}
+      },
+      { type: "instance",
+        connections: ["1", "z"],
+        properties: {instanceOf: "inv", name: "X2", drive: 4}
+      },
+    ]
+  },
+  _top_level_: {
+    name: "",
+    ports: [],
+    properties: {},
+    devices: [
+      { type: "instance",
+        // compare length of connections list to length of ports list of instance
+        // should be some multiple, say, N => there are N copies of the insance
+        connections: ["in", "out"],
+        properties: {instanceOf: "buffer", name: "Xtest"}
+    ]
+  }
+}
+
+>>> Final JSON netlist
+
+[
+  {type: "pfet",
+   connections: {D: "vdd" , G: "in" , S: "Xtest.1" , B: "vdd" },
+   properties: {name: "Xtest.X1.Mpu", W: 2, L: 1}},
+  {type: "nfet",
+   connections: {D: "Xtest.1" , G: "in" , S: "0" , B: "0" },
+   properties: {name: "Xtest.X1.Mpd", W: 2, L: 1}},
+  {type: "pfet",
+   connections: {D: "vdd" , G: "Xtest.1" , S: "out" , B: "vdd" },
+   properties: {name: "Xtest.X2.Mpu", W: 8, L: 1}},
+  {type: "nfet",
+   connections: {D: "out" , G: "Xtest.1" , S: "0" , B: "0" },
+   properties: {name: "Xtest.X2.Mpd", W: 4, L: 1}},
+]
+
+>>> Outline of functions
+
+function netlist_device(prefix,dobj,parent_properties,parent_connections,globals,json_netlist)
+  nports = expected number of connections for this type of device
+  ndevices = dobj.connections.length/nports
+  local_properties = evaluate expression for each element in dobj.properties
+     ... use parent_properties for values of expression symbols
+  for each of the ndevices instances:
+    local_connections = take appropriate signal names from dobj.connections
+          divide dobj.connections in nports equal-size buckets
+          for ith iteration, take signal i from each bucket
+      if global.indexOf[signal] != -1, use signal as is (it's a global signal)
+      else if parent_connections[signal] is defined, use that for the signal name
+      else use prefix+"."+signal (it's a local signal)
+    local_name = prefix+"."+dobj.name
+    if dobj.type == "instance":
+      recursive call to netlist_subcircuit(local_name,
+                                           subcircuits[dobj.properties.instanceOf],
+					   local_connections,
+                                           local_properties,
+                                           globals,
+                                           json_netlist)
+    else:
+      compute type, connections and properties attributes of JSON netlist entry
+        type = dobj.type
+        connections: local_connections
+        properities: local_properties with .name = local_name+"#index"
+        push onto json_netlist
+
+function netlist_subcircuit(prefix,sobj,parent_properties,parent_connections,globals,json_netlist)
+   // compute properties for this instance of the subcircuit
+   local_properties = copy of sobj.properties
+   for each name in parent_properties
+     local_properties[name] = parent_properties[name]
+   for each dobj in sobj.devices
+     call netlist_device(prefix+"."+dobj.name,
+                         dobj,local_properties,parent_connections,globals,json_netlist)
+
+
