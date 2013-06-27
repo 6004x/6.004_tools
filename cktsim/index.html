@@ -1,8 +1,7 @@
 <html>
 <head>
-<script src="flot/jquery.js"></script>
-<script src="flot/jquery.flot.js"></script>
-<script src="flot/jquery.flot.axislabels.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+<script src="highcharts/highcharts.js"></script>
 <script src="cktsim.js"></script>
 <script src="test.js"></script>
 </head>
@@ -16,10 +15,10 @@
 ]
 </div>
 
-<div class="cktsim" data-title="Transient analysis test: RC" data-analysis="tran" data-tstop="5u" data-plot="2">
+<div class="cktsim" data-title="Transient analysis test: RC" data-analysis="tran" data-tstop="5u" data-plot="1,2">
 [["resistor",{"n1":"1","n2":"2"},{"name":"R1","r":"1k"}],
  ["capacitor",{"n1":"2","n2":"0"},{"name":"C1","c":"1n"}],
- ["voltage source",{"nplus":"1","nminus":"0"},{"name":"V1","value":"step()"}]
+ ["voltage source",{"nplus":"1","nminus":"0"},{"name":"V1","value":"step(0,1,1u)"}]
 ]
 </div>
 

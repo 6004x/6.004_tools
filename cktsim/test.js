@@ -49,55 +49,93 @@ function engineering_notation(n, nplaces, trim) {
     return n.toPrecision(nplaces);
 }
 
+function suffix_formatter() {
+    return engineering_notation(this.value,2);
+}
 
+function label_formatter() {
+    return engineering_notation(this.y,2);
+}
 
-function suffix_formatter(val,axis) {
-    return engineering_notation(val,axis.tickDecimals);
+function tran_plot(plotdiv,title,results,plot_nodes) {
+    if (results === undefined) return;
+
+    var plots = [];
+    for (var i = 0; i < plot_nodes.length; i += 1) {
+	var node = plot_nodes[i];
+	var values = results[node];
+	var plot = [];
+	for (var j = 0; j < values.length; j += 1)
+	    plot.push([results._time_[j],values[j]]);
+	plots.push({name: "Node "+node, data: plot, lineWidth: 5});
+    }
+    plotdiv.highcharts({
+	    chart: { type: 'line' },
+		title: { text: title },
+		xAxis: { title: {text: 'Time (s)'},
+ 		         labels: {formatter: suffix_formatter},
+			 type: 'linear',
+		       },
+		yAxis: { title: {text: 'Volts (v)'},
+ 		         labels: {formatter: suffix_formatter},
+			 type: 'linear',
+		       },
+		series: plots,
+		plotOptions: {line: {marker: {enabled: false}}},
+	});
+}
+
+function ac_plot(plotdiv,title,results,plot_nodes) {
+    if (results === undefined) return;
+
+    var mplots = [];
+    var pplots = [];
+    for (var i = 0; i < plot_nodes.length; i += 1) {
+	var node = plot_nodes[i];
+	var magnitudes = results[node].magnitude;
+	var phases = results[node].phase;
+	var mplot = [];
+	var pplot = [];
+	for (j = 0; j < magnitudes.length; j += 1) {
+	    var log_freq = Math.log(results._frequencies_[j])/Math.LN10;
+	    mplot.push([log_freq,magnitudes[j]]);
+	    pplot.push([log_freq,phases[j]]);
+	}
+	mplots.push({name: "Node "+node+" (dB)", data: mplot, lineWidth: 5});
+	pplots.push({name: "Node "+node+" phase (deg)", data: pplot, lineWidth: 5});
+    }
+    plotdiv.highcharts({
+	    chart: { type: 'line' },
+		title: { text: title },
+		xAxis: { title: {text: 'Frequency (log Hz)'},
+ 		         labels: {formatter: suffix_formatter},
+		       },
+		yAxis: { title: {text: 'Magnitude (dB)'},
+	                 labels: {formatter: suffix_formatter},
+		       },
+		series: mplots,
+		plotOptions: {line: {marker: {enabled: false}}},
+	});
 }
 
 function setup_test(div) {
     var netlist = JSON.parse(div.text());
     div.empty();
 
-    var title = div.attr('data-title');
+    var title = div.attr('data-title') || '';
     div.append('<p>',title);
     var plotdiv = $('<div style="width:600px;height:300px"></div>');
     div.append(plotdiv);
 
-    var plot_nodes,plots,results,i,j;
-    var node,values,plot;
+    var plot_nodes = div.attr('data-plot').split(',');
     try {
-	var options = {
-	    xaxis: {
-		tickFormatter: suffix_formatter,
-	    },
-	    yaxis: {
-		tickFormatter: suffix_formatter,
-	    },
-	}
-
 	var analysis = div.attr('data-analysis');
 	switch(analysis) {
 	case 'tran':
 	    var tstop = div.attr('data-tstop');
-	    var plot_nodes = div.attr('data-plot').split(',');
-	    //options.xaxis.axisLabel = 'Time (s)';
-	    //options.xaxis.axisLabelUseCanvas = true;
-	    //options.yaxis.axisLabel = 'Volts (V)';
-	    //options.yaxis.axisLabelUseCanvas = true;
+	    plot_nodes = div.attr('data-plot').split(',');
 	    cktsim.transient_analysis(netlist,tstop,[],function(ignore,results) {
-		    if (results !== undefined) {
-			var plots = [];
-			for (var i = 0; i < plot_nodes.length; i += 1) {
-			    var node = plot_nodes[i];
-			    var values = results[node];
-			    var plot = [];
-			    for (var j = 0; j < values.length; j += 1)
-				plot.push([results._time_[j],values[j]]);
-			    plots.push({label: node, data: plot});
-			}
-			$.plot(plotdiv,plots,options);
-		    }
+		    tran_plot(plotdiv,title,results,plot_nodes);
 		});
 	    break;
 	case 'ac':
@@ -106,36 +144,7 @@ function setup_test(div) {
 	    var ac_source_name = div.attr('ac_source_name');
 	    plot_nodes = div.attr('data-plot').split(',');
 	    results = cktsim.ac_analysis(netlist,fstart,fstop,ac_source_name);
-	    //options.xaxis.axisLabel = 'Frequency (log Hz)';
-	    //options.xaxis.axisLabelUseCanvas = true;
-	    options.yaxes = [{position:"left",
-			      tickFormatter:suffix_formatter,
-			      //axisLabel:'Magnitude (dB)',axisLabelUseCanvas:true
-		             },
-			     {position:"right",
-			      tickFormatter:suffix_formatter,
-			      min:-180, max:180,
-			      tickSize:45,
-			      //axisLabel:'Phase (deg)',axisLabelUseCanvas:true
-                             }];
-	    if (results !== undefined) {
-		plots = [];
-		for (i = 0; i < plot_nodes.length; i += 1) {
-		    node = plot_nodes[i];
-		    var magnitudes = results[node].magnitude;
-		    var phases = results[node].phase;
-		    var mplot = [];
-		    var pplot = [];
-		    for (j = 0; j < magnitudes.length; j += 1) {
-			var log_freq = Math.log(results._frequencies_[j])/Math.LN10;
-			mplot.push([log_freq,magnitudes[j]]);
-			pplot.push([log_freq,phases[j]]);
-		    }
-		    plots.push({label: node+" (dB)",data: mplot,yaxis:1});
-		    plots.push({label: node+" phase (deg)",data: pplot,yaxis:2});
-		}
-		$.plot(plotdiv,plots,options);
-	    }
+	    ac_plot(plotdiv,title,results,plot_nodes);
 	    break;
 	case 'dc':
 	    break;
