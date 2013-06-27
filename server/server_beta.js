@@ -8,20 +8,28 @@ my_http = require("http");
 
 my_http.createServer(function(request,response){  
     sys.puts("I got kicked"); 
+    var root_path=process.cwd();
+    var user_path, full_path;
+    var file_path = unescape(url.parse(request.url).pathname);
 
-    
-    var pathname = unescape(url.parse(request.url).pathname);
-    var user=qs.parse(request.url)['username'];
-    var query=qs.parse(request.url)['query'];
+    var data=qs.parse(request.url);
+    var user=data['username'];
+    var query=data['query'];
+    console.log(data);
+
+    console.log(root_path);
     sys.puts(user);
     sys.puts(request.url);
-    if(user)
-      var full_path=path.join(process.cwd(), user, pathname);
+    sys.puts(file_path);
+    sys.puts(query)
+    if(user){
+      user_path=path.join(root_path, user);
+      full_path=path.join(user_path,file_path);
+    }  
     
     sys.puts(full_path);
-    
-   
-       
+
+    if(query!='saveFile'){
       filesys.exists(full_path, function(exists){
         if(!exists){
           response.writeHeader(404, 
@@ -36,8 +44,9 @@ my_http.createServer(function(request,response){
            if(query==='filelist'){
       // no file name, return directory listing
               filesys.readdir(full_path,function(err,files) {
-                if (err) 
+                if (err){
                   console.log(err);//TODO why is next there
+                }
                 console.log(files)
                 var fileList={}
                 for(var i=0; i <files.length; i++){
@@ -78,14 +87,29 @@ my_http.createServer(function(request,response){
                   }
               });
           }
-          else if(pathname.indexOf('upload')>-1)
-          {
-            console.log('upload');
-
-          }
         }
            
       });
+  }else{
+    var fdata=qs.parse(request.url)['fdata'];
+    filesys.exists(user_path, function(exists){
+      if(exists){
+        filesys.exists(full_path, function(exists){
+            save_file(full_path, fdata);
+        });
+      }
+      else{
+        filesys.mkdirSync(full_path, function(err){
+          if(err){
+            throw err;
+          }
+          else{
+            saveFile(full_path);
+          }
+        });
+      }
+    });
+  }
     
     
 
@@ -94,7 +118,6 @@ my_http.createServer(function(request,response){
         'Content-Length': data.length,
         'Content-Type': 'application/json',
         "Access-Control-Allow-Origin":'*'
-        
             });
       console.log(data);
       response.end(data);
@@ -103,9 +126,26 @@ my_http.createServer(function(request,response){
     function send_file(fname) {
       filesys.readFile(fname,'utf8',function(err,data) {
         if (err){console.log(err);
-          next(err);
+          throw err;
         }
         send_json(data);
+      });
+    }
+    function save_file(fname, fdata) {
+      filesys.writeFile(fname, fdata, 'utf8', function (err) {
+        if (err){
+          send_json(JSON.stringify({
+            filename:fname,
+            status:'not saved',
+            fileData:fdata,
+          }));
+        }
+        console.log(fname+ ' saved!');
+        send_json(JSON.stringify({
+          filename:fname,
+          status:'saved',
+        }));
+
       });
     }
 }).listen(8080);  

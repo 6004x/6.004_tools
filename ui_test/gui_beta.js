@@ -1,6 +1,9 @@
 var GUI=new function(){
     var username;
     var rootNode, editor, sideBarWrapper, editorWrapper;
+    var DEFAULT_SERVER='http://localhost:8080';
+    var modelFolder;//TODO implement model going ahead
+
     function getFileList(parentNode, path){
 
         console.log(path)
@@ -8,11 +11,7 @@ var GUI=new function(){
         
         if(username){
             console.log(username);
-            var req=$.ajax({
-                url:'http://localhost:8080/'+path, 
-                data:{'user':username, 'query':'filelist', 'username':username}
-            });
-            req.done(function(fl){return addFiles(fl, parentNode, path)});
+            sendAjaxRequest(path,null,'json',username, 'filelist', function(fl){addFiles(fl, parentNode,path);});
         }
     }
     var i=0; //counter for collapse indicators
@@ -98,64 +97,33 @@ var GUI=new function(){
             if(folderName!='undefined'){
                 fileName=folderName+'/'+fileName;
             }
-
             console.log(folderName+'/'+fileName);
-            var req=$.ajax({
-                    url:'http://localhost:8080/'+fileName, 
-                    data:{'user':username, 'query':'file', 'username':username},
-                    dataType:'text'                  
-            });
-            req.done(function(msg){displayFile(msg, fileName);});
-            req.always(function(r, text){
-                console.log(text);
-            })
-
+            sendAjaxRequest(fileName,null, 'text', username, 'file', function(file){displayFile(file, fileName);});
         }
 
-    function displayFile(msg, path){
+    function displayFile(file, path){
         console.log('files');
-        // $('.toDisplay').val(msg);
-
-        editor.openTab(path, msg, true);
-
+        editor.openTab(path, file, true);
     }
-
+//current tab is file name
+//.content get content of current tab
+    function saveCurrentFile(){
+        var currentFileName=editor.currentTab();
+        var currentFileData=editor.content();
+        if(currentFileName){
+            console.log('trying to save '+currentFileName);
+            sendAjaxRequest(currentFileName, currentFileData,'json', username, 'saveFile', function(fileObj){console.log(fileObj.status+' saved!')})
+        }
+    }
 
     function setup(root){
         rootNode=$(root);
         var wrapper=addDiv().addClass('row-fluid wrapper');
-        sideBarWrapper=addDiv().addClass('span2');
+        sideBarWrapper=addDiv().addClass('span2 sideBarWrapper');
         editorWrapper=addDiv().addClass('span10 folderStruct');
 
-        var buttonDiv=addDiv().addClass('btn-group group1');
-        var buttonOne=$('<button></button>').addClass('btn open_file').attr({
-                'data-toggle':"tooltip", 
-                'title':"Open file",
-                'data-trigger':'hover'
-                });
-        buttonOne.append('<i class=icon-folder-open></i>');
-        buttonDiv.append(buttonOne);
-        var buttonTwo=$('<button></button>').addClass('btn refresh').attr({
-                'data-toggle':"tooltip", 
-                'title':"Refresh",
-                'data-trigger':'hover'
-                });
-        buttonTwo.append('<i class=icon-refresh></i>');
-        buttonDiv.append(buttonTwo);
-        var buttonThree=$('<button></button>').addClass('btn save_all').attr({
-                'data-toggle':"tooltip", 
-                'title':"Save All",
-                'data-trigger':'hover'
-                });
-        buttonThree.append('<i class=icon-gift></i>');
-        buttonDiv.append(buttonThree);
-        var buttonFour=$('<button></button>').addClass('btn commit').attr({
-                'data-toggle':"tooltip", 
-                'title':"Commit and Close",
-                'data-trigger':'hover'
-                });
-        buttonFour.append('<i class=icon-off></i>');
-        buttonDiv.append(buttonFour);
+        var buttonDiv=addDiv().addClass('btn-group group1 buttonDiv');
+        addButtons(buttonDiv);
 
         sideBarNav=addDiv().addClass('sidebar-nav');
         var filePaths=$('<ul></ul>').addClass('nav nav-list nav-stacked filePaths');
@@ -165,8 +133,8 @@ var GUI=new function(){
         sideBarWrapper.append(sideBarNav);
 
         editor = new Editor(editorWrapper, 'tsim');
-        editor.addButtonGroup([new ToolbarButton('Run', _.identity, 'Runs your program!'), new ToolbarButton('Export')]);
-        editor.openTab('foo.uasm', 'This is a file!');
+        editor.addButtonGroup([new ToolbarButton('Run', _.identity, 'Runs your program!'), new ToolbarButton('Export'), new ToolbarButton('Save', saveCurrentFile, 'Saves the current File')]);
+        //editor.openTab('foo.uasm', 'This is a file!');
         var set_height = function() {
                 editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
         }
@@ -185,24 +153,136 @@ var GUI=new function(){
             getFileList(rootNode.find('.filePaths'), '');
         });
             
-        $('.refresh').on('click', function(e){
-                $('.filePaths').html('');
-                getFileList(rootNode.find('.filePaths'), '');
-            });
+        
         $('.btn').tooltip({'placement': 'bottom'});
 
     }
     function addDiv(){
         return $('<div></div>');
     }
+    function addButtons(buttonDiv){   
+            var buttonZero=$('<button></button>').addClass('btn hideNavBar').attr({
+                    'data-toggle':"tooltip", 
+                    'title':"HIde Folders",
+                    'data-trigger':'hover'
+                    });
+            buttonZero.append('<i class=icon-chevron-left></i>');
+            buttonDiv.append(buttonZero);
+            var buttonOne=$('<button></button>').addClass('btn open_file').attr({
+                    'data-toggle':"tooltip", 
+                    'title':"Open file",
+                    'data-trigger':'hover'
+                    });
+            buttonOne.append('<i class=icon-folder-open></i>');
+            buttonDiv.append(buttonOne);
+            var buttonTwo=$('<button></button>').addClass('btn refresh').attr({
+                    'data-toggle':"tooltip", 
+                    'title':"Refresh",
+                    'data-trigger':'hover'
+                    });
+            buttonTwo.append('<i class=icon-refresh></i>');
+            buttonDiv.append(buttonTwo);
+            // var buttonThree=$('<button></button>').addClass('btn save_all').attr({
+            //         'data-toggle':"tooltip", 
+            //         'title':"Save All",
+            //         'data-trigger':'hover'
+            //         });
+            // buttonThree.append('<i class=icon-gift></i>');
+            // buttonDiv.append(buttonThree);
+            var buttonFour=$('<button></button>').addClass('btn commit').attr({
+                    'data-toggle':"tooltip", 
+                    'title':"Commit and Close", 
+                    'data-trigger':'hover'
+                    });
+            buttonFour.append('<i class=icon-off></i>');
+            buttonDiv.append(buttonFour);
+            buttonTwo.on('click', function(e){
+                $('.filePaths').html('');
+                getFileList(rootNode.find('.filePaths'), '');
+            });
+            buttonZero.on('click', function(e){
+                hideNavBar();
+                console.log('hide');
+            });
+    }
+    function hideNavBar(){
+        sideBarWrapper.css('position', 'relative');
+        var width=-(sideBarWrapper.width()-25);
+
+        console.log(width);
+        sideBarWrapper.animate({'left' :width}, 500, 'swing', function(){
+        //    sideBarWrapper.detach()
+                addFifthButton();
+
+        });
+        editorWrapper.animate({'left' :width}, 500, 'swing', function(){
+            editorWrapper.removeClass('span10');
+            editorWrapper.addClass('float-right');
+            editorWrapper.css('left',25);
+        });
+
+        function addFifthButton(){
+            sideBarWrapper.find('.buttonDiv button.commit')
+                .attr({
+                    'data-original-title':"Show Folders"
+                    });
+            sideBarWrapper.find('button.commit i').removeClass().addClass('icon-chevron-right');
+            sideBarWrapper.find('button.commit').off();
+            sideBarWrapper.find('.buttonDiv button.commit').on('click', showNavBar);
+        }
+    }
+    function showNavBar(){
+        var width=(sideBarWrapper.width()-25);
+        sideBarWrapper.animate({'left' :0}, 500, 'swing', function(){
+            sideBarWrapper.find('.buttonDiv button.commit')
+            .attr({
+                    'data-original-title':"Commit and Close"
+                    });
+            sideBarWrapper.find('button.commit i').removeClass().addClass('icon-off');
+            sideBarWrapper.find('button.commit').off();
+            sideBarWrapper.find('.buttonDiv button.commit').on('click', commit);
+            //bug, clicks add up to each other TODO: fix
+        });
+        editorWrapper.animate({'left' :0}, 500, 'swing', function(){
+            editorWrapper.addClass('span10');
+            editorWrapper.removeClass('float-right');
+        });
+    }
+    function commit(){
+        console.log('commited?');
+    }
     
-    return {setup:setup};
         
+    function sendAjaxRequest(filepath, fileData, dataType, username, query, callbackFunction, urlparam){
+        url=DEFAULT_SERVER||urlparam; //default server
+        fileData='none'||fileData
+        console.log(username);
+        url+=filepath;
+
+        var req=$.ajax({
+                url:url, 
+                data:{dummy:'dummy', username:username,query:query, fdata:fileData},
+                username:username,
+                dataType:dataType,
+            });
+        req.done(callbackFunction);
+        req.fail(failResponse);
+        req.always(function(r, status){
+                //var func = JSON.parse(r);
+                console.log(status);
+        });
+    }
+    function failResponse(req, status, error){
+        alert('failed response'+status+'<br/> '+error);
+    }
+
+    return {setup:setup};
 }();
 
 
 $(document).ready(function (){
     GUI.setup('.wrapperDiv');
+    $('#user_input').val('dontony');
 });
         
 
