@@ -1,0 +1,27 @@
+<html>
+<head>
+<script src="flot/jquery.js"></script>
+<script src="flot/jquery.flot.js"></script>
+<script src="flot/jquery.flot.axislabels.js"></script>
+<script src="cktsim.js"></script>
+<script src="test.js"></script>
+</head>
+<body>
+<h2>CKTSIM test page</h2>
+
+<div class="cktsim" data-title="AC analysis test: RC" data-analysis="ac" data-fstart="1" data-fstop="1G" data-plot="2" ac_source_name="V1">
+[["resistor",{"n1":"1","n2":"2"},{"name":"R1","r":"1k"}],
+ ["capacitor",{"n1":"2","n2":"0"},{"name":"C1","c":"1n"}],
+ ["voltage source",{"nplus":"1","nminus":"0"},{"name":"V1","value":"step()"}]
+]
+</div>
+
+<div class="cktsim" data-title="Transient analysis test: RC" data-analysis="tran" data-tstop="5u" data-plot="2">
+[["resistor",{"n1":"1","n2":"2"},{"name":"R1","r":"1k"}],
+ ["capacitor",{"n1":"2","n2":"0"},{"name":"C1","c":"1n"}],
+ ["voltage source",{"nplus":"1","nminus":"0"},{"name":"V1","value":"step()"}]
+]
+</div>
+
+</body>
+</html>
