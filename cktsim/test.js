@@ -57,7 +57,7 @@ function label_formatter() {
     return engineering_notation(this.y,2);
 }
 
-function tran_plot(plotdiv,title,results,plot_nodes) {
+function tran_plot(div,title,results,plot_nodes) {
     if (results === undefined) return;
 
     var plots = [];
@@ -69,23 +69,29 @@ function tran_plot(plotdiv,title,results,plot_nodes) {
 	    plot.push([results._time_[j],values[j]]);
 	plots.push({name: "Node "+node, data: plot, lineWidth: 5});
     }
-    plotdiv.highcharts({
+
+    for (i = 0; i < plots.length; i += 1) {
+	var plotdiv = $('<div style="width:600px;height:100px"></div>');
+	div.append(plotdiv);
+	var options = {
 	    chart: { type: 'line' },
-		title: { text: title },
-		xAxis: { title: {text: 'Time (s)'},
- 		         labels: {formatter: suffix_formatter},
-			 type: 'linear',
-		       },
-		yAxis: { title: {text: 'Volts (v)'},
- 		         labels: {formatter: suffix_formatter},
-			 type: 'linear',
-		       },
-		series: plots,
-		plotOptions: {line: {marker: {enabled: false}}},
-	});
+	    title: {text: (i == 0) ? title : ''},
+	    xAxis: { title: {text: 'Time (s)'},
+		     labels: {formatter: suffix_formatter},
+		     type: 'linear',
+	    },
+	    yAxis: { title: {text: 'Volts (v)'},
+		     labels: {formatter: suffix_formatter},
+		     type: 'linear',
+	    },
+	    series: plots[i],
+	    plotOptions: {line: {marker: {enabled: false}}},
+	};
+	plotdiv.highcharts(options);
+    }
 }
 
-function ac_plot(plotdiv,title,results,plot_nodes) {
+function ac_plot(div,title,results,plot_nodes) {
     if (results === undefined) return;
 
     var mplots = [];
@@ -101,9 +107,12 @@ function ac_plot(plotdiv,title,results,plot_nodes) {
 	    mplot.push([log_freq,magnitudes[j]]);
 	    pplot.push([log_freq,phases[j]]);
 	}
-	mplots.push({name: "Node "+node+" (dB)", data: mplot, lineWidth: 5});
-	pplots.push({name: "Node "+node+" phase (deg)", data: pplot, lineWidth: 5});
+	mplots.push({name: "Node "+node, data: mplot, lineWidth: 5});
+	pplots.push({name: "Node "+node, data: pplot, lineWidth: 5});
     }
+
+    var plotdiv = $('<div style="display: inline-block; width:400px;height:300px"></div>');
+    div.append(plotdiv);
     plotdiv.highcharts({
 	    chart: { type: 'line' },
 		title: { text: title },
@@ -116,6 +125,21 @@ function ac_plot(plotdiv,title,results,plot_nodes) {
 		series: mplots,
 		plotOptions: {line: {marker: {enabled: false}}},
 	});
+
+    plotdiv = $('<div style="display: inline-block; width:400px;height:300px"></div>');
+    div.append(plotdiv);
+    plotdiv.highcharts({
+	    chart: { type: 'line' },
+		title: { text: title },
+		xAxis: { title: {text: 'Frequency (log Hz)'},
+ 		         labels: {formatter: suffix_formatter},
+		       },
+		yAxis: { title: {text: 'Phase (deg)'},
+	                 labels: {formatter: suffix_formatter},
+		       },
+		series: pplots,
+		plotOptions: {line: {marker: {enabled: false}}},
+	});
 }
 
 function setup_test(div) {
@@ -123,9 +147,7 @@ function setup_test(div) {
     div.empty();
 
     var title = div.attr('data-title') || '';
-    div.append('<p>',title);
-    var plotdiv = $('<div style="width:600px;height:300px"></div>');
-    div.append(plotdiv);
+    div.append('<hr></hr>');
 
     var plot_nodes = div.attr('data-plot').split(',');
     try {
@@ -135,7 +157,7 @@ function setup_test(div) {
 	    var tstop = div.attr('data-tstop');
 	    plot_nodes = div.attr('data-plot').split(',');
 	    cktsim.transient_analysis(netlist,tstop,[],function(ignore,results) {
-		    tran_plot(plotdiv,title,results,plot_nodes);
+		    tran_plot(div,title,results,plot_nodes);
 		});
 	    break;
 	case 'ac':
@@ -144,7 +166,7 @@ function setup_test(div) {
 	    var ac_source_name = div.attr('ac_source_name');
 	    plot_nodes = div.attr('data-plot').split(',');
 	    results = cktsim.ac_analysis(netlist,fstart,fstop,ac_source_name);
-	    ac_plot(plotdiv,title,results,plot_nodes);
+	    ac_plot(div,title,results,plot_nodes);
 	    break;
 	case 'dc':
 	    break;
