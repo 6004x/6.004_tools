@@ -1,0 +1,26 @@
+<html>
+<head>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+<script src="highcharts/highcharts.js"></script>
+<script src="cktsim.js"></script>
+<script src="test.js"></script>
+</head>
+<body>
+<h2>CKTSIM test page</h2>
+
+<div class="cktsim" data-title="AC analysis test: RC" data-analysis="ac" data-fstart="1" data-fstop="1G" data-plot="2" ac_source_name="V1">
+[{"type":"resistor","connections":{"n1":"1","n2":"2"},"properties":{"name":"R1","r":"1k"}},
+ {"type":"capacitor","connections":{"n1":"2","n2":"0"},"properties":{"name":"C1","c":"1n"}},
+ {"type":"voltage source","connections":{"nplus":"1","nminus":"0"},"properties":{"name":"V1","value":"step()"}}
+]
+</div>
+
+<div class="cktsim" data-title="Transient analysis test: RC" data-analysis="tran" data-tstop="5u" data-plot="1,2">
+[{"type":"resistor","connections":{"n1":"1","n2":"2"},"properties":{"name":"R1","r":"1k"}},
+ {"type":"capacitor","connections":{"n1":"2","n2":"0"},"properties":{"name":"C1","c":"1n"}},
+ {"type":"voltage source","connections":{"nplus":"1","nminus":"0"},"properties":{"name":"V1","value":"step(0,1,1u)"}}
+]
+</div>
+
+</body>
+</html>
