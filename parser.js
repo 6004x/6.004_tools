@@ -29,7 +29,8 @@ Analyzer: removes comments and line extensions
         
         // extend lines by replacing the line_ext_pattern with a
         // record separator for each newline.
-        var extended_string = decommented1_string.replace(line_ext_pattern, newline_track);
+        var extended_string = decommented1_string.replace(line_ext_pattern,
+                                                          newline_track);
 //        console.log("extended string:",extended_string);
         
         
@@ -64,7 +65,7 @@ Splitter: splits a string into an array of tokens
         var file_pattern = /".*"/;
         var num_pattern = /-?\d*\.?\d+([A-Za-z]*|[eE]-?\d+)/;
         
-        // 'pattern' matches, in order:
+        // 'pattern' will match, in order:
         //      anything wrapped in quotes
         //      a hex number
         //      a number (int, float, exponential or scaled) (includes octal)
@@ -103,6 +104,8 @@ Splitter: splits a string into an array of tokens
                 type = 'float';
             } else if (int_pattern.test(matched_array[0])){
                 type = 'int';
+            } else if (matched_array[0]== "="){
+                type = 'equals'
             } else {
                 type = null;   
             }
@@ -134,66 +137,6 @@ otherwise, return false
         }
         return false;
     }
-    
-/*********************************
-Line extender: look for + signs directly following newlines and remove both
-*********************************/
-//    function line_extend(token_array){
-////        console.log("initial array:",token_array);
-//        
-//        var extended_array = [];
-//        
-//        while(token_array.length > 0){
-//            if (match_token("\n",token_array) && match_token("+",token_array.slice(1))){
-//                token_array.shift();
-//                token_array.shift();
-//            } else {
-//                extended_array.push(token_array.shift());
-//            }
-//        }
-//        
-////        console.log("extended array:",extended_array);
-//        return extended_array;
-//    }
-    
-/*****************************
-Uncommenter: given an array of raw substrings, remove the comments
-*****************************/
-//    function decomment(token_array){
-////        console.log("decomment's token array:",token_array);
-//        var nocomment_array = [];
-//        
-//        while(token_array.length > 0){
-//            // comment type 1: double slash till end of line
-//            if (match_token("//",token_array)){
-//                while(!match_token("\n",token_array)){ 
-//                      token_array.shift(); 
-//                }
-//            // comment type 2: C-style multiline comment /* ... */
-//            } else if (match_token("/*",token_array)) {
-//                while(!match_token("*/",token_array)&&!(token_array.length==1)){
-//                    token_array.shift(); 
-//                }
-//                if (token_array[0].token != "*/"){
-//                    throw "Unclosed comment at line "+token_array[0].line+".";
-//                }
-//                token_array.shift();
-//            // comment type 3: * at the beginning of a line
-////            } else if (match_token("\n",token_array) && 
-////                       match_token("*",token_array.slice(1))){
-////                token_array.shift();
-////                while(!match_token("\n",token_array)){ 
-////                      token_array.shift(); 
-////                }    
-//            } else {
-//                // if the current token is not part of a comment, simply transfer it
-//                // to the new array
-//                nocomment_array.push(token_array.shift());
-//            } 
-//        }
-////        console.log("uncommented array:",nocomment_array);
-//        return nocomment_array;
-//    }
     
 /********************************
 Iterater expander: expands iterators such as A[0:5] and duplicators such as B#3
@@ -382,14 +325,65 @@ iterators and duplicators
          return iter_expand(split(analyze(input_string),filename))
     }
     
+/***********************
+parse
+***********************/
+    function parse(input_string,filename){
+        return parse1(tokenize(input_string,filename));
+    }
+    
 /********************************
-Parse: parses a string representing the contents of a file
+Parse1: turns .includes into more tokens and parses numbers
     --args: -input_string: a string representing the file contents
             -filename: a string representing the unique name of the file to be parsed
-    --returns:
+    --returns: an array of tokens representing the contents of all included files
 *******************************/
-    function parse(input_string,filename){
-        return tokenize(input_string,filename);
+    function parse1(token_array,filename){
+        var new_token_array = [];
+        
+        // first pass: include files, parse numbers
+        while (token_array.length > 0){
+            var current = token_array[0];
+            switch (current.type){
+                case "control":
+                    if (/\.include/i.test(current.token)){
+                        var contents = include(token_array[1]);
+                        console.log("including a file... contents:",contents);
+                        token_array.shift();
+                        token_array.shift();
+                        token_array = contents.concat(token_array);
+                    }
+                    break;
+                case "int":
+                case "float":
+                case "exp":
+                    new_token_array.push({value:parseFloat(current.token),
+                                          type:"number",
+                                          line:current.line});
+                    token_array.shift();
+                    break;
+                case "hex":
+                case "octal":
+                    new_token_array.push({value:parseInt(current.token),
+                                          type:"number",
+                                          line:current.line});
+                    token_array.shift();
+                    break;
+                case "binary":
+                    new_token_array.push({value:parseInt(current.token.slice(2),2),
+                                          type:"number",
+                                          line:current.line});
+                    token_array.shift();
+                    break;
+                case "scaled":
+                    new_token_array.push(parse_scaled(current.token));
+                    token_array.shift();
+                    break;
+                default:
+                    new_token_array.push(token_array.shift());
+            }
+        }
+        return new_token_array;
     }
     
 /******************************
@@ -456,6 +450,7 @@ the statement
     --returns: undefined
 ******************************/
     function process_control(ctrl,token_array){
+        var new_token_array;
         switch(ctrl.token){
             case ".checkoff":
             case ".connect":
@@ -464,7 +459,10 @@ the statement
             case ".global":
                 break;
             case ".include":
-                include(token_array[1]);
+                var contents = include(token_array[1]);
+                token_array.shift();
+                token_array.shift();
+                new_token_array = contents.concat(token_array);
                 break;
             case ".model":
             case ".mverify":
@@ -481,9 +479,9 @@ the statement
                 break;
             default:
                 throw "Invalid control statement"
-                break;
-            
+                break;  
         }
+        return new_token_array;
     }
     
 /******************************
@@ -514,6 +512,7 @@ Exports
 ****************************/
     return {parse:parse,
             tokenize:tokenize,
+            parse1:parse1,
             include:include,
             parse_scaled:parse_scaled
               }
@@ -540,6 +539,7 @@ var iter_test_array = ["[4:0]","[4:0:2]","[0:4]","[0:4:2]",
                        "[0:4:0]","[1:4:2]","[0:4:3]"];
 var line_ext_text = "hi \n foo\n\n+ bar";
 var decomment_text = "foo\n//comment1\n+NOT_comment1\nbar/*comment2*/\n/*comment3\n\nstill_comment3*/";
+var include_text = '.include "foo"\n.include "bar"\nR1 a b 10 //this is a comment\nC1 a b 1';
 
 function test1(){parser.split(raw_text);}
 function test2(){parser.decomment(parser.line_extend(parser.split(test2_text)));}
@@ -566,7 +566,7 @@ var pseudo_files = {"foo":"foo bar \nbaz /*comment\ncomment2*/ bim",
                             "10 10k 10.1 1e2 1.1e2 0x10 0b10 010"
                    };
 function test12() { console.log(parser.include(parser.parse('.include "foo"\n.include "bar"\nR1 a b 10 //this is a comment\nC1 a b 1',"master_file"))); }
-
+function test13(){ console.log(parser.parse(include_text,"master_file")); }
 
 
 
