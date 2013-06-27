@@ -1,7 +1,10 @@
 var parser = (function(){
     
 /**********************************
-Analyzer (string level): removes comments and line extensions
+Analyzer: removes comments and line extensions
+    --args: -input_string: a string representing the contents of a file
+    --returns: a string representing the contents of the file with line extensions
+                processed and comments removed
 ************************************/
     function analyze(input_string){
         input_string += "\n";
@@ -41,6 +44,9 @@ Analyzer (string level): removes comments and line extensions
     
 /*****************************
 Splitter: splits a string into an array of tokens
+    --args: -input_string: a string containing the processed contents of a file
+            -filename: the name of the file
+    --returns: an array of tokens
 *******************************/
     function split(input_string,filename){
 //        var pattern = /".*"|0x[0-9a-fA-F]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]*)|\.?[A-Za-z][\w:\.,$#\[\]]*|=|\n|\u001e/g; 
@@ -51,7 +57,7 @@ Splitter: splits a string into an array of tokens
         var int_pattern = /\d+/;
         var exp_pattern = /-?\d*\.?\d+[eE]-?\d+/;
         var float_pattern = /-?\d*\.\d+/;
-        var scaled_pattern = /-?\d+[A-Za-z]+/;
+        var scaled_pattern = /-?\d*\.?\d+[A-Za-z]+/;
         var hex_pattern = /^0[xX][0-9a-fA-F]+/;
         var octal_pattern = /^0[0-7]+/;
         var binary_pattern = /^0[bB][01]+/;
@@ -85,8 +91,6 @@ Splitter: splits a string into an array of tokens
                 type = 'control'
             } else if (exp_pattern.test(matched_array[0])){
                 type = 'exp';
-            } else if (float_pattern.test(matched_array[0])){
-                type = 'float';
             } else if (hex_pattern.test(matched_array[0])){
                 type = 'hex';
             } else if (octal_pattern.test(matched_array[0])){
@@ -95,6 +99,8 @@ Splitter: splits a string into an array of tokens
                 type= 'binary';
             } else if (scaled_pattern.test(matched_array[0])){
                 type = 'scaled';
+            } else if (float_pattern.test(matched_array[0])){
+                type = 'float';
             } else if (int_pattern.test(matched_array[0])){
                 type = 'int';
             } else {
@@ -118,6 +124,9 @@ Splitter: splits a string into an array of tokens
 /********************************
 Match token: if the first token in the given array is t, return true;
 otherwise, return false
+    --args: -t: a token to be matched
+            -token_array: the array of tokens t comes from
+    --returns: true if the first token in the array matches t, false otherwise
 **********************************/
     function match_token(t,token_array){
         if (token_array.length > 0 && token_array[0].token==t){
@@ -187,15 +196,19 @@ Uncommenter: given an array of raw substrings, remove the comments
 //    }
     
 /********************************
-Iterater expander: expands iterators such as A[0:5] into the proper sequence
-                    and duplicators such as B#3
+Iterater expander: expands iterators such as A[0:5] and duplicators such as B#3
+into the proper sequences
+    --args: -token_array: an array of tokens representing the contents of a file
+    --returns: an array of tokens in which all iterators and duplicators have
+                been expanded
 *********************************/
-    var iterator_pattern = /\[\d+:\d+(:-?\d+)?\]/;
-    var duplicator_pattern = /#\d+$/;
-    // iterator syntax: [digit:digit(:optional_+/-digit)] 
-    // duplicator syntax: anything#digit
 
     function iter_expand(token_array){
+        var iterator_pattern = /\[\d+:\d+(:-?\d+)?\]/;
+        var duplicator_pattern = /#\d+$/;
+        // iterator syntax: [digit:digit(:optional_+/-digit)] 
+        // duplicator syntax: anything#digit
+        
         var expanded_array = [];
         
         while (token_array.length > 0){
@@ -251,8 +264,9 @@ Iterater expander: expands iterators such as A[0:5] into the proper sequence
     }
     
 /****************************
-iterator interpreter: given a string of the form '[a:b:k]', returns an array of
-strings of the form '[a]', '[a+k]', '[a+2k]', ..., '[b]'
+iterator interpreter: interprets and expands an iterator
+    --args: -iterator_string: a string of the form "[a:b:k]"
+    --returns: an array of strings of the form ["[a]","[a+k]","[a+2k]",...,"[b]"]
 ********************************/
     function iter_interpret(iterator_string){
         // get the two to three numbers from the string
@@ -297,22 +311,97 @@ strings of the form '[a]', '[a+k]', '[a+2k]', ..., '[b]'
         return result;
     }
     
-/*********************************
-Parse: takes a raw string, does decommenting/extending, tokenizes it, and expands
-iterators and duplicators
+/********************************
+Parse scaled: interpret a scaled number
+    --args: -sc_num: a token representing a scaled number
+    --returns: an object containing value (the value of the number),
+                type ("number"), and line (the line number of the token)
 *********************************/
-    function parse(input_string,filename){
+    function parse_scaled(sc_num){
+        var scale_factor;
+        var pattern = /(-?\d*\.?\d+)([^\d]+)/;
+        var scale_pattern = /^((MEG)|(meg)|(MIL)|(mil)|[TtGgKkMmUuNnPpFf])/;
+        
+        var matched = sc_num.token.match(pattern);
+        var value = matched[1]; // the first parenthesized expr, numbers
+        var suffix = matched[2]; // the second parenthesized expr, scale factor
+        
+        value = parseFloat(value);
+        var matched_scale = suffix.match(scale_pattern);
+        if (!(matched_scale === null)){ 
+            matched_scale = matched_scale[0]; 
+        }
+        console.log("value:",value,"scale:",matched_scale);
+        switch(matched_scale){
+            case "MEG": case "meg": // mega
+                scale_factor = 1e6;
+                break;
+            case "MIL": case "mil": // --
+                scale_factor = 25.4e-6;
+                break;
+            case "T": case "t": // tera
+                scale_factor = 1e12;
+                break;
+            case "G": case "g": // giga
+                scale_factor = 1e9;
+                break;
+            case "K": case "k": // kilo
+                scale_factor = 1e3;
+                break;
+            case "M": case "m": // milli
+                scale_factor = 1e-3;
+                break;
+            case "U": case "u": // micro
+                scale_factor = 1e-6;
+                break;
+            case "N": case "n": // nano
+                scale_factor = 1e-9;
+                break;
+            case "P": case "p": // pico
+                scale_factor = 1e-12;
+                break;
+            case "F": case "f": // femto
+                scale_factor = 1e-15;
+                break;
+            default:
+                scale_factor = 1;
+        }
+        return {value:value*scale_factor,
+                type:"number",
+                line:sc_num.line};
+    }
+    
+/*********************************
+Tokenize: takes a raw string, does decommenting/extending, tokenizes it, and expands
+iterators and duplicators
+    --args: -input_string: a string representing the file contents
+            -filename: a string representing the unique name of the file
+    --returns: an array of strings (tokens)
+*********************************/
+    function tokenize(input_string,filename){
          return iter_expand(split(analyze(input_string),filename))
+    }
+    
+/********************************
+Parse: parses a string representing the contents of a file
+    --args: -input_string: a string representing the file contents
+            -filename: a string representing the unique name of the file to be parsed
+    --returns:
+*******************************/
+    function parse(input_string,filename){
+        return tokenize(input_string,filename);
     }
     
 /******************************
 filename_to_contents: takes a file path and returns the string representing its 
 content
+    --args: -filename: a string representing the unique name of a file
+    --returns: a string representing the contents of the file
 *******************************/
     function filename_to_contents(filename){
 //        filename = filename.replace(/"/g,'');
         
-        console.log("filename:",filename,"pseudofiles:",pseudo_files);
+//        console.log("filename:",filename,"pseudofiles:",pseudo_files);
         if (pseudo_files[filename]===undefined){
             throw "File does not exist";
         } else {
@@ -321,46 +410,112 @@ content
     }
     
 /**************************
-Evaluate: takes a parsed array of tokens and evaluates its contents
+Include: takes a parsed array of tokens and includes all the files
 ***************************/
-    function evaluate(token_array){
-        // list of filenames that have already been included
-        var included_files = []; // !!!!!!!!! set this here????????????????
-        var new_token_array = [];
-        
-        while (token_array.length > 0){
-            var current = token_array[0];
-            if (current.token == ".include"){
-                var file = token_array[1];
-                if (!(file.type == "string")){
-                    throw "Filename expected";
-                } else {
-                    var filename = file.token;
-                    if (included_files.indexOf(filename)==-1) {
-                        console.log("file not yet included :)");
-                        included_files.push(filename);
-                        
-                        var contents = filename_to_contents(filename);
-                        contents = parse(contents,filename);
-                        console.log("contents of file:",contents);
-                        token_array.shift();
-                        token_array.shift();
-                        token_array = contents.concat(token_array);
-                        console.log("updated token arary:",token_array);
-                        
-                    } else {
-                        console.log("file already included, skipping");
-                    }
-                }
-            } // !!!!!! else, other tokens to evaluate
+//    function include(token_array){
+//        // list of filenames that have already been included
+//        var included_files = [token_array[0].origin_file]; // ?????????????????? 
+//        var new_token_array = [];
+//        
+//        while (token_array.length > 0){
+//            var current = token_array[0];
+//            if (current.token == ".include"){
+//                var file = token_array[1];
+//                if (!(file.type == "string")){
+//                    throw "Filename expected";
+//                } else {
+//                    var filename = file.token;
+//                    if (included_files.indexOf(filename)==-1) {
+////                        console.log("file not yet included :)");
+//                        included_files.push(filename);
+//                        
+//                        var contents = filename_to_contents(filename);
+//                        contents = parse(contents,filename);
+////                        console.log("contents of file:",contents);
+//                        token_array.shift();
+//                        token_array.shift();
+//                        token_array = contents.concat(token_array);
+////                        console.log("updated token arary:",token_array);
+//                        
+//                    } else {
+////                        console.log("file already included, skipping");
+//                    }
+//                }
+//            }
+//            new_token_array.push(token_array.shift());
+//        }
+//        return new_token_array;
+//    }
+    
+    
+/*****************************
+Process control statements: given a control statement and the token array, parse
+the statement
+    --args: -ctrl: the token object of a control statement
+            -token_array: the array of tokens from which ctrl was taken
+    --returns: undefined
+******************************/
+    function process_control(ctrl,token_array){
+        switch(ctrl.token){
+            case ".checkoff":
+            case ".connect":
+            case ".dc":
+            case ".end":
+            case ".global":
+                break;
+            case ".include":
+                include(token_array[1]);
+                break;
+            case ".model":
+            case ".mverify":
+            case ".op":
+            case ".options":
+            case ".plot":
+            case ".plotdef":
+            case ".subckt":
+            case ".ends":
+            case ".tran":
+            case ".temp":
+            case ".tempdir":
+            case ".verify":
+                break;
+            default:
+                throw "Invalid control statement"
+                break;
             
-            new_token_array.push(token_array.shift());
         }
-        return new_token_array;
     }
     
+/******************************
+include (modular): given the token after an .include, include the specified file
+    --args: -file: the token after an .include statement
+            -included_files: an array of filenames that have already been included
+    --returns: the tokenized contents of the file, if applicable, otherwise
+                returns undefined
+******************************/
+    function include(file,included_files){
+        if (!(file.type == "string")){
+                throw "Filename expected";
+        } else {
+            var filename = file.token;
+            if (included_files.indexOf(filename)==-1) {
+//                        console.log("file not yet included :)");
+                included_files.push(filename);
+                
+                var contents = filename_to_contents(filename);
+                contents = tokenize(contents,filename);
+              return contents;
+            } 
+        }
+    }
+    
+/***************************
+Exports
+****************************/
     return {parse:parse,
-            evaluate:evaluate
+            tokenize:tokenize,
+            include:include,
+            parse_scaled:parse_scaled
               }
 }());
 
@@ -406,8 +561,11 @@ function test10(){ return parser.analyze(decomment_text); }
 function test11(){ console.log(parser.parse(
     "2 2k 2ms 2.2 2e2 2.2e2 .2e2 0x2 0b01 02")); }
 
-var pseudo_files = {"foo":"foo bar \nbaz /*comment\ncomment2*/ bim"};
-function test12() { console.log(parser.evaluate(parser.parse('.include "foo"\n.include "foo"\nR1 a b 10',"master_file"))); }
+var pseudo_files = {"foo":"foo bar \nbaz /*comment\ncomment2*/ bim",
+                    "bar":"/* this file starts with\na multiline comment.*/\n"+
+                            "10 10k 10.1 1e2 1.1e2 0x10 0b10 010"
+                   };
+function test12() { console.log(parser.include(parser.parse('.include "foo"\n.include "bar"\nR1 a b 10 //this is a comment\nC1 a b 1',"master_file"))); }
 
 
 
