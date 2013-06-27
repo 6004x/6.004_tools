@@ -18,8 +18,8 @@ var cktsim = (function() {
     //    "inductor"		ports: n1, n2; properties: l, name
     //    "diode"		ports: anode, cathode; properties: area, type, name
     //    "opamp"		ports: nplus, nminus, output, gnd; properties: A, name
-    //    "nfet"		ports: D, G, S; properties: W, L, name
-    //    "pfet"		ports: D, G, S; properties: W, L, name
+    //    "nfet"		ports: D, G, S, B; properties: W, L, name
+    //    "pfet"		ports: D, G, S, B; properties: W, L, name
     //    "voltage source"	ports: nplus, nminus; properties: value, name
     //    "current source"	ports: nplus, nminus; properties: value, name
     // signals are just strings
