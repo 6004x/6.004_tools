@@ -14,34 +14,33 @@ var GUI=new function(){
             sendAjaxRequest(path,null,'json',username, 'filelist', function(fl){addFiles(fl, parentNode,path);});
         }
     }
-    var i=0; //counter for collapse indicators
     function addFiles(fileList, parentNode, parentPath){
         //testing whether username chenged or not, to change data structure
         if (username!=$('.testDiv').text()){
             $('.testDiv').text(username);
             parentNode.html('');
             console.log('username changed');
-            i=0;
         }
+        console.log(fileList);
 
-        
-        $.each(fileList, function(name, subList) {
+        for(var name in fileList){
+            subList=fileList[name];
             
             var collapseName='collapse'+name.replace(' ','_');
             //collapseName is name without whitespace
-
-            if(subList.length==0){
+            console.log(collapseName);
+            console.log(subList);
+            if(name.indexOf('.')>-1){
                 console.log('.');
                 var listVar=$('<li></li>').attr('data-parent', parentPath).append('<a href=#>'+name+'</a>');
                 listVar.on('click', getFile);
                 parentNode.append(listVar);
             }
             else{
-                
                 addSubFolder(parentNode, parentPath, collapseName, name, subList)
             }
 
-        });
+        }
     }
 
 
@@ -71,7 +70,9 @@ var GUI=new function(){
             }
         });
         var foldered=false;
-        $.each(subList, function(i, sub_name){
+
+        for(var i=0;i<subList.length; i++){
+                var sub_name=subList[i];
                 var listVar=$('<li></li>').attr('data-parent',parentPath+'/'+folderName);           
                 if(sub_name.indexOf('.')>-1){
                     listVar.append('<a href=# >'+sub_name+'</a>');
@@ -84,16 +85,20 @@ var GUI=new function(){
                     subListUL.append(listVar);
                 }else
                     console.log('foldered');
-            });
+            }
+        // if(subList.length==0){
+        //     sublistUL.append('[empty directory]');
+        // }
         collapserDiv.append(subListUL)
         parentNode.append(collapserDiv);
 
     }
     function getFile(e){
-            var node=$(e.target);
+            var node=$(e.currentTarget);
+            console.log(node);
             var fileName=unescape(node.text());
-            var folderName=unescape(node.parent().attr('data-parent'));
-            console.log(folderName==null);
+            var folderName=unescape(node.attr('data-parent'));
+            console.log(fileName);
             if(folderName!='undefined'){
                 fileName=folderName+'/'+fileName;
             }
