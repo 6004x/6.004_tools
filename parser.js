@@ -1,5 +1,13 @@
 var parser = (function(){
     
+/********************************
+Error object:
+*********************************/
+    function Error(message,line){
+        this.message = message;
+        this.line = line;
+    }
+    
 /**********************************
 Analyzer: removes comments and line extensions
     --args: -input_string: a string representing the contents of a file
@@ -183,7 +191,12 @@ into the proper sequences
                     var end_index = iter_match_array.index + iter_string.length;
                     var end_string = current.token.slice(end_index);
                     
-                    var new_iter_strings = iter_interpret(iter_string);
+                    var new_iter_strings;
+                    try{
+                        new_iter_strings = iter_interpret(iter_string);
+                    } catch(err) {
+                        throw new Error(err,current.line);
+                    }
                     for (var i=0; i < new_iter_strings.length; i+=1){
                         var new_token_obj = {token:front_string+new_iter_strings[i]+
                                             end_string,
@@ -260,131 +273,176 @@ Parse scaled: interpret a scaled number
     --returns: an object containing value (the value of the number),
                 type ("number"), and line (the line number of the token)
 *********************************/
-    function parse_scaled(sc_num){
-        var scale_factor;
-        var pattern = /(-?\d*\.?\d+)([^\d]+)/;
-        var scale_pattern = /^((MEG)|(meg)|(MIL)|(mil)|[TtGgKkMmUuNnPpFf])/;
-        
-        var matched = sc_num.token.match(pattern);
-        var value = matched[1]; // the first parenthesized expr, numbers
-        var suffix = matched[2]; // the second parenthesized expr, scale factor
-        
-        value = parseFloat(value);
-        var matched_scale = suffix.match(scale_pattern);
-        if (!(matched_scale === null)){ 
-            matched_scale = matched_scale[0]; 
+//    function parse_scaled(sc_num){
+//        var scale_factor;
+//        var pattern = /(-?\d*\.?\d+)([^\d]+)/;
+//        var scale_pattern = /^((MEG)|(meg)|(MIL)|(mil)|[TtGgKkMmUuNnPpFf])/;
+//        
+//        var matched = sc_num.token.match(pattern);
+//        var value = matched[1]; // the first parenthesized expr, numbers
+//        var suffix = matched[2]; // the second parenthesized expr, scale factor
+//        
+//        value = parseFloat(value);
+//        var matched_scale = suffix.match(scale_pattern);
+//        if (!(matched_scale === null)){ 
+//            matched_scale = matched_scale[0]; 
+//        }
+//        console.log("value:",value,"scale:",matched_scale);
+//        switch(matched_scale){
+//            case "MEG": case "meg": // mega
+//                scale_factor = 1e6;
+//                break;
+//            case "MIL": case "mil": // --
+//                scale_factor = 25.4e-6;
+//                break;
+//            case "T": case "t": // tera
+//                scale_factor = 1e12;
+//                break;
+//            case "G": case "g": // giga
+//                scale_factor = 1e9;
+//                break;
+//            case "K": case "k": // kilo
+//                scale_factor = 1e3;
+//                break;
+//            case "M": case "m": // milli
+//                scale_factor = 1e-3;
+//                break;
+//            case "U": case "u": // micro
+//                scale_factor = 1e-6;
+//                break;
+//            case "N": case "n": // nano
+//                scale_factor = 1e-9;
+//                break;
+//            case "P": case "p": // pico
+//                scale_factor = 1e-12;
+//                break;
+//            case "F": case "f": // femto
+//                scale_factor = 1e-15;
+//                break;
+//            default:
+//                scale_factor = 1;
+//        }
+//        return {value:value*scale_factor,
+//                type:"number",
+//                line:sc_num.line};
+//    }
+    
+/************************************
+Parse Number: taken from cktsim.js by Chris Terman, with permission. Slightly 
+                modified.
+*************************************/
+    // convert string argument to a number, accepting usual notations
+    // (hex, octal, binary, decimal, floating point) plus engineering
+    // scale factors (eg, 1k = 1000.0 = 1e3).
+    // return default if argument couldn't be interpreted as a number
+    function parse_number(x, default_v) {
+        var m;
+
+        m = x.match(/^\s*([\-+]?)0x([0-9a-fA-F]+)\s*$/); // hex
+        if (m) return parseInt(m[1] + m[2], 16);
+
+        m = x.match(/^\s*([\-+]?)0b([0-1]+)\s*$/); // binary
+        if (m) return parseInt(m[1] + m[2], 2);
+
+        m = x.match(/^\s*([\-+]?)0([0-7]+)\s*$/); // octal
+        if (m) return parseInt(m[1] + m[2], 8);
+
+        m = x.match(/^\s*[\-+]?[0-9]*(\.([0-9]+)?)?([eE][\-+]?[0-9]+)?\s*$/); // decimal, float
+        if (m) return parseFloat(m[0]);
+
+        m = x.match(/^\s*([\-+]?[0-9]*(\.([0-9]+)?)?)([A-Za-z]+)/); // decimal, float
+        if (m) {
+            var result = parseFloat(m[1]);
+            var scale = m[4][0];
+            if (scale == 'P') result *= 1e15; // peta
+            else if (scale == 't' || scale == 'T') result *= 1e12; // tera
+            else if (scale == 'g' || scale == 'G') result *= 1e9; // giga
+            else if (scale == 'M') result *= 1e6; // mega
+            else if (scale == 'k' || scale == 'K') result *= 1e3; // kilo
+            else if (scale == 'm') result *= 1e-3; // milli
+            else if (scale == 'u' || scale == 'U') result *= 1e-6; // micro
+            else if (scale == 'n' || scale == 'N') result *= 1e-9; // nano
+            else if (scale == 'p') result *= 1e-12; // pico
+            else if (scale == 'f' || scale == 'F') result *= 1e-15; // femto
+            else if (scale == 'a' || scale == 'A') result *= 1e-18; // atto
+            return result;
         }
-        console.log("value:",value,"scale:",matched_scale);
-        switch(matched_scale){
-            case "MEG": case "meg": // mega
-                scale_factor = 1e6;
-                break;
-            case "MIL": case "mil": // --
-                scale_factor = 25.4e-6;
-                break;
-            case "T": case "t": // tera
-                scale_factor = 1e12;
-                break;
-            case "G": case "g": // giga
-                scale_factor = 1e9;
-                break;
-            case "K": case "k": // kilo
-                scale_factor = 1e3;
-                break;
-            case "M": case "m": // milli
-                scale_factor = 1e-3;
-                break;
-            case "U": case "u": // micro
-                scale_factor = 1e-6;
-                break;
-            case "N": case "n": // nano
-                scale_factor = 1e-9;
-                break;
-            case "P": case "p": // pico
-                scale_factor = 1e-12;
-                break;
-            case "F": case "f": // femto
-                scale_factor = 1e-15;
-                break;
-            default:
-                scale_factor = 1;
-        }
-        return {value:value*scale_factor,
-                type:"number",
-                line:sc_num.line};
+
+        return (default_v === undefined ? NaN : default_v);
     }
     
 /*********************************
 Tokenize: takes a raw string, does decommenting/extending, tokenizes it, and expands
-iterators and duplicators
+iterators and duplicators, and includes files
     --args: -input_string: a string representing the file contents
             -filename: a string representing the unique name of the file
     --returns: an array of strings (tokens)
 *********************************/
     function tokenize(input_string,filename){
-         return iter_expand(split(analyze(input_string),filename))
+         return include(iter_expand(split(analyze(input_string),filename)));
     }
     
 /***********************
 parse
 ***********************/
     function parse(input_string,filename){
-        return parse1(tokenize(input_string,filename));
+        
     }
     
 /********************************
-Parse1: turns .includes into more tokens and parses numbers
+Parse1: turns .includes into more tokens
     --args: -input_string: a string representing the file contents
             -filename: a string representing the unique name of the file to be parsed
     --returns: an array of tokens representing the contents of all included files
 *******************************/
-    function parse1(token_array,filename){
-        var new_token_array = [];
-        
-        // first pass: include files, parse numbers
-        while (token_array.length > 0){
-            var current = token_array[0];
-            switch (current.type){
-                case "control":
-                    if (/\.include/i.test(current.token)){
-                        var contents = include(token_array[1]);
-                        console.log("including a file... contents:",contents);
-                        token_array.shift();
-                        token_array.shift();
-                        token_array = contents.concat(token_array);
-                    }
-                    break;
-                case "int":
-                case "float":
-                case "exp":
-                    new_token_array.push({value:parseFloat(current.token),
-                                          type:"number",
-                                          line:current.line});
-                    token_array.shift();
-                    break;
-                case "hex":
-                case "octal":
-                    new_token_array.push({value:parseInt(current.token),
-                                          type:"number",
-                                          line:current.line});
-                    token_array.shift();
-                    break;
-                case "binary":
-                    new_token_array.push({value:parseInt(current.token.slice(2),2),
-                                          type:"number",
-                                          line:current.line});
-                    token_array.shift();
-                    break;
-                case "scaled":
-                    new_token_array.push(parse_scaled(current.token));
-                    token_array.shift();
-                    break;
-                default:
-                    new_token_array.push(token_array.shift());
-            }
-        }
-        return new_token_array;
-    }
+//    function parse_include(token_array,filename){
+//        var new_token_array = [];
+//        
+//        // first pass: include files, parse numbers
+//        while (token_array.length > 0){
+//            var current = token_array[0];
+//            switch (current.type){
+//                case "control":
+//                    if (/\.include/i.test(current.token)){
+//                        var contents = include(token_array[1]);
+//                        console.log("including a file... contents:",contents);
+//                        token_array.shift();
+//                        token_array.shift();
+//                        token_array = contents.concat(token_array);
+//                    }
+//                    break;
+//                case "int":
+//                case "float":
+//                case "exp":
+//                    new_token_array.push({value:parseFloat(current.token),
+//                                          type:"number",
+//                                          line:current.line});
+//                    token_array.shift();
+//                    break;
+//                case "hex":
+//                case "octal":
+//                    new_token_array.push({value:parseInt(current.token),
+//                                          type:"number",
+//                                          line:current.line});
+//                    token_array.shift();
+//                    break;
+//                case "binary":
+//                    new_token_array.push({value:parseInt(current.token.slice(2),2),
+//                                          type:"number",
+//                                          line:current.line});
+//                    token_array.shift();
+//                    break;
+//                case "scaled":
+//                    new_token_array.push(parse_scaled(current.token));
+//                    token_array.shift();
+//                    break;
+//                default:
+//                    new_token_array.push(token_array.shift());
+//            }
+//        }
+//        return new_token_array;
+//    }
+
     
 /******************************
 filename_to_contents: takes a file path and returns the string representing its 
@@ -405,41 +463,52 @@ content
     
 /**************************
 Include: takes a parsed array of tokens and includes all the files
+    --args: -token_array: an array of tokens
+    --returns: a new array of tokens consisting of all the tokens from all files
 ***************************/
-//    function include(token_array){
-//        // list of filenames that have already been included
-//        var included_files = [token_array[0].origin_file]; // ?????????????????? 
-//        var new_token_array = [];
-//        
-//        while (token_array.length > 0){
-//            var current = token_array[0];
-//            if (current.token == ".include"){
-//                var file = token_array[1];
-//                if (!(file.type == "string")){
-//                    throw "Filename expected";
-//                } else {
-//                    var filename = file.token;
-//                    if (included_files.indexOf(filename)==-1) {
-////                        console.log("file not yet included :)");
-//                        included_files.push(filename);
-//                        
-//                        var contents = filename_to_contents(filename);
-//                        contents = parse(contents,filename);
-////                        console.log("contents of file:",contents);
-//                        token_array.shift();
-//                        token_array.shift();
-//                        token_array = contents.concat(token_array);
-////                        console.log("updated token arary:",token_array);
-//                        
-//                    } else {
-////                        console.log("file already included, skipping");
-//                    }
-//                }
-//            }
-//            new_token_array.push(token_array.shift());
-//        }
-//        return new_token_array;
-//    }
+    
+    function include(token_array){
+        var included_files = [token_array[0].origin_file]; // ??????????????????
+        // list of filenames that have already been included 
+        var new_token_array = [];
+        
+        while (token_array.length > 0){
+            var current = token_array[0];
+            if (current.token.toLowerCase() == ".include"){
+                var file = token_array[1];
+                console.log("file:",file);
+                if (!(file.type == "string")){
+                    throw new Error("Filename expected",current.line);
+                } else {
+                    var filename = file.token;
+                    if (included_files.indexOf(filename)==-1) {
+//                        console.log("file not yet included :)");
+                        included_files.push(filename);
+                        
+                        var contents;
+                        try{
+                            contents = filename_to_contents(filename);
+                        } catch(err) {
+                            throw new Error(err,current.line);
+                        }
+                        contents = tokenize(contents,filename);
+//                        console.log("contents of file:",contents);
+                        token_array.shift();
+                        token_array.shift();
+                        if (contents !== undefined){
+                            token_array = contents.concat(token_array);
+                        }
+//                        console.log("updated token arary:",token_array);
+                        
+                    } else {
+//                        console.log("file already included, skipping");
+                    }
+                }
+            }
+            new_token_array.push(token_array.shift());
+        }
+        return new_token_array;
+    }
     
     
 /*****************************
@@ -491,30 +560,31 @@ include (modular): given the token after an .include, include the specified file
     --returns: the tokenized contents of the file, if applicable, otherwise
                 returns undefined
 ******************************/
-    function include(file,included_files){
-        if (!(file.type == "string")){
-                throw "Filename expected";
-        } else {
-            var filename = file.token;
-            if (included_files.indexOf(filename)==-1) {
-//                        console.log("file not yet included :)");
-                included_files.push(filename);
-                
-                var contents = filename_to_contents(filename);
-                contents = tokenize(contents,filename);
-              return contents;
-            } 
-        }
-    }
+//    function include(file,included_files){
+//        if (!(file.type == "string")){
+//                throw "Filename expected";
+//        } else {
+//            var filename = file.token;
+//            if (included_files.indexOf(filename)==-1) {
+////                        console.log("file not yet included :)");
+//                included_files.push(filename);
+//                
+//                var contents = filename_to_contents(filename);
+//                contents = tokenize(contents,filename);
+//              return contents;
+//            } 
+//        }
+//    }
     
 /***************************
 Exports
 ****************************/
     return {parse:parse,
             tokenize:tokenize,
-            parse1:parse1,
+//            parse1:parse1,
             include:include,
-            parse_scaled:parse_scaled
+//            parse_scaled:parse_scaled,
+            parse_number:parse_number
               }
 }());
 
