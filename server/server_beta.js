@@ -42,29 +42,10 @@ my_http.createServer(function(request,response){
         }
         else{
            if(query==='filelist'){
-      // no file name, return directory listing
-              filesys.readdir(full_path,function(err,files) {
-                if (err){
-                  console.log(err);//TODO why is next there
-                }
-                console.log(files)
-                var fileList={}
-                for(var i=0; i <files.length; i++){
-                  var name = files[i];
-                  if(name.indexOf('.')<0){
-                    var new_path = path.join(full_path, name)
-                    console.log(new_path)
-                    fileList[name]= filesys.readdirSync(new_path);
-                    //synchronois return of lsit of subfiles, only need to go one level down
-                  }else{
-                    fileList[name]=[];
-                  }
-
-                }
-                console.log(fileList);
-
-                send_json(JSON.stringify(fileList));
-            });
+            // no file name, return directory listing
+            var fileList=recurseThroughFolders(full_path);
+            console.log('returned from fileList');
+            send_json(JSON.stringify(fileList));
           }
           else if (query==='file'){
             console.log(full_path);
@@ -99,21 +80,37 @@ my_http.createServer(function(request,response){
         });
       }
       else{
-        filesys.mkdirSync(full_path, function(err){
-          if(err){
-            throw err;
-          }
-          else{
-            saveFile(full_path);
-          }
-        });
+        filesys.mkdirSync(user_path);
+        
       }
     });
   }
-    
-    
 
-    function send_json(data) {
+  function recurseThroughFolders(curr_path){
+      console.log(curr_path);
+      console.log('line 98');
+      var files=filesys.readdirSync(curr_path);
+      var fileList={};
+      for(var i=0; i <files.length; i++){
+          var name = files[i];
+          if(name.indexOf('.')<0){
+            var new_path = path.join(curr_path, name)
+            console.log(new_path)
+            fileList[name]= recurseThroughFolders(new_path);
+
+            //synchronois return of list of subfiles, only need to go one level down
+          }else{
+            fileList[name]=[];
+          }
+
+        }
+        console.log('line 114');
+      console.log(fileList);
+      return(fileList);
+  }
+  
+
+  function send_json(data) {
       response.writeHead(200,{
         'Content-Length': data.length,
         'Content-Type': 'application/json',

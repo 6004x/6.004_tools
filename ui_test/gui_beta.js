@@ -4,95 +4,88 @@ var GUI=new function(){
     var DEFAULT_SERVER='http://localhost:8080';
     var modelFolder;//TODO implement model going ahead
 
-    function getFileList(parentNode, path){
+    function getFileList(parentNode){
 
-        console.log(path)
         username= $('#user_input').val();
         
         if(username){
-            console.log(username);
-            sendAjaxRequest(path,null,'json',username, 'filelist', function(fl){addFiles(fl, parentNode,path);});
+            sendAjaxRequest('/',null,'json',username, 'filelist', function(fl){addFiles(fl, parentNode,'/');});
         }
     }
     function addFiles(fileList, parentNode, parentPath){
         //testing whether username chenged or not, to change data structure
+
         if (username!=$('.testDiv').text()){
             $('.testDiv').text(username);
             parentNode.html('');
             console.log('username changed');
         }
-        console.log(fileList);
 
         for(var name in fileList){
             subList=fileList[name];
-            
             var collapseName='collapse'+name.replace(' ','_');
             //collapseName is name without whitespace
-            console.log(collapseName);
-            console.log(subList);
+           
             if(name.indexOf('.')>-1){
-                console.log('.');
                 var listVar=$('<li></li>').attr('data-parent', parentPath).append('<a href=#>'+name+'</a>');
                 listVar.on('click', getFile);
                 parentNode.append(listVar);
             }
-            else{
-                addSubFolder(parentNode, parentPath, collapseName, name, subList)
+            else {
+                //it is a folder, we must go deeper
+
+                    var folderName=name;
+                    var collapserDiv=addDiv().addClass('folderContents');
+                    var collapser=$('<li class=folderName data-toggle=collapse href=#'+collapseName+'></li>');
+                    collapserDiv.append(collapser);
+
+                    collapser.append('<a >'+'<i class="icon-minus float-left open_indicator"></i>'+folderName+'</a>');
+                    collapser.find('i').addClass(collapseName);
+
+                    var subListUL=$('<ul id='+collapseName+' class ="collapse in"></ul>');
+
+                    subListUL.on('shown', function(e){
+                        var id=$(e.currentTarget).attr('id');
+                        var arrow = sideBarWrapper.find('.folderName a>i ');
+                        arrow=arrow.filter(function(i, e){
+                            return $(e).hasClass(id);
+                        });
+                        if(arrow.hasClass('icon-plus')){
+                            arrow.addClass('icon-minus')
+                            arrow.removeClass('icon-plus')
+                        }                            
+                        e.stopPropagation();
+                    });
+                    subListUL.on('hidden', function(e){
+                        var id=$(e.currentTarget).attr('id');
+                        var arrow = sideBarWrapper.find('.folderName a>i ');
+                        arrow=arrow.filter(function(i, e){
+                            return $(e).hasClass(id);
+                        });
+                        if(arrow.hasClass('icon-minus')){
+                            arrow.addClass('icon-plus');
+                            arrow.removeClass('icon-minus');
+                        }
+                        e.stopPropagation();
+                    });
+
+                    if(Object.keys(subList).length>0){
+                        //if the subfolder has files inside
+                        addFiles(subList, subListUL,parentPath+folderName+'/');
+                    }
+                    else{
+                        //the subfolder has no files inside, it's an empty folder
+                        console.log(name+ ' has no sublists');
+                        subListUL.append('[empty folder]');
+                    }
+                    collapserDiv.append(subListUL);
+                    parentNode.append(collapserDiv);
             }
+
 
         }
     }
 
-
-    function addSubFolder(parentNode, parentPath, collapseName, folderName, subList){
-        var collapserDiv=addDiv().addClass('folderContents');
-        var collapser=$('<li class=folderName data-toggle=collapse href=#'+collapseName+'></li>');
-        collapserDiv.append(collapser);
-
-        collapser.append('<a >'+'<i class="icon-minus float-left open_indicator"></i>'+folderName+'</a>');
-        collapser.find('i').addClass(collapseName+'_collapser')
-
-        var subListUL=$('<ul id='+collapseName+' class ="collapse in"></ul>');
-        //subListUL.addClass('folderContents');
-        subListUL.on('shown', function(e){
-            var arrow = collapser.find('.'+collapseName+'_collapser');
-            if(arrow.hasClass('icon-plus')){
-                arrow.addClass('icon-minus')
-                arrow.removeClass('icon-plus')
-            }                            
-        });
-        subListUL.on('hidden', function(e){
-            var arrow = collapser.find('.'+collapseName+'_collapser');
-            console.log(arrow);
-            if(arrow.hasClass('icon-minus')){
-                arrow.addClass('icon-plus');
-                arrow.removeClass('icon-minus');
-            }
-        });
-        var foldered=false;
-
-        for(var i=0;i<subList.length; i++){
-                var sub_name=subList[i];
-                var listVar=$('<li></li>').attr('data-parent',parentPath+'/'+folderName);           
-                if(sub_name.indexOf('.')>-1){
-                    listVar.append('<a href=# >'+sub_name+'</a>');
-                    listVar.on('click', getFile);
-                    subListUL.append(listVar);
-                }
-                else if(!foldered){
-                    getFileList(listVar, parentPath+'/'+folderName);
-                    foldered=true;
-                    subListUL.append(listVar);
-                }else
-                    console.log('foldered');
-            }
-        // if(subList.length==0){
-        //     sublistUL.append('[empty directory]');
-        // }
-        collapserDiv.append(subListUL)
-        parentNode.append(collapserDiv);
-
-    }
     function getFile(e){
             var node=$(e.currentTarget);
             console.log(node);
@@ -100,9 +93,9 @@ var GUI=new function(){
             var folderName=unescape(node.attr('data-parent'));
             console.log(fileName);
             if(folderName!='undefined'){
-                fileName=folderName+'/'+fileName;
+                fileName=folderName+fileName;
             }
-            console.log(folderName+'/'+fileName);
+            console.log(fileName);
             sendAjaxRequest(fileName,null, 'text', username, 'file', function(file){displayFile(file, fileName);});
         }
 
@@ -112,12 +105,19 @@ var GUI=new function(){
     }
 //current tab is file name
 //.content get content of current tab
-    function saveCurrentFile(){
+    function saveCurrentFile(callbackFunction){
         var currentFileName=editor.currentTab();
         var currentFileData=editor.content();
+        console.log(currentFileData);
         if(currentFileName){
             console.log('trying to save '+currentFileName);
-            sendAjaxRequest(currentFileName, currentFileData,'json', username, 'saveFile', function(fileObj){console.log(fileObj.status+' saved!')})
+            sendAjaxRequest(currentFileName, currentFileData,'json', username, 'saveFile', function(fileObj){
+                if(fileObj.status=='saved')
+                    console.log(fileObj.name+' saved!');
+                else
+                    console.log(fileObj.name+' did not save');
+                callbackFunction(fileObj);
+            });
         }
     }
 
@@ -137,8 +137,9 @@ var GUI=new function(){
         sideBarWrapper.append(buttonDiv);
         sideBarWrapper.append(sideBarNav);
 
-        editor = new Editor(editorWrapper, 'tsim');
+        editor = new Editor(editorWrapper, 'jsim');
         editor.addButtonGroup([new ToolbarButton('Run', _.identity, 'Runs your program!'), new ToolbarButton('Export'), new ToolbarButton('Save', saveCurrentFile, 'Saves the current File')]);
+        editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
         //editor.openTab('foo.uasm', 'This is a file!');
         var set_height = function() {
                 editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
@@ -150,17 +151,19 @@ var GUI=new function(){
         wrapper.append(editorWrapper);
         var tempName=$("<h1 class='testDiv'>testing</h1>INPUT: <input id = 'user_input' type='text' title='username'></input><button class='btn-info' id='user_button'>get filelist</button>");
 
+                
 
         rootNode.append(tempName);
-        rootNode.append(wrapper);
-        $('#user_button').on('click', function(e){
-            console.log('button');
-            getFileList(rootNode.find('.filePaths'), '');
-        });
-            
-        
-        $('.btn').tooltip({'placement': 'bottom'});
 
+        rootNode.append(wrapper);
+        
+        $('#user_button').on('click', function(e){
+                console.log('button');
+                rootNode.find('.filePaths').html('');
+                getFileList(rootNode.find('.filePaths'));
+            });
+        $('.btn').tooltip({'placement': 'bottom'});
+        rootNode=wrapper;
     }
     function addDiv(){
         return $('<div></div>');
@@ -203,7 +206,7 @@ var GUI=new function(){
             buttonDiv.append(buttonFour);
             buttonTwo.on('click', function(e){
                 $('.filePaths').html('');
-                getFileList(rootNode.find('.filePaths'), '');
+                getFileList(rootNode.find('.filePaths'));
             });
             buttonZero.on('click', function(e){
                 hideNavBar();
@@ -212,46 +215,42 @@ var GUI=new function(){
     }
     function hideNavBar(){
         sideBarWrapper.css('position', 'relative');
-        var width=-(sideBarWrapper.width()-25);
+        var width=-(sideBarWrapper.width());
 
         console.log(width);
         sideBarWrapper.animate({'left' :width}, 500, 'swing', function(){
-        //    sideBarWrapper.detach()
+                sideBarWrapper.detach()
                 addFifthButton();
 
         });
-        editorWrapper.animate({'left' :width}, 500, 'swing', function(){
+        var offset=-editorWrapper.offset().left+parseInt(editorWrapper.css('margin-left'));
+        editorWrapper.animate({'left' :offset}, 500, 'swing', function(){
             editorWrapper.removeClass('span10');
-            editorWrapper.addClass('float-right');
-            editorWrapper.css('left',25);
+            editorWrapper.css('left', 0);
         });
 
         function addFifthButton(){
-            sideBarWrapper.find('.buttonDiv button.commit')
-                .attr({
-                    'data-original-title':"Show Folders"
-                    });
-            sideBarWrapper.find('button.commit i').removeClass().addClass('icon-chevron-right');
-            sideBarWrapper.find('button.commit').off();
-            sideBarWrapper.find('.buttonDiv button.commit').on('click', showNavBar);
+            
+
         }
     }
     function showNavBar(){
-        var width=(sideBarWrapper.width()-25);
-        sideBarWrapper.animate({'left' :0}, 500, 'swing', function(){
-            sideBarWrapper.find('.buttonDiv button.commit')
-            .attr({
-                    'data-original-title':"Commit and Close"
-                    });
-            sideBarWrapper.find('button.commit i').removeClass().addClass('icon-off');
-            sideBarWrapper.find('button.commit').off();
-            sideBarWrapper.find('.buttonDiv button.commit').on('click', commit);
-            //bug, clicks add up to each other TODO: fix
-        });
-        editorWrapper.animate({'left' :0}, 500, 'swing', function(){
+        if(sideBarWrapper.parent().length==0){
+            console.log(sideBarWrapper.parent());
+            rootNode.prepend(sideBarWrapper);    
+            var width=(sideBarWrapper.width());
             editorWrapper.addClass('span10');
+            editorWrapper.css('left', -width);
+            console.log(width);
             editorWrapper.removeClass('float-right');
-        });
+            
+            sideBarWrapper.animate({'left' :0}, 500, 'swing', function(){
+                
+            });
+            editorWrapper.animate({'left' :0}, 500, 'swing', function(){
+                
+            });
+        }
     }
     function commit(){
         console.log('commited?');
@@ -260,7 +259,11 @@ var GUI=new function(){
         
     function sendAjaxRequest(filepath, fileData, dataType, username, query, callbackFunction, urlparam){
         url=DEFAULT_SERVER||urlparam; //default server
-        fileData='none'||fileData
+
+        if(!fileData)
+            fileData='none';
+
+        console.log(fileData);
         console.log(username);
         url+=filepath;
 
