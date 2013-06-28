@@ -46,12 +46,12 @@ my_http.createServer(function(request,response){
             console.log('returned from fileList');
             send_json(JSON.stringify(fileList));
           }
-          else if (query==='file'){
+          else if (query==='getFile'){
             console.log(full_path);
             filesys.exists(full_path,function(exists) {
               if (exists){
                 console.log('send_file');
-                send_file(full_path);
+                send_file(file_path, full_path);
 
               } 
               else {
@@ -75,7 +75,7 @@ my_http.createServer(function(request,response){
     filesys.exists(user_path, function(exists){
       if(exists){
         filesys.exists(full_path, function(exists){
-            save_file(full_path, fdata);
+            save_file(file_path, full_path, fdata);
         });
       }
       else{
@@ -119,26 +119,29 @@ my_http.createServer(function(request,response){
       response.end(data);
       console.log('data sent');
     }
-    function send_file(fname) {
-      filesys.readFile(fname,'utf8',function(err,data) {
+    function send_file(file_path, full_path) {
+      filesys.readFile(full_path,'utf8',function(err,data) {
         if (err){console.log(err);
           throw err;
         }
-        send_json(data);
+        send_json(JSON.stringify({
+          name:file_path,
+          data:data,
+        }));
       });
     }
-    function save_file(fname, fdata) {
-      filesys.writeFile(fname, fdata, 'utf8', function (err) {
+    function save_file(file_path, full_path, fdata) {
+      filesys.writeFile(full_path, fdata, 'utf8', function (err) {
         if (err){
           send_json(JSON.stringify({
-            name:fname,
+            name:file_path,
             status:'not saved',
             data:fdata,
           }));
         }
         console.log(fname+ ' saved!');
         send_json(JSON.stringify({
-          name:fname,
+          name:file_path,
           status:'saved',
         }));
 

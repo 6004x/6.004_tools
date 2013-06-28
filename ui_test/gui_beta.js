@@ -1,16 +1,22 @@
 var GUI=new function(){
     var username;
     var rootNode, editor, sideBarWrapper, editorWrapper;
-    var DEFAULT_SERVER='http://localhost:8080';
-    var modelFolder;//TODO implement model going ahead
     var openFiles=[];
+    var fileSystem;
     function getFileList(parentNode){
 
         username= $('#user_input').val();
         
         if(username){
-            sendAjaxRequest('/',null,'json',username, 'filelist', function(fl){addFiles(fl, parentNode,'/');});
+            fileSystem.getFileList(username, function(data, status){
+                console.log(data);
+                console.log(status);
+                addFiles(data, parentNode, '/');
+            }, noServer);
         }
+    }
+    function noServer(){
+        alert('there is no server online');
     }
     function addFiles(fileList, parentNode, parentPath){
         //testing whether username chenged or not, to change data structure
@@ -71,6 +77,7 @@ var GUI=new function(){
 
                     if(Object.keys(subList).length>0){
                         //if the subfolder has files inside
+                        //recursively fill the tree out
                         addFiles(subList, subListUL,parentPath+folderName+'/');
                     }
                     else{
@@ -96,13 +103,18 @@ var GUI=new function(){
                 fileName=folderName+fileName;
             }
             console.log(fileName);
-            sendAjaxRequest(fileName,null, 'text', username, 'file', function(file){displayFile(file, fileName);});
+            fileSystem.getFile(username, fileName, function(file, status){
+                console.log(status);
+                displayFile(file);
+            });
+            
         }
 
-    function displayFile(file, path){
+    function displayFile(file){
         console.log('files');
-        editor.openTab(path, file, true);
-        openFiles.push({fname:path, fdata:file});
+        console.log(file.data);
+        editor.openTab(file.name, file.data, true);
+        openFiles.push({name:file.name, data:file.data});
     }
     function displaySave(file){
         var alert=addDiv().addClass('alert alert-success fade fade-in');
@@ -113,27 +125,26 @@ var GUI=new function(){
     }
 //current tab is file name
 //.content get content of current tab
-    function saveCurrentFile(callbackFunction){
-        console.log(callbackFunction);
-        callbackFunction=displaySave;
-        var currentFileName=editor.currentTab();
-        var currentFileData=editor.content();
-        console.log(currentFileData);
-        if(currentFileName){
+    function saveCurrentFile(){
+        var file=new Object();
+        file.name=editor.currentTab();
+        file.data=editor.content();
+        console.log(file);
+        if(file.name){
             console.log('trying to save '+currentFileName);
-            sendAjaxRequest(currentFileName, currentFileData,'json', username, 'saveFile', function(fileObj){
-                console.log(fileObj);
-                if(fileObj.status=='saved')
-                    console.log(fileObj.name+' saved!');
+            fileSystem.saveFile(username, file, function(file, status){
+                console.log(file.name);
+                if(file.status=='saved')
+                    console.log(file.name+' saved!');
                 else
-                    console.log(fileObj.name+' did not save');
-                callbackFunction(fileObj);
+                    console.log(file.name+' did not save');
+                displaySave(file);
             });
         }
 
     }
 
-    function setup(root){
+    function setup(root, fileSys){
         rootNode=$(root);
         var wrapper=addDiv().addClass('row-fluid wrapper');
         sideBarWrapper=addDiv().addClass('span2 sideBarWrapper');
@@ -163,6 +174,7 @@ var GUI=new function(){
 
         rootNode.append(tempName);
 
+        fileSystem=fileSys;
         setSyntax();
         rootNode.append(wrapper);
         
@@ -203,7 +215,7 @@ var GUI=new function(){
             $.each(openFiles, function(i, file){
                 console.log(i)
                 console.log(file)
-                editor.openTab(file.fname, file.fdata, true);
+                editor.openTab(file.name, file.data, true);
             });
 
     }
@@ -294,41 +306,14 @@ var GUI=new function(){
     function commit(){
         console.log('commited?');
     }
-    
-        
-    function sendAjaxRequest(filepath, fileData, dataType, username, query, callbackFunction, urlparam){
-        url=DEFAULT_SERVER||urlparam; //default server
-
-        if(!fileData)
-            fileData='none';
-
-        console.log(fileData);
-        console.log(username);
-        url+=filepath;
-
-        var req=$.ajax({
-                url:url, 
-                data:{dummy:'dummy', username:username,query:query, fdata:fileData},
-                username:username,
-                dataType:dataType,
-            });
-        req.done(callbackFunction);
-        req.fail(failResponse);
-        req.always(function(r, status){
-                //var func = JSON.parse(r);
-                console.log(status);
-        });
-    }
-    function failResponse(req, status, error){
-        alert('failed response'+status+'<br/> '+error);
-    }
 
     return {setup:setup};
 }();
 
 
 $(document).ready(function (){
-    GUI.setup('.wrapperDiv');
+    fileSystem.setup('http://localhost:8080');
+    GUI.setup('.wrapperDiv', fileSystem);
     $('#user_input').val('dontony');
 });
         
