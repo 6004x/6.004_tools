@@ -6,12 +6,24 @@
 // parsers more succinct.
 
 // The character stream used by a mode's parser.
-function StringStream(string) {
+function StringStream(fstream) {
     this.pos = this.start = 0;
-    this.string = string;
+    this.fstream = fstream;
+    this.string = this.fstream.line();
 }
 
 StringStream.prototype = {
+    next_line: function() {
+        this.pos = this.start = 0;
+        this.string = this.fstream.line();
+        if(!this.string) {
+            this.string = '';
+            return false;
+        }
+        return true;
+    },
+    line_number: function() { return this.fstream.line_number; },
+    file: function() { return this.fstream.file; },
     eol: function() {return this.pos >= this.string.length;},
     sol: function() {return this.pos == 0;},
     peek: function() {return this.string.charAt(this.pos) || undefined;},
@@ -56,5 +68,20 @@ StringStream.prototype = {
             return match;
         }
     },
-    current: function(){return this.string.slice(this.start, this.pos);}
+    current: function(){return this.string.slice(this.start, this.pos);},
+    column: function(){return this.pos+1;}
+};
+
+function FileStream(string, filename) {
+    this.line_number = 0;
+    this.file = filename;
+    this.lines = string.split("\n");
+};
+FileStream.prototype = {
+    line: function() {
+        return this.lines[this.line_number++];
+    },
+    eof: function() {
+        return this.line_number >= this.lines.length;
+    }
 };
