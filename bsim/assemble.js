@@ -1,4 +1,4 @@
-//(function() {
+(function() {
     var root = this; // = window in a browser
 
     var Symbol = function(name, value, kind) {
@@ -89,7 +89,7 @@
         return NaN;
     }
 
-    var readNumber = function(stream) {
+    var readNumber = function(stream, optional) {
         // This reads more than just sane numbers so we can actually see errors.
         // Anything this matches should be a number, though, so we can safely error
         // out if we can't extract a number from a match.
@@ -98,7 +98,7 @@
         token = token[0];
         var num = parseNumber(token);
         // If whatever we had was Not a Number, then it is a syntax error.
-        if(isNaN(num)) {
+        if(isNaN(num) && !optional) {
             throw new SyntaxError("Incomprehensible number " + token + ". Acceptable bases are hex (0x…), octal (0…), binary (0b…) and decimal.", stream);
         }
 
@@ -108,6 +108,7 @@
     var readSymbol = function(stream) {
         stream.eatSpace();
         var match = stream.match(/^[\$\.@A-Z_][\$\.@A-Z0-9_]*/i);
+        
         if(match) {
             return match[0];
         } else {
@@ -237,7 +238,7 @@
                 }
             } else {
                 // It could be an operation.
-                var op = stream.match(/^(?:[\+\-\/\*]|<<|>>)/);
+                var op = stream.match(/^(?:[\+\-\/\*%]|<<|>>)/);
                 if(op) {
                     // Comments are not division!
                     if(op[0] == '/' && stream.peek() == '/') {
@@ -317,6 +318,10 @@
         this.file = file;
         this.line = line;
     };
+    Align.parse = function(stream) {
+        var expression = Expression.parse(stream);
+        return new Align(expression, stream.file(), stream.line_number());
+    }
 
     function AssemblyString(text, null_terminated, file, line) {
         this.text = text;
@@ -350,8 +355,7 @@
     Symbol.Assigned = 1;
     Symbol.Label = 2;
 
-    var Assembler = function(source) {
-        var mSource = source;
+    var Assembler = function() {
         var mSymbols = {};
         var mDot = Symbol('.', 0);
 
@@ -446,7 +450,8 @@
 
                     // Pull out a token. Be ready to put it back, though.
                     var start_pos = stream.pos;
-                    var token = readSymbol(stream, stream.file(), stream.line_number());
+                    var token = readSymbol(stream);
+                    
                     stream.eatSpace();
                     if(token) {
                         // Check for commands
@@ -462,6 +467,9 @@
                                 break;
                             case "macro":
                                 fileContent.push(parse_macro(stream));
+                                break;
+                            case "align":
+                                fileContent.push(Align.parse(stream));
                                 break;
                             default:
                                 stream.skipToEnd();
@@ -480,6 +488,8 @@
 
                         // Or assigning something
                         if(stream.peek() == '=') {
+                            
+                            stream.next();
                             var expression = Expression.parse(stream);
                             var assignment = new Assignment(token, expression, stream);
                             fileContent.push(assignment);
@@ -522,18 +532,39 @@
             } while(allow_multiple_lines && stream.next_line());
             return fileContent;
         }
-        try {
-            var stream = new StringStream(new FileStream(source, "foo.uasm"));
-            return parse(stream);
-        } catch(e) {
-            if(e instanceof SyntaxError) {
-                console.log(e.toString());
-                // console.log(stream.next_line());
-            } else {
-                throw e;
+
+        // var run_assembly = function() {
+        //     mDot
+        // }
+
+        // try {
+        //     var stream = new StringStream(new FileStream(source, "foo.uasm"));
+        //     return parse(stream);
+        // } catch(e) {
+        //     if(e instanceof SyntaxError) {
+        //         console.log(e.toString());
+        //         // console.log(stream.next_line());
+        //     } else {
+        //         throw e;
+        //     }
+        // }
+
+        this.assemble = function(file, content, callback) {
+            var stream = new StringStream(new FileStream(content, file));
+            try {
+                var content = parse(stream);
+            } catch(e) {
+                if(e instanceof SyntaxError) {
+                    callback(false, e);
+                    return;
+                } else {
+                    throw e;
+                }
             }
+            console.log(content);
+            callback(true);
         }
     };
 
     root.BetaAssembler = Assembler;
-//})();
+})();

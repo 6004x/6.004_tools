@@ -16,7 +16,7 @@ StringStream.prototype = {
     next_line: function() {
         this.pos = this.start = 0;
         this.string = this.fstream.line();
-        if(!this.string) {
+        if(this.string === undefined) {
             this.string = '';
             return false;
         }

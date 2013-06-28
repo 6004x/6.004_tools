@@ -1,14 +1,19 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Assembler Test</title>
+        <title>Editor Test</title>
         <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script src="../editor/external/codemirror.js"></script>
+        <script src="../editor/editor.js"></script>
+        <script src="../editor/external/codemirror-extensions.js"></script>
+        <script src="../editor/modes/uasm.js"></script>
         <script src="external/sstream.js"></script>
         <script src="assemble.js"></script>
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
         <style type="text/css">
             .tab-pane {
                 border-bottom: 1px solid #ddd;
@@ -20,6 +25,43 @@
             }
         </style>
     </head>
-    <body>  Foo.
+    <body>
+        <div class="container">
+            <div class="masthead">
+                <h1>BSim Editor Test</h1>
+            </div>
+            <div id="editor-test"></div>
+        </div>
+        <script type="text/javascript">
+            // Make an editor
+            var editor = new Editor('#editor-test', 'uasm');
+
+            var do_assemble = function() {
+                var filename = editor.doc('foo.uasm').name;
+                var content = editor.content();
+                var assembler = new BetaAssembler();
+                editor.clearErrors();
+                assembler.assemble(filename, content, function(success, error) {
+                    if(!success) {
+                        editor.markErrorLine(filename, error.message, error.line - 1, error.column);
+                    } else {
+                        alert("Assembled successfully!")
+                    }
+                });
+            }
+
+            // Add some buttons to it
+            editor.addButtonGroup([new ToolbarButton('Assemble', do_assemble, 'Runs your program!'), new ToolbarButton('Export')]);
+            editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
+                editor.clearErrors();
+            })]);
+            // And a couple of tabs.
+            editor.openTab('foo.uasm', '// Stuff goes here');
+            var set_height = function() {
+                editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
+            }
+            set_height();
+            $(window).resize(set_height); // Update the height whenever the browser window changes size.
+        </script>
     </body>
 </html>
