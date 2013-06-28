@@ -3,7 +3,7 @@ var GUI=new function(){
     var rootNode, editor, sideBarWrapper, editorWrapper;
     var DEFAULT_SERVER='http://localhost:8080';
     var modelFolder;//TODO implement model going ahead
-
+    var openFiles=[];
     function getFileList(parentNode){
 
         username= $('#user_input').val();
@@ -102,16 +102,27 @@ var GUI=new function(){
     function displayFile(file, path){
         console.log('files');
         editor.openTab(path, file, true);
+        openFiles.push({fname:path, fdata:file});
+    }
+    function displaySave(file){
+        var alert=addDiv().addClass('alert alert-success fade fade-in');
+        alert.append($('<button type="button" class="close" data-dismiss="alert" href=#>&times;</button>'
+            +'<div><strong>Saved!</strong> '+file.name+' has been saved successfully</div>'));
+        rootNode.prepend(alert);
+
     }
 //current tab is file name
 //.content get content of current tab
     function saveCurrentFile(callbackFunction){
+        console.log(callbackFunction);
+        callbackFunction=displaySave;
         var currentFileName=editor.currentTab();
         var currentFileData=editor.content();
         console.log(currentFileData);
         if(currentFileName){
             console.log('trying to save '+currentFileName);
             sendAjaxRequest(currentFileName, currentFileData,'json', username, 'saveFile', function(fileObj){
+                console.log(fileObj);
                 if(fileObj.status=='saved')
                     console.log(fileObj.name+' saved!');
                 else
@@ -119,6 +130,7 @@ var GUI=new function(){
                 callbackFunction(fileObj);
             });
         }
+
     }
 
     function setup(root){
@@ -137,24 +149,21 @@ var GUI=new function(){
         sideBarWrapper.append(buttonDiv);
         sideBarWrapper.append(sideBarNav);
 
-        editor = new Editor(editorWrapper, 'jsim');
-        editor.addButtonGroup([new ToolbarButton('Run', _.identity, 'Runs your program!'), new ToolbarButton('Export'), new ToolbarButton('Save', saveCurrentFile, 'Saves the current File')]);
-        editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
-        //editor.openTab('foo.uasm', 'This is a file!');
-        var set_height = function() {
-                editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
-        }
-        set_height();
-        $(window).resize(set_height);
-
-        wrapper.append(sideBarWrapper);
-        wrapper.append(editorWrapper);
-        var tempName=$("<h1 class='testDiv'>testing</h1>INPUT: <input id = 'user_input' type='text' title='username'></input><button class='btn-info' id='user_button'>get filelist</button>");
-
-                
+        
+        var rowOne=addDiv().addClass('row').append(sideBarWrapper).append(editorWrapper);
+        wrapper.append(rowOne);
+        var tempName=$("<h1 class='testDiv'>testing</h1>USERNAME:"
+            +"<input id = 'user_input' type='text' title='username'></input>"
+            +"<button class='btn btn-info' id='user_button'>get filelist</button>"
+            +"<div class = 'modeButtons btn-group'>"
+            +"<button class='btn btn-success' id='jsim'><img src=js.png></img>IM</button>"
+            +"<button class='btn btn-success' id='bsim'><em>&beta;</em>sim</button>"
+            +"<button class='btn btn-success' id='tmsim'>TMsim</button></div>");
+      
 
         rootNode.append(tempName);
 
+        setSyntax();
         rootNode.append(wrapper);
         
         $('#user_button').on('click', function(e){
@@ -162,11 +171,41 @@ var GUI=new function(){
                 rootNode.find('.filePaths').html('');
                 getFileList(rootNode.find('.filePaths'));
             });
+        $('#jsim').on('click', function (e){setSyntax('jsim');});
+        $('#bsim').on('click', function (e){setSyntax('bsim');});
+        $('#tmsim').on('click', function (e){setSyntax('tmsim');});
+
         $('.btn').tooltip({'placement': 'bottom'});
         rootNode=wrapper;
     }
     function addDiv(){
         return $('<div></div>');
+    }
+    function setSyntax(mode){
+        mode=mode||'jsim';
+        console.log(mode);
+        editorWrapper.html('');
+        editor = new Editor(editorWrapper, 'jsim');
+        editor.addButtonGroup([new ToolbarButton('Run', _.identity, 'Runs your program!'), 
+            new ToolbarButton('Export'), 
+            new ToolbarButton('Save', saveCurrentFile, 'Saves the current File')]);
+
+        editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
+
+
+
+        var set_height = function() {
+                editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
+        }
+        set_height();
+        $(window).resize(set_height);
+        if(openFiles.length>0)
+            $.each(openFiles, function(i, file){
+                console.log(i)
+                console.log(file)
+                editor.openTab(file.fname, file.fdata, true);
+            });
+
     }
     function addButtons(buttonDiv){   
             var buttonZero=$('<button></button>').addClass('btn hideNavBar').attr({

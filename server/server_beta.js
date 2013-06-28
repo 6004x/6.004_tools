@@ -15,13 +15,12 @@ my_http.createServer(function(request,response){
     var data=qs.parse(request.url);
     var user=data['username'];
     var query=data['query'];
-    console.log(data);
-
-    console.log(root_path);
-    sys.puts(user);
-    sys.puts(request.url);
-    sys.puts(file_path);
-    sys.puts(query)
+    // console.log(data);
+    // console.log(root_path);
+    // sys.puts(user);
+    // sys.puts(request.url);
+    // sys.puts(file_path);
+    // sys.puts(query)
     if(user){
       user_path=path.join(root_path, user);
       full_path=path.join(user_path,file_path);
@@ -80,8 +79,8 @@ my_http.createServer(function(request,response){
         });
       }
       else{
-        filesys.mkdirSync(user_path);
-        
+        filesys.mkdirSync(full_path);
+        //TODO FIX THIS PATH 
       }
     });
   }
@@ -132,14 +131,14 @@ my_http.createServer(function(request,response){
       filesys.writeFile(fname, fdata, 'utf8', function (err) {
         if (err){
           send_json(JSON.stringify({
-            filename:fname,
+            name:fname,
             status:'not saved',
-            fileData:fdata,
+            data:fdata,
           }));
         }
         console.log(fname+ ' saved!');
         send_json(JSON.stringify({
-          filename:fname,
+          name:fname,
           status:'saved',
         }));
 
