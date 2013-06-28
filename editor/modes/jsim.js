@@ -68,10 +68,7 @@ CodeMirror.defineMode('jsim', function() {
                 state.sol = false;
                 if(stream.peek() == '+') {
                     stream.next();
-                    if(state.last_state == 'comment') {
-                        stream.skipToEnd();
-                        return 'comment';
-                    } else if(state.last_state == 'string') {
+                    if(state.last_state == 'string') {
                         if(eatString(stream, state)) {
                             state.last_state = null;
                         }
@@ -87,12 +84,11 @@ CodeMirror.defineMode('jsim', function() {
             state.last_state = null;
             // Eat single-line comments.
             if(stream.match('//')) {
-                state.last_state = 'comment';
                 stream.skipToEnd();
                 return 'comment';
             }
             if(!state.in_args) {
-                if(stream.match(/^.(checkoff|connect|dc|end|global|include|model|mverify|op|options|plot|plotdef|subckt|ends|temp|tempdir|tran|verify)\b/i)) {
+                if(stream.match(/^.(checkoff|connect|dc|end|global|include|model|mverify|op|options|plot|plotdef|subckt|ends|temp|tempdir|tran|verify|gsubckt)\b/i)) {
                     state.in_args = true;
                     return 'keyword';
                 }
@@ -113,11 +109,12 @@ CodeMirror.defineMode('jsim', function() {
                 if(stream.match(/[a-z0-9_:\$\[\]\.#]+/i)) {
                     return 'variable-2';
                 }
+                if(stream.match(/^[()]/)) {
+                    return 'bracket';
+                }
+                if(stream.match(',')) return;
+                if(stream.match('=')) return 'operator';
             }
-            if(stream.match(/^[()]/)) {
-                return 'bracket';
-            }
-            if(stream.match(',')) return;
             // Give up
             if(!stream.eatWhile(/^[^\s()]/)) {
                 if(!stream.eatWhile(/^[^\s]/)) {

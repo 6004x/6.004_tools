@@ -9,7 +9,9 @@ var Editor = function(container, mode) {
     var mUntitledDocumentCount = 0; // The number of untitled documents (used to name the next one)
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
+
     var mMarkedLines = []; // List of lines we need to clear things from when requested.
+
 
     this.addButtonGroup = function(buttons) {
         var group = $('<div class="btn-group">');
@@ -68,6 +70,7 @@ var Editor = function(container, mode) {
     this.closeTab = function(filename) {
         closeTab(mOpenDocuments[filename]);
     };
+
 
     // These are convenience functions to save on fiddling with CodeMirror directly.
 
@@ -204,13 +207,19 @@ var Editor = function(container, mode) {
         if(mExpectedHeight) self.setHeight(mExpectedHeight);
     };
 
-    this.doc = function(filename) {
-        return mOpenDocuments[filename];
+    this.currentTab = function() {
+        return mCurrentDocument ? mCurrentDocument.name : null;
+    };
+
+    this.filenames = function() {
+        return _.pluck(mOpenDocuments, 'name');
     };
 
     // Why does doing anything vertically suck so much?
     this.setHeight = function(height) {
+
         if(!mCurrentDocument) return; // If we don't have a current document there is no height to set, so don't die over it.
+
         mExpectedHeight = height;
         mContainer.height(height);
         var offset = mCurrentDocument.el.position().top;
@@ -248,8 +257,10 @@ var Editor = function(container, mode) {
         // Do some one-time setup.
         if(!Editor.IsSetUp) {
             CodeMirror.commands.save = do_save;
+
             CodeMirror.keyMap.macDefault['Cmd-/'] = 'toggleComment';
             CodeMirror.keyMap.pcDefault['Ctrl-/'] = 'toggleComment';
+
             Editor.IsSetUp = true;
         }
     };
