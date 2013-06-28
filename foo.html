@@ -1,0 +1,21 @@
+<html>
+<head>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+<script src="highcharts/highcharts.js"></script>
+<script src="cktsim.js"></script>
+<script src="test.js"></script>
+</head>
+<body>
+<h2>CKTSIM test page</h2>
+
+<div class="cktsim" data-title="Transient analysis test: RC">
+V1 1 0 step()
+R1 1 2 1k
+C1 2 0 1n
+.tran 5u
+.plot 1
+.plot 2
+</div>
+
+</body>
+</html>

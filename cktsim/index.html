@@ -8,6 +8,15 @@
 <body>
 <h2>CKTSIM test page</h2>
 
+<div class="cktsim" data-title="Transient analysis test: RC">
+V1 1 0 step()
+R1 1 2 1k
+C1 2 0 1n
+.tran 5u
+.plot 1
+.plot 2
+</div>
+
 <div class="cktsim" data-title="AC analysis test: RC" data-analysis="ac" data-fstart="1" data-fstop="1G" data-plot="2" ac_source_name="V1">
 [{"type":"resistor","connections":{"n1":"1","n2":"2"},"properties":{"name":"R1","r":"1k"}},
  {"type":"capacitor","connections":{"n1":"2","n2":"0"},"properties":{"name":"C1","c":"1n"}},

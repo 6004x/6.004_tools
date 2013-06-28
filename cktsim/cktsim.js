@@ -25,17 +25,17 @@ var cktsim = (function() {
     // signals are just strings
     // property values -- see parse_number below
     // source values -- see parse_source below
- 
+
     // DC Analysis
     //   netlist: JSON description of the circuit
     //   returns associative array mapping node names -> DC value
     //   throws a string to report errors
     function dc_analysis(netlist) {
         if (netlist.length > 0) {
-	    var ckt = new Circuit(netlist);
+            var ckt = new Circuit(netlist);
 
             // run the analysis
-	    return ckt.dc();
+            return ckt.dc();
         }
     }
 
@@ -48,17 +48,15 @@ var cktsim = (function() {
     //   returns associative array mapping <node name> -> {magnitude: val, phase: val}
     function ac_analysis(netlist, fstart, fstop, ac_source_name) {
         var npts = 50;
-	if ((typeof fstart) == 'string')
-	    fstart = parse_number_alert(fstart);
-	if ((typeof fstop) == 'string')
-	    fstop = parse_number_alert(fstop);
+        if ((typeof fstart) == 'string') fstart = parse_number_alert(fstart);
+        if ((typeof fstop) == 'string') fstop = parse_number_alert(fstop);
 
-	//console.log(fstart,fstop,ac_source_name);
+        //console.log(fstart,fstop,ac_source_name);
 
         if (netlist.length > 0) {
             var ckt = new Circuit(netlist);
-	    return ckt.ac(npts, fstart, fstop, ac_source_name);
-	}
+            return ckt.ac(npts, fstart, fstop, ac_source_name);
+        }
     }
 
     // Transient analysis
@@ -70,29 +68,27 @@ var cktsim = (function() {
     //      until simulation is complete, results are undefined
     // results are associative array mapping node name -> array of voltages/currents
     //   includes _time_ -> array of simulation times at which values were measured
-    function transient_analysis(netlist, tstop, probe_names,progress_callback) {
-	if ((typeof tstop) == 'string')
-	    tstop = parse_number_alert(tstop);
+    function transient_analysis(netlist, tstop, probe_names, progress_callback) {
+        if ((typeof tstop) == 'string') tstop = parse_number_alert(tstop);
 
-	if (netlist.length > 0 && tstop !== undefined) {
-	    var ckt = new Circuit(netlist);
+        if (netlist.length > 0 && tstop !== undefined) {
+            var ckt = new Circuit(netlist);
 
-	    var progress = {};
-	    progress.probe_names = probe_names,   // node names for LTE check
-	    progress.update_interval = 250;	// in milliseconds
-	    progress.finish = function(results) {
-		progress_callback(undefined,results);
-	    }
-	    progress.stop_requested = false;
-	    progress.update = function(percent_complete) {    // 0 - 100
-		// invoke the callback which will return true if the
-		// simulation should halt.
-		if (progress_callback(percent_complete,undefined))
-		    progress.stop_requested = true;
-	    }
+            var progress = {};
+            progress.probe_names = probe_names, // node names for LTE check
+            progress.update_interval = 250; // in milliseconds
+            progress.finish = function(results) {
+                progress_callback(undefined, results);
+            }
+            progress.stop_requested = false;
+            progress.update = function(percent_complete) { // 0 - 100
+                // invoke the callback which will return true if the
+                // simulation should halt.
+                if (progress_callback(percent_complete, undefined)) progress.stop_requested = true;
+            }
 
-	    ckt.tran_start(progress,100,0,tstop);
-	}
+            ckt.tran_start(progress, 100, 0, tstop);
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -135,8 +131,7 @@ var cktsim = (function() {
 
         this.periods = 1;
 
-	if (netlist !== undefined)
-	    this.load_netlist(netlist);
+        if (netlist !== undefined) this.load_netlist(netlist);
     }
 
     // index of ground node
@@ -210,10 +205,10 @@ var cktsim = (function() {
 
     // load circuit from JSON netlist: [[device,[connections,...],{prop: value,...}]...]
     Circuit.prototype.load_netlist = function(netlist) {
-        var i,component,connections;
+        var i, component, connections;
 
         // set up mapping for all ground connections
-	this.node_map['0'] = this.gnd_node();
+        this.node_map['0'] = this.gnd_node();
 
         // process each component in the JSON netlist (see schematic.js for format)
         var found_ground = false; // is some component hooked to gnd?
@@ -237,44 +232,44 @@ var cktsim = (function() {
 
             // process the component
             var name = properties.name;
-	    switch (type) {
-	    case 'resistor':
-		this.r(connections.n1, connections.n2, properties.r, name);
-		break;
-	    case 'diode':
-		this.d(connections.anode, connections.cathode, properties.area, properties.type, name);
-		break;
-	    case 'capacitor':
-		this.c(connections.n1, connections.n2, properties.c, name);
-		break;
-	    case 'inductor':
-		this.l(connections.n1, connections.n2, properties.l, name);
-		break;
-	    case 'voltage source':
-		this.v(connections.nplus, connections.nminus, properties.value, name);
-		break;
-	    case 'current source':
-		this.i(connections.nplus, connections.nminus, properties.value, name);
-		break;
-	    case 'opamp':
-		this.opamp(connections.nplus, connections.nminus, connections.output, connections.gnd, properties.A, name);
-		break;
-	    case 'nfet':
-		this.n(connections.D, connections.G, connections.S, properties.W, properties.L, name);
-		break;
-	    case 'pfet':
-		this.p(connections.D, connections.G, connections.S, properties.W, properties.L, name);
-		break;
-	    default:
-		throw 'Unrecognized device type '+type;
-	    }
+            switch (type) {
+            case 'resistor':
+                this.r(connections.n1, connections.n2, properties.r, name);
+                break;
+            case 'diode':
+                this.d(connections.anode, connections.cathode, properties.area, properties.type, name);
+                break;
+            case 'capacitor':
+                this.c(connections.n1, connections.n2, properties.c, name);
+                break;
+            case 'inductor':
+                this.l(connections.n1, connections.n2, properties.l, name);
+                break;
+            case 'voltage source':
+                this.v(connections.nplus, connections.nminus, properties.value, name);
+                break;
+            case 'current source':
+                this.i(connections.nplus, connections.nminus, properties.value, name);
+                break;
+            case 'opamp':
+                this.opamp(connections.nplus, connections.nminus, connections.output, connections.gnd, properties.A, name);
+                break;
+            case 'nfet':
+                this.n(connections.D, connections.G, connections.S, properties.W, properties.L, name);
+                break;
+            case 'pfet':
+                this.p(connections.D, connections.G, connections.S, properties.W, properties.L, name);
+                break;
+            default:
+                throw 'Unrecognized device type ' + type;
+            }
         }
 
         if (!found_ground) { // No ground connection from some device
             throw 'Please make at least one connection to ground (node 0)';
         }
 
-	// report circuit stats
+        // report circuit stats
         var msg = (this.node_index + 1).toString() + ' nodes';
         for (var d in counts) {
             msg += ', ' + counts[d].toString() + ' ' + d;
@@ -298,7 +293,7 @@ var cktsim = (function() {
         // iteratively solve until values converge or iteration limit exceeded
         for (var iter = 0; iter < maxiters; iter += 1) {
             var i;
-            
+
             // set up equations
             load.call(this, soln, rhs); // load should be a method of Circuit
 
@@ -426,102 +421,102 @@ var cktsim = (function() {
     // initialize everything for transient analysis
     Circuit.prototype.tran_start = function(progress, ntpts, tstart, tstop) {
         var i;
-        
-	// Standard to do a dc analysis before transient
-	// Otherwise, do the setup also done in dc.
-	var no_dc = false;
-	if (this.diddc === false) {
-	    if (this.dc() === undefined) { // DC failed, realloc mats and vects.
-		//throw 'DC failed, trying transient analysis from zero.';
-		this.finalized = false; // Reset the finalization.
-		if (this.finalize() === false) progress.finish(undefined); // nothing more to do
-	    }
-	}
-	else if (this.finalize() === false) // Allocate matrices and vectors.
-	    progress.finish(undefined); // nothing more to do
 
-	// build array to hold list of results for each variable
-	// last entry is for timepoints.
-	this.response = new Array(this.N + 1);
-	for (i = this.N; i >= 0; i -= 1) {
-	    this.response[i] = [];
-	}
+        // Standard to do a dc analysis before transient
+        // Otherwise, do the setup also done in dc.
+        var no_dc = false;
+        if (this.diddc === false) {
+            if (this.dc() === undefined) { // DC failed, realloc mats and vects.
+                //throw 'DC failed, trying transient analysis from zero.';
+                this.finalized = false; // Reset the finalization.
+                if (this.finalize() === false) progress.finish(undefined); // nothing more to do
+            }
+        }
+        else if (this.finalize() === false) // Allocate matrices and vectors.
+        progress.finish(undefined); // nothing more to do
 
-	// Allocate back vectors for up to a second order method
-	this.old3sol = new Array(this.N);
-	this.old3q = new Array(this.N);
-	this.old2sol = new Array(this.N);
-	this.old2q = new Array(this.N);
-	this.oldsol = new Array(this.N);
-	this.oldq = new Array(this.N);
-	this.q = new Array(this.N);
-	this.oldc = new Array(this.N);
-	this.c = new Array(this.N);
-	this.alpha0 = 1.0;
-	this.alpha1 = 0.0;
-	this.alpha2 = 0.0;
-	this.beta0 = new Array(this.N);
-	this.beta1 = new Array(this.N);
+        // build array to hold list of results for each variable
+        // last entry is for timepoints.
+        this.response = new Array(this.N + 1);
+        for (i = this.N; i >= 0; i -= 1) {
+            this.response[i] = [];
+        }
 
-	// Mark a set of algebraic variable (don't miss hidden ones!).
-	this.ar = this.algebraic(this.C);
+        // Allocate back vectors for up to a second order method
+        this.old3sol = new Array(this.N);
+        this.old3q = new Array(this.N);
+        this.old2sol = new Array(this.N);
+        this.old2q = new Array(this.N);
+        this.oldsol = new Array(this.N);
+        this.oldq = new Array(this.N);
+        this.q = new Array(this.N);
+        this.oldc = new Array(this.N);
+        this.c = new Array(this.N);
+        this.alpha0 = 1.0;
+        this.alpha1 = 0.0;
+        this.alpha2 = 0.0;
+        this.beta0 = new Array(this.N);
+        this.beta1 = new Array(this.N);
 
-	// Non-algebraic variables and probe variables get lte
-	this.ltecheck = new Array(this.N);
-	for (i = this.N; i >= 0; i -= 1) {
-	    this.ltecheck[i] = (this.ar[i] === 0);
-	}
+        // Mark a set of algebraic variable (don't miss hidden ones!).
+        this.ar = this.algebraic(this.C);
 
-	for (var name in this.node_map) {
-	    var index = this.node_map[name];
-	    for (i = progress.probe_names.length - 1; i >= 0; i -= 1) {
-		if (name == progress.probe_names[i]) {
-		    this.ltecheck[index] = true;
-		    break;
-		}
-	    }
-	}
+        // Non-algebraic variables and probe variables get lte
+        this.ltecheck = new Array(this.N);
+        for (i = this.N; i >= 0; i -= 1) {
+            this.ltecheck[i] = (this.ar[i] === 0);
+        }
 
-	// Check for periodic sources
-	var period = tstop - tstart;
-	var per;
-	for (i = this.voltage_sources.length - 1; i >= 0; i -= 1) {
-	    per = this.voltage_sources[i].src.period;
-	    if (per > 0) period = Math.min(period, per);
-	}
-	for (i = this.current_sources.length - 1; i >= 0; i -= 1) {
-	    per = this.current_sources[i].src.period;
-	    if (per > 0) period = Math.min(period, per);
-	}
-	this.periods = Math.ceil((tstop - tstart) / period);
-	// maximum 50000 steps/period
-	this.max_nsteps = this.periods * 50000;
+        for (var name in this.node_map) {
+            var index = this.node_map[name];
+            for (i = progress.probe_names.length - 1; i >= 0; i -= 1) {
+                if (name == progress.probe_names[i]) {
+                    this.ltecheck[index] = true;
+                    break;
+                }
+            }
+        }
 
-	this.time = tstart;
-	// ntpts adjusted by numbers of periods in input
-	this.max_step = (tstop - tstart) / (this.periods * ntpts);
-	this.min_step = this.max_step / 1e8;
-	this.new_step = this.max_step / 1e6;
-	this.oldt = this.time - this.new_step;
+        // Check for periodic sources
+        var period = tstop - tstart;
+        var per;
+        for (i = this.voltage_sources.length - 1; i >= 0; i -= 1) {
+            per = this.voltage_sources[i].src.period;
+            if (per > 0) period = Math.min(period, per);
+        }
+        for (i = this.current_sources.length - 1; i >= 0; i -= 1) {
+            per = this.current_sources[i].src.period;
+            if (per > 0) period = Math.min(period, per);
+        }
+        this.periods = Math.ceil((tstop - tstart) / period);
+        // maximum 50000 steps/period
+        this.max_nsteps = this.periods * 50000;
 
-	// Initialize old crnts, charges, and solutions.
-	this.load_tran(this.solution, this.rhs);
-	for (i = this.N - 1; i >= 0; i -= 1) {
-	    this.old3sol[i] = this.solution[i];
-	    this.old2sol[i] = this.solution[i];
-	    this.oldsol[i] = this.solution[i];
-	    this.old3q[i] = this.q[i];
-	    this.old2q[i] = this.q[i];
-	    this.oldq[i] = this.q[i];
-	    this.oldc[i] = this.c[i];
-	}
+        this.time = tstart;
+        // ntpts adjusted by numbers of periods in input
+        this.max_step = (tstop - tstart) / (this.periods * ntpts);
+        this.min_step = this.max_step / 1e8;
+        this.new_step = this.max_step / 1e6;
+        this.oldt = this.time - this.new_step;
 
-	// now for the real work
-	this.tstart = tstart;
-	this.tstop = tstop;
-	this.progress = progress;
-	this.step_index = -3; // Start with two pseudo-Euler steps
-	this.tran_steps(new Date().getTime() + progress.update_interval);
+        // Initialize old crnts, charges, and solutions.
+        this.load_tran(this.solution, this.rhs);
+        for (i = this.N - 1; i >= 0; i -= 1) {
+            this.old3sol[i] = this.solution[i];
+            this.old2sol[i] = this.solution[i];
+            this.oldsol[i] = this.solution[i];
+            this.old3q[i] = this.q[i];
+            this.old2q[i] = this.q[i];
+            this.oldq[i] = this.q[i];
+            this.oldc[i] = this.c[i];
+        }
+
+        // now for the real work
+        this.tstart = tstart;
+        this.tstop = tstop;
+        this.progress = progress;
+        this.step_index = -3; // Start with two pseudo-Euler steps
+        this.tran_steps(new Date().getTime() + progress.update_interval);
     };
 
     Circuit.prototype.pick_step = function() {
@@ -592,7 +587,7 @@ var cktsim = (function() {
     // tupdate is the time we should update progress bar
     Circuit.prototype.tran_steps = function(tupdate) {
         var i;
-        
+
         if (!this.progress.stop_requested) // halt when user clicks stop
         while (this.step_index < this.max_nsteps) {
             // Save the just computed solution, and move back q and c.
@@ -681,12 +676,14 @@ var cktsim = (function() {
             if (t >= tupdate) {
                 // update progress bar
                 var completed = Math.round(100 * (this.time - this.tstart) / (this.tstop - this.tstart));
-		this.progress.update(completed);
+                this.progress.update(completed);
 
                 // a brief break in the action to allow progress bar to update
                 // then pick up where we left off
                 var ckt = this;
-                setTimeout(function() { ckt.tran_steps(t + ckt.progress.update_interval); },1);
+                setTimeout(function() {
+                    ckt.tran_steps(t + ckt.progress.update_interval);
+                }, 1);
                 // our portion of the work is done
                 return;
             }
@@ -714,7 +711,7 @@ var cktsim = (function() {
     // NOTE: Normalization removed in schematic.js, jkw.
     Circuit.prototype.ac = function(npts, fstart, fstop, source_name) {
         var i;
-        
+
         if (this.dc() === undefined) { // DC failed, realloc mats and vects.
             return undefined;
         }
@@ -769,12 +766,12 @@ var cktsim = (function() {
             }
 
             // Compute the small signal response
-            var solac = mat_solve(matrixac,null);
+            var solac = mat_solve(matrixac, null);
 
             // Save magnitude and phase
             for (i = N - 1; i >= 0; i -= 1) {
                 var mag = Math.sqrt(solac[i] * solac[i] + solac[i + N] * solac[i + N]);
-                response[i].push(20*Math.log(mag)/Math.LN10);   //dB
+                response[i].push(20 * Math.log(mag) / Math.LN10); //dB
 
                 // Avoid wrapping phase, add or sub 180 for each jump
                 var phase = 180 * (Math.atan2(solac[i + N], solac[i]) / Math.PI);
@@ -799,8 +796,10 @@ var cktsim = (function() {
         var result = {};
         for (var name in this.node_map) {
             var index = this.node_map[name];
-            result[name] = {magnitude: (index == -1) ? 0 : response[index],
-			    phase: (index == -1) ? 0 : response[index + N]};
+            result[name] = {
+                magnitude: (index == -1) ? 0 : response[index],
+                phase: (index == -1) ? 0 : response[index + N]
+            };
         }
         result._frequencies_ = response[2 * N];
         return result;
@@ -1014,7 +1013,7 @@ var cktsim = (function() {
 
     // C = scalea*A + scaleb*B, scalea, scaleb eithers numbers or arrays (row scaling)
     function mat_scale_add(A, B, scalea, scaleb, C) {
-        var i,j;
+        var i, j;
         var n = A.length;
         var m = A[0].length;
 
@@ -1682,8 +1681,8 @@ var cktsim = (function() {
                 gds = gmgs * (vgst - vds) + this.beta * this.lambda * vds * (vgst - 0.5 * vds);
                 gmgs *= vds;
             }
-            ckt.add_to_rhs(this.d, -ids, rhs);  // current flows into the drain
-            ckt.add_to_rhs(this.s, ids, rhs);   // and out the source	    
+            ckt.add_to_rhs(this.d, - ids, rhs); // current flows into the drain
+            ckt.add_to_rhs(this.s, ids, rhs); // and out the source	    
             ckt.add_conductance(this.d, this.s, gds);
             ckt.add_to_G(this.s, this.s, gmgs);
             ckt.add_to_G(this.d, this.s, - gmgs);
@@ -1748,8 +1747,7 @@ var cktsim = (function() {
     function parse_number_alert(s) {
         var v = parse_number(s, undefined);
 
-        if (v === undefined)
-	    throw 'Unrecognized number \"' + s + '\".';
+        if (v === undefined) throw 'Unrecognized number \"' + s + '\".';
 
         return v;
     }
@@ -1784,7 +1782,7 @@ var cktsim = (function() {
         var m = v.match(/^\s*(\w+)\s*\(([^\)]*)\)\s*$/); // parse f(arg,arg,...)
         if (m) {
             src.fun = m[1];
-	    if (m[2] == '') src.args = [];
+            if (m[2] == '') src.args = [];
             else src.args = m[2].split(/\s*,\s*/).map(parse_number_alert);
         }
         else {
@@ -1975,9 +1973,9 @@ var cktsim = (function() {
     //
     ///////////////////////////////////////////////////////////////////////////////
     var module = {
-	dc_analysis: dc_analysis,
-	ac_analysis: ac_analysis,
-	transient_analysis: transient_analysis,
+        dc_analysis: dc_analysis,
+        ac_analysis: ac_analysis,
+        transient_analysis: transient_analysis,
     };
     return module;
 }());
