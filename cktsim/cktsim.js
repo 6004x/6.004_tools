@@ -13,9 +13,9 @@ var cktsim = (function() {
     //                             connections: {port_name: signal, ...},
     //                             properties: {prop_name: value, ...}} ... ]
     // device_type is one of
-    //    "resistor"		ports: n1, n2; properties: r, name
-    //    "capacitor"		ports: n1, n2; properties: c, name
-    //    "inductor"		ports: n1, n2; properties: l, name
+    //    "resistor"		ports: n1, n2; properties: value, name
+    //    "capacitor"		ports: n1, n2; properties: value, name
+    //    "inductor"		ports: n1, n2; properties: value, name
     //    "diode"		ports: anode, cathode; properties: area, type, name
     //    "opamp"		ports: nplus, nminus, output, gnd; properties: A, name
     //    "nfet"		ports: D, G, S, B; properties: W, L, name
@@ -234,16 +234,15 @@ var cktsim = (function() {
             var name = properties.name;
             switch (type) {
             case 'resistor':
-                this.r(connections.n1, connections.n2, properties.r, name);
+                this.r(connections.n1, connections.n2, properties.value, name);
                 break;
             case 'diode':
                 this.d(connections.anode, connections.cathode, properties.area, properties.type, name);
                 break;
             case 'capacitor':
-                this.c(connections.n1, connections.n2, properties.c, name);
+                this.c(connections.n1, connections.n2, properties.value, name);
                 break;
             case 'inductor':
-                this.l(connections.n1, connections.n2, properties.l, name);
                 break;
             case 'voltage source':
                 this.v(connections.nplus, connections.nminus, properties.value, name);

@@ -53,7 +53,7 @@ function suffix_formatter() {
     return engineering_notation(this.value, 2);
 }
 
-function tran_plot(div, title, results, plots) {
+function tran_plot(div, results, plots) {
     if (results === undefined) return;
     
     for (var p = 0; p < plots.length; p += 1) {
@@ -113,110 +113,132 @@ function tran_plot(div, title, results, plots) {
     }
 }
 
-function ac_plot(div, title, results, plot_nodes) {
+function ac_plot(div, results, plots) {
     if (results === undefined) return;
-
-    var mplots = [];
-    var pplots = [];
-    for (var i = 0; i < plot_nodes.length; i += 1) {
-        var node = plot_nodes[i];
-        var magnitudes = results[node].magnitude;
-        var phases = results[node].phase;
-        var mplot = [];
-        var pplot = [];
-        for (var j = 0; j < magnitudes.length; j += 1) {
-            var log_freq = Math.log(results._frequencies_[j]) / Math.LN10;
-            mplot.push([log_freq, magnitudes[j]]);
-            pplot.push([log_freq, phases[j]]);
+    
+    for (var p = 0; p < plots.length; p += 1) {
+        var plot_nodes = plots[p];
+        var mplots = [];
+        var pplots = [];
+        for (var i = 0; i < plot_nodes.length; i += 1) {
+            var node = plot_nodes[i];
+            var magnitudes = results[node].magnitude;
+            var phases = results[node].phase;
+            var mplot = [];
+            var pplot = [];
+            for (var j = 0; j < magnitudes.length; j += 1) {
+                var log_freq = Math.log(results._frequencies_[j]) / Math.LN10;
+                mplot.push([log_freq, magnitudes[j]]);
+                pplot.push([log_freq, phases[j]]);
+            }
+            mplots.push({
+                name: "Node " + node,
+                data: mplot,
+                lineWidth: 5
+            });
+            pplots.push({
+                name: "Node " + node,
+                data: pplot,
+                lineWidth: 5
+            });
         }
-        mplots.push({
-            name: "Node " + node,
-            data: mplot,
-            lineWidth: 5
+
+        var plotdiv = $('<div style="display: inline-block; width:400px;height:300px"></div>');
+        div.append(plotdiv);
+        plotdiv.highcharts({
+            chart: {
+                type: 'line'
+            },
+            title: {
+                text: '' //title
+            },
+            xAxis: {
+                title: {
+                    text: 'Frequency (log Hz)'
+                },
+                labels: {
+                    formatter: suffix_formatter
+                },
+                gridLineWidth: 1
+            },
+            yAxis: {
+                title: {
+                    text: 'Magnitude (dB)'
+                },
+                labels: {
+                    formatter: suffix_formatter
+                },
+            },
+            series: mplots,
+            plotOptions: {
+                line: {
+                    marker: {
+                        enabled: false
+                    }
+                }
+            },
         });
-        pplots.push({
-            name: "Node " + node,
-            data: pplot,
-            lineWidth: 5
+
+        plotdiv = $('<div style="display: inline-block; width:400px;height:300px"></div>');
+        div.append(plotdiv);
+        plotdiv.highcharts({
+            chart: {
+                type: 'line'
+            },
+            title: {
+                text: '' //title
+            },
+            xAxis: {
+                title: {
+                    text: 'Frequency (log Hz)'
+                },
+                labels: {
+                    formatter: suffix_formatter
+                },
+                gridLineWidth: 1
+            },
+            yAxis: {
+                title: {
+                    text: 'Phase (deg)'
+                },
+                labels: {
+                    formatter: suffix_formatter
+                },
+                min: -180,
+                max: 180,
+                tickInterval: 45,
+                startOnTick: false,
+                endOnTick: false
+            },
+            series: pplots,
+            plotOptions: {
+                line: {
+                    marker: {
+                        enabled: false
+                    }
+                }
+            },
         });
     }
+}
 
-    var plotdiv = $('<div style="display: inline-block; width:400px;height:300px"></div>');
-    div.append(plotdiv);
-    plotdiv.highcharts({
-        chart: {
-            type: 'line'
-        },
-        title: {
-            text: '' //title
-        },
-        xAxis: {
-            title: {
-                text: 'Frequency (log Hz)'
-            },
-            labels: {
-                formatter: suffix_formatter
-            },
-            gridLineWidth: 1
-        },
-        yAxis: {
-            title: {
-                text: 'Magnitude (dB)'
-            },
-            labels: {
-                formatter: suffix_formatter
-            },
-        },
-        series: mplots,
-        plotOptions: {
-            line: {
-                marker: {
-                    enabled: false
-                }
-            }
-        },
-    });
+// parse "prop=value" tokens
+function parse_properties(tokens,properties) {
+    for (var i = 0; i < tokens.length; i += 1) {
+        var parts = tokens[i].split('=');
+        if (parts.length != 2 || parts[0].length===0 || parts[1].length===0) throw "Malformed parameter: " + tokens[i];
+        properties[parts[0]] = parts[1];
+    }
+}
 
-    plotdiv = $('<div style="display: inline-block; width:400px;height:300px"></div>');
-    div.append(plotdiv);
-    plotdiv.highcharts({
-        chart: {
-            type: 'line'
-        },
-        title: {
-            text: title
-        },
-        xAxis: {
-            title: {
-                text: 'Frequency (log Hz)'
-            },
-            labels: {
-                formatter: suffix_formatter
-            },
-            gridLineWidth: 1
-        },
-        yAxis: {
-            title: {
-                text: 'Phase (deg)'
-            },
-            labels: {
-                formatter: suffix_formatter
-            },
-            min: -180,
-            max: 180,
-            tickInterval: 45,
-            startOnTick: false,
-            endOnTick: false
-        },
-        series: pplots,
-        plotOptions: {
-            line: {
-                marker: {
-                    enabled: false
-                }
-            }
-        },
-    });
+var device_types = {
+    'R': "resistor",
+    'C': "capacitor",
+    'L': "inductor",
+    'V': "voltage source",
+    'I': "current source",
+    'N': "nfet",
+    'P': "pfet"
 }
 
 function parse_netlist(text) {
@@ -224,42 +246,48 @@ function parse_netlist(text) {
     var analyses = [];
     var plots = [];
     var lines = text.split('\n');
+    var properties,j;
     for (var i = 0; i < lines.length; i += 1) {
         var tokens = lines[i].split(/\s+/);
         if (tokens[0].length === 0) continue;
         switch (tokens[0][0]) {
             case '*':   // comment!
                 break;
-            case 'R':
-                if (tokens.length != 4) return "Malformed R statement";
+            case 'R':   // resistor: Rname n1 n2 value
+            case 'C':   // capacitor: Cname n1 n2 value
+            case 'L':   // inductor: Lname n1 n2 value
+                if (tokens.length != 4) return "Malformed device statement: " + lines[i];
                 netlist.push({
-                    type: "resistor",
+                    type: device_types[tokens[0][0]],
                     connections: {n1: tokens[1], n2: tokens[2]},
-                    properties: {name: tokens[0], r: tokens[3]}
+                    properties: {name: tokens[0], value: tokens[3]}
                 });
                 break;
-            case 'C':
-                if (tokens.length != 4) return "Malformed C statement";
+            case 'V':   // voltage source: Vname nplus nminus source_function
+            case 'I':   // current source: Iname nplus nminus source_function
+                if (tokens.length != 4) return "Malformed source statement:" + lines[i];
                 netlist.push({
-                    type: "capacitor",
-                    connections: {n1: tokens[1], n2: tokens[2]},
-                    properties: {name: tokens[0], c: tokens[3]}
-                });
-                break;
-            case 'L':
-                if (tokens.length != 4) return "Malformed L statement";
-                netlist.push({
-                    type: "inductor",
-                    connections: {n1: tokens[1], n2: tokens[2]},
-                    properties: {name: tokens[0], l: tokens[3]}
-                });
-                break;
-            case 'V':
-                if (tokens.length != 4) return "Malformed V statement";
-                netlist.push({
-                    type: "voltage source",
+                    type: device_types[tokens[0][0]],
                     connections: {nplus: tokens[1], nminus: tokens[2]},
                     properties: {name: tokens[0], value: tokens[3]}
+                });
+                break;
+            case 'N':   // nfet: Nname drain gate source W=number L=number
+            case 'P':   // pfet: Pname drain gate source W=number L=number
+                if (tokens.length < 4) return "Malformed fet statement: " + lines[i];
+                properties = {name: tokens[0]};
+                try {
+                    parse_properties(tokens.slice(4),properties);
+                } catch (e) {
+                    return e;
+                }
+                if (properties.W === undefined)
+                    return "fet missing W parameterL: "+ lines[i];
+                if (properties.L === undefined) properties.L = 1;
+                netlist.push({
+                    type: device_types[tokens[0][0]],
+                    connections: {D: tokens[1], G: tokens[2], S: tokens[3]},
+                    properties: properties
                 });
                 break;
             case '.':
@@ -289,13 +317,9 @@ function parse_netlist(text) {
     return {netlist: netlist, analyses: analyses, plots: plots};
 }
 
-function setup_test(div) {
-    var text = div.text();
+function simulate(text,div) {
+    div.empty();  // we'll fill this with results
     var parse = parse_netlist(text);
-    div.empty();
-    div.append('<hr></hr><pre></pre>');
-    div.find('pre').text(text);
-    
     if ((typeof parse) === 'string') {
         div.text(parse);
         return;
@@ -306,23 +330,17 @@ function setup_test(div) {
     if (netlist.length === 0) return;
     if (analyses.length === 0) return;
 
-    var title = div.attr('data-title') || '';
-
     try {
         var analysis = analyses[0];
         switch (analysis.type) {
         case 'tran':
             cktsim.transient_analysis(netlist, analysis.tstop, [], function(ignore, results) {
-                tran_plot(div, title, results, plots);
+                tran_plot(div, results, plots);
             });
             break;
         case 'ac':
-            var fstart = div.attr('data-fstart') || 1;
-            var fstop = div.attr('data-fstop') || 1e9;
-            var ac_source_name = div.attr('ac_source_name');
-            plot_nodes = div.attr('data-plot').split(',');
-            var results = cktsim.ac_analysis(netlist, fstart, fstop, ac_source_name);
-            ac_plot(div, title, results, plot_nodes);
+            var results = cktsim.ac_analysis(netlist, analysis.fstart, analysis.fstop, analysis.ac_source_name);
+            ac_plot(div, results, plots);
             break;
         case 'dc':
             break;
@@ -330,7 +348,22 @@ function setup_test(div) {
     }
     catch (e) {
         div.append(e);
-    }
+    }   
+}
+
+function setup_test(div) {
+    var text = div.text();
+    div.empty();
+    div.append('<hr></hr><textarea rows="10" cols="50"></textarea><button style="vertical-align:top">Simulate</button><div class="results"></div>');
+    var textarea = div.find('textarea');
+    var plotdiv = div.find('.results');
+
+    div.find('button').on('click',function () {
+        simulate(textarea.val(),plotdiv)
+    })
+
+    textarea.val(text);
+    simulate(text,plotdiv);
 }
 
 $(document).ready(function() {
