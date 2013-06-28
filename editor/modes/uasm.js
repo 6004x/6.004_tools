@@ -119,7 +119,7 @@
                 }
                 // Not a string
                 // Perhaps a comment
-                if(stream.peek() == '|') {
+                if(stream.match(/^\/\//)) {
                     stream.skipToEnd();
                     return 'comment';
                 }
