@@ -1,0 +1,66 @@
+<html>
+    <head>
+        <title>Parser Demo</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+        <script src="parser.js"></script>
+        <script src="parser_demo.js"></script>
+        <style>
+            .demo {
+                background-color: #F0F0FF;
+                border: 5px ridge steelblue;
+                margin-bottom:10px;
+            }
+            .demo textarea{
+                white-space:pre;
+                font-family:monospace;
+                display:block;
+                vertical-align:bottom;
+                height:200px;
+                font-size:16pt;
+                border:1px solid black;
+                margin:10px;
+                width:90%;
+            }
+            
+            .output {
+                white-space:pre;
+                font-family:monospace;
+                display:block;
+                vertical-align:bottom;
+                border: 1px black solid;
+                padding:5px;
+                min-height:190px;
+                font-size:14pt;
+                background-color:white;
+                margin:10px;
+                width:90%;
+            }
+            
+            .demo button {
+                margin-left:10px;
+                font-size:16pt;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <div class="demo">foo bar</div>
+            <div class="demo">foo bar // comment</div>
+            <div class="demo">foo /* comment */ bar</div>
+            <div class="demo">foo
+
+                
+bar</div>
+            <div class="demo">foo /* comment
+still_comment */ bar</div>
+            <div class="demo">foo /*
+
+
+lots of newlines! */
+bar</div>
+            <div class="demo">2 2k 2.2 2e2 2.2e2 0x20 020 0b10</div>
+            <div class="demo">A[0:2] B[2:0] C[0:4:2] D[0:1][2:3]</div>
+            <div class="demo">A#2 B#2#2 C[0:1]#2</div>
+        </div>
+    </body>
+</html>
