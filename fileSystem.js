@@ -19,13 +19,39 @@ var fileSystem= function(server){
 	*/
 
 	var exports
-	function getFileList(username, callback){
+	function getFileList(username, callback, callbackFailed){
 		//using username or some other sort of authentication, we can get the root folder of the user
 		if(username){
-            sendAjaxRequest('/',null,'json',username, 'filelist', callback);
+            sendAjaxRequest('/',null,'json',username, 'filelist', callback, callbackFailed);
             //callback will return with a file object
 		}
 	}
 
+	function sendAjaxRequest(filepath, fileData, dataType, username, query, callbackFunction, failFunction, urlparam){
+		failFunction=failFunction||failResponse
+        url=DEFAULT_SERVER||urlparam; //default server
 
+        if(!fileData)
+            fileData='none';
+
+        console.log(fileData);
+        console.log(username);
+        url+=filepath;
+
+        var req=$.ajax({
+                url:url, 
+                data:{dummy:'dummy', username:username,query:query, fdata:fileData},
+                username:username,
+                dataType:dataType,
+            });
+        req.done(callbackFunction);
+        req.fail(failFunction);
+        req.always(function(r, status){
+                //var func = JSON.parse(r);
+                console.log(status);
+        });
+    }
+    function failResponse(req, status, error){
+        alert('failed response '+status+'<br> '+error);
+    }
 }
