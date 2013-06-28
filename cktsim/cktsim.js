@@ -200,9 +200,6 @@ var cktsim = (function() {
         return true;
     };
 
-    // these components are extracted but don't represent a cktsim device
-    var ignored_components = ["analog:g", "analog:vdd", "analog:port-in", "analog:port-out", "analog:port-inout", "analog:s"];
-
     // load circuit from JSON netlist: [[device,[connections,...],{prop: value,...}]...]
     Circuit.prototype.load_netlist = function(netlist) {
         var i, component, connections;
@@ -1855,14 +1852,14 @@ var cktsim = (function() {
         }
 
         // post-processing for pulsed sources
-        // pulse(v_init,v_plateau,t_delay,t_rise,t_fall,t_width,t_period)
+        // pulse(v_init,v_plateau,t_delay,t_width,t_rise,t_fall,t_period)
         else if (src.fun == 'pulse') {
             var v1 = arg_value(src.args, 0, 0); // default init value: 0V
             var v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
             var td = Math.max(0, arg_value(src.args, 2, 0)); // time pulse starts
-            var tr = Math.abs(arg_value(src.args, 3, 1e-9)); // default rise time: 1ns
-            var tf = Math.abs(arg_value(src.args, 4, 1e-9)); // default rise time: 1ns
-            var pw = Math.abs(arg_value(src.args, 5, 1e9)); // default pulse width: "infinite"
+            var pw = Math.abs(arg_value(src.args, 3, 1e9)); // default pulse width: "infinite"
+            var tr = Math.abs(arg_value(src.args, 4, .1e-9)); // default rise time: .1ns
+            var tf = Math.abs(arg_value(src.args, 5, .1e-9)); // default rise time: .1ns
             var per = Math.abs(arg_value(src.args, 6, 1e9)); // default period: "infinite"
             src.args = [v1, v2, td, tr, tf, pw, per];
 
@@ -1875,13 +1872,12 @@ var cktsim = (function() {
         }
 
         // post-processing for sinusoidal sources
-        // sin(v_offset,v_amplitude,freq_hz,t_delay,phase_offset_degrees)
+        // sin(freq_hz,v_offset,v_amplitude,t_delay,phase_offset_degrees)
         else if (src.fun == 'sin') {
-            var voffset = arg_value(src.args, 0, 0); // default offset voltage: 0V
-            var va = arg_value(src.args, 1, 1); // default amplitude: -1V to 1V
-            var freq = Math.abs(arg_value(src.args, 2, 1)); // default frequency: 1Hz
+            var freq = Math.abs(arg_value(src.args, 0, 1)); // default frequency: 1Hz
             src.period = 1.0 / freq;
-
+            var voffset = arg_value(src.args, 1, 0); // default offset voltage: 0V
+            var va = arg_value(src.args, 2, 1); // default amplitude: -1V to 1V
             var td = Math.max(0, arg_value(src.args, 3, 0)); // default time delay: 0sec
             var phase = arg_value(src.args, 4, 0); // default phase offset: 0 degrees
             src.args = [voffset, va, freq, td, phase];

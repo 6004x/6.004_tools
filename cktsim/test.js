@@ -54,7 +54,10 @@ function suffix_formatter() {
 }
 
 function tran_plot(div, results, plots) {
-    if (results === undefined) return;
+    if (results === undefined) {
+        div.text("No results!");
+        return;
+    }
     
     for (var p = 0; p < plots.length; p += 1) {
         var plot_nodes = plots[p];
@@ -62,14 +65,20 @@ function tran_plot(div, results, plots) {
         for (var i = 0; i < plot_nodes.length; i += 1) {
             var node = plot_nodes[i];
             var values = results[node];
+            if (values === undefined) {
+                div.text("No values to plot for node "+node);
+                return;
+            }
             var plot = [];
             for (var j = 0; j < values.length; j += 1) {
                 plot.push([results._time_[j], values[j]]);
             }
+            var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
             series.push({
-                name: "Node " + node,
+                name: current ? node : "Node " + node,
                 data: plot,
-                lineWidth: 5
+                lineWidth: 5,
+                units: current ? 'Amps (A)' : 'Volts (V)'
             });
         }
         var plotdiv = $('<div style="width:600px;height:300px"></div>');
@@ -93,7 +102,7 @@ function tran_plot(div, results, plots) {
             },
             yAxis: {
                 title: {
-                    text: 'Volts (v)'
+                    text: series[0].units //'Volts (v)'
                 },
                 labels: {
                     formatter: suffix_formatter
@@ -114,7 +123,10 @@ function tran_plot(div, results, plots) {
 }
 
 function ac_plot(div, results, plots) {
-    if (results === undefined) return;
+    if (results === undefined) {
+        div.text("No results!");
+        return;
+    }
     
     for (var p = 0; p < plots.length; p += 1) {
         var plot_nodes = plots[p];
@@ -122,6 +134,10 @@ function ac_plot(div, results, plots) {
         var pplots = [];
         for (var i = 0; i < plot_nodes.length; i += 1) {
             var node = plot_nodes[i];
+            if (results[node] === undefined) {
+                div.text('No values to plot for node '+node);
+                return;
+            }
             var magnitudes = results[node].magnitude;
             var phases = results[node].phase;
             var mplot = [];
@@ -250,7 +266,8 @@ function parse_netlist(text) {
     for (var i = 0; i < lines.length; i += 1) {
         var tokens = lines[i].split(/\s+/);
         if (tokens[0].length === 0) continue;
-        switch (tokens[0][0]) {
+        var device = tokens[0][0].toUpperCase();
+        switch (device) {
             case '*':   // comment!
                 break;
             case 'R':   // resistor: Rname n1 n2 value
@@ -258,7 +275,7 @@ function parse_netlist(text) {
             case 'L':   // inductor: Lname n1 n2 value
                 if (tokens.length != 4) return "Malformed device statement: " + lines[i];
                 netlist.push({
-                    type: device_types[tokens[0][0]],
+                    type: device_types[device],
                     connections: {n1: tokens[1], n2: tokens[2]},
                     properties: {name: tokens[0], value: tokens[3]}
                 });
@@ -267,7 +284,7 @@ function parse_netlist(text) {
             case 'I':   // current source: Iname nplus nminus source_function
                 if (tokens.length != 4) return "Malformed source statement:" + lines[i];
                 netlist.push({
-                    type: device_types[tokens[0][0]],
+                    type: device_types[device],
                     connections: {nplus: tokens[1], nminus: tokens[2]},
                     properties: {name: tokens[0], value: tokens[3]}
                 });
@@ -285,10 +302,19 @@ function parse_netlist(text) {
                     return "fet missing W parameterL: "+ lines[i];
                 if (properties.L === undefined) properties.L = 1;
                 netlist.push({
-                    type: device_types[tokens[0][0]],
+                    type: device_types[device],
                     connections: {D: tokens[1], G: tokens[2], S: tokens[3]},
                     properties: properties
                 });
+                break;
+            case 'O':   // opamp: Oname nplus nminus output gnd A
+                if (tokens.length != 6) return "Malformed opamp statement: " + lines[i];
+                netlist.push({
+                    type: "opamp",
+                    connections: {nplus: tokens[1], nminus: tokens[2], output: tokens[3], ground: tokens[4]},
+                    properties: {name: tokens[0], A: tokens[5]}
+                });
+                netlist.push
                 break;
             case '.':
                 switch (tokens[0]) {
