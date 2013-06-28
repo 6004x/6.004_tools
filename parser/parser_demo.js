@@ -12,10 +12,14 @@ function setup (div) {
     
     function go(){
         var input = area.val();
-        var parsed = parser.tokenize(input);
-        var stringed = JSON.stringify(parsed);
-        var done = stringed.replace(/},{/g,"},\n{");
-        output.text(done);
+        try{
+            var parsed = parser.tokenize(input);
+            var stringed = JSON.stringify(parsed);
+            var done = stringed.replace(/},{/g,"},\n{");
+            output.text(done);
+        } catch (err) {
+            output.text("Error in line "+err.line+": "+err.message);
+        }
     }
 }
 

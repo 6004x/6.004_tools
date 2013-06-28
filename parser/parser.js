@@ -59,7 +59,7 @@ Splitter: splits a string into an array of tokens
 *******************************/
     function split(input_string,filename){
 //        var pattern = /".*"|0x[0-9a-fA-F]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]*)|\.?[A-Za-z][\w:\.,$#\[\]]*|=|\n|\u001e/g; 
-        var pattern = /".*"|\.?[A-Za-z][\w:\.,$#\[\]]*|[\w\.-]+|=|\n|\u001e/g;
+        var pattern = /".*"|[\w:\.,$#\[\]]+|=|\/\*|\n|\u001e/g;
         
         var names_pattern = /^[A-Za-z][\w,$:\[\]\.]*/;
         var control_pattern = /^\..+/;
@@ -67,11 +67,12 @@ Splitter: splits a string into an array of tokens
         var exp_pattern = /-?\d*\.?\d+[eE]-?\d+/;
         var float_pattern = /-?\d*\.\d+/;
         var scaled_pattern = /-?\d*\.?\d+[A-Za-z]+/;
-        var hex_pattern = /^0[xX][0-9a-fA-F]+/;
+        var hex_pattern = /^0x[0-9a-fA-F]+/;
         var octal_pattern = /^0[0-7]+/;
-        var binary_pattern = /^0[bB][01]+/;
+        var binary_pattern = /^0b[01]+/;
         var file_pattern = /".*"/;
-        var num_pattern = /-?\d*\.?\d+([A-Za-z]*|[eE]-?\d+)/;
+        var num_pattern = /^(([+-]?\d*\.?)|(0x)|(0b))\d+(([eE]-?\d+)|[A-Za-z]*)/;
+//        var num_pattern = /[+-]?\d*\.?\d+([A-Za-z]*|[eE]-?\d+)/;
         
         // 'pattern' will match, in order:
         //      anything wrapped in quotes
@@ -97,7 +98,7 @@ Splitter: splits a string into an array of tokens
             } else if (names_pattern.test(matched_array[0])){
                 type = 'name';
             } else if (control_pattern.test(matched_array[0])){
-                type = 'control'
+                type = 'control';
             } else if (exp_pattern.test(matched_array[0])){
                 type = 'exp';
             } else if (hex_pattern.test(matched_array[0])){
@@ -117,7 +118,10 @@ Splitter: splits a string into an array of tokens
             } else {
                 type = null;   
             }
-            if (!(matched_array[0]=="\u001e")){
+            if (matched_array[0]=="/*"){
+                throw new Error("Unclosed comment",lineNumber);
+            }
+            if (matched_array[0]!="\u001e"){
                 substrings.push({token:matched_array[0],
                                  line:lineNumber,
                                  type:type,
@@ -335,7 +339,7 @@ Parse Number: taken from cktsim.js by Chris Terman, with permission. Slightly
     // (hex, octal, binary, decimal, floating point) plus engineering
     // scale factors (eg, 1k = 1000.0 = 1e3).
     // return default if argument couldn't be interpreted as a number
-    function parse_number(x, default_v) {
+    function parse_number(x) {
         var m;
 
         m = x.match(/^\s*([\-+]?)0x([0-9a-fA-F]+)\s*$/); // hex
@@ -347,10 +351,10 @@ Parse Number: taken from cktsim.js by Chris Terman, with permission. Slightly
         m = x.match(/^\s*([\-+]?)0([0-7]+)\s*$/); // octal
         if (m) return parseInt(m[1] + m[2], 8);
 
-        m = x.match(/^\s*[\-+]?[0-9]*(\.([0-9]+)?)?([eE][\-+]?[0-9]+)?\s*$/); // decimal, float
+        m = x.match(/^\s*[\-+]?[0-9]*(\.([0-9]+)?)?([eE][\-+]?[0-9]+)?\s*$/); // decimal, float, exponential
         if (m) return parseFloat(m[0]);
 
-        m = x.match(/^\s*([\-+]?[0-9]*(\.([0-9]+)?)?)([A-Za-z]+)/); // decimal, float
+        m = x.match(/^\s*([\-+]?[0-9]*(\.?([0-9]+)))([A-Za-z]+)/); // decimal, float
         if (m) {
             var result = parseFloat(m[1]);
             var scale = m[4][0];
@@ -368,7 +372,7 @@ Parse Number: taken from cktsim.js by Chris Terman, with permission. Slightly
             return result;
         }
 
-        return (default_v === undefined ? NaN : default_v);
+        throw "Number expected";
     }
     
 /*********************************
@@ -383,10 +387,132 @@ iterators and duplicators, and includes files
     }
     
 /***********************
-parse
+Parse ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ***********************/
     function parse(input_string,filename){
+        var token_array = tokenize(input_string,filename);
+        var globals = [];
+        var plots = [];
+        var options = {};
+        var analyses = [];
+        var subcircuits = {};
         
+        var toParse = [];
+        
+        // executes control statements
+        function parseControl(line){
+            switch (line[0].token.toLowerCase()){
+                case ".global":
+                    line.shift();
+                    for (var i=0; i<line.length; i+=1){
+                        globals.push(line.shift().token);
+                    }
+                    break;
+                case ".options":
+                    line.shift();
+                    while (line.length > 0){
+                        if (line[1].token != "="){
+                            throw "Expression expected";
+                        }
+                        var opt_name = line[0].token;
+                        try{
+                            var opt_val = parse_number(line[2].token);
+                        } catch(err){
+                            throw "Number expected";
+                        }
+//                        if (opt_val.type = "number"){
+//                            opt_val = parse_number(line[2].token);
+//                        }
+                        options[opt_name] = opt_val;
+                        line=line.slice(3);
+                    }
+                    break;
+                case ".plot":
+                    line.shift();
+                    var plot_list=[];
+                    while (line.length > 0){
+                        plot_list.push(line.shift().token);
+                    }
+                    if (plot_list.length > 0){
+                        plots.push(plot_list);
+                    } else {
+                        throw "Node name expected";
+                    }
+                    break;
+                case ".tran":
+                    line.shift();
+                    var tran_obj = {type:'tran',parameters:{}};
+                    for (var i=0;i<line.length;i+=1){
+                        if (i==line.length-1){
+                            tran_obj.parameters["tstop"]=parse_number(line[i].token);
+                        } else {
+                            tran_obj.parameters["tstep"+i] =
+                                parse_number(line[i].token);
+                        }
+                    }
+                    analyses.push(tran_obj);
+                    break;
+                case ".dc":
+                    line.shift();
+                    var dc_obj = {type:'dc',parameters:{}};
+                    var param_names = ["source1","start1","stop1","step1",
+                                       "source2","start2","stop2","step2"];
+                    for (var i=0; i<line.length;i+=1){
+                        switch(i){
+                            case 0:
+                            case 4:
+                                if (line[i].type != 'name'){
+                                    throw "Node name expected";
+                                } else {
+                                    dc_obj.parameters[param_names[i]]=line[i].token;
+                                }
+                                break;
+                            case 1:
+                            case 2:
+                            case 3:
+                            case 5:
+                            case 6:
+                            case 7:
+                                dc_obj.parameters[param_names[i]]=parse_number(
+                                    line[i].token);
+                                break;
+                        }
+                    }
+                    analyses.push(dc_obj);
+                    break;
+                case ".subckt":
+                case ".ends":
+                    throw "subcircuits not implemented yet";
+                    break;
+                default:
+                    throw "Invalid control statement";
+                    break;
+            }
+        }
+        
+        // go through tokens one line at a time
+        while (token_array.length > 0){
+            var current = token_array[0];
+            if(current.token != "\n"){
+                toParse.push(token_array.shift());
+            } else if (toParse.length != 0) { 
+                if (toParse[0].type=="control"){ 
+                    try{
+                        parseControl(toParse);
+                        token_array.shift();
+                    } catch (err){
+                        throw new Error(err,current.line);
+                    }
+                } else {
+                    token_array.shift();
+                }
+            } else {
+                token_array.shift();
+                continue;
+            }
+        }
+        console.log("globals:",globals,"options:",options,"plots:",plots,
+                    "analyses:",JSON.stringify(analyses));
     }
     
 /********************************
@@ -517,42 +643,44 @@ the statement
     --args: -ctrl: the token object of a control statement
             -token_array: the array of tokens from which ctrl was taken
     --returns: undefined
-******************************/
-    function process_control(ctrl,token_array){
-        var new_token_array;
-        switch(ctrl.token){
-            case ".checkoff":
-            case ".connect":
-            case ".dc":
-            case ".end":
-            case ".global":
-                break;
-            case ".include":
-                var contents = include(token_array[1]);
-                token_array.shift();
-                token_array.shift();
-                new_token_array = contents.concat(token_array);
-                break;
-            case ".model":
-            case ".mverify":
-            case ".op":
-            case ".options":
-            case ".plot":
-            case ".plotdef":
-            case ".subckt":
-            case ".ends":
-            case ".tran":
-            case ".temp":
-            case ".tempdir":
-            case ".verify":
-                break;
-            default:
-                throw "Invalid control statement"
-                break;  
-        }
-        return new_token_array;
-    }
     
+    !!!!!!!!!!!!!!!!!! bad way to go about it !!!!!!!!!!!!!!!!!!
+******************************/
+//    function process_control(ctrl,token_array){
+//        var new_token_array;
+//        switch(ctrl.token){
+//            case ".checkoff":
+//            case ".connect":
+//            case ".dc":
+//            case ".end":
+//            case ".global":
+//                break;
+//            case ".include":
+//                var contents = include(token_array[1]);
+//                token_array.shift();
+//                token_array.shift();
+//                new_token_array = contents.concat(token_array);
+//                break;
+//            case ".model":
+//            case ".mverify":
+//            case ".op":
+//            case ".options":
+//            case ".plot":
+//            case ".plotdef":
+//            case ".subckt":
+//            case ".ends":
+//            case ".tran":
+//            case ".temp":
+//            case ".tempdir":
+//            case ".verify":
+//                break;
+//            default:
+//                throw "Invalid control statement"
+//                break;  
+//        }
+//        return new_token_array;
+//    }
+//    
 /******************************
 include (modular): given the token after an .include, include the specified file
     --args: -file: the token after an .include statement
