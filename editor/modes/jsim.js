@@ -92,7 +92,7 @@ CodeMirror.defineMode('jsim', function() {
                     state.in_args = true;
                     return 'keyword';
                 }
-                if(stream.match(/^[WRMCLXVI][a-z0-9_:\$\[\]\.]+/i)) {
+                if(stream.match(/^[WRNPCLXVI][a-z0-9_:\$\[\]\.]+/i)) {
                     state.in_args = true;
                     return 'variable-3';
                 }
