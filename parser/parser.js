@@ -3,9 +3,10 @@ var parser = (function(){
 /********************************
 Error object:
 *********************************/
-    function Error(message,line){
+    function Error(message,line,column){
         this.message = message;
         this.line = line;
+        this.column = column;
     }
     
 /**********************************
@@ -90,7 +91,10 @@ Splitter: splits a string into an array of tokens
         var matched_array;
         var substrings = [];
         var lineNumber = 1;
+        var lastLineOffset = 0;
         while ((matched_array = pattern.exec(input_string)) !== null){
+            
+            //set the token's type
             var type;
             if (file_pattern.test(matched_array[0])){
                 matched_array[0] = matched_array[0].replace(/"/g,'');
@@ -118,18 +122,28 @@ Splitter: splits a string into an array of tokens
             } else {
                 type = null;   
             }
+            
+            // check for unclosed comments
             if (matched_array[0]=="/*"){
                 throw new Error("Unclosed comment",lineNumber);
             }
+            
+            // find column offset
+            var offset = matched_array.index - lastLineOffset;
+            
             if (matched_array[0]!="\u001e"){
                 substrings.push({token:matched_array[0],
                                  line:lineNumber,
+                                 column:offset,
                                  type:type,
                                  origin_file:filename
                                 });
             }
             if ((matched_array[0] == "\n")||(matched_array[0] == "\u001e")){
                 lineNumber += 1;
+            }
+            if (matched_array[0] == "\n"){
+                lastLineOffset = matched_array.index + 1;
             }
         }
 //        console.log(substrings);
@@ -180,9 +194,10 @@ into the proper sequences
                     var dupe_string = current.token.slice(0,dupe_match_array.index);
                     for (var i=0; i<repetitions; i+=1){
                         duped_token_array.push({token:dupe_string,
-                                             line:current.line,
-                                             type:'name'
-                                            });
+                                                line:current.line,
+                                                type:'name',
+                                                column:current.column
+                                                });
                     }
                     duped_token_array = iter_expand(duped_token_array);
                     expanded_array = expanded_array.concat(duped_token_array);
@@ -199,13 +214,15 @@ into the proper sequences
                     try{
                         new_iter_strings = iter_interpret(iter_string);
                     } catch(err) {
-                        throw new Error(err,current.line);
+                        throw new Error(err,current.line,current.column);
                     }
                     for (var i=0; i < new_iter_strings.length; i+=1){
                         var new_token_obj = {token:front_string+new_iter_strings[i]+
                                             end_string,
                                              line:current.line,
-                                             type:'name'}
+                                             type:'name',
+                                             column:current.column
+                                            }
                         new_token_array.push(new_token_obj);
                     }
                     new_token_array = iter_expand(new_token_array);
@@ -501,7 +518,7 @@ Parse ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                         parseControl(toParse);
                         token_array.shift();
                     } catch (err){
-                        throw new Error(err,current.line);
+                        throw new Error(err,current.line,current.column);
                     }
                 } else {
                     token_array.shift();
@@ -604,7 +621,7 @@ Include: takes a parsed array of tokens and includes all the files
                 var file = token_array[1];
                 console.log("file:",file);
                 if (!(file.type == "string")){
-                    throw new Error("Filename expected",current.line);
+                    throw new Error("Filename expected",current.line,current.column);
                 } else {
                     var filename = file.token;
                     if (included_files.indexOf(filename)==-1) {
@@ -615,7 +632,7 @@ Include: takes a parsed array of tokens and includes all the files
                         try{
                             contents = filename_to_contents(filename);
                         } catch(err) {
-                            throw new Error(err,current.line);
+                            throw new Error(err,current.line,current.column);
                         }
                         contents = tokenize(contents,filename);
 //                        console.log("contents of file:",contents);
@@ -708,6 +725,8 @@ include (modular): given the token after an .include, include the specified file
 Exports
 ****************************/
     return {parse:parse,
+            analyze:analyze,
+            split:split,
             tokenize:tokenize,
 //            parse1:parse1,
             include:include,
@@ -754,7 +773,7 @@ function test5(){
 function test6(){ parser.iter_expand(parser.split("Rtest a[0:1][2:3][4:5] ")); }
 function test7(){ return parser.iter_expand(parser.split("A[0:2] B#3 C[0:1]#2")); }
 function test8(){ return parser.decomment(parser.split("*hi \n foo \n bar *comment\n")); }
-function test9(){ console.log(parser.split(parser.analyze(decomment_text))); }
+function test9(){ console.log(JSON.stringify(parser.split(parser.analyze(include_text)))); }
 function test10(){ return parser.analyze(decomment_text); }
 function test11(){ console.log(parser.parse(
     "2 2k 2ms 2.2 2e2 2.2e2 .2e2 0x2 0b01 02")); }
@@ -765,6 +784,10 @@ var pseudo_files = {"foo":"foo bar \nbaz /*comment\ncomment2*/ bim",
                    };
 function test12() { console.log(parser.include(parser.parse('.include "foo"\n.include "bar"\nR1 a b 10 //this is a comment\nC1 a b 1',"master_file"))); }
 function test13(){ console.log(parser.parse(include_text,"master_file")); }
+function test14(){ console.log(parser.tokenize("//comment\nR1 a b 1\n/* comment */ "+
+                                               "A[0:1:0]"
+                                              )); }
+
 
 
 
