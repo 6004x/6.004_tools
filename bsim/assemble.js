@@ -1,4 +1,4 @@
-// (function() {
+(function() {
     var root = this; // = window in a browser
 
     // This can take either a stream or a file/line pair.
@@ -101,7 +101,7 @@
             return parseInt(text, 10);
         }
         return NaN;
-    }
+    };
 
     var readNumber = function(stream, optional) {
         // This reads more than just sane numbers so we can actually see errors.
@@ -128,7 +128,7 @@
         } else {
             return null;
         }
-    }
+    };
 
     var readTerm = function(stream) {
         stream.eatSpace();
@@ -248,7 +248,6 @@
         if(!_.has(context.macros[this.macro], this.args.length)) {
             throw new SyntaxError("Macro '" + this.macro + "' not defined for " + this.args.length + " arguments.", this.file, this.line);
         }
-        // console.log(this.file, this.line);
         // Evaluate the arguments, which should all be Expressions.
         var evaluated = [];
         _.each(this.args, function(value) {
@@ -279,12 +278,14 @@
         if(!_.has(ops, this.op)) {
             throw new SyntaxError("Cannot perform operation '" + this.op + "'; no function defined.", this.file, this.line);
         }
+
+        // a and b must both be unsigned, so if they're less than zero we force them to be the unsigned
+        // two's-complement representation of the same value.
         if(a < 0) a = 0xFFFFFFFF + a + 1;
         if(b < 0) b = 0xFFFFFFFF + b + 1;
         var result =  ops[this.op](a, b);
-        if(result < 0) result = 0xFFFFFFFF + result + 1;
         return result;
-    }
+    };
 
     function Negate(value, file, line) {
         this.value = value;
@@ -395,7 +396,6 @@
             if(!(operation instanceof Operation)) {
                 throw new SyntaxError("Internal error evaluating expression: expected operation but didn't get one!", this.file, this.line);
             }
-            // console.log(a + " " + operation.op + " " + b + " = " + operation.operate(a, b));
             a = operation.operate(a, b);
         }
 
@@ -403,7 +403,6 @@
     };
     Expression.prototype.assemble = function(context, out) {
         var value = this.evaluate(context, !!out);
-        // console.log(context.dot, value);
         if(out) out[context.dot] = value;
         context.dot += 1;
     };
@@ -434,7 +433,7 @@
         var old_scope = context.symbols;
         var scope = _.extend({}, context.symbols, _.object(this.parameters, args));
         context.symbols = scope;
-        // console.log(this.name, _.object(this.parameters, args));
+
         _.each(this.instructions, function(instruction) {
             instruction.assemble(context, out);
         });
@@ -563,7 +562,7 @@
             var macro_content = parse(stream, true);
             var macro = new Macro(macro_name, macro_args, macro_content, stream.file(), start_line);
             return macro;
-        }
+        };
 
         var parse = function(stream, is_macro) {
             var fileContent = [];
@@ -703,7 +702,7 @@
                 }
             } while(allow_multiple_lines && stream.next_line());
             return fileContent;
-        }
+        };
 
         var run_assembly = function(syntax) {
             var context = {
@@ -719,12 +718,11 @@
             context.dot = 0;
             var memory = new Uint8Array(size);
             // Now do it again!
-            console.log(context);
             _.each(syntax, function(item) {
                 item.assemble(context, memory);
             });
             return memory;
-        }
+        };
 
         this.assemble = function(file, content, callback) {
             var stream = new StringStream(new FileStream(content, file));
@@ -739,7 +737,6 @@
                         throw e;
                     }
                 }
-                console.log(syntax);
             } while(stream.next_line());
             if(errors.length) {
                 callback(false, errors);
@@ -755,14 +752,13 @@
                 }
                 console.log(code);
                 if(errors.length) {
-                    console.log(errors);
                     callback(false, errors);
                 } else {
                     callback(true);
                 }
             }
-        }
+        };
     };
 
     root.BetaAssembler = Assembler;
-// })();
+})();
