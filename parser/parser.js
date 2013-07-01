@@ -542,7 +542,7 @@ Parse Device: takes a line representing a device and creates a device object
     function parse_device(line){
         var device_obj;
         // type of device based on first letter of first token
-        switch (line[0][0]){
+        switch (line[0].token[0]){
             case "R":
                 device_obj = parse_resistor(line);
                 break;
@@ -570,18 +570,17 @@ Parse Device: takes a line representing a device and creates a device object
         return device_obj;
     }
     
-/***********************
+/*********************************
 Device parsers
-*****************************/
+*********************************/
     
-    /**************************
-    Resistor
+    /*************************
+    General linear device: used for resistors, capacitors, inductors
         --connections: n_plus, n_minus
         --properties: name, value
     **************************/
-    function parse_resistor(line){
-//        console.log("line:",line);
-        var obj = {type:"resistor",
+    function parse_linear(line,type,err_msg){
+        var obj = {type:type,
                    connections:{},
                    properties:{}
                   };
@@ -604,70 +603,41 @@ Device parsers
         } catch (err) {
             throw new Error("Number expected",line[3].line,line[3].column);
         }
-        
-        if (obj.properties.value <= 0){
-            throw new Error("Positive value expected",line[3].line,line[3].column);
+            
+        if ((type=="resistor" && obj.properties.value == 0) ||
+            (obj.properties.value < 0)){
+            throw new Error(err_msg,line[3].line,line[3].column);
         }
-        
         return obj;
     }
     
-    // Capacitor
+    /**************************
+    Resistor
+        --connections: n_plus, n_minus
+        --properties: name, value
+    **************************/
+    function parse_resistor(line){
+        return parse_linear(line,"resistor",
+                            "Positive, non-zero value expected");
+    }
     
-/********************************
-Parse1: turns .includes into more tokens
-    --args: -input_string: a string representing the file contents
-            -filename: a string representing the unique name of the file to be parsed
-    --returns: an array of tokens representing the contents of all included files
-*******************************/
-//    function parse_include(token_array,filename){
-//        var new_token_array = [];
-//        
-//        // first pass: include files, parse numbers
-//        while (token_array.length > 0){
-//            var current = token_array[0];
-//            switch (current.type){
-//                case "control":
-//                    if (/\.include/i.test(current.token)){
-//                        var contents = include(token_array[1]);
-//                        console.log("including a file... contents:",contents);
-//                        token_array.shift();
-//                        token_array.shift();
-//                        token_array = contents.concat(token_array);
-//                    }
-//                    break;
-//                case "int":
-//                case "float":
-//                case "exp":
-//                    new_token_array.push({value:parseFloat(current.token),
-//                                          type:"number",
-//                                          line:current.line});
-//                    token_array.shift();
-//                    break;
-//                case "hex":
-//                case "octal":
-//                    new_token_array.push({value:parseInt(current.token),
-//                                          type:"number",
-//                                          line:current.line});
-//                    token_array.shift();
-//                    break;
-//                case "binary":
-//                    new_token_array.push({value:parseInt(current.token.slice(2),2),
-//                                          type:"number",
-//                                          line:current.line});
-//                    token_array.shift();
-//                    break;
-//                case "scaled":
-//                    new_token_array.push(parse_scaled(current.token));
-//                    token_array.shift();
-//                    break;
-//                default:
-//                    new_token_array.push(token_array.shift());
-//            }
-//        }
-//        return new_token_array;
-//    }
-
+    /********************
+    Capacitor
+        --connections: n_plus, n_minus
+        --parameters: name, value
+    ***********************/
+    function parse_capacitor(line){
+        return parse_linear(line,"capacitor","Positive value expected");
+    }
+    
+    /*********************
+    Inductor 
+        --connections: n_plus, n_minus
+        --parameters: name, value
+    **********************/
+    function parse_inductor(line){
+        return parse_linear(line,"inductor","Positive value expected");
+    }
     
 /******************************
 filename_to_contents: takes a file path and returns the string representing its 
@@ -676,9 +646,6 @@ content
     --returns: a string representing the contents of the file
 *******************************/
     function filename_to_contents(filename){
-//        filename = filename.replace(/"/g,'');
-        
-//        console.log("filename:",filename,"pseudofiles:",pseudo_files);
         if (pseudo_files[filename]===undefined){
             throw "File does not exist";
         } else {
@@ -707,7 +674,6 @@ Include: takes a parsed array of tokens and includes all the files
                 } else {
                     var filename = file.token;
                     if (included_files.indexOf(filename)==-1) {
-//                        console.log("file not yet included :)");
                         included_files.push(filename);
                         
                         var contents;
@@ -717,16 +683,12 @@ Include: takes a parsed array of tokens and includes all the files
                             throw new Error(err,current.line,current.column);
                         }
                         contents = tokenize(contents,filename);
-//                        console.log("contents of file:",contents);
                         token_array.shift();
                         token_array.shift();
                         if (contents !== undefined){
                             token_array = contents.concat(token_array);
                         }
-//                        console.log("updated token arary:",token_array);
                         
-                    } else {
-//                        console.log("file already included, skipping");
                     }
                 }
             }
@@ -734,75 +696,7 @@ Include: takes a parsed array of tokens and includes all the files
         }
         return new_token_array;
     }
-    
-    
-/*****************************
-Process control statements: given a control statement and the token array, parse
-the statement
-    --args: -ctrl: the token object of a control statement
-            -token_array: the array of tokens from which ctrl was taken
-    --returns: undefined
-    
-    !!!!!!!!!!!!!!!!!! bad way to go about it !!!!!!!!!!!!!!!!!!
-******************************/
-//    function process_control(ctrl,token_array){
-//        var new_token_array;
-//        switch(ctrl.token){
-//            case ".checkoff":
-//            case ".connect":
-//            case ".dc":
-//            case ".end":
-//            case ".global":
-//                break;
-//            case ".include":
-//                var contents = include(token_array[1]);
-//                token_array.shift();
-//                token_array.shift();
-//                new_token_array = contents.concat(token_array);
-//                break;
-//            case ".model":
-//            case ".mverify":
-//            case ".op":
-//            case ".options":
-//            case ".plot":
-//            case ".plotdef":
-//            case ".subckt":
-//            case ".ends":
-//            case ".tran":
-//            case ".temp":
-//            case ".tempdir":
-//            case ".verify":
-//                break;
-//            default:
-//                throw "Invalid control statement"
-//                break;  
-//        }
-//        return new_token_array;
-//    }
-//    
-/******************************
-include (modular): given the token after an .include, include the specified file
-    --args: -file: the token after an .include statement
-            -included_files: an array of filenames that have already been included
-    --returns: the tokenized contents of the file, if applicable, otherwise
-                returns undefined
-******************************/
-//    function include(file,included_files){
-//        if (!(file.type == "string")){
-//                throw "Filename expected";
-//        } else {
-//            var filename = file.token;
-//            if (included_files.indexOf(filename)==-1) {
-////                        console.log("file not yet included :)");
-//                included_files.push(filename);
-//                
-//                var contents = filename_to_contents(filename);
-//                contents = tokenize(contents,filename);
-//              return contents;
-//            } 
-//        }
-//    }
-    
+       
 /***************************
 Exports
 ****************************/
@@ -814,7 +708,7 @@ Exports
             include:include,
 //            parse_scaled:parse_scaled,
             parse_number:parse_number,
-            parse_resistor:parse_resistor
+            parse_device:parse_device
               }
 }());
 
@@ -871,7 +765,7 @@ function test14(){ console.log(parser.tokenize("//comment\nR1 a b 1\n/* comment 
                                                "A[0:1:0]"
                                               )); }
 
-function test15(){ console.log(parser.parse_resistor(parser.tokenize("Rtest a b -2").slice(0,4))); }
+function test15(letter){ console.log(parser.parse_device(parser.tokenize(letter+"test a b 0").slice(0,4))); }
 
 
 
