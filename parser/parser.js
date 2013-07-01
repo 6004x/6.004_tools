@@ -62,7 +62,7 @@ Splitter: splits a string into an array of tokens
 //        var pattern = /".*"|0x[0-9a-fA-F]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]*)|\.?[A-Za-z][\w:\.,$#\[\]]*|=|\n|\u001e/g; 
         var pattern = /".*"|-?[\w:\.,$#\[\]]+|=|\/\*|\n|\u001e/g;
         
-        var names_pattern = /^[A-Za-z][\w,$:\[\]\.]*/;
+        var names_pattern = /(^[A-Za-z][\w,$:\[\]\.]*)|(^\d$)/;
         var control_pattern = /^\..+/;
         var int_pattern = /\d+/;
         var exp_pattern = /-?\d*\.?\d+[eE]-?\d+/;
@@ -408,106 +408,18 @@ iterators and duplicators, and includes files
 /***********************
 Parse ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ***********************/
+    
+    var globals = [];
+    var plots = [];
+    var options = {};
+    var analyses = [];
+    var subcircuits = {};
+    var devices = [] // DEBUG ONLY!!!!!!!!!!
+    
     function parse(input_string,filename){
         var token_array = tokenize(input_string,filename);
-        var globals = [];
-        var plots = [];
-        var options = {};
-        var analyses = [];
-        var subcircuits = {};
         
         var toParse = [];
-        
-        // executes control statements
-        function parseControl(line){
-            switch (line[0].token.toLowerCase()){
-                case ".global":
-                    line.shift();
-                    for (var i=0; i<line.length; i+=1){
-                        globals.push(line.shift().token);
-                    }
-                    break;
-                case ".options":
-                    line.shift();
-                    while (line.length > 0){
-                        if (line[1].token != "="){
-                            throw "Expression expected";
-                        }
-                        var opt_name = line[0].token;
-                        try{
-                            var opt_val = parse_number(line[2].token);
-                        } catch(err){
-                            throw "Number expected";
-                        }
-//                        if (opt_val.type = "number"){
-//                            opt_val = parse_number(line[2].token);
-//                        }
-                        options[opt_name] = opt_val;
-                        line=line.slice(3);
-                    }
-                    break;
-                case ".plot":
-                    line.shift();
-                    var plot_list=[];
-                    while (line.length > 0){
-                        plot_list.push(line.shift().token);
-                    }
-                    if (plot_list.length > 0){
-                        plots.push(plot_list);
-                    } else {
-                        throw "Node name expected";
-                    }
-                    break;
-                case ".tran":
-                    line.shift();
-                    var tran_obj = {type:'tran',parameters:{}};
-                    for (var i=0;i<line.length;i+=1){
-                        if (i==line.length-1){
-                            tran_obj.parameters["tstop"]=parse_number(line[i].token);
-                        } else {
-                            tran_obj.parameters["tstep"+i] =
-                                parse_number(line[i].token);
-                        }
-                    }
-                    analyses.push(tran_obj);
-                    break;
-                case ".dc":
-                    line.shift();
-                    var dc_obj = {type:'dc',parameters:{}};
-                    var param_names = ["source1","start1","stop1","step1",
-                                       "source2","start2","stop2","step2"];
-                    for (var i=0; i<line.length;i+=1){
-                        switch(i){
-                            case 0:
-                            case 4:
-                                if (line[i].type != 'name'){
-                                    throw "Node name expected";
-                                } else {
-                                    dc_obj.parameters[param_names[i]]=line[i].token;
-                                }
-                                break;
-                            case 1:
-                            case 2:
-                            case 3:
-                            case 5:
-                            case 6:
-                            case 7:
-                                dc_obj.parameters[param_names[i]]=parse_number(
-                                    line[i].token);
-                                break;
-                        }
-                    }
-                    analyses.push(dc_obj);
-                    break;
-                case ".subckt":
-                case ".ends":
-                    throw "subcircuits not implemented yet";
-                    break;
-                default:
-                    throw "Invalid control statement";
-                    break;
-            }
-        }
         
         // go through tokens one line at a time
         while (token_array.length > 0){
@@ -516,22 +428,122 @@ Parse ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 toParse.push(token_array.shift());
             } else if (toParse.length != 0) { 
                 if (toParse[0].type=="control"){ 
-                    try{
-                        parseControl(toParse);
-                        token_array.shift();
-                    } catch (err){
-                        throw new Error(err,current.line,current.column);
-                    }
+                    parse_control(toParse);
+                    toParse = [];
                 } else {
+                    devices.push(parse_device(toParse));
                     token_array.shift();
+                    toParse = [];
                 }
             } else {
                 token_array.shift();
                 continue;
             }
         }
-        console.log("globals:",globals,"options:",options,"plots:",plots,
-                    "analyses:",JSON.stringify(analyses));
+        console.log(/*"globals:",globals,"options:",options,"plots:",plots,
+                    "analyses:",JSON.stringify(analyses),*/"devices:",
+                   JSON.stringify(devices));
+    }
+    
+/*****************************
+Parse Control 
+    --args: -line: a list of tokens representing the line with a control statement
+    --returns: none
+******************************/
+    function parseControl(line){
+        switch (line[0].token.toLowerCase()){
+            case ".global":
+                line.shift();
+                for (var i=0; i<line.length; i+=1){
+                    globals.push(line.shift().token);
+                }
+                break;
+            case ".options":
+                line.shift();
+                while (line.length > 0){
+                    if (line[1].token != "="){
+                        throw new Error("Expression expected",
+                                        line[0].line,line[0].column);
+                    }
+                    var opt_name = line[0].token;
+                    try{
+                        var opt_val = parse_number(line[2].token);
+                    } catch(err){
+                        throw new Error("Number expected",
+                                        line[2].line,line[2].column);
+                    }
+//                        if (opt_val.type = "number"){
+//                            opt_val = parse_number(line[2].token);
+//                        }
+                    options[opt_name] = opt_val;
+                    line=line.slice(3);
+                }
+                break;
+            case ".plot":
+                line.shift();
+                var plot_list=[];
+                while (line.length > 0){
+                    plot_list.push(line.shift().token);
+                }
+                if (plot_list.length > 0){
+                    plots.push(plot_list);
+                } else {
+                    throw new Error("Node name expected",
+                                    line[0].line,line[0].column);
+                }
+                break;
+            case ".tran":
+                line.shift();
+                var tran_obj = {type:'tran',parameters:{}};
+                for (var i=0;i<line.length;i+=1){
+                    if (i==line.length-1){
+                        tran_obj.parameters["tstop"]=parse_number(line[i].token);
+                    } else {
+                        tran_obj.parameters["tstep"+i] =
+                            parse_number(line[i].token);
+                    }
+                }
+                analyses.push(tran_obj);
+                break;
+            case ".dc":
+                line.shift();
+                var dc_obj = {type:'dc',parameters:{}};
+                var param_names = ["source1","start1","stop1","step1",
+                                   "source2","start2","stop2","step2"];
+                for (var i=0; i<line.length;i+=1){
+                    switch(i){
+                        case 0:
+                        case 4:
+                            if (line[i].type != 'name'){
+                                throw new Error("Node name expected",
+                                                line[i].line,line[i].column);
+                            } else {
+                                dc_obj.parameters[param_names[i]]=line[i].token;
+                            }
+                            break;
+                        case 1:
+                        case 2:
+                        case 3:
+                        case 5:
+                        case 6:
+                        case 7:
+                            dc_obj.parameters[param_names[i]]=parse_number(
+                                line[i].token);
+                            break;
+                    }
+                }
+                analyses.push(dc_obj);
+                break;
+            case ".subckt":
+            case ".ends":
+                throw new Error("subcircuits not implemented yet",
+                                line[0].line,line[0].column);
+                break;
+            default:
+                throw new Error("Invalid control statement",
+                                line[0].line,line[0].column);
+                break;
+        }
     }
     
 /*******************************
@@ -580,6 +592,7 @@ Device parsers
         --properties: name, value
     **************************/
     function parse_linear(line,type,err_msg){
+        console.log("line:",line);
         var obj = {type:type,
                    connections:{},
                    properties:{}
@@ -624,7 +637,7 @@ Device parsers
     /********************
     Capacitor
         --connections: n_plus, n_minus
-        --parameters: name, value
+        --propertiess: name, value
     ***********************/
     function parse_capacitor(line){
         return parse_linear(line,"capacitor","Positive value expected");
@@ -633,10 +646,116 @@ Device parsers
     /*********************
     Inductor 
         --connections: n_plus, n_minus
-        --parameters: name, value
+        --properties: name, value
     **********************/
     function parse_inductor(line){
         return parse_linear(line,"inductor","Positive value expected");
+    }
+    
+    /************************
+    Mosfet
+        --connections: D, G, S, B
+        --properties: name, model, (scaled) width, (scaled) length
+    **************************/
+    function parse_mosfet(line){
+        var obj = {type:null,
+                   connections:{},
+                   properties:{}}
+        if (line.length != 12){
+            throw new Error("Expected seven arguments",
+                            line[0].line,line[0].column)
+        }
+        
+        for (var i=1;i<=4;i+=1){
+            if (line[i].type != 'name'){
+                throw new Error("Node name expected", 
+                                line[i].line, line[i].column)
+            }
+        }
+        obj.connections.D = line[1].token;
+        obj.connections.G = line[2].token;
+        obj.connections.S = line[3].token;
+        obj.connections.B = line[4].token;
+        
+        var model = line[5].token.toLowerCase();
+        console.log("model:",model);
+        if ((model != 'nenh')&&
+            (model != 'penh')){
+            throw new Error("Invalid model name",line[5].line,line[5].column);
+        } else {
+            if (model == 'nenh'){
+                obj.type = "nfet";
+            } else {
+                obj.type = "pfet";
+            }
+            obj.properties.model = model;
+        }
+        
+        if (line[7].token != "="){
+            throw new Error("Expression expected",line[7].line,line[7].column);
+        }
+        if (line[10].token != "="){
+            throw new Error("Expression expected",line[10].line,line[10].column);
+        }
+        
+        var lw_pattern = /^(L|W|SL|SW)$/i
+        if (!lw_pattern.test(line[6].token)){
+            throw new Error("Unrecognized property name",
+                            line[6].line,line[6].column);
+        }
+        if (!lw_pattern.test(line[9].token)){
+            throw new Error("Unrecognized property name",
+                           line[9].line,line[9].column);
+        }
+        
+        try{
+            obj.properties[line[6].token.toUpperCase()] =
+                parse_number(line[8].token);
+        } catch (err) {
+            throw new Error("Number expected",line[8].line,line[8].column);
+        }
+        
+        try{
+            obj.properties[line[9].token.toUpperCase()] =
+                parse_number(line[11].token);
+        } catch (err) {
+            throw new Error("Number expected",line[11].line,line[11].column);
+        }
+        
+        if ((obj.properties.L === undefined && obj.properties.SL === undefined) || 
+            (obj.properties.W === undefined && obj.properties.SW === undefined)){
+            throw new Error("Mosfet length and width must both be specified",
+                            line[6].line,line[6].column);
+        }
+        
+        return obj;
+    }
+    
+    /****************************
+    Voltage source
+    *****************************/
+    function parse_vsource(line){
+        throw new Error("voltage sources aren't implemented yet",
+                       line[0].line,line[0].column);
+    }
+    
+    /****************************
+    Current source
+    ***************************/
+    function parse_isource(line){
+        throw new Error("current sources aren't implemented yet",
+                       line[0].line,line[0].column);
+    }
+    
+    /*****************************
+    Instance
+    *******************************/
+    function parse_instance(line){
+        var inst_of = line.slice(-1).token;
+        
+        if (!(inst_of in subcircuits)){
+            throw new Error("Invalid device name",line[-1].line,line[-1].column);
+        }
     }
     
 /******************************
@@ -765,8 +884,9 @@ function test14(){ console.log(parser.tokenize("//comment\nR1 a b 1\n/* comment 
                                                "A[0:1:0]"
                                               )); }
 
-function test15(letter){ console.log(parser.parse_device(parser.tokenize(letter+"test a b 0").slice(0,4))); }
-
-
-
+function test15(letter){ console.log(parser.parse_device(parser.tokenize(letter+"test 0 1 1").slice(0,4))); }
+function test16(string){ console.log(JSON.stringify(parser.parse_device(
+    parser.tokenize(string).slice(0,-1)))); }
+function test17(){ parser.parse("Rrtest a b 10k\nCctest c d 5\n"+
+                               "Lltest e f 3\nMmtest 0 x z 0 nenh sw=2 sl=2"); }
 
