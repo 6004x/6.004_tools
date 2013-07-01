@@ -1,0 +1,43 @@
+to add
+
+save/delete
+
+SUPORT FOR EMPTY FOLDERS
+NEW FILE
+NEW DIRECTORY
+	filesystem object
+
+	load(path to file, callback)
+	callbackObj:
+	{
+	filepath:
+	filecontents:string
+	}
+	save(filepath, content, callback())
+	{
+	filepath:
+	success:true/false
+	//come from either server, or not able to access server
+	filecontents:..
+	}
+
+	normalizing ../
+	other path names
+	.include functionality
+
+
+newfile with me
+
+
+localstorage with server storage
+how does code mirror due offline
+rudimentary version control
+
+
+cygwin apache server for authentication
+ca server certificate
+environment variables pass to node
+
+
+roboant
+tsim
