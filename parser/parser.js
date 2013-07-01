@@ -25,7 +25,7 @@ Analyzer: removes comments and line extensions
         
         function newline_track(match){
             // replace everything that isn't a newline with a blank string
-            var replaced1 = match.replace(/[^\n\u001e]/g,"");
+            var replaced1 = match.replace(/[^\n\u001e]/g," ");
             // now replace all newlines with record separators
             return replaced1.replace(/\n/g,"\u001e");
         }
