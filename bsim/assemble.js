@@ -248,6 +248,7 @@
         if(!_.has(context.macros[this.macro], this.args.length)) {
             throw new SyntaxError("Macro '" + this.macro + "' not defined for " + this.args.length + " arguments.", this.file, this.line);
         }
+        // console.log(this.file, this.line);
         // Evaluate the arguments, which should all be Expressions.
         var evaluated = [];
         _.each(this.args, function(value) {
@@ -280,7 +281,9 @@
         }
         if(a < 0) a = 0xFFFFFFFF + a + 1;
         if(b < 0) b = 0xFFFFFFFF + b + 1;
-        return ops[this.op](a, b);
+        var result =  ops[this.op](a, b);
+        if(result < 0) result = 0xFFFFFFFF + result + 1;
+        return result;
     }
 
     function Negate(value, file, line) {
@@ -392,7 +395,7 @@
             if(!(operation instanceof Operation)) {
                 throw new SyntaxError("Internal error evaluating expression: expected operation but didn't get one!", this.file, this.line);
             }
-            console.log(a + " " + operation.op + " " + b + " = " + operation.operate(a, b));
+            // console.log(a + " " + operation.op + " " + b + " = " + operation.operate(a, b));
             a = operation.operate(a, b);
         }
 
@@ -400,7 +403,7 @@
     };
     Expression.prototype.assemble = function(context, out) {
         var value = this.evaluate(context, !!out);
-        console.log(context.dot, value);
+        // console.log(context.dot, value);
         if(out) out[context.dot] = value;
         context.dot += 1;
     };
@@ -431,7 +434,7 @@
         var old_scope = context.symbols;
         var scope = _.extend({}, context.symbols, _.object(this.parameters, args));
         context.symbols = scope;
-        console.log(this.name, _.object(this.parameters, args));
+        // console.log(this.name, _.object(this.parameters, args));
         _.each(this.instructions, function(instruction) {
             instruction.assemble(context, out);
         });
@@ -488,6 +491,13 @@
         } else {
             context.dot += this.text.length;
             if(this.null_terminated) context.dot += 1;
+        }
+        // Interesting undocumented tidbit: .text aligns!
+        // This wasted at least an hour.
+        if(this.null_terminated) {
+            if(context.dot % 4 !== 0) {
+                context.dot += (4 - (context.dot % 4));
+            }
         }
     };
 
