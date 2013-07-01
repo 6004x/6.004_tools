@@ -60,7 +60,7 @@ Splitter: splits a string into an array of tokens
 *******************************/
     function split(input_string,filename){
 //        var pattern = /".*"|0x[0-9a-fA-F]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]*)|\.?[A-Za-z][\w:\.,$#\[\]]*|=|\n|\u001e/g; 
-        var pattern = /".*"|[\w:\.,$#\[\]]+|=|\/\*|\n|\u001e/g;
+        var pattern = /".*"|-?[\w:\.,$#\[\]]+|=|\/\*|\n|\u001e/g;
         
         var names_pattern = /^[A-Za-z][\w,$:\[\]\.]*/;
         var control_pattern = /^\..+/;
@@ -103,20 +103,22 @@ Splitter: splits a string into an array of tokens
                 type = 'name';
             } else if (control_pattern.test(matched_array[0])){
                 type = 'control';
-            } else if (exp_pattern.test(matched_array[0])){
-                type = 'exp';
-            } else if (hex_pattern.test(matched_array[0])){
-                type = 'hex';
-            } else if (octal_pattern.test(matched_array[0])){
-                type = 'octal';
-            } else if (binary_pattern.test(matched_array[0])){
-                type= 'binary';
-            } else if (scaled_pattern.test(matched_array[0])){
-                type = 'scaled';
-            } else if (float_pattern.test(matched_array[0])){
-                type = 'float';
-            } else if (int_pattern.test(matched_array[0])){
-                type = 'int';
+//            } else if (exp_pattern.test(matched_array[0])){
+//                type = 'exp';
+//            } else if (hex_pattern.test(matched_array[0])){
+//                type = 'hex';
+//            } else if (octal_pattern.test(matched_array[0])){
+//                type = 'octal';
+//            } else if (binary_pattern.test(matched_array[0])){
+//                type= 'binary';
+//            } else if (scaled_pattern.test(matched_array[0])){
+//                type = 'scaled';
+//            } else if (float_pattern.test(matched_array[0])){
+//                type = 'float';
+//            } else if (int_pattern.test(matched_array[0])){
+//                type = 'int';
+            } else if (num_pattern.test(matched_array[0])){
+                type = 'number';
             } else if (matched_array[0]== "="){
                 type = 'equals'
             } else {
@@ -532,6 +534,86 @@ Parse ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                     "analyses:",JSON.stringify(analyses));
     }
     
+/*******************************
+Parse Device: takes a line representing a device and creates a device object
+    --args: -line: the array of tokens representing the device statement
+    --returns: a device object
+*******************************/
+    function parse_device(line){
+        var device_obj;
+        // type of device based on first letter of first token
+        switch (line[0][0]){
+            case "R":
+                device_obj = parse_resistor(line);
+                break;
+            case "C":
+                device_obj = parse_capacitor(line);
+                break;
+            case "L":
+                device_obj = parse_inductor(line);
+                break;
+            case "M":
+                device_obj = parse_mosfet(line);
+                break;
+            case "V":
+                device_obj = parse_vsource(line);
+                break;
+            case "I":
+                device_obj = parse_isource(line);
+                break;
+            case "X":
+                device_obj = parse_instance(line);
+                break;
+            default:
+                throw new Error("Invalid device type",line[0].line,line[0].column);
+        }
+        return device_obj;
+    }
+    
+/***********************
+Device parsers
+*****************************/
+    
+    /**************************
+    Resistor
+        --connections: n_plus, n_minus
+        --properties: name, value
+    **************************/
+    function parse_resistor(line){
+//        console.log("line:",line);
+        var obj = {type:"resistor",
+                   connections:{},
+                   properties:{}
+                  };
+        if (line.length != 4){
+            throw new Error("Expected three arguments",line[0].line,line[0].column);
+        }
+        
+        obj.properties.name = line[0].token.slice(1);
+        for (var i=1;i<=2;i+=1){
+            if (line[i].type != 'name'){
+                throw new Error("Node name expected", 
+                                line[i].line, line[i].column)
+            }
+        }
+        obj.connections.n_plus = line[1].token;
+        obj.connections.n_minus = line[2].token;
+        
+        try{
+            obj.properties.value = parse_number(line[3].token);
+        } catch (err) {
+            throw new Error("Number expected",line[3].line,line[3].column);
+        }
+        
+        if (obj.properties.value <= 0){
+            throw new Error("Positive value expected",line[3].line,line[3].column);
+        }
+        
+        return obj;
+    }
+    
+    // Capacitor
+    
 /********************************
 Parse1: turns .includes into more tokens
     --args: -input_string: a string representing the file contents
@@ -731,7 +813,8 @@ Exports
 //            parse1:parse1,
             include:include,
 //            parse_scaled:parse_scaled,
-            parse_number:parse_number
+            parse_number:parse_number,
+            parse_resistor:parse_resistor
               }
 }());
 
@@ -788,7 +871,7 @@ function test14(){ console.log(parser.tokenize("//comment\nR1 a b 1\n/* comment 
                                                "A[0:1:0]"
                                               )); }
 
-
+function test15(){ console.log(parser.parse_resistor(parser.tokenize("Rtest a b -2").slice(0,4))); }
 
 
 
