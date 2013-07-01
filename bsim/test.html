@@ -41,11 +41,13 @@
                 var content = editor.content();
                 var assembler = new BetaAssembler();
                 editor.clearErrors();
-                assembler.assemble(filename, content, function(success, error) {
+                assembler.assemble(filename, content, function(success, errors) {
                     if(!success) {
-                        editor.markErrorLine(error.file, error.message, error.line - 1, error.column);
+                        _.each(errors, function(error) {
+                            editor.markErrorLine(error.file, error.message, error.line - 1, error.column);
+                        });
                     } else {
-                        alert("Assembled successfully!")
+                        alert("Assembled successfully!");
                     }
                 });
             }

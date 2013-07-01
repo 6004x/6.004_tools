@@ -1,16 +1,27 @@
-(function() {
+// (function() {
     var root = this; // = window in a browser
 
-    var Symbol = function(name, value, kind) {
+    var Symbol = function(name, file, line) {
         this.name = name;
-        this.value = value;
-        this.kind = kind || Symbol.Assigned;
+        this.file = file;
+        this.line = line;
     };
 
-    var SyntaxError = function(message, stream) {
-        this.file = stream.file();
-        this.line = stream.line_number();
-        this.column = stream.column();
+    // This can take either a stream or a file/line pair.
+    // If it's given a stream as the second argument, it will extract
+    // the file, line number and column from that.
+    // Otherwise it will assume the second argument to be a filename
+    // and the third to be a line number.
+    var SyntaxError = function(message, stream_or_file, line) {
+        if(stream_or_file instanceof StringStream) {
+            this.file = stream_or_file.file();
+            this.line = stream_or_file.line_number();
+            this.column = stream_or_file.column();
+        } else {
+            this.file = stream_or_file;
+            this.line = line;
+            this.column = 0;
+        }
         this.message = message;
     };
     SyntaxError.prototype = new Error();
@@ -23,6 +34,8 @@
         while(!stream.eol() && sequence.length < 3) {
             if(_.contains('01234567', stream.peek())) {
                 sequence += stream.next();
+            } else {
+                break;
             }
         }
         var value = parseInt(sequence, 8);
@@ -159,12 +172,28 @@
         this.file = file;
         this.line = line;
     };
+    Assignment.prototype.assemble = function(context, out) {
+        // Dot is a special case.
+        if(this.name === '.') {
+            var dot = this.value.evaluate(context, true);
+            if(dot < context.dot) {
+                throw new SyntaxError("It is illegal to set . to a value lower than its current value (current value: " + context.dot + "; new value: " + dot + ")", this.file, this.line);
+            }
+            context.dot = dot;
+        } else {
+            context.symbols[this.name] = this.value.evaluate(context);
+        }
+        return null;
+    }
 
     function Label(name, file, line) {
         this.name = name;
         this.file = file;
         this.line = line;
     };
+    Label.prototype.assemble = function(context, out) {
+        context.symbols[this.name] = context.dot;
+    }
 
     function MacroInvocation(macro, args, file, line) {
         this.macro = macro;
@@ -199,13 +228,46 @@
             }
         }
         throw new SyntaxError("Expected ')' at end of macro argument list; got end of line.", stream);
-    }
+    };
+    MacroInvocation.prototype.assemble = function(context, out) {
+        if(!_.has(context.macros, this.macro)) {
+            throw new SyntaxError("Macro '" + this.macro + "' has not been defined.", this.file, this.line);
+        }
+        if(!_.has(context.macros[this.macro], this.args.length)) {
+            throw new SyntaxError("Macro '" + this.macro + "' not defined for " + this.args.length + " arguments.", this.file, this.line);
+        }
+        // Evaluate the arguments.
+        var evaluated = [];
+        _.each(this.args, function(value) {
+            evaluated.push(value.evaluate(context, !!out));
+        });
+        context.macros[this.macro][this.args.length].transclude(context, evaluated, out);
+    };
 
     function Operation(op, file, line) {
         this.op = op;
         this.file = file;
         this.line = line;
     };
+    Operation.prototype.operate = function(a, b) {
+        // All operations are done on 32-bit ints. Arithmetic operations are coerced
+        // by bitwise OR with 0.
+        var ops = {
+            '+': function(a, b) { return (a + b)|0; },
+            '-': function(a, b) { return (a - b)|0; },
+            '/': function(a, b) { return (a / b)|0; },
+            '*': function(a, b) { return (a * b)|0; },
+            '>>': function(a, b) { return a >>> b; },
+            '<<': function(a, b) { return a << b; },
+            '%': function(a, b) { return a % b; },
+            '&': function(a, b) { return a & b; },
+            '|': function(a, b) { return a | b; }
+        };
+        if(!_.has(ops, this.op)) {
+            throw new SyntaxError("Cannot perform operation '" + this.op + "'; no function defined.", this.file, this.line);
+        }
+        return ops[this.op](a, b);
+    }
 
     function Negate(value, file, line) {
         this.value = value;
@@ -238,7 +300,7 @@
                 }
             } else {
                 // It could be an operation.
-                var op = stream.match(/^(?:[\+\-\/\*%]|<<|>>)/);
+                var op = stream.match(/^(?:[\+\-\/\*%&|]|<<|>>)/);
                 if(op) {
                     // Comments are not division!
                     if(op[0] == '/' && stream.peek() == '/') {
@@ -256,44 +318,76 @@
             // break;
         }
 
-        // if(terms.length) {
-            // if(_.last(terms) instanceof Operation) {
-                // throw new SyntaxError("Expected operand after trailing operation '" + _.last(terms).op + "'.", file, line);
-            // }
-            return new Expression(terms, stream.file(), stream.line_number());
-        // } else {
-            // return null;
-        // }
-    }
-
-    /*
-    Expression.parse = function(stream, file, line) {
-        stream.eatSpace();
-        var a = readTerm(stream, file, line);
-        var b = null;
-        // All operations are done on 32-bit ints. Arithmetic operations are coerced
-        // by bitwise OR with 0.
-        var ops = {
-            '+': function(a, b) { return (a + b)|0; },
-            '-': function(a, b) { return (a - b)|0; },
-            '/': function(a, b) { return (a / b)|0; },
-            '*': function(a, b) { return (a * b)|0; },
-            '>>': function(a, b) { return a >>> b; },
-            '<<': function(a, b) { return a << b; },
-            '%': function(a, b) { return a % b; }
-        }
-        while(true) {
-            stream.eatSpace();
-            var operation = stream.match(/^(?:[\+\-\/\*]|<<|>>)/);
-            if(operation) {
-                b = readTerm(stream, line, file);
-                a = ops[operation](a, b);
-            } else {
-                return a;
+        return new Expression(terms, stream.file(), stream.line_number());
+    };
+    Expression.prototype.evaluate = function(context, strict) {
+        // Expressions should be alternate values and operations.
+        // If this isn't true, something has gone wrong (internally; the parser phase
+        // should catch it as a syntax error if the user messed up).
+        // Operations are always of type Operation.
+        // Values can be Numbers (ints), Strings (token names) or Expressions.
+        // Numbers are literal, tokens are expanded if possible, and expressions are
+        // recursively evaluated.
+        // If token expansion fails (because it is undefined), the expression's value is
+        // undefined. If this happens during assembly phase one it's ignorable,
+        // but during phase two it's a fatal error.
+        // (Interestingly, the existing Java implementation sometimes gets this wrong and
+        // allows you to use undefinable values, assigning them a value of zero. Let's do
+        // better.)
+        var self = this;
+        var term = function(t) {
+            if(_.isNumber(t)) {
+                return t;
             }
+            if(_.isString(t)) {
+                // . is a special case.
+                if(t === '.') {
+                    return context.dot;
+                }
+                var value = context.symbols[t];
+                if(value === undefined && strict) {
+                    throw new SyntaxError("Symbol '" + t + "' is undefined.", self.file, self.line);
+                }
+                return value;
+            }
+            if(t instanceof Expression) {
+                return t.evaluate(context, strict);
+            }
+            if(t instanceof Negate) {
+                if(t.value instanceof Expression)
+                    return -t.value.evaluate(context, strict);
+                else
+                    return -t.value;
+            }
+            console.log(t);
+            throw "Unknown term type during expression evaluation.";
         }
-        throw "???";
-    };*/
+
+        var i = 0;
+        var a = term(this.expression[i++]);
+        if(a === undefined) {
+            return undefined;
+        }
+
+        while(i < this.expression.length) {
+            var operation = this.expression[i++];
+            var b = term(this.expression[i++]);
+            if(b === undefined) {
+                return undefined;
+            }
+            if(!(operation instanceof Operation)) {
+                throw new SyntaxError("Internal error evaluating expression: expected operation but didn't get one!", this.file, this.line);
+            }
+            a = operation.operate(a, b);
+        }
+
+        return a;
+    };
+    Expression.prototype.assemble = function(context, out) {
+        var value = this.evaluate(context, !!out);
+        if(out) out[context.dot] = value;
+        context.dot += 1;
+    };
 
     function Macro(name, parameters, instructions, file, line) {
         this.name = name;
@@ -302,16 +396,50 @@
         this.file = file;
         this.line = line;
     };
+    Macro.prototype.assemble = function(context, out) {
+        if(out) return; // Only evalute macro definitions on first parse to avoid redefinition errors.
+        if(!_.has(context.macros, this.name)) {
+            context.macros[this.name] = {};
+        }
+        if(_.has(context.macros[this.name], this.parameters.length)) {
+            var old = context.macros[this.name][this.parameters.length];
+            throw new SyntaxError("Redefinition of " + this.parameters.length + "-argument macro " + this.name + ". (Original at " + old.file + ":" + old.line, this.file, this.line + ")");
+        }
+        context.macros[this.name][this.parameters.length] = this;
+    };
+    Macro.prototype.transclude = function(context, args, out) {
+        if(args.length != this.parameters.length) {
+            throw "Wrong number of parameters in Macro transclude (MacroInvocation should not permit this!)";
+        }
+        // Macros have their own scope, so create a new scope object for them.
+        var old_scope = context.symbols;
+        var scope = _.extend({}, context.symbols, _.object(this.parameters, args));
+        context.symbols = scope;
+        _.each(this.instructions, function(instruction) {
+            instruction.assemble(context, out);
+        });
+        // Revert back to the old scope.
+        context.symbols = old_scope;
+    }
 
     function Include(filename, file, line) {
         this.filename = filename;
         this.file = file;
         this.line = line;
+        this.instructions = null;
     };
     Include.parse = function(stream) {
         var filename = readString(stream);
         return new Include(filename, stream.file(), stream.line_number());
     };
+    Include.prototype.assemble = function(context, out) {
+        if(!this.instructions) {
+            throw "Attempting to assemble Include without parsing file contents.";
+        }
+        _.each(this.instructions, function(instruction) {
+            instruction.assemble(context, out);
+        });
+    }
 
     function Align(expression, file, line) {
         this.expression = expression;
@@ -322,6 +450,11 @@
         var expression = Expression.parse(stream);
         return new Align(expression, stream.file(), stream.line_number());
     }
+    Align.prototype.assemble = function(context, out) {
+        var align = this.expression.evaluate(context, true);
+        if(context.dot % align === 0) return;
+        context.dot = context.dot + (align - (context.dot % align));
+    }
 
     function AssemblyString(text, null_terminated, file, line) {
         this.text = text;
@@ -329,11 +462,25 @@
         this.file = file;
         this.line = line;
     };
+    AssemblyString.prototype.assemble = function(context, out) {
+        if(out) {
+            for(var i = 0; i < this.text.length; ++i) {
+                out[context.dot++] = this.text.charCodeAt(i);
+            }
+            if(this.null_terminated) out[context.dot++] = 0;
+        } else {
+            context.dot += this.text.length;
+            if(this.null_terminated) context.dot += 1;
+        }
+    };
 
     function Breakpoint(file, line) {
         this.file = file;
         this.line = line;
     };
+    Breakpoint.prototype.assemble = function(context, out) {
+        if(out) context.breakpoints.push(context.dot);
+    }
 
     var Protect = function(file, line) {
         this.file = file;
@@ -471,6 +618,11 @@
                             case "align":
                                 fileContent.push(Align.parse(stream));
                                 break;
+                            case "ascii":
+                            case "text":
+                                var ascii = readString(stream);
+                                fileContent.push(new AssemblyString(ascii, command == "text", stream.file(), stream.line_number()));
+                                break;
                             default:
                                 stream.skipToEnd();
                                 throw new SyntaxError("Unrecognised directive '." + command + "'", stream);
@@ -491,7 +643,7 @@
                             
                             stream.next();
                             var expression = Expression.parse(stream);
-                            var assignment = new Assignment(token, expression, stream);
+                            var assignment = new Assignment(token, expression, stream.file(), stream.line_number());
                             fileContent.push(assignment);
                             continue;
                         }
@@ -533,38 +685,63 @@
             return fileContent;
         }
 
-        // var run_assembly = function() {
-        //     mDot
-        // }
-
-        // try {
-        //     var stream = new StringStream(new FileStream(source, "foo.uasm"));
-        //     return parse(stream);
-        // } catch(e) {
-        //     if(e instanceof SyntaxError) {
-        //         console.log(e.toString());
-        //         // console.log(stream.next_line());
-        //     } else {
-        //         throw e;
-        //     }
-        // }
+        var run_assembly = function(syntax) {
+            var context = {
+                symbols: {},
+                macros: {},
+                breakpoints: [],
+                dot: 0
+            };
+             _.each(syntax, function(item) {
+                item.assemble(context);
+            });
+            var size = context.dot;
+            context.dot = 0;
+            var memory = new Uint8Array(size);
+            // Now do it again!
+            _.each(syntax, function(item) {
+                item.assemble(context, memory);
+            });
+            return memory;
+        }
 
         this.assemble = function(file, content, callback) {
             var stream = new StringStream(new FileStream(content, file));
-            try {
-                var content = parse(stream);
-            } catch(e) {
-                if(e instanceof SyntaxError) {
-                    callback(false, e);
-                    return;
+            var errors = [];
+            do {
+                try {
+                    var syntax = parse(stream);
+                } catch(e) {
+                    if(e instanceof SyntaxError) {
+                        errors.push(e);
+                    } else {
+                        throw e;
+                    }
+                }
+                console.log(syntax);
+            } while(stream.next_line());
+            if(errors.length) {
+                callback(false, errors);
+            } else {
+                try {
+                    var code = run_assembly(syntax);
+                } catch(e) {
+                    if(e instanceof SyntaxError) {
+                        errors.push(e);
+                    } else {
+                        throw e;
+                    }
+                }
+                console.log(code);
+                if(errors.length) {
+                    console.log(errors);
+                    callback(false, errors);
                 } else {
-                    throw e;
+                    callback(true);
                 }
             }
-            console.log(content);
-            callback(true);
         }
     };
 
     root.BetaAssembler = Assembler;
-})();
+// })();
