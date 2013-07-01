@@ -1,12 +1,6 @@
 // (function() {
     var root = this; // = window in a browser
 
-    var Symbol = function(name, file, line) {
-        this.name = name;
-        this.file = file;
-        this.line = line;
-    };
-
     // This can take either a stream or a file/line pair.
     // If it's given a stream as the second argument, it will extract
     // the file, line number and column from that.
@@ -45,39 +39,46 @@
         return String.fromCharCode(value);
     };
 
+    var readChar = function(stream, end_char) {
+        var chr = stream.next();
+        switch(chr) {
+        case end_char:
+            return false;
+        case '\\':
+            chr = stream.next();
+            switch(chr) {
+            case 'b': return '\b'; break;
+            case 'f': return '\f'; break;
+            case 'n': return '\n'; break;
+            case 'r': return '\r'; break;
+            case 't': return '\t'; break;
+            case '"': return '"'; break;
+            case "'": return "'"; break;
+            case '\\': return '\\'; break;
+            // Allow octal sequences like \123
+            case '0': case '1': case '2': case '3':
+            case '4': case '5': case '6': case '7':
+                stream.backUp(1);
+                return readOctalStringEscape(stream);
+                break;
+            default:
+                throw new SyntaxError("Unknown escape sequence \\" + chr + ". (if you want a literal backslash, try \\\\)", stream);
+            }
+            break;
+        default:
+            return chr;
+        }
+    };
+
     var readString = function(stream) {
         if(stream.next() != '"') {
             throw new SyntaxError("Expected a string here.", stream);
         }
         var out = '';
         while(!stream.eol()) {
-            var chr = stream.next();
-            switch(chr) {
-            case '"':
-                return out;
-            case '\\':
-                chr = stream.next();
-                switch(chr) {
-                case 'b': out += '\b'; break;
-                case 'f': out += '\f'; break;
-                case 'n': out += '\n'; break;
-                case 'r': out += '\r'; break;
-                case 't': out += '\t'; break;
-                case '"': out += '"'; break;
-                case '\\': out += '\\'; break;
-                // Allow octal sequences like \123
-                case '0': case '1': case '2': case '3':
-                case '4': case '5': case '6': case '7':
-                    stream.backUp(1);
-                    out += readOctalStringEscape(stream);
-                    break;
-                default:
-                    throw new SyntaxError("Unknown escape sequence \\" + chr + ". (if you want a literal backslash, try \\\\)", stream);
-                }
-                break;
-            default:
-                out += chr;
-            }
+            var chr = readChar(stream, '"');
+            if(chr === false) return out;
+            else out += chr;
         }
         throw new SyntaxError("Unterminated string constant", stream);
     };
@@ -157,6 +158,17 @@
             }
             return expression;
         }
+        if(stream.peek() == "'") {
+            stream.next();
+            var chr = readChar(stream, "'");
+            if(chr === false) {
+                throw new SyntaxError("Zero-character char constant; char constants must have exactly one character.");
+            }
+            if(stream.next() != "'") {
+                throw new SyntaxError("Multi-character char constant; char constants must have exactly one character (for more, try .ascii or .text)");
+            }
+            return chr.charCodeAt(0);
+        };
 
 
         return null;
@@ -181,10 +193,10 @@
             }
             context.dot = dot;
         } else {
-            context.symbols[this.name] = this.value.evaluate(context);
+            context.symbols[this.name] = this.value.evaluate(context, !!out);
         }
         return null;
-    }
+    };
 
     function Label(name, file, line) {
         this.name = name;
@@ -193,7 +205,7 @@
     };
     Label.prototype.assemble = function(context, out) {
         context.symbols[this.name] = context.dot;
-    }
+    };
 
     function MacroInvocation(macro, args, file, line) {
         this.macro = macro;
@@ -236,7 +248,7 @@
         if(!_.has(context.macros[this.macro], this.args.length)) {
             throw new SyntaxError("Macro '" + this.macro + "' not defined for " + this.args.length + " arguments.", this.file, this.line);
         }
-        // Evaluate the arguments.
+        // Evaluate the arguments, which should all be Expressions.
         var evaluated = [];
         _.each(this.args, function(value) {
             evaluated.push(value.evaluate(context, !!out));
@@ -266,6 +278,8 @@
         if(!_.has(ops, this.op)) {
             throw new SyntaxError("Cannot perform operation '" + this.op + "'; no function defined.", this.file, this.line);
         }
+        if(a < 0) a = 0xFFFFFFFF + a + 1;
+        if(b < 0) b = 0xFFFFFFFF + b + 1;
         return ops[this.op](a, b);
     }
 
@@ -378,6 +392,7 @@
             if(!(operation instanceof Operation)) {
                 throw new SyntaxError("Internal error evaluating expression: expected operation but didn't get one!", this.file, this.line);
             }
+            console.log(a + " " + operation.op + " " + b + " = " + operation.operate(a, b));
             a = operation.operate(a, b);
         }
 
@@ -385,6 +400,7 @@
     };
     Expression.prototype.assemble = function(context, out) {
         var value = this.evaluate(context, !!out);
+        console.log(context.dot, value);
         if(out) out[context.dot] = value;
         context.dot += 1;
     };
@@ -415,6 +431,7 @@
         var old_scope = context.symbols;
         var scope = _.extend({}, context.symbols, _.object(this.parameters, args));
         context.symbols = scope;
+        console.log(this.name, _.object(this.parameters, args));
         _.each(this.instructions, function(instruction) {
             instruction.assemble(context, out);
         });
@@ -498,14 +515,7 @@
         this.line = line;
     };
 
-    Symbol.Undefined = undefined;
-    Symbol.Assigned = 1;
-    Symbol.Label = 2;
-
     var Assembler = function() {
-        var mSymbols = {};
-        var mDot = Symbol('.', 0);
-
         var mParsedFiles = {};
         var mPendingIncludes = [];
 
@@ -633,7 +643,7 @@
                         // Check if we're defining a label
                         if(stream.peek() == ':') {
                             stream.next();
-                            var label = new Label(token, stream);
+                            var label = new Label(token, stream.file(), stream.line_number());
                             fileContent.push(label);
                             continue;
                         }
@@ -677,7 +687,7 @@
                             throw new SyntaxError("Unexpected closing brace '}' without matching open brace '{'", stream);
                         }
 
-                        var bad_thing = stream.match(/^[^\s]/) || stream.match(/^[^\b]/) || stream.peek();
+                        var bad_thing = stream.match(/^[^\s]+/) || stream.match(/^[^\b]+/) || stream.peek();
                         throw new SyntaxError("Unexpected '" + bad_thing + "'; giving up.", stream);
                     }
                 }
@@ -699,6 +709,7 @@
             context.dot = 0;
             var memory = new Uint8Array(size);
             // Now do it again!
+            console.log(context);
             _.each(syntax, function(item) {
                 item.assemble(context, memory);
             });
