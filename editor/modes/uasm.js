@@ -183,7 +183,7 @@
                 return null;
             },
 
-            lineComment: '|' 
+            lineComment: '//' 
         };
     };
 
