@@ -20,11 +20,12 @@
                 border:1px solid black;
                 margin:10px;
                 width:90%;
+                word-wrap:break-word;
             }
             
             .output {
                 white-space:pre;
-                font-family:monospace;
+                font-family:"Times";
                 display:block;
                 vertical-align:bottom;
                 border: 1px black solid;
@@ -34,6 +35,7 @@
                 background-color:white;
                 margin:10px;
                 width:90%;
+                word-wrap:break-word;
             }
             
             .demo button {
@@ -44,28 +46,12 @@
     </head>
     <body>
         <div>
-            <div class="demo">foo bar</div>
-            <div class="demo">foo bar // comment</div>
-            <div class="demo">foo /* comment */ bar</div>
-            <div class="demo">foo
+            <div class="demo">.global 0 vdd
+.subckt foo a
+R1 vdd a 10k
+R2 a 0 10k
+.ends</div>
 
-                
-bar</div>
-            <div class="demo">foo /* comment
-still_comment */ bar</div>
-            <div class="demo">foo /*
-
-
-lots of newlines! */
-bar</div>
-            <div class="demo">2 2k 2.2 2e2 2.2e2 0x20 020 0b10</div>
-            <div class="demo">A[0:2] B[2:0] C[0:4:2] D[0:1][2:3]</div>
-            <div class="demo">A#2 B#2#2 C[0:1]#2</div>
-            <div class="demo">A[0:1:0]</div>
-            <div class="demo">
-
-
-A[0:1:0]</div>
         </div>
     </body>
 </html>

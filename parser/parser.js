@@ -60,9 +60,9 @@ Splitter: splits a string into an array of tokens
 *******************************/
     function split(input_string,filename){
 //        var pattern = /".*"|0x[0-9a-fA-F]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]*)|\.?[A-Za-z][\w:\.,$#\[\]]*|=|\n|\u001e/g; 
-        var pattern = /".*"|-?[\w:\.,$#\[\]]+|=|\/\*|\n|\u001e/g;
+        var pattern = /".*"|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
         
-        var names_pattern = /(^[A-Za-z][\w,$:\[\]\.]*)|(^\d$)/;
+        var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)|(^\d$)/;
         var control_pattern = /^\..+/;
         var int_pattern = /\d+/;
         var exp_pattern = /-?\d*\.?\d+[eE]-?\d+/;
@@ -405,25 +405,28 @@ iterators and duplicators, and includes files
          return include(iter_expand(split(analyze(input_string),filename)));
     }
     
-/***********************
-Parse ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-***********************/
+/******************************************************************************
+*******************************************************************************
+Parse 
+*******************************************************************************
+******************************************************************************/
     
     var globals = [];
     var plots = [];
     var options = {};
     var analyses = [];
-    var subcircuits = {_top_level_:{type:"toplevel",
+    var subcircuits = {_top_level_:{name:"_top_level_",
                                     connections:{},
-                                    properties:{},
+                                    properties:{toplevel:true},
                                     devices:[]
                                    }
                       };
-    var current_subckt = subcircuits["_top_level_"];
+    var current_subckt;
     var devices = [] // DEBUG ONLY!!!!!!!!!!
     
     function parse(input_string,filename){
         var token_array = tokenize(input_string,filename);
+        current_subckt = subcircuits["_top_level_"];
         
         var toParse = [];
         
@@ -437,7 +440,7 @@ Parse ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                     parse_control(toParse);
                     toParse = [];
                 } else {
-                    current_subckt.devices.push(parse_device(toParse));
+                    current_subckt.devices.push(read_device(toParse));
                     token_array.shift();
                     toParse = [];
                 }
@@ -446,9 +449,8 @@ Parse ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 continue;
             }
         }
-        console.log("globals:",globals,"options:",options,"plots:",plots,
-                    "analyses:",JSON.stringify(analyses),/*"devices:",
-                   JSON.stringify(devices),*/"subckts:",subcircuits);
+        return {globals:globals,options:options,plots:plots,
+                analyses:analyses,subckts:subcircuits};
     }
     
 /*****************************
@@ -471,12 +473,26 @@ Parse Control
                 read_plot(line);
                 break;
             case ".tran":
+                if (current_subckt.name != "_top_level_"){
+                    throw new Error("Analyses not allowed inside "+
+                                    "subcircuit definitons",
+                                    line[0].line,line[0].column);
+                }
                 read_tran(line);
                 break;
             case ".dc":
+                if (current_subckt.name != "_top_level_"){
+                    throw new Error("Analyses not allowed inside "+
+                                    "subcircuit definitons",
+                                    line[0].line,line[0].column);
+                }
                 read_dc(line);
                 break;
             case ".subckt":
+                if (current_subckt.name != "_top_level_"){
+                    throw new Error("Nested subcircuits not allowed",
+                                    line[0].line,line[0].column);
+                }
                 current_subckt = read_subcircuit(line);
                 break;
             case ".ends":
@@ -503,7 +519,7 @@ Control statement readers
                             line[0].line,line[0].column);
         }
         for (var i=0; i<line.length; i+=1){
-            globals.push(line.shift().token);
+            globals.push(line[i].token);
         }
     }
     
@@ -613,37 +629,37 @@ Read subcircuit: creates an entry in the subcircuit dictionary
     }
     
 /*******************************
-Parse Device: takes a line representing a device and creates a device object
+Read Device: takes a line representing a device and creates a device object
     --args: -line: the array of tokens representing the device statement
     --returns: a device object
 *******************************/
-    function parse_device(line){
+    function read_device(line){
         var device_obj;
         // type of device based on first letter of first token
         switch (line[0].token[0]){
             case "R":
-                device_obj = parse_resistor(line);
+                device_obj = read_resistor(line);
                 break;
             case "C":
-                device_obj = parse_capacitor(line);
+                device_obj = read_capacitor(line);
                 break;
             case "L":
-                device_obj = parse_inductor(line);
+                device_obj = read_inductor(line);
                 break;
             case "P":
-                device_obj = parse_pfet(line);
+                device_obj = read_pfet(line);
                 break;
             case "N":
-                device_obj = parse_nfet(line);
+                device_obj = read_nfet(line);
                 break;
             case "V":
-                device_obj = parse_vsource(line);
+                device_obj = read_vsource(line);
                 break;
             case "I":
-                device_obj = parse_isource(line);
+                device_obj = read_isource(line);
                 break;
             case "X":
-                device_obj = parse_instance(line);
+                device_obj = read_instance(line);
                 break;
             default:
                 throw new Error("Invalid device type",line[0].line,line[0].column);
@@ -652,7 +668,7 @@ Parse Device: takes a line representing a device and creates a device object
     }
     
 /*********************************
-Device parsers
+Device readers
 *********************************/
     
     /*************************
@@ -664,33 +680,34 @@ Device parsers
     /**************************
     Resistor
     **************************/
-    function parse_resistor(line){
-        return parse_linear(line,"resistor",
+    function read_resistor(line){
+        return read_linear(line,"resistor",
                             "Positive, non-zero value expected");
     }
     
     /********************
     Capacitor
     ***********************/
-    function parse_capacitor(line){
-        return parse_linear(line,"capacitor","Positive value expected");
+    function read_capacitor(line){
+        return read_linear(line,"capacitor","Positive value expected");
     }
     
     /*********************
     Inductor 
     **********************/
-    function parse_inductor(line){
-        return parse_linear(line,"inductor","Positive value expected");
+    function read_inductor(line){
+        return read_linear(line,"inductor","Positive value expected");
     }
     
-    function parse_linear(line,type,err_msg){
+    function read_linear(line,type,err_msg){
 //        console.log("line:",line);
         var obj = {type:type,
                    connections:{},
                    properties:{}
                   };
         if (line.length != 4){
-            throw new Error("Three arguments expected",line[0].line,line[0].column);
+            throw new Error("Ill-formed device statement",
+                            line[0].line,line[0].column);
         }
         
         obj.properties.name = line[0].token.slice(1);
@@ -725,18 +742,18 @@ Device parsers
     /********************
     PFET
     *********************/
-    function parse_pfet(line){
-        return parse_fet(line,"pfet");
+    function read_pfet(line){
+        return read_fet(line,"pfet");
     }
     
     /********************
     NFET
     *********************/
-    function parse_nfet(line){
-        return parse_fet(line,"nfet");
+    function read_nfet(line){
+        return read_fet(line,"nfet");
     }
     
-    function parse_fet(line,type){
+    function read_fet(line,type){
         var obj = {type:type,
                    connections:{},
                    properties:{name:line[0].token.slice(1),L:1}
@@ -768,31 +785,77 @@ Device parsers
         return obj;
     }
     
+    /*************************
+    Sources: (voltage source, current source)
+        --connections: n_plus, n_minus
+        --properties: name, value
+    ***************************/
+    
     /****************************
     Voltage source
     *****************************/
-    function parse_vsource(line){
-        throw new Error("voltage sources aren't implemented yet",
-                       line[0].line,line[0].column);
+    function read_vsource(line){
+        return read_source(line,"voltage source");
     }
     
     /****************************
     Current source
     ***************************/
-    function parse_isource(line){
-        throw new Error("current sources aren't implemented yet",
-                       line[0].line,line[0].column);
+    function read_isource(line){
+        return read_source(line,"current source");
+    }
+    
+    function read_source(line,type){
+        var obj = {type:type,
+                   connections:{},
+                   properties:{name:line[0].token.slice(1)}
+                  }
+        line.shift();
+        obj.connections.n_plus = line.shift().token;
+        obj.connections.n_minus = line.shift().token;
+        var val_ar = []
+        for (var i=0; i<line.length; i+=1){
+            val_ar.push(line[i].token);
+        }
+        obj.properties.value = val_ar.join(" ");
+        return obj;
     }
     
     /*****************************
-    Instance
+    Instance: instance of user-specified subcircuit
     *******************************/
-    function parse_instance(line){
-        var inst_of = line.slice(-1).token;
-        
-        if (!(inst_of in subcircuits)){
-            throw new Error("Invalid device name",line[-1].line,line[-1].column);
+    function read_instance(line){
+        var props = [];
+        if (line.length >= 4){
+            try{
+                while (line[line.length-2].token=="="){
+                    props.push(line.slice(-3));
+                    line = line.slice(0,-3);
+                }
+            } catch (err) {}
         }
+        console.log("props:",props);
+        
+        
+        var inst = line[line.length-1];
+        if (!(inst.token in subcircuits)){
+            throw new Error("Invalid device name",inst.line,inst.column);
+        }
+        
+        var obj = {type:"instance",
+                  connections:[],
+                  properties:{instanceOf:inst.token, name:line[0].token.slice(1)}
+                  }
+        line.shift();
+        
+        for (var i=0; i<line.length-1; i+= 1){
+            obj.connections.push(line[i].token);
+        }
+        for (var i=0; i<props.length; i+=1){
+            obj.properties[props[i][0].token]=props[i][2].token;
+        }
+        
+        return obj;
     }
     
 
@@ -866,7 +929,7 @@ Exports
             include:include,
 //            parse_scaled:parse_scaled,
             parse_number:parse_number,
-            parse_device:parse_device
+//            parse_device:parse_device
               }
 }());
 
@@ -895,6 +958,10 @@ var include_text = '.include "foo"\n.include "bar"\nR1 a b 10 //this is a commen
 var control_text = ".global vdd\n.options a=1 b=2\n.subckt foo a z\nR1 a z 10k\n"
 +".ends\nCcap a z 5\n.tran 10ns\n.plot a z 0\n\n\nPpfet z a 0 W=2\n"
 +"Nnfet 0 a z W=4 L=3";
+
+var subckt_test_text = ".subckt foo a z\nR1 a z 10k\n.ends\n"+
+                       "Xtest a b foo prop1=1 prop2=1\n"+
+                       "Xtest2 a b bar";
 
 function test1(){parser.split(raw_text);}
 function test2(){parser.decomment(parser.line_extend(parser.split(test2_text)));}
@@ -932,5 +999,5 @@ function test16(string){ console.log(JSON.stringify(parser.parse_device(
 function test17(){ parser.parse("Rrtest a b 10k\nCctest c d 5\n"+
                                "Lltest e f 3\nMmtest 0 x z 0 nenh sw=2 sl=2"); }
 
-function test18(){ parser.parse(control_text); }
+function test18(){ parser.parse(subckt_test_text); }
 
