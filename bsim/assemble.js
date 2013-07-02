@@ -675,6 +675,8 @@
 
                     // Skip any whitespace
                     if(eatSpace(stream)) continue;
+                    // If we're at the end of the line, continue.
+                    if(stream.eol()) break;
 
                     // If we're in a multi-line macro and we find a }, it's time for us to exit.
                     if(is_macro && allow_multiple_lines && stream.peek() == "}") {
