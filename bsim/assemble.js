@@ -153,7 +153,7 @@
     // - Parenthesised expressions
     // - Characters (single character strings quoted with '')
     // - Negations of the above (any of the above prefixed by a -)
-    // Returns the term, whatever it happens to be (number, symbol name, expression, Negate)
+    // Returns the term, whatever it happens to be (number, symbol name, Expression, UnaryOperation)
     var readTerm = function(stream) {
         eatSpace(stream);
         // Is it a number?
@@ -163,13 +163,13 @@
         var symbol = readSymbol(stream);
         if(symbol !== null) return symbol;
 
-        if(stream.peek() == '-') {
-            stream.next();
+        if(stream.peek() == '-' || stream.peek() == '~' || stream.peek() == '+') {
+            var unary = stream.next();
             var next = readTerm(stream);
             if(next) {
-                return new Negate(next, stream.file(), stream.line_number());
+                return new UnaryOperation(unary, next, stream.file(), stream.line_number());
             } else {
-                throw new SyntaxError("Expected value to negate after unary negation operator.", stream);
+                throw new SyntaxError("Expected value after unary '" + unary + "' operator.", stream);
             }
         }
         if(stream.peek() == '(') {
@@ -340,12 +340,27 @@
         return result;
     };
 
-    // Indicates that the value should be negated.
-    function Negate(value, file, line) {
+    // Indicates that the value should be subjected to some unary operation.
+    function UnaryOperation(op, value, file, line) {
+        this.op = op;
         this.value = value;
         this.file = file;
         this.line = line;
     };
+    UnaryOperation.prototype.evaluate = function(context, strict) {
+        var ops = {
+            '-': function(a) { return -a; },
+            '~': function(a) { return ~a; },
+            '+': function(a) { return +a; }
+        };
+        if(this.value instanceof Expression) {
+            this.value = this.value.evaluate(context, strict);
+        }
+        if(!_.has(ops, this.op)) {
+            throw new SyntaxError("Cannot perform unary operation '" + this.op + "'; no function defined.", this.file, this.line);
+        }
+        return ops[this.op](this.value);
+    }
 
     // Represents an 'arithmetic expression'. This includes the degenerate cases of either an integer
     // literal or a symbol name with no operations.
@@ -428,16 +443,9 @@
                 }
                 return value;
             }
-            // Evaluate expressions recursively.
-            if(t instanceof Expression) {
+            // Evaluate expressions and unary operations recursively.
+            if(t instanceof Expression || t instanceof UnaryOperation) {
                 return t.evaluate(context, strict);
-            }
-            // Negate anything that should be negated.
-            if(t instanceof Negate) {
-                if(t.value instanceof Expression)
-                    return -t.value.evaluate(context, strict);
-                else
-                    return -t.value;
             }
             // We shouldn't be able to get here.
             console.log(t);
