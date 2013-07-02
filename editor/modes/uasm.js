@@ -10,9 +10,17 @@
         }
 
         return {
-            startState: function() { return {local_functions: {}, labels: {}}; },
+            startState: function() { return {local_functions: {}, labels: {}, block_comment: false}; },
             token: function(stream, state) {
                 // Handle special states.
+                if(state.block_comment) {
+                    if(stream.match(/^.*\*\//)) {
+                        state.block_comment = false;
+                    } else {
+                        stream.skipToEnd();
+                    }
+                    return 'comment';
+                }
                 if(state.is_include) {
                     stream.eatSpace();
                     stream.eatWhile(/^[^|]/);
@@ -119,8 +127,12 @@
                 }
                 // Not a string
                 // Perhaps a comment
-                if(stream.peek() == '|') {
+                if(stream.match(/^\/\//)) {
                     stream.skipToEnd();
+                    return 'comment';
+                }
+                if(stream.match('/*')) {
+                    state.block_comment = true;
                     return 'comment';
                 }
                 // Maybe a parenthesis
@@ -183,7 +195,10 @@
                 return null;
             },
 
-            lineComment: '|' 
+            lineComment: '//',
+            blockCommentStart: '/*',
+            blockCommentEnd: ' */',
+            blockCommentLead: '  *'
         };
     };
 
