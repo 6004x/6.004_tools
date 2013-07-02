@@ -120,7 +120,7 @@
     };
 
     var readSymbol = function(stream) {
-        stream.eatSpace();
+        eatSpace(stream);
         var match = stream.match(/^[\$\.@A-Z_][\$\.@A-Z0-9_]*/i);
         
         if(match) {
@@ -131,7 +131,7 @@
     };
 
     var readTerm = function(stream) {
-        stream.eatSpace();
+        eatSpace(stream);
         // Is it a number?
         var num = readNumber(stream);
         if(num !== null) return num;
@@ -172,6 +172,27 @@
 
 
         return null;
+    };
+
+    // Eats spaces and comments (so nothing else needs to worry about either)
+    var eatSpace = function(stream) {
+        stream.eatSpace();
+        if(stream.match(/^\/\//)) {
+            stream.skipToEnd();
+        }
+        if(stream.match(/^\/\*/)) {
+            var start_line = stream.line_number();
+            while(true) {
+                if(stream.match(/^.*\*\//)) {
+                    break;
+                } else {
+                    stream.skipToEnd();
+                    if(!stream.next_line()) {
+                        throw new SyntaxError("Unclosed block comment (starts here)", stream.file(), start_line);
+                    }
+                }
+            }
+        }
     };
 
     // All of these are generated during a first pass over the file.
@@ -302,7 +323,7 @@
         var terms = []; // List of terms (which we don't generally evaluate while parsing)
         var want_operation = false;
         while(true) {
-            stream.eatSpace();
+            eatSpace(stream);
             if(!want_operation) {
                 var term = readTerm(stream);
                 if(term !== null) {
@@ -320,11 +341,6 @@
                 // It could be an operation.
                 var op = stream.match(/^(?:[\+\-\/\*%&|]|<<|>>)/);
                 if(op) {
-                    // Comments are not division!
-                    if(op[0] == '/' && stream.peek() == '/') {
-                        stream.backUp(1);
-                        break;
-                    }
                     terms.push(new Operation(op[0], stream.file(), stream.line_number()));
                     want_operation = false;
                     continue;
@@ -534,7 +550,7 @@
                 throw new SyntaxError("Macro definitions must include a name.", stream);
             }
             var macro_args = [];
-            stream.eatSpace();
+            eatSpace(stream);
             if(stream.next() != '(') {
                 throw new SyntaxError("Macro definitions must include a parenthesised argument list.", stream);
             }
@@ -548,7 +564,7 @@
                         throw new SyntaxError("Macro arguments must be valid symbol names", stream);
                     }
                     macro_args.push(macro_arg);
-                    stream.eatSpace();
+                    eatSpace(stream);
                     var next = stream.next();
                     if(next == ')') {
                         break;
@@ -572,7 +588,7 @@
 
             // If we're in a macro, if the first character we receive is an open brace {,
             // we are allowed to span multiple lines (indeed, we run until we find a close brace)
-            stream.eatSpace();
+            eatSpace(stream);
             if(is_macro && stream.peek() == '{') {
                 stream.next();
                 allow_multiple_lines = true;
@@ -591,7 +607,7 @@
                     }
 
                     // Skip any whitespace
-                    if(stream.eatSpace()) continue;
+                    if(eatSpace(stream)) continue;
 
                     // If we're in a multi-line macro and we find a }, it's time for us to exit.
                     if(is_macro && allow_multiple_lines && stream.peek() == "}") {
@@ -618,7 +634,7 @@
                     var start_pos = stream.pos;
                     var token = readSymbol(stream);
                     
-                    stream.eatSpace();
+                    eatSpace(stream);
                     if(token) {
                         // Check for commands
                         if(token[0] == '.' && token.length > 1) {
