@@ -446,8 +446,8 @@ Parse ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 continue;
             }
         }
-        console.log(/*"globals:",globals,"options:",options,"plots:",plots,
-                    "analyses:",JSON.stringify(analyses),"devices:",
+        console.log("globals:",globals,"options:",options,"plots:",plots,
+                    "analyses:",JSON.stringify(analyses),/*"devices:",
                    JSON.stringify(devices),*/"subckts:",subcircuits);
     }
     
@@ -458,71 +458,23 @@ Parse Control
 ******************************/
     function parse_control(line){
         switch (line[0].token.toLowerCase()){
+            case ".connect":
+                throw new Error("Not implemented yet",line[0].row,line[0].column);
+                break;
             case ".global":
-                line.shift();
-                if (line.length === 0){
-                    throw new Error("No global nodes specified",
-                                    line[0].line,line[0].column);
-                }
-                for (var i=0; i<line.length; i+=1){
-                    globals.push(line.shift().token);
-                }
+                read_global(line);
                 break;
             case ".options":
-                line.shift();
-                while (line.length > 0){
-                    if (line.length < 3){
-                        throw new Error("Assignment expected",
-                                        line[0].line,line[0].column);
-                    }
-                    if (line[1].token != "="){
-                        throw new Error("Assignment expected",
-                                        line[0].line,line[0].column);
-                    }
-                    options[line[0].token] = line[2].token;
-                    line=line.slice(3);
-                }
+                read_options(line);
                 break;
             case ".plot":
-                line.shift();
-                var plot_list=[];
-                while (line.length > 0){
-                    plot_list.push(line.shift().token);
-                }
-                if (plot_list.length > 0){
-                    plots.push(plot_list);
-                } else {
-                    throw new Error("Node name expected",
-                                    line[0].line,line[0].column);
-                }
+                read_plot(line);
                 break;
             case ".tran":
-                line.shift();
-                var tran_obj = {type:'tran',parameters:{}};
-                for (var i=0;i<line.length;i+=1){
-                    if (i==line.length-1){
-                        tran_obj.parameters["tstop"]=parse_number(line[i].token);
-                    } else {
-                        tran_obj.parameters["tstep"+i] =
-                            parse_number(line[i].token);
-                    }
-                }
-                analyses.push(tran_obj);
+                read_tran(line);
                 break;
             case ".dc":
-                line.shift();
-                var dc_obj = {type:'dc',parameters:{}};
-                var param_names = ["source1","start1","stop1","step1",
-                                   "source2","start2","stop2","step2"];
-                if (line.length != 4 && line.length != 8){
-                    throw new Error("Ill-formed .dc statement",
-                                   line[0].line,line[0].column);
-                }
-                
-                for (var i=0; i<line.length;i+=1){
-                    dc_obj.parameters[param_names[i]]=line[i].token;
-                }
-                analyses.push(dc_obj);
+                read_dc(line);
                 break;
             case ".subckt":
                 current_subckt = read_subcircuit(line);
@@ -537,8 +489,101 @@ Parse Control
         }
     }
     
+/************************
+Control statement readers
+************************/
+    
+    /*********************
+    Global: for global nodes
+    *********************/
+    function read_global(line){
+        line.shift();
+        if (line.length === 0){
+            throw new Error("No global nodes specified",
+                            line[0].line,line[0].column);
+        }
+        for (var i=0; i<line.length; i+=1){
+            globals.push(line.shift().token);
+        }
+    }
+    
+    /*********************
+    Plot: which nodes to plot
+    *********************/
+    function read_plot(line){
+        line.shift();
+        var plot_list=[];
+        while (line.length > 0){
+            plot_list.push(line.shift().token);
+        }
+        if (plot_list.length > 0){
+            plots.push(plot_list);
+        } else {
+            throw new Error("Node name expected",
+                            line[0].line,line[0].column);
+        }
+    }
+    
+    /*********************
+    Options: global options
+    *********************/
+    function read_options(line){
+        line.shift();
+        while (line.length > 0){
+            if (line.length < 3){
+                throw new Error("Assignment expected",
+                                line[0].line,line[0].column);
+            }
+            if (line[1].token != "="){
+                throw new Error("Assignment expected",
+                                line[0].line,line[0].column);
+            }
+            options[line[0].token] = line[2].token;
+            line=line.slice(3);
+        }
+    }
+    
+    /*********************
+    Tran: transient analyses
+    *********************/
+    function read_tran(line){
+        line.shift();
+        var tran_obj = {type:'tran',parameters:{}};
+        for (var i=0;i<line.length;i+=1){
+            if (i==line.length-1){
+                tran_obj.parameters["tstop"]=parse_number(line[i].token);
+            } else {
+                tran_obj.parameters["tstep"+i] =
+                    parse_number(line[i].token);
+            }
+        }
+        analyses.push(tran_obj);
+    }
+    
+    /*********************
+    DC: DC analyses
+    *********************/
+    function read_dc(line){
+        line.shift();
+        var dc_obj = {type:'dc',parameters:{}};
+        var param_names = ["source1","start1","stop1","step1",
+                           "source2","start2","stop2","step2"];
+        if (line.length != 4 && line.length != 8){
+            throw new Error("Ill-formed .dc statement",
+                           line[0].line,line[0].column);
+        }
+        
+        for (var i=0; i<line.length;i+=1){
+            dc_obj.parameters[param_names[i]]=line[i].token;
+        }
+        analyses.push(dc_obj);
+    }
+    
 /*******************************
 Read subcircuit: creates an entry in the subcircuit dictionary
+    --args: -line: the token array representing the line to read
+    --returns: a subcircuit object with a name, ports list, properties dict, 
+                and device list
 *********************************/
     function read_subcircuit(line){
         line.shift();
@@ -639,7 +684,7 @@ Device parsers
     }
     
     function parse_linear(line,type,err_msg){
-        console.log("line:",line);
+//        console.log("line:",line);
         var obj = {type:type,
                    connections:{},
                    properties:{}
@@ -694,7 +739,7 @@ Device parsers
     function parse_fet(line,type){
         var obj = {type:type,
                    connections:{},
-                   properties:{name:line[0].token.slice(1),L:1,SL:1}
+                   properties:{name:line[0].token.slice(1),L:1}
                   }
         if ((line.length !=10) && (line.length !=7)){
             throw new Error("Ill-formed device declaration",
@@ -720,87 +765,8 @@ Device parsers
             throw new Error("Mosfet width must be specified",
                             line[0].line,line[0].column);
         }
-        
+        return obj;
     }
-    
-    /************************
-    Mosfet
-        --connections: D, G, S, B
-        --properties: name, model, (scaled) width, (scaled) length
-    **************************/
-//    function parse_mosfet(line){
-//        var obj = {type:null,
-//                   connections:{},
-//                   properties:{}}
-//        if (line.length != 12){
-//            throw new Error("Expected seven arguments",
-//                            line[0].line,line[0].column)
-//        }
-//        
-//        for (var i=1;i<=4;i+=1){
-//            if (line[i].type != 'name'){
-//                throw new Error("Node name expected", 
-//                                line[i].line, line[i].column)
-//            }
-//        }
-//        obj.connections.D = line[1].token;
-//        obj.connections.G = line[2].token;
-//        obj.connections.S = line[3].token;
-//        obj.connections.B = line[4].token;
-//        
-//        var model = line[5].token.toLowerCase();
-//        console.log("model:",model);
-//        if ((model != 'nenh')&&
-//            (model != 'penh')){
-//            throw new Error("Invalid model name",line[5].line,line[5].column);
-//        } else {
-//            if (model == 'nenh'){
-//                obj.type = "nfet";
-//            } else {
-//                obj.type = "pfet";
-//            }
-//            obj.properties.model = model;
-//        }
-//        
-//        if (line[7].token != "="){
-//            throw new Error("Assignment expected",line[7].line,line[7].column);
-//        }
-//        if (line[10].token != "="){
-//            throw new Error("Assignment expected",line[10].line,line[10].column);
-//        }
-//        
-//        var lw_pattern = /^(L|W|SL|SW)$/i
-//        if (!lw_pattern.test(line[6].token)){
-//            throw new Error("Unrecognized property name",
-//                            line[6].line,line[6].column);
-//        }
-//        if (!lw_pattern.test(line[9].token)){
-//            throw new Error("Unrecognized property name",
-//                           line[9].line,line[9].column);
-//        }
-//        
-//        try{
-//            obj.properties[line[6].token.toUpperCase()] =
-//                parse_number(line[8].token);
-//        } catch (err) {
-//            throw new Error("Number expected",line[8].line,line[8].column);
-//        }
-//        
-//        try{
-//            obj.properties[line[9].token.toUpperCase()] =
-//                parse_number(line[11].token);
-//        } catch (err) {
-//            throw new Error("Number expected",line[11].line,line[11].column);
-//        }
-//        
-//        if ((obj.properties.L === undefined && obj.properties.SL === undefined) || 
-//            (obj.properties.W === undefined && obj.properties.SW === undefined)){
-//            throw new Error("Mosfet length and width must both be specified",
-//                            line[6].line,line[6].column);
-//        }
-//        
-//        return obj;
-//    }
     
     /****************************
     Voltage source
@@ -926,6 +892,9 @@ var iter_test_array = ["[4:0]","[4:0:2]","[0:4]","[0:4:2]",
 var line_ext_text = "hi \n foo\n\n+ bar";
 var decomment_text = "foo\n//comment1\n+NOT_comment1\nbar/*comment2*/\n/*comment3\n\nstill_comment3*/";
 var include_text = '.include "foo"\n.include "bar"\nR1 a b 10 //this is a comment\nC1 a b 1';
+var control_text = ".global vdd\n.options a=1 b=2\n.subckt foo a z\nR1 a z 10k\n"
++".ends\nCcap a z 5\n.tran 10ns\n.plot a z 0\n\n\nPpfet z a 0 W=2\n"
++"Nnfet 0 a z W=4 L=3";
 
 function test1(){parser.split(raw_text);}
 function test2(){parser.decomment(parser.line_extend(parser.split(test2_text)));}
@@ -962,4 +931,6 @@ function test16(string){ console.log(JSON.stringify(parser.parse_device(
     parser.tokenize(string).slice(0,-1)))); }
 function test17(){ parser.parse("Rrtest a b 10k\nCctest c d 5\n"+
                                "Lltest e f 3\nMmtest 0 x z 0 nenh sw=2 sl=2"); }
+
+function test18(){ parser.parse(control_text); }
 
