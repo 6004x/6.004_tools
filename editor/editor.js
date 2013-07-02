@@ -91,7 +91,7 @@ var Editor = function(container, mode) {
         if(!document) return false;
         var cm = document.cm;
         cm.addLineClass(line, 'background', 'cm-error-line');
-        cm.addLineWidget(line, create_error_widget(message), {noHScroll: true});
+        cm.addLineWidget(line, create_error_widget(message), {noHScroll: true, handleMouseEvents: true});
         cm.scrollIntoView({line: line, ch: column});
         var handle = cm.lineInfo(line).handle;
         mMarkedLines.push({filename: filename, handle: handle});
