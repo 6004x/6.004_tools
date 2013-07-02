@@ -162,10 +162,10 @@
             stream.next();
             var chr = readChar(stream, "'");
             if(chr === false) {
-                throw new SyntaxError("Zero-character char constant; char constants must have exactly one character.");
+                throw new SyntaxError("Zero-character char constant; char constants must have exactly one character.", stream);
             }
             if(stream.next() != "'") {
-                throw new SyntaxError("Multi-character char constant; char constants must have exactly one character (for more, try .ascii or .text)");
+                throw new SyntaxError("Multi-character char constant; char constants must have exactly one character (for more, try .ascii or .text)", stream);
             }
             return chr.charCodeAt(0);
         };
@@ -437,7 +437,7 @@
         }
         if(_.has(context.macros[this.name], this.parameters.length)) {
             var old = context.macros[this.name][this.parameters.length];
-            throw new SyntaxError("Redefinition of " + this.parameters.length + "-argument macro " + this.name + ". (Original at " + old.file + ":" + old.line, this.file, this.line + ")");
+            throw new SyntaxError("Redefinition of " + this.parameters.length + "-argument macro " + this.name + ". (Original at " + old.file + ":" + old.line + ")", this.file, this.line);
         }
         context.macros[this.name][this.parameters.length] = this;
     };
