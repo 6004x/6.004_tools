@@ -4,6 +4,7 @@
         <title>BSim</title>
         <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
         <script src="../editor/external/codemirror.js"></script>
         <script src="../editor/editor.js"></script>
@@ -13,6 +14,14 @@
         <script src="assemble.js"></script>
         <script src="split_ui.js"></script>
         <script src="bsim.js"></script>
+        <script src="simulation/bsim_common.js"></script>
+        <script src="simulation/beta.js"></script>
+        <script src="simulation/beta_instructions.js"></script>
+        <script src="simulation/regfile_view.js"></script>
+        <script src="simulation/controls.js"></script>
+        <script src="simulation/projcheckoff.js"></script>
+        <script src="simulation/tty.js"></script>
+        <script src="simulation/disassembled_view.js"></script>
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
@@ -32,7 +41,12 @@
                 <div id="editor-pane">
                     <div id="editor"></div>
                 </div>
-                <div id="simulation-pane"></div>
+                <div id="simulation-pane">
+                    <div class="program-controls"></div>
+                    <div class="regfile"></div>
+                    <div class="disassembly"></div>
+                    <div class="tty"></div>
+                </div>
             </div>
         </div>
         <script type="text/javascript">

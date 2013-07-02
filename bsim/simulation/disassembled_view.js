@@ -2,9 +2,9 @@ BSim.DisassebledView = function(container, beta) {
     var mContainer = $(container);
     var mBeta = beta;
     var mTable = $('<table class="disassembly">');
-    var mTableRows = new Array(mBeta.memorySize() / 4);
-    var mOperationCells = new Array(mBeta.memorySize() / 4);
-    var mValueCells = new Array(mBeta.memorySize() / 4);
+    var mTableRows = new Array(20);
+    var mOperationCells = new Array(20);
+    var mValueCells = new Array(20);
     var mCurrentPC = 0;
     var mRowHeight = 0;
     var mScrollOffset = 0;
@@ -38,10 +38,21 @@ BSim.DisassebledView = function(container, beta) {
         mContainer[0].scrollTop = (mRowHeight * (new_pc / 4)) - mScrollOffset;
     };
 
-    var initialise = function() {
-        var length = beta.memorySize();
+    var beta_resize_memory = function(new_length) {
+        build_rows(new_length);
+    };
+
+    var build_rows = function(length) {
+        var zero_word = BSim.Common.FormatWord(0);
+        var zero_instruction = disassemble_value(0);
+        var word_length = Math.ceil(length / 4)
+        mTableRows = new Array(word_length);
+        mOperationCells = new Array(word_length);
+        mValueCells = new Array(word_length);
+
+        mTable.empty();
         for(var i = 0; i < length; i += 4) {
-            var word = beta.readWord(i);
+            var word = 0;
             // Here we don't use jQuery because it's slow. Our use of textContent will fail in
             // IE ≤ 8, however.
 
@@ -58,15 +69,15 @@ BSim.DisassebledView = function(container, beta) {
             addr.className = 'address';
 
             var value = document.createElement('td');
-            value.textContent = BSim.Common.FormatWord(word);
+            value.textContent = zero_word;
             value.className = 'value';
 
             var label = document.createElement('td');
-            label.className = 'label';
+            label.className = 'address-label';
 
             var operation = document.createElement('td');
             operation.className = 'operation';
-            operation.textContent = disassemble_value(word);
+            operation.textContent = zero_instruction;
 
             tr.appendChild(addr);
             tr.appendChild(value);
@@ -77,15 +88,23 @@ BSim.DisassebledView = function(container, beta) {
             mOperationCells[i/4] = operation;
             mValueCells[i/4] = value;
             mTableRows[i/4] = tr;
-        }
 
+        }
+        if(word_length > 0) {
+            mRowHeight = $(mTableRows[0]).height();
+            mScrollOffset = $(mContainer).height() / 2 - mRowHeight / 2;
+        }
+    };
+
+    var initialise = function() {
+        var length = 80;
+        build_rows(length);
         mContainer.append(mTable);
-        mRowHeight = $(mTableRows[0]).height();
-        mScrollOffset = $(mContainer).height() / 2 - mRowHeight / 2;
 
         mBeta.on('change:word', beta_change_word);
         mBeta.on('change:pc', beta_change_pc);
         mBeta.on('change:bulk:word', beta_bulk_change_word);
+        mBeta.on('resize:memory', beta_resize_memory);
     };
 
     initialise();

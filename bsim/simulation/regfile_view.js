@@ -20,7 +20,7 @@ BSim.RegfileView = function(container, beta) {
         for(var i = 0; i < 8; ++i) {
             var tr = $('<tr>');
             for(var j = 0; j < 4; ++j) {
-                tr.append($('<td class="label">').text(BSim.Common.RegisterName((i + j*8))));
+                tr.append($('<td class="register">').text(BSim.Common.RegisterName((i + j*8))));
                 var cell = $('<td class="value">').text(BSim.Common.FormatWord(0));
                 mRegisterValueCells[i+j*8] = cell;
                 tr.append(cell);

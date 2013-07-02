@@ -40,6 +40,8 @@ BSim.Beta = function(mem_size) {
     this.loadBytes = function(bytes) {
         this.stop();
         this.reset();
+        mMemory = new Uint8Array(bytes.length);
+        this.trigger('resize:memory', bytes.length);
         for(var i = 0; i < bytes.length; ++i) {
             this.writeByte(i, bytes[i]);
         }

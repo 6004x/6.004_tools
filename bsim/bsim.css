@@ -10,3 +10,60 @@
 .nav-pills li {
     cursor: pointer;
 }
+
+.regfile .register {
+    color: gray;
+    text-align: right;
+}
+
+table.regfile {
+    border: 1px solid gray;
+}
+
+.regfile, .disassembly, .tty {
+    font-family: Menlo, Monaco, monospace;
+    font-size: small;
+}
+
+pre.tty-output {
+    height: 100px;
+    overflow-y: auto;
+    background-color: #fafafa;
+    border: thin solid #eaeaea;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+table.disassembly {
+    table-layout: fixed;
+    border-spacing: 0px;
+}
+
+.current-instruction {
+    background-color: #3874D7;
+    color: white;
+}
+
+.current-instruction.supervisor-mode {
+    background-color: #CC3729;
+}
+
+div.disassembly {
+    height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 400px;
+}
+
+.disassembly td {
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.disassembly .address-label {
+    width: 150px;
+}
+
+.disassembly .operation {
+    width: 240px;
+}

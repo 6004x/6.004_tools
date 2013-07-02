@@ -818,7 +818,8 @@
         // Public driver function.
         // file: the name of the file
         // content: the contents of the file
-        // callback(success, error_list): called on completion. error_list is a list of SyntaxErrors, if any
+        // callback(false, error_list): called on failure. error_list is a list of SyntaxErrors, if any
+        // callback(true, bytecode): called on success. bytecode is a Uint8Array containing the result of compilation.
         this.assemble = function(file, content, callback) {
             var stream = new StringStream(new FileStream(content, file));
             var errors = [];
@@ -849,7 +850,7 @@
                 if(errors.length) {
                     callback(false, errors);
                 } else {
-                    callback(true);
+                    callback(true, code);
                 }
             }
         };
