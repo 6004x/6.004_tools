@@ -14,10 +14,11 @@ function setup (div) {
         var input = area.val();
         try{
             var parsed = parser.parse(input);
-            var stringed = JSON.stringify(parsed, null,"  ").replace(/"/g,"");
+            var stringed = JSON.stringify(parsed, null,"   ").replace(/"/g,"");
             output.text(stringed);
         } catch (err) {
-            output.text("Error in line "+err.line+": "+err.message);
+            output.text("Error in line "+err.line+", column "+err.column+
+                        ": "+err.message);
         }
     }
 }

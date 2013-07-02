@@ -47,9 +47,9 @@
     <body>
         <div>
             <div class="demo">.global 0 vdd
-.subckt foo a
-R1 vdd a 10k
-R2 a 0 10k
+.subckt inv a z
+Pup z a vdd w=1
+Ndown 0 a z w=1
 .ends</div>
 
         </div>

@@ -411,26 +411,31 @@ Parse
 *******************************************************************************
 ******************************************************************************/
     
-    var globals = [];
-    var plots = [];
-    var options = {};
-    var analyses = [];
-    var subcircuits = {_top_level_:{name:"_top_level_",
-                                    connections:{},
-                                    properties:{toplevel:true},
-                                    devices:[]
-                                   }
-                      };
+    var globals;
+    var plots;
+    var options;
+    var analyses;
+    var subcircuits;
     var current_subckt;
-    var devices = [] // DEBUG ONLY!!!!!!!!!!
     
     function parse(input_string,filename){
         var token_array = tokenize(input_string,filename);
+        globals = [];
+        plots = [];
+        options = {};
+        analyses = [];
+        subcircuits = {_top_level_:{name:"_top_level_",
+                                    connections:{},
+                                    properties:{},
+                                    devices:[]
+                                   }
+                      };
         current_subckt = subcircuits["_top_level_"];
         
         var toParse = [];
         
-        // go through tokens one line at a time
+        // go through tokens one line at a time, and pass the line to the 
+        // appropriate handler
         while (token_array.length > 0){
             var current = token_array[0];
             if(current.token != "\n"){
@@ -461,7 +466,8 @@ Parse Control
     function parse_control(line){
         switch (line[0].token.toLowerCase()){
             case ".connect":
-                throw new Error("Not implemented yet",line[0].row,line[0].column);
+                throw new Error("Connect not implemented yet",
+                                line[0].row,line[0].column);
                 break;
             case ".global":
                 read_global(line);
@@ -496,6 +502,10 @@ Parse Control
                 current_subckt = read_subcircuit(line);
                 break;
             case ".ends":
+                if (current_subckt.name == "_top_level_"){
+                    throw new Error(".ends statement without matching .subckt",
+                                    line[0].line,line[0].column);
+                }
                 current_subckt = subcircuits["_top_level_"];
                 break;
             default:
@@ -563,14 +573,21 @@ Control statement readers
     Tran: transient analyses
     *********************/
     function read_tran(line){
-        line.shift();
         var tran_obj = {type:'tran',parameters:{}};
-        for (var i=0;i<line.length;i+=1){
+        for (var i=1;i<line.length;i+=1){
             if (i==line.length-1){
-                tran_obj.parameters["tstop"]=parse_number(line[i].token);
+                try{
+                    tran_obj.parameters["tstop"]=parse_number(line[i].token);
+                } catch (err){
+                    throw new Error("Number expected",line[i].line,line[i].column);
+                }
             } else {
-                tran_obj.parameters["tstep"+i] =
-                    parse_number(line[i].token);
+                try{
+                    tran_obj.parameters["tstep"+i] =
+                        parse_number(line[i].token);
+                } catch (err){
+                    throw new Error("Number expected",line[i].line,line[i].column);
+                }
             }
         }
         analyses.push(tran_obj);
@@ -590,6 +607,18 @@ Control statement readers
         }
         
         for (var i=0; i<line.length;i+=1){
+            if (i==0 || i==4){
+                if (line[i].type != "name"){
+                    throw new Error("Node name expected",
+                                    line[i].line, line[i].column);
+                }
+            } else {
+                try{
+                    line[i].token=parse_number(line[i].token)
+                } catch (err){
+                    throw new Error("Number expected",line[i].line,line[i].column);
+                }
+            }
             dc_obj.parameters[param_names[i]]=line[i].token;
         }
         analyses.push(dc_obj);
@@ -613,7 +642,7 @@ Read subcircuit: creates an entry in the subcircuit dictionary
             if (line.length > 1){
                 if (line[1].token == "="){
                     if (line.length < 3){
-                        throw new Error("Number expected",
+                        throw new Error("Assignment expected",
                                         line[1].line,line[1].column);
                     } else {
                         obj.properties[line[0].token]=line[2].token;
@@ -681,25 +710,24 @@ Device readers
     Resistor
     **************************/
     function read_resistor(line){
-        return read_linear(line,"resistor",
-                            "Positive, non-zero value expected");
+        return read_linear(line,"resistor");
     }
     
     /********************
     Capacitor
     ***********************/
     function read_capacitor(line){
-        return read_linear(line,"capacitor","Positive value expected");
+        return read_linear(line,"capacitor");
     }
     
     /*********************
     Inductor 
     **********************/
     function read_inductor(line){
-        return read_linear(line,"inductor","Positive value expected");
+        return read_linear(line,"inductor");
     }
     
-    function read_linear(line,type,err_msg){
+    function read_linear(line,type){
 //        console.log("line:",line);
         var obj = {type:type,
                    connections:{},
@@ -720,16 +748,15 @@ Device readers
         obj.connections.n_plus = line[1].token;
         obj.connections.n_minus = line[2].token;
         
+//        if (line[3].type != "number"){
+//            throw new Error("Number expected",line[3].line,line[3].column);
+//        }
         try{
             obj.properties.value = parse_number(line[3].token);
-        } catch (err) {
-            throw new Error("Number expected",line[3].line,line[3].column);
+        } catch(err) {
+            throw new Error("Number expected",line[3].line,line[3].column)
         }
-            
-        if ((type=="resistor" && obj.properties.value == 0) ||
-            (obj.properties.value < 0)){
-            throw new Error(err_msg,line[3].line,line[3].column);
-        }
+        
         return obj;
     }
     
@@ -763,6 +790,12 @@ Device readers
                             line[0].line,line[0].column);
         }
         
+        for (var i=1; i<=3; i+=1){
+            if (line[i].type != "name"){
+                throw new Error("Node name expected",
+                                line[i].line,line[i].column);
+            }
+        }
         obj.connections.D = line[1].token;
         obj.connections.G = line[2].token;
         obj.connections.S = line[3].token;
@@ -770,12 +803,29 @@ Device readers
         if (line[5].token != "="){
             throw new Error("Assignment expected",line[5].line,line[5].column);
         }
-        obj.properties[line[4].token.toUpperCase()]=line[6].token;
+//        if (line[6].type != "number"){
+//            throw new Error("Number expected",line[6].line,line[6].column);
+//        }
+        try{
+            obj.properties[line[4].token.toUpperCase()]=parse_number(line[6].token);
+        } catch(err){
+            throw new Error("Number expected",
+                            line[6].line,line[6].column);
+        }
+        
         if (line.length==10){
             if (line[8].token != "="){
                 throw new Error("Assignment expected",line[8].line,line[8].column);
             }
-            obj.properties[line[7].token.toUpperCase()]=line[9].token;
+//            if (line[9].type != "number"){
+//                throw new Error("Number expected",line[9].line,line[9].column);
+//            }
+            try{
+            obj.properties[line[7].token.toUpperCase()]=parse_number(line[9].token);
+            } catch(err) {
+                throw new Error("Number expected",
+                                line[9].line,line[9].column);
+            }
         }
         
         if (obj.properties.W === undefined){
@@ -810,11 +860,17 @@ Device readers
                    connections:{},
                    properties:{name:line[0].token.slice(1)}
                   }
-        line.shift();
-        obj.connections.n_plus = line.shift().token;
-        obj.connections.n_minus = line.shift().token;
+        for (var i=1; i<=2; i+=1){
+            if (line[i].type!= "name"){
+                throw new Error("Node name expected",
+                                line[i].line,line[i].column);
+            }
+        }
+        
+        obj.connections.n_plus = line[1].token;
+        obj.connections.n_minus = line[2].token;
         var val_ar = []
-        for (var i=0; i<line.length; i+=1){
+        for (var i=3; i<line.length; i+=1){
             val_ar.push(line[i].token);
         }
         obj.properties.value = val_ar.join(" ");
@@ -834,9 +890,8 @@ Device readers
                 }
             } catch (err) {}
         }
-        console.log("props:",props);
-        
-        
+//        console.log("props:",props);
+
         var inst = line[line.length-1];
         if (!(inst.token in subcircuits)){
             throw new Error("Invalid device name",inst.line,inst.column);
@@ -849,10 +904,23 @@ Device readers
         line.shift();
         
         for (var i=0; i<line.length-1; i+= 1){
+            if (line[i].type != "name"){
+                throw new Error("Node name expected",
+                                line[i].line,line[i].column);
+            }
             obj.connections.push(line[i].token);
         }
         for (var i=0; i<props.length; i+=1){
-            obj.properties[props[i][0].token]=props[i][2].token;
+//            if (props[2].type != "number"){
+//                throw new Error("Number expected",
+//                                props[2].line,props[2].column)
+//            }
+            try{
+                obj.properties[props[i][0].token]=parse_number(props[i][2].token);
+            } catch(err) {
+                throw new Error("Number expected",
+                                props[i][2].line,props[i][2].token);
+            }
         }
         
         return obj;
