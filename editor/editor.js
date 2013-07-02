@@ -1,3 +1,6 @@
+// Creates an editor in the given container for the given mode.
+// - `container` should be a DOM node or unique CSS selector
+// - `mode` should be one of 'uasm', 'tsim' or 'jsim' as appropriate.
 var Editor = function(container, mode) {
     var self = this; // Tracking 'this' can be finicky; use 'self' instead.
     var mContainer = $(container);
@@ -12,7 +15,7 @@ var Editor = function(container, mode) {
 
     var mMarkedLines = []; // List of lines we need to clear things from when requested.
 
-
+    // Given a list of ToolbarButtons, adds a button group.
     this.addButtonGroup = function(buttons) {
         var group = $('<div class="btn-group">');
         _.each(buttons, function(button) {
@@ -21,52 +24,19 @@ var Editor = function(container, mode) {
         mToolbarHolder.append(group);
     };
 
-    var focusTab = function(doc) {
-        doc.tab.find('a').tab('show');
-        if(mCurrentDocument) mCurrentDocument.el.hide();
-        doc.el.show().addClass('active');
-        doc.cm.refresh();
-        doc.cm.focus();
-        mCurrentDocument = doc;
-    };
-
-    var unfocusTab = function(doc) {
-        if(!doc) return;
-        doc.el.removeClass("active").hide();
-        doc.tab.removeClass('active');
-    };
-
-    var closeTab = function(doc) {
-        if(!doc) return;
-        if(!doc.cm.isClean(doc.generation)) {
-            alert("Document has unsaved changes!\nTODO: Handle this.");
-            return;
-        }
-        // Figure out what document we should open next by taking siblings of our object.
-        var sibling = doc.tab.prev(); // Try left first
-        if(!sibling.length) sibling = doc.tab.next(); // Then try right
-        if(sibling.length) {
-            // Now we need to find the appropriate doc element.
-            // TODO: we could attach this to the tab?
-            var new_doc = _.find(_.values(mOpenDocuments), function(e) { return e.tab[0] == sibling[0];});
-            if(new_doc) {
-                focusTab(new_doc); // Focus the document, assuming we found it.
-            }
-        }
-        // Now get rid of this one.
-        delete mOpenDocuments[doc.name];
-        doc.el.remove();
-        doc.tab.remove();
-    };
-
+    // Focuses the tab for the given filename.
     this.focusTab = function(filename) {
         focusTab(mOpenDocuments[filename]);
     };
 
+    // Unfocuses the tab for the given filename.
+    // Note that calling this will cause *no* tab to be focused.
     this.unfocusTab = function(filename) {
         unfocusTab(mOpenDocuments[filename]);
     };
 
+    // Closes the tab for the given filename.
+    // Focuses an adjacent tab (preferring the left tab), if any.
     this.closeTab = function(filename) {
         closeTab(mOpenDocuments[filename]);
     };
@@ -84,6 +54,7 @@ var Editor = function(container, mode) {
         return document.cm.getValue();
     };
 
+    // Marks the given line in the given file as having an error, and displays it to the user.
     this.markErrorLine = function(filename, message, line, column) {
         var document;
         if(filename) document = mOpenDocuments[filename];
@@ -97,6 +68,7 @@ var Editor = function(container, mode) {
         mMarkedLines.push({filename: filename, handle: handle});
     };
 
+    // Clears all error markers in all files.
     this.clearErrors = function() {
         _.each(mMarkedLines, function(value) {
             if(mOpenDocuments[value.filename]) {
@@ -112,45 +84,10 @@ var Editor = function(container, mode) {
         mMarkedLines = [];
     };
 
-    var create_error_widget = function(message) {
-        var widget = $('<div class="cm-error-widget">');
-        var span = $('<span>');
-        span.text(message).appendTo(widget);
-        return widget[0];
-    };
-
-    var create_cm_instance = function(container, content) {
-        var cm = new CodeMirror(container[0], {
-            indentUint: 4,
-            lineNumbers: true,
-            electricChars: true,
-            matchBracktes: true,
-            autoCloseBrackets: true,
-            smartIndent: true,
-            indentWithTabs: true,
-            styleActiveLine: true,
-            value: content,
-            mode: mSyntaxMode
-        });
-        cm.on('save', function() {
-            alert("This would save, if it had anything to save to.");
-        });
-        return cm;
-    };
-
-    var handle_change_tab_icon = function(doc) {
-        var close = doc.tab.find('.close');
-        if(!doc.cm.isClean(doc.generation)) {
-            close.text("\u25CF"); // U+25CF BLACK CIRCLE
-        } else {
-            close.text("\u00D7"); // U+00D7 MULTIPLICATION SIGN
-        }
-    };
-
-    var tab_mouse_enter = function() {
-        $(this).text("\u00D7"); // U+00D7 MULTIPLICATION SIGN
-    };
-
+    // Opens a new tab with the given filename and content.
+    // filename should be a full path to the file. If not given, the document will be called 'untitled'
+    // If activate is true, the tab will be focused. If false, the tab will be focused only if there are
+    // no other documents currently open.
     this.openTab = function(filename, content, activate) {
         var has_location = true;
         // If no filename is given, invent one. We'll need to prompt later.
@@ -207,26 +144,108 @@ var Editor = function(container, mode) {
         if(mExpectedHeight) self.setHeight(mExpectedHeight);
     };
 
-    this.currentTab = function() {
+    // Returns the filename of the currently focused document. If there is no such document, returns null.
+    this.currentFilename = function() {
         return mCurrentDocument ? mCurrentDocument.name : null;
     };
+    this.currentTab = this.currentFilename; // legacy
 
+    // Returns a list of filenames of currently open documents.
     this.filenames = function() {
         return _.pluck(mOpenDocuments, 'name');
     };
 
-    // Why does doing anything vertically suck so much?
+    // Sets the vertical height of the entire editor (including toolbars, etc.), in pixels.
+    // This should be called whenever the available display area changes.
+    // (Why does doing anything vertically suck so much?)
     this.setHeight = function(height) {
-
         if(!mCurrentDocument) return; // If we don't have a current document there is no height to set, so don't die over it.
 
         mExpectedHeight = height;
         mContainer.height(height);
-        var offset = mCurrentDocument.el.position().top;
+        var offset = mCurrentDocument.el.position().top; // Gets the amount of unavailable space.
         _.each(mOpenDocuments, function(doc) {
             doc.cm.getWrapperElement().style.height = (height - offset) + 'px';
             doc.cm.refresh();
         });
+    };
+
+    // The below methods are private.
+    var focusTab = function(doc) {
+        doc.tab.find('a').tab('show');
+        if(mCurrentDocument) mCurrentDocument.el.hide();
+        doc.el.show().addClass('active');
+        doc.cm.refresh();
+        doc.cm.focus();
+        mCurrentDocument = doc;
+    };
+
+    var unfocusTab = function(doc) {
+        if(!doc) return;
+        doc.el.removeClass("active").hide();
+        doc.tab.removeClass('active');
+    };
+
+    var closeTab = function(doc) {
+        if(!doc) return;
+        if(!doc.cm.isClean(doc.generation)) {
+            alert("Document has unsaved changes!\nTODO: Handle this.");
+            return;
+        }
+        // Figure out what document we should open next by taking siblings of our object.
+        var sibling = doc.tab.prev(); // Try left first
+        if(!sibling.length) sibling = doc.tab.next(); // Then try right
+        if(sibling.length) {
+            // Now we need to find the appropriate doc element.
+            // TODO: we could attach this to the tab?
+            var new_doc = _.find(_.values(mOpenDocuments), function(e) { return e.tab[0] == sibling[0];});
+            if(new_doc) {
+                focusTab(new_doc); // Focus the document, assuming we found it.
+            }
+        }
+        // Now get rid of this one.
+        delete mOpenDocuments[doc.name];
+        doc.el.remove();
+        doc.tab.remove();
+    };
+
+    var create_error_widget = function(message) {
+        var widget = $('<div class="cm-error-widget">');
+        var span = $('<span>');
+        span.text(message).appendTo(widget);
+        return widget[0];
+    };
+
+    var create_cm_instance = function(container, content) {
+        var cm = new CodeMirror(container[0], {
+            indentUint: 4,
+            lineNumbers: true,
+            electricChars: true,
+            matchBracktes: true,
+            autoCloseBrackets: true,
+            smartIndent: true,
+            indentWithTabs: true,
+            styleActiveLine: true,
+            value: content,
+            mode: mSyntaxMode
+        });
+        cm.on('save', function() {
+            alert("This would save, if it had anything to save to.");
+        });
+        return cm;
+    };
+
+    var handle_change_tab_icon = function(doc) {
+        var close = doc.tab.find('.close');
+        if(!doc.cm.isClean(doc.generation)) {
+            close.text("\u25CF"); // U+25CF BLACK CIRCLE
+        } else {
+            close.text("\u00D7"); // U+00D7 MULTIPLICATION SIGN
+        }
+    };
+
+    var tab_mouse_enter = function() {
+        $(this).text("\u00D7"); // U+00D7 MULTIPLICATION SIGN
     };
 
     var create_new_document = function() {
@@ -258,6 +277,7 @@ var Editor = function(container, mode) {
         if(!Editor.IsSetUp) {
             CodeMirror.commands.save = do_save;
 
+            // Add our keyboard shortcuts for the command to comment your code.
             CodeMirror.keyMap.macDefault['Cmd-/'] = 'toggleComment';
             CodeMirror.keyMap.pcDefault['Ctrl-/'] = 'toggleComment';
 
@@ -273,6 +293,10 @@ var Editor = function(container, mode) {
 };
 Editor.IsSetUp = false;
 
+// Represents a toolbar button for the editor.
+// icon: a string (displayed as a string), a Bootstrap icon (any string beginning 'icon-'), or a DOM node
+// callback: called when the button is clicked.
+// tooltip: tooltip displayed when the user hovers over the button (optional)
 var ToolbarButton = function(icon, callback, tooltip) {
     var self = this;
     var mTooltip = tooltip;
@@ -280,6 +304,7 @@ var ToolbarButton = function(icon, callback, tooltip) {
     var mCallback = callback;
     var mElement = null;
 
+    // Renders the button in the given jQuery container element.
     self.render = function(container) {
         if(mElement) {
             mElement.remove();
