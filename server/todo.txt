@@ -2,7 +2,6 @@ to add
 
 save/delete
 
-SUPORT FOR EMPTY FOLDERS
 NEW FILE
 NEW DIRECTORY
 	filesystem object
