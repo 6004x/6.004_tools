@@ -27,7 +27,7 @@
             }
         </style>
         <script src='../fileSystem.js'></script>
-        <script src='gui_test.js'></script>
+        <script src='folders.js'></script>
         <script>
         $(document).ready(function(){
             //pass in server location to fileSystem
@@ -40,7 +40,7 @@
             $(window).resize(set_height);
 
 
-            GUI.setup('.span2', fileSystem, editor);
+            Folders.setup('.span2', fileSystem, editor);
             $('#user_input').val('');
         });
         </script>
