@@ -540,6 +540,9 @@ Control statement readers
         line.shift();
         var plot_list=[];
         while (line.length > 0){
+            if (line[0].type != "name"){
+                throw new Error("Node name expected",line[0].line,line[0].column);
+            }
             plot_list.push(line.shift().token);
         }
         if (plot_list.length > 0){
@@ -613,11 +616,14 @@ Control statement readers
                                     line[i].line, line[i].column);
                 }
             } else {
-                try{
-                    line[i].token=parse_number(line[i].token)
-                } catch (err){
+                if (line[i].type != "number"){
                     throw new Error("Number expected",line[i].line,line[i].column);
                 }
+//                try{
+//                    line[i].token=parse_number(line[i].token)
+//                } catch (err){
+//                    throw new Error("Number expected",line[i].line,line[i].column);
+//                }
             }
             dc_obj.parameters[param_names[i]]=line[i].token;
         }
@@ -632,6 +638,16 @@ Read subcircuit: creates an entry in the subcircuit dictionary
 *********************************/
     function read_subcircuit(line){
         line.shift();
+//        var props = [];
+//        if (line.length >= 4){
+//            try{
+//                while (line[line.length-2].token=="="){
+//                    props.push(line.slice(-3));
+//                    line = line.slice(0,-3);
+//                }
+//            } catch (err) {}
+//        }
+        
         var obj = {name:line[0].token,
                    ports:[],
                    properties:{},
@@ -748,14 +764,14 @@ Device readers
         obj.connections.n_plus = line[1].token;
         obj.connections.n_minus = line[2].token;
         
-//        if (line[3].type != "number"){
-//            throw new Error("Number expected",line[3].line,line[3].column);
-//        }
-        try{
-            obj.properties.value = parse_number(line[3].token);
-        } catch(err) {
-            throw new Error("Number expected",line[3].line,line[3].column)
+        if (line[3].type != "number"){
+            throw new Error("Number expected",line[3].line,line[3].column);
         }
+//        try{
+            obj.properties.value = line[3].token;
+//        } catch(err) {
+//            throw new Error("Number expected",line[3].line,line[3].column)
+//        }
         
         return obj;
     }
@@ -783,7 +799,7 @@ Device readers
     function read_fet(line,type){
         var obj = {type:type,
                    connections:{},
-                   properties:{name:line[0].token.slice(1),L:1}
+                   properties:{name:line[0].token,L:1}
                   }
         if ((line.length !=10) && (line.length !=7)){
             throw new Error("Ill-formed device declaration",
@@ -803,29 +819,29 @@ Device readers
         if (line[5].token != "="){
             throw new Error("Assignment expected",line[5].line,line[5].column);
         }
-//        if (line[6].type != "number"){
-//            throw new Error("Number expected",line[6].line,line[6].column);
-//        }
-        try{
-            obj.properties[line[4].token.toUpperCase()]=parse_number(line[6].token);
-        } catch(err){
-            throw new Error("Number expected",
-                            line[6].line,line[6].column);
+        if (line[6].type != "number"){
+            throw new Error("Number expected",line[6].line,line[6].column);
         }
+//        try{
+            obj.properties[line[4].token.toUpperCase()]=parse_number(line[6].token);
+//        } catch(err){
+//            throw new Error("Number expected",
+//                            line[6].line,line[6].column);
+//        }
         
         if (line.length==10){
             if (line[8].token != "="){
                 throw new Error("Assignment expected",line[8].line,line[8].column);
             }
-//            if (line[9].type != "number"){
-//                throw new Error("Number expected",line[9].line,line[9].column);
-//            }
-            try{
-            obj.properties[line[7].token.toUpperCase()]=parse_number(line[9].token);
-            } catch(err) {
-                throw new Error("Number expected",
-                                line[9].line,line[9].column);
+            if (line[9].type != "number"){
+                throw new Error("Number expected",line[9].line,line[9].column);
             }
+//            try{
+            obj.properties[line[7].token.toUpperCase()]=line[9].token;
+//            } catch(err) {
+//                throw new Error("Number expected",
+//                                line[9].line,line[9].column);
+//            }
         }
         
         if (obj.properties.W === undefined){
@@ -858,7 +874,7 @@ Device readers
     function read_source(line,type){
         var obj = {type:type,
                    connections:{},
-                   properties:{name:line[0].token.slice(1)}
+                   properties:{name:line[0].token}
                   }
         for (var i=1; i<=2; i+=1){
             if (line[i].type!= "name"){
@@ -899,7 +915,7 @@ Device readers
         
         var obj = {type:"instance",
                   connections:[],
-                  properties:{instanceOf:inst.token, name:line[0].token.slice(1)}
+                  properties:{instanceOf:inst.token, name:line[0].token}
                   }
         line.shift();
         

@@ -15,7 +15,7 @@
                 font-family:monospace;
                 display:block;
                 vertical-align:bottom;
-                height:200px;
+                min-height:200px;
                 font-size:16pt;
                 border:1px solid black;
                 margin:10px;
@@ -46,6 +46,27 @@
     </head>
     <body>
         <div>
+            <div class="demo">
+.global vdd gnd
+.subckt inv a z drive=2
+Ppu vdd a z w=4
+Npd z a gnd w=2
+.ends
+                
+.subckt buffer a z
+X1 a n1 inv drive=2
+X2 n1 z inv drive=4
+.ends
+                
+.options A=1 B=2
+                
+Xtest in out buffer //instance
+V1 in gnd step(0,1,1n)
+
+.tran 10n
+.plot in
+.plot out
+            </div>
             <div class="demo">.global 0 vdd
 .subckt inv a z
 Pup z a vdd w=1
