@@ -5,7 +5,6 @@ var fileSystem= function(){
 	var fileTree={};
 	var updated=true;
 	var online=false;
-	var testFileTree={"dir1":{"cjtserver.js":[],"dir2":{"fileindir2.js":{"name":"//dir1/dir2/fileindir2.js","data":"this is another test file"}},"testfile.jsim":{"name":"//dir1/testfile.jsim","data":"this is a test file"}},"lab 3":{"lab3.bak":[],"lab3.jsim":[],"lab3.timing":[],"lab3.timing.bak":[],"lab3_beta.bak":[],"lab3_beta.jsim":[],"lab3_extra.bak":[],"lab3_extra.jsim":[]},"lab 6":{"alu":{"lab3.jsim":[],"mult.jsim":[]},"lab6 tests":{"lab6 individual tests":{"lab6basicblock.jsim":[],"lab6basicblock.uasm":[],"lab6ctl.jsim":[],"lab6pc.jsim":[],"lab6regfile.jsim":[]},"lab6.uasm":[],"lab6checkoff.jsim":[]},"lab6.bak":[],"lab6.jsim":[]},"test_file.js":[]}
 	/*
 		fileTree contains a tree representation of a file list, starting with the rootnode,
 		and an dict to indicate all folders and files in the current node. In the dict, 
@@ -31,22 +30,23 @@ var fileSystem= function(){
 	function getFileList(username, callback, callbackFailed){
 		//using username or some other sort of authentication, we can get the root folder of the user
 		console.log(Object.keys(fileTree).length);
-		if(Object.keys(fileTree).length>0&&updated){
-			return fileTree;
-		}else if (!updated){
-			fileTree=readTreeFromLocalStorage;
-			writeLocalStorageToServer();
-			return fileTree;
-		}
-		else if(username){
+		// if(Object.keys(fileTree).length>0&&updated){
+		// 	return fileTree;
+		// }else if (!updated){
+		// 	fileTree=readTreeFromLocalStorage;
+		// 	writeLocalStorageToServer();
+		// 	return fileTree;
+		// }
+		if(username){
             sendAjaxRequest('/',null,'json',username, 'filelist', 
             	function(data, status){
 	            	if(status=='success'){
-	            		callback(data,status);
+	            		
 	            		fileTree=data;
 	            		writeTreeToLocalStorage();
 	            		updated=true;
 	            		online=true;
+	            		callback(data,status);
 	            	}
 	            }
             , 	function(req, status, error){
@@ -78,7 +78,7 @@ var fileSystem= function(){
 		if(username&&!file){
 			sendAjaxRequest(fileName,null, 'json', username, 'getFile', function(data, status){
 				callback(data, status)
-				if(statis=='success')
+				if(status=='success')
 					writeFileToTree(data.name, data.data);
 			}, callbackFailed);
 		}else{
@@ -133,9 +133,11 @@ var fileSystem= function(){
 
 	function newFile(username, file, callback, callbackFailed){
 		sendAjaxRequest(file.name, file.data,'json', username, 'newFile', callback, callbackFailed);
+		updated=false;
 	}	
 	function newFolder(username, folderName, callback, callbackFailed){
 		sendAjaxRequest(folderName,null,'json', username, 'newFolder', callback, callbackFailed);
+		updated=false;
 	}	
 
 	function sendAjaxRequest(filepath, fileData, dataType, username, query, callbackFunction, failFunction){
