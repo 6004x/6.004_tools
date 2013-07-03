@@ -808,23 +808,27 @@ Device readers: each takes a line of tokens and returns a device object,
                    connections:[],
                    properties:{}
                   };
-        if (line.length != 4){
-            throw new Error("Ill-formed device statement",
-                            line[0].line,line[0].column);
-        }
+//        if (line.length != 4){
+//            throw new Error("Ill-formed device statement",
+//                            line[0].line,line[0].column);
+//        }
         
         obj.properties.name = line[0].token;
-        for (var i=1;i<=2;i+=1){
-            if (line[i].type != 'name'){
-                throw new Error("Node name expected", 
-                                line[i].line, line[i].column)
-            }
+//        for (var i=1;i<=2;i+=1){
+//            if (line[i].type != 'name'){
+//                throw new Error("Node name expected", 
+//                                line[i].line, line[i].column)
+//            }
+//        }
+//        obj.connections.push(line[1].token);
+//        obj.connections.push(line[2].token);
+        for (var i=0;i<line.length-1;i+=1){
+            obj.conenctions.push(line[i]);
         }
-        obj.connections.push(line[1].token);
-        obj.connections.push(line[2].token);
         
-        if (line[3].type != "number"){
-            throw new Error("Number expected",line[3].line,line[3].column);
+        var end = line.length;
+        if (line[end-1].type != "number"){
+            throw new Error("Number expected",line[end-1].line,line[end-1].column);
         }
         obj.properties.value = line[3];
         
@@ -857,43 +861,61 @@ Device readers: each takes a line of tokens and returns a device object,
                    connections:[],
                    properties:{name:line[0].token,L:1}
                   }
-        if ((line.length !=10) && (line.length !=7)){
-            throw new Error("Ill-formed device declaration",
-                            line[0].line,line[0].column);
-        }
+//        if ((line.length !=10) && (line.length !=7)){
+//            throw new Error("Ill-formed device declaration",
+//                            line[0].line,line[0].column);
+//        }
         
-        for (var i=1; i<=3; i+=1){
-            if (line[i].type != "name"){
-                throw new Error("Node name expected",
-                                line[i].line,line[i].column);
-            }
-        }
-        obj.connections.push(line[1].token);
-        obj.connections.push(line[2].token);
-        obj.connections.push(line[3].token);
+//        for (var i=1; i<=3; i+=1){
+//            if (line[i].type != "name"){
+//                throw new Error("Node name expected",
+//                                line[i].line,line[i].column);
+//            }
+//        }
+//        obj.connections.push(line[1].token);
+//        obj.connections.push(line[2].token);
+//        obj.connections.push(line[3].token);
         
-        if (line[5].token != "="){
-            throw new Error("Assignment expected",line[5].line,line[5].column);
+        var end = line.length;
+        var knex_end=line.length-3;
+        if (line[end-2].token != "="){
+            throw new Error("Assignment expected",
+                            line[end-2].line,line[end-2].column);
         }
-        if (line[6].type != "number"){
-            throw new Error("Number expected",line[6].line,line[6].column);
+        if (line[end-1].type != "number"){
+            throw new Error("Number expected",line[end-1].line,line[end-1].column);
         }
-        obj.properties[line[4].token.toUpperCase()]=line[6];
+        obj.properties[line[end-3].token.toUpperCase()]=line[end-1];
         
-        if (line.length==10){
-            if (line[8].token != "="){
-                throw new Error("Assignment expected",line[8].line,line[8].column);
+//        if (line.length==10){
+//            if (line[8].token != "="){
+//                throw new Error("Assignment expected",line[8].line,line[8].column);
+//            }
+//            if (line[9].type != "number"){
+//                throw new Error("Number expected",line[9].line,line[9].column);
+//            }
+//            obj.properties[line[7].token.toUpperCase()]=line[9];
+//        }
+        if (line[end-5] !== undefined){
+            if (line[end-5].token == "="){
+                if (line[end-4].type != "number"){
+                    throw new Error("Number expected",
+                                    line[end-4].line,line[end-4].column);
+                }
+                obj.properties[line[end-6].token.toUpperCae()]=line[end-4];
+                knex_end -= 3;
             }
-            if (line[9].type != "number"){
-                throw new Error("Number expected",line[9].line,line[9].column);
-            }
-            obj.properties[line[7].token.toUpperCase()]=line[9];
         }
         
         if (obj.properties.W === undefined){
             throw new Error("Mosfet width must be specified",
                             line[0].line,line[0].column);
         }
+        
+        for (var i=0;i<knex_end;i+=1){
+            obj.connections.push(line[i]);
+        }
+        
         return obj;
     }
     
@@ -959,7 +981,8 @@ Device readers: each takes a line of tokens and returns a device object,
 
         var inst = line[line.length-1];
         if (!(inst.token in subcircuits)){
-            throw new Error("Invalid device name",inst.line,inst.column);
+            throw new Error("Can't find definition for subcircuit "+inst.token,
+                            inst.line,inst.column);
         }
         
         var obj = {type:"instance",
