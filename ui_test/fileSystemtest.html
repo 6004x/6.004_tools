@@ -32,9 +32,7 @@
         $(document).ready(function(){
             //pass in server location to fileSystem
             fileSystem.setup('http://localhost:8080');
-            editor = new Editor(editorWrapper, 'jsim');
-            editor.addButtonGroup(
-                new ToolbarButton('Save', saveCurrentFile, 'Saves the current File')]);
+            editor = new Editor('.span10', 'jsim');
             var set_height = function() {
                 editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
             }
@@ -42,7 +40,7 @@
             $(window).resize(set_height);
 
 
-            GUI.setup('.wrapperDiv', fileSystem);
+            GUI.setup('.span2', fileSystem, editor);
             $('#user_input').val('');
         });
         </script>
@@ -89,8 +87,10 @@
     </style>
     <body>
         <div class="container-fluid">
-            
-            <div class="wrapperDiv"></div>
+            <div class='row'>
+            <div class="span2"></div>
+            <div class="span10"></div>
+        </div>
         </div>
         
 

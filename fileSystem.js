@@ -1,8 +1,9 @@
 var fileSystem= function(){
 	var DEFAULT_SERVER;
+	var server;
 	var openFiles=[];
 	var fileTree={};
-	var updated=false;
+	var updated=true;
 	var online=false;
 	var testFileTree={"dir1":{"cjtserver.js":[],"dir2":{"fileindir2.js":{"name":"//dir1/dir2/fileindir2.js","data":"this is another test file"}},"testfile.jsim":{"name":"//dir1/testfile.jsim","data":"this is a test file"}},"lab 3":{"lab3.bak":[],"lab3.jsim":[],"lab3.timing":[],"lab3.timing.bak":[],"lab3_beta.bak":[],"lab3_beta.jsim":[],"lab3_extra.bak":[],"lab3_extra.jsim":[]},"lab 6":{"alu":{"lab3.jsim":[],"mult.jsim":[]},"lab6 tests":{"lab6 individual tests":{"lab6basicblock.jsim":[],"lab6basicblock.uasm":[],"lab6ctl.jsim":[],"lab6pc.jsim":[],"lab6regfile.jsim":[]},"lab6.uasm":[],"lab6checkoff.jsim":[]},"lab6.bak":[],"lab6.jsim":[]},"test_file.js":[]}
 	/*
@@ -29,7 +30,8 @@ var fileSystem= function(){
 	var exports={};
 	function getFileList(username, callback, callbackFailed){
 		//using username or some other sort of authentication, we can get the root folder of the user
-		if(fileTree&&updated){
+		console.log(Object.keys(fileTree).length);
+		if(Object.keys(fileTree).length>0&&updated){
 			return fileTree;
 		}else if (!updated){
 			fileTree=readTreeFromLocalStorage;
@@ -144,7 +146,7 @@ var fileSystem= function(){
 
         console.log(fileData);
         console.log(username);
-        url+='/'+filepath;
+        url=server+'/'+filepath;
 
         var req=$.ajax({
                 url:url, 
@@ -174,9 +176,9 @@ var fileSystem= function(){
 
     exports.getServerName=function(){return DEFAULT_SERVER;};
 
-    function setup(server){
-    	DEFAULT_SERVER=server;
-    	console.log(DEFAULT_SERVER);
+    function setup(serverN){
+    	server=DEFAULT_SERVER||serverN;
+    	console.log(server);
     }
     exports.setup=setup;
     exports.getFileFromTree=getFileFromTree;

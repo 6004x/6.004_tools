@@ -13,15 +13,8 @@ var GUI=new function(){
     function getFileList(parentNode){
 
         username= $('#user_input').val();
-        server_name=$('#server_input').val();
-
+        console.log(username);
         parentNode.html('');
-        console.log(server_name)
-        if(server_name!=fileSystem.getServerName())
-        {
-            console.log(fileSystem.getServerName());
-            fileSystem.setup(server_name);
-        }
         if(username){
             fileSystem.getFileList(username, function(data, status){
                 console.log(data);
@@ -77,7 +70,7 @@ var GUI=new function(){
 
                         subListUL.on('shown', function(e){
                             var id=$(e.currentTarget).attr('id');
-                            var arrow = sideBarWrapper.find('.folderName a>i ');
+                            var arrow = rootNode.find('.folderName a>i ');
                             arrow=arrow.filter(function(i, e){
                                 return $(e).hasClass(id);
                             });
@@ -89,7 +82,7 @@ var GUI=new function(){
                         });
                         subListUL.on('hidden', function(e){
                             var id=$(e.currentTarget).attr('id');
-                            var arrow = sideBarWrapper.find('.folderName a>i ');
+                            var arrow = rootNode.find('.folderName a>i ');
                             arrow=arrow.filter(function(i, e){
                                 return $(e).hasClass(id);
                             });
@@ -211,8 +204,6 @@ var GUI=new function(){
     }
      function setup(root, fileSys, editorN){
         rootNode=$(root);
-        var wrapper=addDiv().addClass('row-fluid wrapper');
-        sideBarWrapper=addDiv().addClass('span2 sideBarWrapper');
         //editorWrapper=addDiv().addClass('span10 folderStruct');
 
         var buttonDiv=addDiv().addClass('btn-group group1 buttonDiv');
@@ -220,23 +211,23 @@ var GUI=new function(){
 
         sideBarNav=addDiv().addClass('sidebar-nav');
         var filePaths=$('<ul></ul>').addClass('nav nav-list nav-stacked filePaths');
+        
         sideBarNav.append(filePaths);
 
 
         
         //var rowOne=addDiv().addClass('row').append(sideBarWrapper).append(editorWrapper);
         //wrapper.append(rowOne);
-        var tempName=$("<h1 class='testDiv'>testing</h1>USERNAME:"
+        var tempName=$("<h1 class='testDiv'>testing</h1><p>USERNAME:</span>"
+            +"<input id = 'user_input' type='text' title='username'style='width:auto'></input>"
             +"<button class='btn btn-info' id='user_button'>get filelist</button>");
 
-        sideBarWrapper,append(tempName);
-        sideBarWrapper.append(buttonDiv);
-        sideBarWrapper.append(sideBarNav);
+        
         editor=editorN;
         fileSystem=fileSys;
-        setSyntax();
-        rootNode.append(sideBarWrapper);
-        
+        rootNode.append(tempName);
+        rootNode.append(buttonDiv);
+        rootNode.append(sideBarNav);
         $('#user_button').on('click', function(e){
                 console.log('button');
                 rootNode.find('.filePaths').html('');
