@@ -522,7 +522,7 @@ Control statement readers
 ************************/
     
     /*********************
-    Global: for global nodes
+    Read global: for global nodes
     *********************/
     function read_global(line){
         line.shift();
@@ -540,7 +540,7 @@ Control statement readers
     }
     
     /*********************
-    Plot: which nodes to plot
+    Read plot: which nodes to plot
     *********************/
     function read_plot(line){
         line.shift();
@@ -561,7 +561,7 @@ Control statement readers
     }
     
     /*********************
-    Options: global options
+    Read options: global options
     *********************/
     function read_options(line){
         line.shift();
@@ -583,7 +583,7 @@ Control statement readers
     }
     
     /*********************
-    Tran: transient analyses
+    Read tran: transient analyses
     *********************/
     function read_tran(line){
         var tran_obj = {type:'tran',parameters:{}};
@@ -604,11 +604,40 @@ Control statement readers
                 } 
             }
         }
+        tran_obj = parse_tran(tran_obj);
         analyses.push(tran_obj);
     }
     
+    /********************
+    Parse tran: make sure a given transient analysis is valid
+    *********************/
+    function parse_tran(tran_obj){
+        var temp_ps = {}
+        var num_ps = 0;
+        for (var param in tran_obj.parameters){
+            temp_ps[param] = parse_number(tran_obj.parameters[param].token);
+            num_ps += 1;
+        }
+        for (var i=0; i<num_ps; i+=1){
+            if (i==num_ps-1){
+                if (temp_ps["tstep"+i] >= temp_ps["tstop"]){
+                    throw new Error("Time steps must be listed in increasing order",
+                                    tran_obj.parameters["tstep"+i].line,
+                                    tran_obj.parameters["tstep"+i].column);
+                }
+            } else if (temp_ps["tstep"+i] >= temp_ps["tstep"+(i+1)]) {
+                throw new Error("Time steps must be listed in increasing order",
+                                tran_obj.parameters["tstep"+i].line,
+                                tran_obj.parameters["tstep"+i].column);
+            }
+        }
+        
+        tran_obj.parameters = temp_ps;
+        return tran_obj;
+    }
+    
     /*********************
-    DC: DC analyses
+    Read DC: DC analyses
     *********************/
     function read_dc(line){
         line.shift();
