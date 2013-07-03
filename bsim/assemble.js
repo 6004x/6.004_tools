@@ -545,7 +545,7 @@
         return new Align(expression, stream.file(), stream.line_number());
     }
     Align.prototype.assemble = function(context, out) {
-        var align = this.expression.evaluate(context, true);
+        var align = this.expression ? this.expression.evaluate(context, true) : 4;
         if(context.dot % align === 0) return;
         context.dot = context.dot + (align - (context.dot % align));
     }
