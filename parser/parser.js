@@ -101,6 +101,8 @@ Splitter: splits a string into an array of tokens
                 type = 'string';
             } else if (names_pattern.test(matched_array[0])){
                 type = 'name';
+            } else if (num_pattern.test(matched_array[0])){
+                type = 'number';
             } else if (control_pattern.test(matched_array[0])){
                 type = 'control';
 //            } else if (exp_pattern.test(matched_array[0])){
@@ -117,8 +119,6 @@ Splitter: splits a string into an array of tokens
 //                type = 'float';
 //            } else if (int_pattern.test(matched_array[0])){
 //                type = 'int';
-            } else if (num_pattern.test(matched_array[0])){
-                type = 'number';
             } else if (matched_array[0]== "="){
                 type = 'equals'
             } else {
@@ -425,7 +425,7 @@ Parse
         options = {};
         analyses = [];
         subcircuits = {_top_level_:{name:"_top_level_",
-                                    connections:{},
+                                    ports:[],
                                     properties:{},
                                     devices:[]
                                    }
@@ -655,7 +655,7 @@ Control statement readers
                     throw new Error("Node name expected",
                                     line[i].line, line[i].column);
                 } else {
-                    dc_obj.parameters[param_names[i]]=line[i].token;
+                    dc_obj.parameters[param_names[i]]=line[i];
                 }
             } else {
                 if (line[i].type != "number"){
@@ -665,7 +665,36 @@ Control statement readers
                 }
             }
         }
+        dc_obj = parse_dc(dc_obj);
         analyses.push(dc_obj);
+    }
+    
+    /**********************
+    Parse DC: makes sure all parameters are valid
+    **********************/
+    function parse_dc(dc_obj){
+        var temp_ps = {};
+        for (var param in dc_obj.parameters){
+            temp_ps[param] = dc_obj.parameters[param].token;
+            if (param != "source1" && param != "source2"){
+                temp_ps[param] = parse_number(temp_ps[param]);
+            }
+        }
+        
+        for (var i=1; i<=2; i+=1){
+            if (temp_ps["start"+i] >= temp_ps["stop"+i]){
+                throw new Error("Stop time must be greater than start time",
+                                dc_obj.parameters["start"+i].line,
+                                dc_obj.parameters["start"+i].column);
+            }
+            if (temp_ps["step"+i] <= 0) {
+                throw new Error("Step interval must be a non-zero, positive number",
+                                dc_obj.parameters["step"+i].line,
+                                dc_obj.parameters["step"+i].line);
+            }
+        }
+        dc_obj.parameters = temp_ps;
+        return dc_obj;
     }
     
 /*******************************
@@ -742,12 +771,13 @@ Read Device: takes a line representing a device and creates a device object
     }
     
 /*********************************
-Device readers
+Device readers: each takes a line of tokens and returns a device object,
+                parameters _not_ checked for correctness
 *********************************/
     
     /*************************
     General linear device: (resistors, capacitors, inductors)
-        --connections: n_plus, n_minus
+        --ports: n_plus, n_minus
         --properties: name, value
     **************************/
     
@@ -773,9 +803,9 @@ Device readers
     }
     
     function read_linear(line,type){
-//        console.log("line:",line);
         var obj = {type:type,
-                   connections:{},
+                   ports:["n_plus","n_minus"],
+                   connections:[],
                    properties:{}
                   };
         if (line.length != 4){
@@ -790,8 +820,8 @@ Device readers
                                 line[i].line, line[i].column)
             }
         }
-        obj.connections.n_plus = line[1].token;
-        obj.connections.n_minus = line[2].token;
+        obj.connections.push(line[1].token);
+        obj.connections.push(line[2].token);
         
         if (line[3].type != "number"){
             throw new Error("Number expected",line[3].line,line[3].column);
@@ -803,7 +833,7 @@ Device readers
     
     /*************************
     Mosfets: (pfets, nfets)
-        --connections: D, G, S
+        --ports: D, G, S
         --properties: name, [scaled] length, [scaled] width
     **************************/
     
@@ -823,7 +853,8 @@ Device readers
     
     function read_fet(line,type){
         var obj = {type:type,
-                   connections:{},
+                   ports:["D","G","S"],
+                   connections:[],
                    properties:{name:line[0].token,L:1}
                   }
         if ((line.length !=10) && (line.length !=7)){
@@ -837,9 +868,9 @@ Device readers
                                 line[i].line,line[i].column);
             }
         }
-        obj.connections.D = line[1].token;
-        obj.connections.G = line[2].token;
-        obj.connections.S = line[3].token;
+        obj.connections.push(line[1].token);
+        obj.connections.push(line[2].token);
+        obj.connections.push(line[3].token);
         
         if (line[5].token != "="){
             throw new Error("Assignment expected",line[5].line,line[5].column);
@@ -868,7 +899,7 @@ Device readers
     
     /*************************
     Sources: (voltage source, current source)
-        --connections: n_plus, n_minus
+        --ports: n_plus, n_minus
         --properties: name, value
     ***************************/
     
@@ -888,7 +919,8 @@ Device readers
     
     function read_source(line,type){
         var obj = {type:type,
-                   connections:{},
+                   ports:["n_plus","n_minus"],
+                   connections:[],
                    properties:{name:line[0].token}
                   }
         for (var i=1; i<=2; i+=1){
@@ -898,8 +930,8 @@ Device readers
             }
         }
         
-        obj.connections.n_plus = line[1].token;
-        obj.connections.n_minus = line[2].token;
+        obj.connections.push(line[1].token);
+        obj.connections.push(line[2].token);
         
         var val_ar = []
         for (var i=3; i<line.length; i+=1){
@@ -926,13 +958,14 @@ Device readers
 //        console.log("props:",props);
 
         var inst = line[line.length-1];
-//        if (!(inst.token in subcircuits)){
-//            throw new Error("Invalid device name",inst.line,inst.column);
-//        }
+        if (!(inst.token in subcircuits)){
+            throw new Error("Invalid device name",inst.line,inst.column);
+        }
         
         var obj = {type:"instance",
-                  connections:[],
-                  properties:{instanceOf:inst.token, name:line[0].token}
+                   connections:[],
+                   ports:subcircuits[inst.token].ports,
+                   properties:{instanceOf:inst.token, name:line[0].token}
                   }
         line.shift();
         
@@ -954,7 +987,10 @@ Device readers
         return obj;
     }
     
-
+/*************************
+Device parsers
+**************************/
+    
     
 /******************************
 filename_to_contents: takes a file path and returns the string representing its 
