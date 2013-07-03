@@ -85,7 +85,7 @@ BSim.DisassebledView = function(container, beta) {
         for(var i = 0; i < length; i += 4) {
             var word = 0;
             // Here we don't use jQuery because it's slow. Our use of textContent will fail in
-            // IE ≤ 8, however.
+            // IE <= 8, however.
 
             // var tr = $('<tr>');
             // var addr = $('<td class="address">').text(BSim.Common.FormatWord(i, 4) + ':');

@@ -127,7 +127,7 @@
         var num = parseNumber(token);
         // If whatever we had was Not a Number, then it is a syntax error.
         if(isNaN(num) && !optional) {
-            throw new SyntaxError("Incomprehensible number " + token + ". Acceptable bases are hex (0x…), octal (0…), binary (0b…) and decimal.", stream);
+            throw new SyntaxError("Incomprehensible number " + token + ". Acceptable bases are hex (0x...), octal (0...), binary (0b...) and decimal.", stream);
         }
 
         return num;
