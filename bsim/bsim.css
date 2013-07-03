@@ -67,3 +67,9 @@ div.disassembly {
 .disassembly .operation {
     width: 240px;
 }
+
+.disassembly .breakpoint {
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+    line-height: 18px;
+}

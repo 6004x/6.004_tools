@@ -31,7 +31,8 @@ $(function() {
                     editor.markErrorLine(error.file, error.message, error.line - 1, error.column);
                 });
             } else {
-                beta.loadBytes(result);
+                beta.loadBytes(result.image);
+                beta.setBreakpoints(result.breakpoints);
             }
         });
     }

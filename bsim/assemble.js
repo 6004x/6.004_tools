@@ -727,6 +727,9 @@
                                 var ascii = readString(stream);
                                 fileContent.push(new AssemblyString(ascii, command == "text", stream.file(), stream.line_number()));
                                 break;
+                            case "breakpoint":
+                                fileContent.push(new Breakpoint(stream.file(), stream.line_number()));
+                                break;
                             default:
                                 stream.skipToEnd();
                                 throw new SyntaxError("Unrecognised directive '." + command + "'", stream);
@@ -812,7 +815,10 @@
             _.each(syntax, function(item) {
                 item.assemble(context, memory);
             });
-            return memory;
+            return {
+                image: memory,
+                breakpoints: context.breakpoints
+            };
         };
 
         // Public driver function.

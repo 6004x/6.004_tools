@@ -29,17 +29,35 @@ BSim.DisassebledView = function(container, beta) {
     };
 
     var beta_change_pc = function(new_pc) {
-        var className = 'current-instruction';
+        var className = ' current-instruction';
         if(new_pc & 0x80000000) className += ' supervisor-mode';
         new_pc &= ~0x80000000;
-        mTableRows[mCurrentPC/4].className = '';
-        mTableRows[new_pc/4].className = className;
+        mTableRows[mCurrentPC/4].className = mTableRows[mCurrentPC/4].className.replace(className, '');
+        mTableRows[new_pc/4].className += className;
         mCurrentPC = new_pc;
         mContainer[0].scrollTop = (mRowHeight * (new_pc / 4)) - mScrollOffset;
     };
 
     var beta_resize_memory = function(new_length) {
         build_rows(new_length);
+    };
+
+    var beta_set_breakpoints = function(breakpoints) {
+        _.each(breakpoints, beta_set_breakpoint);
+    };
+
+    var beta_delete_breakpoints = function(breakpoints) {
+        _.each(breakpoints, beta_delete_breakpoint);
+    };
+
+    var beta_set_breakpoint = function(breakpoint) {
+        var row = breakpoint/4;
+        $(mTableRows[row]).addClass('breakpoint');
+    };
+
+    var beta_delete_breakpoint = function(breakpoint) {
+        var row = breakpoint/4;
+        $(mTableRows[row]).removeClass('breakpoint');
     };
 
     var build_rows = function(length) {
@@ -105,6 +123,10 @@ BSim.DisassebledView = function(container, beta) {
         mBeta.on('change:pc', beta_change_pc);
         mBeta.on('change:bulk:word', beta_bulk_change_word);
         mBeta.on('resize:memory', beta_resize_memory);
+        mBeta.on('add:bulk:breakpoint', beta_set_breakpoints);
+        mBeta.on('delete:bulk:breakpoint', beta_delete_breakpoints);
+        mBeta.on('add:breakpoint', beta_set_breakpoint);
+        mBeta.on('delete:breakpoint', beta_delete_breakpoint);
     };
 
     initialise();

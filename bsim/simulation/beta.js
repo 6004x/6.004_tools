@@ -22,6 +22,9 @@ BSim.Beta = function(mem_size) {
     var mChangedRegisters = {};
     var mChangedWords = {};
 
+    // Information not strictly related to running the Beta, but needed in BSim
+    var mBreakpoints = {};
+
     // Mostly exception stuff.
     var SUPERVISOR_BIT = 0x80000000;
     var XP = 30;
@@ -49,6 +52,28 @@ BSim.Beta = function(mem_size) {
         this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
         var r = _.range(0, mMemory.length, 4);
         this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
+    };
+
+    // Takes a list of breakpoint addresses and replaces all current breakpoints with them.
+    this.setBreakpoints = function(breakpoints) {
+        mBreakpoints = _.object(_.map(breakpoints, function(b) { return [b, true]; }));
+        console.log(mBreakpoints);
+        this.trigger('add:bulk:breakpoint', breakpoints);
+    };
+
+    this.clearBreakpoints = function() {
+        this.trigger('delete:bulk:breakpoint', _.keys(mBreakpoints));
+        mBreakpoints = {};
+    };
+
+    this.addBreakpoint = function(breakpoint) {
+        mBreakpoints[breakpoint] = true;
+        this.trigger('add:breakpoint', breakpoint);
+    };
+
+    this.removeBreakpoint = function(breakpoint) {
+        delete mBreakpoints[breakpoint];
+        this.trigger('delete:breakpoint', breakpoint);
     };
 
     this.readByte = function(address) {
@@ -204,6 +229,9 @@ BSim.Beta = function(mem_size) {
     // value is undefined (but may well be 'undefined').
     // Use ===.
     this.executeCycle = function() {
+        if(mBreakpoints[mPC & ~SUPERVISOR_BIT] === false) {
+            mBreakpoints[mPC & ~SUPERVISOR_BIT] = true;
+        }
         // Check if we should fire a clock exception first.
         if(++mClockCounter % CYCLES_PER_TICK === 0) {
             mClockCounter = 0;
@@ -269,6 +297,13 @@ BSim.Beta = function(mem_size) {
             var i = quantum;
             // Execute quantum cycles, then yield for the UI.
             while(i--) {
+                // Check for a breakpoint
+                var real_pc = mPC & ~SUPERVISOR_BIT;
+                if(mBreakpoints[real_pc] === true) {
+                    mBreakpoints[real_pc] = false;
+                    mRunning = false;
+                    break;
+                }
                 // This means we should terminate.
                 if(self.executeCycle() === false) {
                     mRunning = false;
