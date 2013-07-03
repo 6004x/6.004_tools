@@ -62,7 +62,7 @@ Splitter: splits a string into an array of tokens
 //        var pattern = /".*"|0x[0-9a-fA-F]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]*)|\.?[A-Za-z][\w:\.,$#\[\]]*|=|\n|\u001e/g; 
         var pattern = /".*"|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
         
-        var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)|(^\d$)/;
+        var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)/;
         var control_pattern = /^\..+/;
         var int_pattern = /\d+/;
         var exp_pattern = /-?\d*\.?\d+[eE]-?\d+/;
@@ -438,6 +438,8 @@ Parse
         // appropriate handler
         while (token_array.length > 0){
             var current = token_array[0];
+            
+            // transfer the tokens of one line to toParse
             if(current.token != "\n"){
                 toParse.push(token_array.shift());
             } else if (toParse.length != 0) { 
@@ -529,7 +531,11 @@ Control statement readers
                             line[0].line,line[0].column);
         }
         for (var i=0; i<line.length; i+=1){
-            globals.push(line[i].token);
+            if (line[i].type != "name"){
+                throw new Error("Node name expected",line[i].line,line[i].column);
+            } else {
+                globals.push(line[i].token);
+            }
         }
     }
     
@@ -539,11 +545,12 @@ Control statement readers
     function read_plot(line){
         line.shift();
         var plot_list=[];
-        while (line.length > 0){
-            if (line[0].type != "name"){
-                throw new Error("Node name expected",line[0].line,line[0].column);
+        for (var i=0; i<line.length; i+=1){
+            if (line[i].type != "name"){
+                throw new Error("Node name expected",line[i].line,line[i].column);
+            } else{
+                plot_list.push(line[i].token);
             }
-            plot_list.push(line.shift().token);
         }
         if (plot_list.length > 0){
             plots.push(plot_list);
@@ -567,6 +574,9 @@ Control statement readers
                 throw new Error("Assignment expected",
                                 line[0].line,line[0].column);
             }
+            if (line[2].type != "number"){
+                throw new Error("Number expected",line[2].line,line[2].column);
+            }
             options[line[0].token] = line[2].token;
             line=line.slice(3);
         }
@@ -579,18 +589,19 @@ Control statement readers
         var tran_obj = {type:'tran',parameters:{}};
         for (var i=1;i<line.length;i+=1){
             if (i==line.length-1){
-                try{
-                    tran_obj.parameters["tstop"]=parse_number(line[i].token);
-                } catch (err){
-                    throw new Error("Number expected",line[i].line,line[i].column);
+                if (line[i].type != "number"){
+                    throw new Error("Number expected",line[i].line,line[i].column)
                 }
+                else{
+                    tran_obj.parameters["tstop"]=line[i];
+                } 
             } else {
-                try{
-                    tran_obj.parameters["tstep"+i] =
-                        parse_number(line[i].token);
-                } catch (err){
-                    throw new Error("Number expected",line[i].line,line[i].column);
+                if (line[i].type != "number"){
+                    throw new Error("Number expected",line[i].line,line[i].column)
                 }
+                else{
+                    tran_obj.parameters["tstep"+i]=line[i];
+                } 
             }
         }
         analyses.push(tran_obj);
@@ -614,18 +625,16 @@ Control statement readers
                 if (line[i].type != "name"){
                     throw new Error("Node name expected",
                                     line[i].line, line[i].column);
+                } else {
+                    dc_obj.parameters[param_names[i]]=line[i].token;
                 }
             } else {
                 if (line[i].type != "number"){
                     throw new Error("Number expected",line[i].line,line[i].column);
+                } else {
+                    dc_obj.parameters[param_names[i]]=line[i];
                 }
-//                try{
-//                    line[i].token=parse_number(line[i].token)
-//                } catch (err){
-//                    throw new Error("Number expected",line[i].line,line[i].column);
-//                }
             }
-            dc_obj.parameters[param_names[i]]=line[i].token;
         }
         analyses.push(dc_obj);
     }
@@ -638,22 +647,13 @@ Read subcircuit: creates an entry in the subcircuit dictionary
 *********************************/
     function read_subcircuit(line){
         line.shift();
-//        var props = [];
-//        if (line.length >= 4){
-//            try{
-//                while (line[line.length-2].token=="="){
-//                    props.push(line.slice(-3));
-//                    line = line.slice(0,-3);
-//                }
-//            } catch (err) {}
-//        }
-        
         var obj = {name:line[0].token,
                    ports:[],
                    properties:{},
                    devices:[]
                   }
         line.shift();
+        
         while (line.length > 0){
             if (line.length > 1){
                 if (line[1].token == "="){
@@ -661,7 +661,7 @@ Read subcircuit: creates an entry in the subcircuit dictionary
                         throw new Error("Assignment expected",
                                         line[1].line,line[1].column);
                     } else {
-                        obj.properties[line[0].token]=line[2].token;
+                        obj.properties[line[0].token]=line[2];
                         line = line.slice(3);
                         continue;
                     }
@@ -754,7 +754,7 @@ Device readers
                             line[0].line,line[0].column);
         }
         
-        obj.properties.name = line[0].token.slice(1);
+        obj.properties.name = line[0].token;
         for (var i=1;i<=2;i+=1){
             if (line[i].type != 'name'){
                 throw new Error("Node name expected", 
@@ -767,11 +767,7 @@ Device readers
         if (line[3].type != "number"){
             throw new Error("Number expected",line[3].line,line[3].column);
         }
-//        try{
-            obj.properties.value = line[3].token;
-//        } catch(err) {
-//            throw new Error("Number expected",line[3].line,line[3].column)
-//        }
+        obj.properties.value = line[3];
         
         return obj;
     }
@@ -822,12 +818,7 @@ Device readers
         if (line[6].type != "number"){
             throw new Error("Number expected",line[6].line,line[6].column);
         }
-//        try{
-            obj.properties[line[4].token.toUpperCase()]=parse_number(line[6].token);
-//        } catch(err){
-//            throw new Error("Number expected",
-//                            line[6].line,line[6].column);
-//        }
+        obj.properties[line[4].token.toUpperCase()]=line[6];
         
         if (line.length==10){
             if (line[8].token != "="){
@@ -836,12 +827,7 @@ Device readers
             if (line[9].type != "number"){
                 throw new Error("Number expected",line[9].line,line[9].column);
             }
-//            try{
-            obj.properties[line[7].token.toUpperCase()]=line[9].token;
-//            } catch(err) {
-//                throw new Error("Number expected",
-//                                line[9].line,line[9].column);
-//            }
+            obj.properties[line[7].token.toUpperCase()]=line[9];
         }
         
         if (obj.properties.W === undefined){
@@ -885,11 +871,13 @@ Device readers
         
         obj.connections.n_plus = line[1].token;
         obj.connections.n_minus = line[2].token;
+        
         var val_ar = []
         for (var i=3; i<line.length; i+=1){
             val_ar.push(line[i].token);
         }
-        obj.properties.value = val_ar.join(" ");
+        obj.properties.value = line[3];
+        obj.properties.value.token = val_ar.join(" ");
         return obj;
     }
     
@@ -909,9 +897,9 @@ Device readers
 //        console.log("props:",props);
 
         var inst = line[line.length-1];
-        if (!(inst.token in subcircuits)){
-            throw new Error("Invalid device name",inst.line,inst.column);
-        }
+//        if (!(inst.token in subcircuits)){
+//            throw new Error("Invalid device name",inst.line,inst.column);
+//        }
         
         var obj = {type:"instance",
                   connections:[],
@@ -927,16 +915,11 @@ Device readers
             obj.connections.push(line[i].token);
         }
         for (var i=0; i<props.length; i+=1){
-//            if (props[2].type != "number"){
-//                throw new Error("Number expected",
-//                                props[2].line,props[2].column)
-//            }
-            try{
-                obj.properties[props[i][0].token]=parse_number(props[i][2].token);
-            } catch(err) {
+            if (props[i][2].type != "number"){
                 throw new Error("Number expected",
-                                props[i][2].line,props[i][2].token);
+                                props[2].line,props[2].column)
             }
+            obj.properties[props[i][0].token]=props[i][2];
         }
         
         return obj;
@@ -1044,8 +1027,7 @@ var control_text = ".global vdd\n.options a=1 b=2\n.subckt foo a z\nR1 a z 10k\n
 +"Nnfet 0 a z W=4 L=3";
 
 var subckt_test_text = ".subckt foo a z\nR1 a z 10k\n.ends\n"+
-                       "Xtest a b foo prop1=1 prop2=1\n"+
-                       "Xtest2 a b bar";
+                       "Xtest a b foo prop1=1 prop2=1\n";
 
 function test1(){parser.split(raw_text);}
 function test2(){parser.decomment(parser.line_extend(parser.split(test2_text)));}
@@ -1083,5 +1065,33 @@ function test16(string){ console.log(JSON.stringify(parser.parse_device(
 function test17(){ parser.parse("Rrtest a b 10k\nCctest c d 5\n"+
                                "Lltest e f 3\nMmtest 0 x z 0 nenh sw=2 sl=2"); }
 
-function test18(){ parser.parse(subckt_test_text); }
+function psSubcktTest(){ return parser.parse(subckt_test_text); }
+
+
+function psDevTest(){ return parser.parse(
+"Rtest a z 10k\n"+
+"Ctest a z 5\n"+
+"Ltest a z 2\n"+
+"Ptest d g s w=2\n"+
+"Ntest d g s w=2"
+
+); }
+
+function psCtlTest(){ return parser.parse(
+    ".plot a b\n"+
+    ".plot c d\n"+
+    ".tran 10ns\n"+
+    ".tran 1 2 3 4 5\n"+
+    ".dc foo 0 5 0.5\n"+
+    ".dc bar 5 6 0.1\n"+
+    ".global gnd vdd\n"+
+    ".options A=1 B=2"
+    
+); }
+
+
+
+
+
+
 
