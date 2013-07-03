@@ -5,20 +5,21 @@ BSim.DisassebledView = function(container, beta) {
     var mTableRows = new Array(20);
     var mOperationCells = new Array(20);
     var mValueCells = new Array(20);
+    var mLabelCells = new Array(20);
     var mCurrentPC = 0;
     var mRowHeight = 0;
     var mScrollOffset = 0;
 
-    var disassemble_value = function(value) {
-        var decoded = beta.decodeInstruction(value);
+    var disassemble_value = function(address, value) {
+        var decoded = mBeta.decodeInstruction(value);
         var op = BSim.Beta.Opcodes[decoded.opcode];
         var deasm = "illop";
-        if(op) deasm = op.disassemble(decoded);
+        if(op) deasm = op.disassemble.call(mBeta, decoded, parseInt(address));
         return deasm;
     };
 
     var beta_change_word = function(address, value) {
-        mOperationCells[address/4].textContent = disassemble_value(value);
+        mOperationCells[address/4].textContent = disassemble_value(address, value);
         mValueCells[address/4].textContent = BSim.Common.FormatWord(value);
     };
 
@@ -28,11 +29,22 @@ BSim.DisassebledView = function(container, beta) {
         }
     };
 
+    var beta_bulk_change_labels = function(labels) {
+        console.log(labels, mLabelCells.length);
+        for(var i = 0; i < mLabelCells.length; ++i) {
+            var address = i*4;
+            if(labels[address]) {
+                mLabelCells[i].textContent = labels[address] + ":";
+            }
+            mOperationCells[i].textContent = disassemble_value(address, mBeta.readWord(address));
+        }
+    };
+
     var beta_change_pc = function(new_pc) {
         var className = ' current-instruction';
         if(new_pc & 0x80000000) className += ' supervisor-mode';
         new_pc &= ~0x80000000;
-        mTableRows[mCurrentPC/4].className = mTableRows[mCurrentPC/4].className.replace(className, '');
+        mTableRows[mCurrentPC/4].className = mTableRows[mCurrentPC/4].className.replace(/current-instruction|supervisor-mode/g, '');
         mTableRows[new_pc/4].className += className;
         mCurrentPC = new_pc;
         mContainer[0].scrollTop = (mRowHeight * (new_pc / 4)) - mScrollOffset;
@@ -62,11 +74,12 @@ BSim.DisassebledView = function(container, beta) {
 
     var build_rows = function(length) {
         var zero_word = BSim.Common.FormatWord(0);
-        var zero_instruction = disassemble_value(0);
+        var zero_instruction = disassemble_value(0, 0);
         var word_length = Math.ceil(length / 4)
         mTableRows = new Array(word_length);
         mOperationCells = new Array(word_length);
         mValueCells = new Array(word_length);
+        mLabelCells = new Array(word_length);
 
         mTable.empty();
         for(var i = 0; i < length; i += 4) {
@@ -105,8 +118,8 @@ BSim.DisassebledView = function(container, beta) {
             mTable.append(tr);
             mOperationCells[i/4] = operation;
             mValueCells[i/4] = value;
+            mLabelCells[i/4] = label;
             mTableRows[i/4] = tr;
-
         }
         if(word_length > 0) {
             mRowHeight = $(mTableRows[0]).height();
@@ -127,6 +140,7 @@ BSim.DisassebledView = function(container, beta) {
         mBeta.on('delete:bulk:breakpoint', beta_delete_breakpoints);
         mBeta.on('add:breakpoint', beta_set_breakpoint);
         mBeta.on('delete:breakpoint', beta_delete_breakpoint);
+        mBeta.on('change:bulk:labels', beta_bulk_change_labels);
     };
 
     initialise();

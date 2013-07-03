@@ -100,6 +100,19 @@ BSim.Beta.Opcodes = {};
                 this.setPC(pc + 4*literal, false);
             }
             this.writeRegister(c, pc);
+        },
+        disassemble: function(op, pc) {
+            var target = ((op.literal * 4) + (pc + 4)) & ~0x80000000;
+            var label = this.getLabel(target) || target;
+            if(op.ra == 31) {
+                if(op.rc == 31) {
+                    return "BR(" + label + ")";
+                } else {
+                    return "BR(" + label + ", " + name_register(op.rc) + ")";
+                }
+            } else {
+                return "BEQ(" + name_register(op.ra) + ", " + label + ", " + name_register(op.rc) + ")";
+            }
         }
     });
 
@@ -113,6 +126,11 @@ BSim.Beta.Opcodes = {};
                 this.setPC(pc + 4*literal, false);
             }
             this.writeRegister(c, pc);
+        },
+        disassemble: function(op, pc) {
+            var target = ((op.literal * 4) + (pc + 4)) & ~0x80000000;
+            var label = this.getLabel(target) || target;
+            return "BNE(" + name_register(op.ra) + ", " + label + ", " + name_register(op.rc) + ")";
         }
     });
 
@@ -212,6 +230,11 @@ BSim.Beta.Opcodes = {};
         has_literal: true,
         exec: function LDR(a, literal, c) {
             this.writeRegister(c, this.readWord(this.getPC() + 4*literal));
+        },
+        disassemble: function(op, pc) {
+            var target = op.literal*4 + pc;
+            var label = this.getLabel(target) || target;
+            return "LDR(" + label + ", " + name_register(op.rc) + ")";
         }
     });
 

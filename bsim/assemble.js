@@ -251,6 +251,7 @@
     };
     Label.prototype.assemble = function(context, out) {
         context.symbols[this.name] = context.dot;
+        context.labels[this.name] = context.dot;
     };
 
     // Represents an invocation of a macro.
@@ -800,8 +801,10 @@
             var context = {
                 symbols: {},
                 macros: {},
+                dot: 0,
+                // Things to be passed out to the driver.
                 breakpoints: [],
-                dot: 0
+                labels: {}
             };
             // First pass: figure out where everything goes.
              _.each(syntax, function(item) {
@@ -817,7 +820,8 @@
             });
             return {
                 image: memory,
-                breakpoints: context.breakpoints
+                breakpoints: context.breakpoints,
+                labels: context.labels
             };
         };
 

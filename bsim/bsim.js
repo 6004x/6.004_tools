@@ -33,6 +33,7 @@ $(function() {
             } else {
                 beta.loadBytes(result.image);
                 beta.setBreakpoints(result.breakpoints);
+                beta.setLabels(result.labels);
             }
         });
     }

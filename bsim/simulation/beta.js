@@ -24,6 +24,7 @@ BSim.Beta = function(mem_size) {
 
     // Information not strictly related to running the Beta, but needed in BSim
     var mBreakpoints = {};
+    var mLabels = {};
 
     // Mostly exception stuff.
     var SUPERVISOR_BIT = 0x80000000;
@@ -52,6 +53,9 @@ BSim.Beta = function(mem_size) {
         this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
         var r = _.range(0, mMemory.length, 4);
         this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
+
+        this.clearBreakpoints();
+        this.setLabels({});
     };
 
     // Takes a list of breakpoint addresses and replaces all current breakpoints with them.
@@ -74,6 +78,15 @@ BSim.Beta = function(mem_size) {
     this.removeBreakpoint = function(breakpoint) {
         delete mBreakpoints[breakpoint];
         this.trigger('delete:breakpoint', breakpoint);
+    };
+
+    this.setLabels = function(labels) {
+        mLabels = _.invert(labels);
+        this.trigger('change:bulk:labels', mLabels);
+    };
+
+    this.getLabel = function(address) {
+        return mLabels[address & ~SUPERVISOR_BIT] || null;
     };
 
     this.readByte = function(address) {

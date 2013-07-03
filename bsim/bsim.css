@@ -52,7 +52,7 @@ div.disassembly {
     height: 200px;
     overflow-y: auto;
     overflow-x: hidden;
-    width: 400px;
+    width: 500px;
 }
 
 .disassembly td {
@@ -61,7 +61,7 @@ div.disassembly {
 }
 
 .disassembly .address-label {
-    width: 150px;
+    max-width: 150px;
 }
 
 .disassembly .operation {
