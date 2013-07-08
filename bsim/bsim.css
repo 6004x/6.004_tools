@@ -34,7 +34,7 @@ pre.tty-output {
     padding: 5px;
 }
 
-table.disassembly {
+.disassembly table {
     table-layout: fixed;
     border-spacing: 0px;
 }
@@ -44,7 +44,7 @@ table.disassembly {
     color: white;
 }
 
-.current-instruction.supervisor-mode {
+.supervisor-mode .current-instruction {
     background-color: #CC3729;
 }
 
@@ -60,11 +60,19 @@ div.disassembly {
     white-space: nowrap;
 }
 
-.disassembly .address-label {
+/* Address */
+.disassembly td:nth-child(1) {
+    width: 40px;
+}
+
+/* Label */
+.disassembly td:nth-child(3) {
+    width: 150px;
     max-width: 150px;
 }
 
-.disassembly .operation {
+/* Disassembeld instruction */
+.disassembly  td:nth-child(4) {
     width: 240px;
 }
 
