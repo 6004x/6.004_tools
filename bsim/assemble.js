@@ -127,7 +127,7 @@
         var num = parseNumber(token);
         // If whatever we had was Not a Number, then it is a syntax error.
         if(isNaN(num) && !optional) {
-            throw new SyntaxError("Incomprehensible number " + token + ". Acceptable bases are hex (0x…), octal (0…), binary (0b…) and decimal.", stream);
+            throw new SyntaxError("Incomprehensible number " + token + ". Acceptable bases are hex (0x...), octal (0...), binary (0b...) and decimal.", stream);
         }
 
         return num;
@@ -251,6 +251,7 @@
     };
     Label.prototype.assemble = function(context, out) {
         context.symbols[this.name] = context.dot;
+        context.labels[this.name] = context.dot;
     };
 
     // Represents an invocation of a macro.
@@ -545,7 +546,7 @@
         return new Align(expression, stream.file(), stream.line_number());
     }
     Align.prototype.assemble = function(context, out) {
-        var align = this.expression.evaluate(context, true);
+        var align = this.expression ? this.expression.evaluate(context, true) : 4;
         if(context.dot % align === 0) return;
         context.dot = context.dot + (align - (context.dot % align));
     }
@@ -675,6 +676,8 @@
 
                     // Skip any whitespace
                     if(eatSpace(stream)) continue;
+                    // If we're at the end of the line, continue.
+                    if(stream.eol()) break;
 
                     // If we're in a multi-line macro and we find a }, it's time for us to exit.
                     if(is_macro && allow_multiple_lines && stream.peek() == "}") {
@@ -724,6 +727,9 @@
                             case "text":
                                 var ascii = readString(stream);
                                 fileContent.push(new AssemblyString(ascii, command == "text", stream.file(), stream.line_number()));
+                                break;
+                            case "breakpoint":
+                                fileContent.push(new Breakpoint(stream.file(), stream.line_number()));
                                 break;
                             default:
                                 stream.skipToEnd();
@@ -795,8 +801,10 @@
             var context = {
                 symbols: {},
                 macros: {},
+                dot: 0,
+                // Things to be passed out to the driver.
                 breakpoints: [],
-                dot: 0
+                labels: {}
             };
             // First pass: figure out where everything goes.
              _.each(syntax, function(item) {
@@ -810,13 +818,18 @@
             _.each(syntax, function(item) {
                 item.assemble(context, memory);
             });
-            return memory;
+            return {
+                image: memory,
+                breakpoints: context.breakpoints,
+                labels: context.labels
+            };
         };
 
         // Public driver function.
         // file: the name of the file
         // content: the contents of the file
-        // callback(success, error_list): called on completion. error_list is a list of SyntaxErrors, if any
+        // callback(false, error_list): called on failure. error_list is a list of SyntaxErrors, if any
+        // callback(true, bytecode): called on success. bytecode is a Uint8Array containing the result of compilation.
         this.assemble = function(file, content, callback) {
             var stream = new StringStream(new FileStream(content, file));
             var errors = [];
@@ -847,7 +860,7 @@
                 if(errors.length) {
                     callback(false, errors);
                 } else {
-                    callback(true);
+                    callback(true, code);
                 }
             }
         };
