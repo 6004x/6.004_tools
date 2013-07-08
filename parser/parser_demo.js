@@ -13,7 +13,7 @@ function setup (div) {
     function go(){
         var input = area.val();
         try{
-            var parsed = parser.parse(input);
+            var parsed = Parser.parse(input);
             var stringed = JSON.stringify(parsed, null,"   ").replace(/"/g,"");
             output.text(stringed);
         } catch (err) {
