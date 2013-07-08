@@ -1,4 +1,4 @@
-BSim.DisassebledView = function(container, beta) {
+BSim.DisassembledView = function(container, beta) {
     var mContainer = $(container);
     var mBeta = beta;
     var mTable = new BigTable(mContainer, 500, 200, 22, 4);
@@ -39,7 +39,7 @@ BSim.DisassebledView = function(container, beta) {
 
     var beta_change_pc = function(new_pc) {
         var word = (new_pc & ~0x80000000) / 4;
-        mTable.removeRowClass(mCurrentPC/4, 'current-instruction');;
+        mTable.removeRowClass(mCurrentPC/4, 'current-instruction');
         mTable.addRowClass(word, 'current-instruction');
         if(new_pc & 0x80000000) {
             if(!mInSupervisorMode) {

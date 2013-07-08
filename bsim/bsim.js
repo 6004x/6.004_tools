@@ -68,7 +68,7 @@ $(function() {
     });
 
     $('.disassembly').each(function() {
-        new BSim.DisassebledView(this, beta);
+        new BSim.DisassembledView(this, beta);
     });
 
     // // Convenient way of loading a file for testing and such.

@@ -7,8 +7,8 @@
         var mRight = $(right_node);
 
         this.split = function() {
-            mLeft.show().addClass('span6').removeClass('span12');
-            mRight.show().addClass('span6').removeClass('span12');
+            splitSide(mLeft);
+            splitSide(mRight);
         };
 
         this.maximiseLeft = function() {
@@ -17,12 +17,16 @@
 
         this.maximiseRight = function() {
             maximise(mRight, mLeft);
-        }
+        };
 
         var maximise = function(maximise, minimise) {
-            maximise.show().addClass('span12').removeClass('span6');
+            maximise.show().addClass('span12', 'maximised').removeClass('span6');
             minimise.hide();
-        }
+        };
+
+        var splitSide = function(pane) {
+            pane.show().addClass('span6').removeClass('span12', 'maximised');
+        };
 
         var initialise = function() {
             // Make sure we have the right classes in place.
