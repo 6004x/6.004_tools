@@ -73,3 +73,8 @@ div.disassembly {
     border-bottom: 2px solid black;
     line-height: 18px;
 }
+
+/* This fixes the several pixel jump when toggling split screen caused by the right buttons being too tall. */
+.masthead {
+    height: 55px;
+}
