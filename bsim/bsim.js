@@ -75,6 +75,10 @@ $(function() {
         new BSim.MemoryView(this, beta);
     });
 
+    $('.stack').each(function() {
+        new BSim.StackView(this, beta);
+    });
+
     // // Convenient way of loading a file for testing and such.
     // var neuter = function(e) {
     //     e.stopPropagation();

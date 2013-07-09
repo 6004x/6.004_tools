@@ -139,7 +139,7 @@ BSim.Beta = function(mem_size) {
                 if(mLastWrites.length > 5) mLastWrites.shift();
             }
         }
-        else mChangedWords[address] = value;
+        mChangedWords[address] = value;
     };
 
     this.readRegister = function(register) {

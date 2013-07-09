@@ -20,7 +20,7 @@ table.regfile {
     border: 1px solid gray;
 }
 
-.regfile, .disassembly, .tty, .memory {
+.regfile, .disassembly, .tty, .memory, .stack {
     font-family: Menlo, Monaco, monospace;
     font-size: small;
 }
@@ -32,6 +32,27 @@ pre.tty-output {
     border: thin solid #eaeaea;
     border-radius: 5px;
     padding: 5px;
+}
+
+div.stack-holder {
+    float: right;
+    margin-right: 20px;
+    width: 150px;
+    display: none;
+}
+
+div.stack {
+    border: 1px solid gray;
+    height: 352px;
+}
+
+.stack td:nth-child(1) {
+    width: 30px;
+    text-align: right;
+}
+
+.maximised div.stack-holder {
+    display: block;
 }
 
 div.memory-holder {
@@ -50,7 +71,7 @@ div.memory {
     display: block;
 }
 
-.memory td:nth-child(1) {
+.memory td:nth-child(1), .stack td:nth-child(2) {
     color: gray;
     width: 40px;
     text-align: right;
@@ -125,7 +146,7 @@ div.memory {
     background-color: hsl(169, 60%, 50%);
 }
 
-.disassembly table, .memory table {
+.disassembly table, .memory table, .stack table {
     table-layout: fixed;
     border-spacing: 0px;
 }
