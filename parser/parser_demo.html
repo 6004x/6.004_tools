@@ -47,6 +47,18 @@
     <body>
         <div>
             <div class="demo">
+Ptest d g s w=2 l=1
+            </div>
+            
+            <div class="demo">
+.subckt foo a z bar=1 bim=2
+R1 a z 10k
+.ends
+                
+Xfoo1 n1 n2 foo bar=2
+            </div>
+            
+            <div class="demo">
 .global vdd gnd
 .subckt inv a z drive=2
 Ppu vdd a z w=4
@@ -67,11 +79,12 @@ V1 in gnd step(0,1,1n)
 .plot in
 .plot out
             </div>
-            <div class="demo">.global 0 vdd
+            <div class="demo">.global gnd vdd
 .subckt inv a z
 Pup z a vdd w=1
-Ndown 0 a z w=1
-.ends</div>
+Ndown gnd a z w=1
+.ends
+Xtest in out inv</div>
 
         </div>
     </body>

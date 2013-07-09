@@ -543,15 +543,15 @@ Parse
                 continue;
             }
         }
-//        return {globals:globals,options:options,plots:plots,
-//                analyses:analyses,subckts:subcircuits};
         netlist_instance("",{type:"instance",
                              ports:[],
                              connections:[],
                              properties:{name:"_top_level_",
                                          instanceOf:"_top_level_"}
                             },netlist);
-        return netlist;
+        
+        return {globals:globals,options:options,plots:plots,
+                analyses:analyses,netlist:netlist};
     }
     
 /*****************************
@@ -670,10 +670,14 @@ Control statement readers
                 throw new CustomError("Assignment expected",
                                 line[0].line,line[0].column);
             }
-            if (line[2].type != "number"){
+//            if (line[2].type != "number"){
+//                throw new CustomError("Number expected",line[2].line,line[2].column);
+//            }
+            try{
+                options[line[0].token] = parse_number(line[2].token);
+            } catch (err) {
                 throw new CustomError("Number expected",line[2].line,line[2].column);
             }
-            options[line[0].token] = line[2].token;
             line = line.slice(3);
         }
     }
@@ -933,6 +937,10 @@ Device readers: each takes a line of tokens and returns a device object,
 //        obj.connections.push(line[2].token);
         line.shift();
         for (var i = 0; i < line.length-1; i += 1){
+            if (line[i].type != "name"){
+                throw new CustomError("Node name expected",
+                                      line[i].line,line[i].column);
+            }
             obj.connections.push(line[i].token);
         }
         
@@ -1008,6 +1016,13 @@ Device readers: each takes a line of tokens and returns a device object,
 //            throw new CustomError("Number expected",
 //                                  line[end-1].line,line[end-1].column);
 //        }
+        if (line[end-3].token.toUpperCase() != "L" &&
+            line[end-3].token.toUpperCase() != "W"){
+            throw new CustomError("Mosfet has no property "+
+                                  line[end-3].token,line[end-3].line,
+                                  line[end-3].column);
+        }
+        
         try{
             obj.properties[line[end-3].token.toUpperCase()] = 
                 parse_number(line[end-1].token);
@@ -1016,22 +1031,25 @@ Device readers: each takes a line of tokens and returns a device object,
                                   line[end-1].line,line[end-1].column);
         }
         
-//        if (line.length==10){
-//            if (line[8].token != "="){
-//                throw new CustomError("Assignment expected",line[8].line,line[8].column);
-//            }
-//            if (line[9].type != "number"){
-//                throw new CustomError("Number expected",line[9].line,line[9].column);
-//            }
-//            obj.properties[line[7].token.toUpperCase()]=line[9];
-//        }
         if (line[end-5] !== undefined){
             if (line[end-5].token == "="){
-                if (line[end-4].type != "number"){
-                    throw new CustomError("Number expected",
-                                    line[end-4].line,line[end-4].column);
+//                if (line[end-4].type != "number"){
+//                    throw new CustomError("Number expected",
+//                                    line[end-4].line,line[end-4].column);
+//                }
+                if (line[end-6].token.toUpperCase() != "L" &&
+                    line[end-6].token.toUpperCase() != "W"){
+                    throw new CustomError("Mosfet has no property "+
+                                          line[end-6].token,line[end-6].line,
+                                          line[end-6].column);
                 }
-                obj.properties[line[end-6].token.toUpperCase()] = line[end-4];
+                try{
+                    obj.properties[line[end-6].token.toUpperCase()] = 
+                        parse_number(line[end-4].token);
+                } catch (err) {
+                    throw new CustomError("Number expected", line[end-4].line,
+                                          line[end-4].column);
+                }
                 knex_end -= 3;
             }
         }
@@ -1042,6 +1060,10 @@ Device readers: each takes a line of tokens and returns a device object,
         }
         
         for (var i = 0; i < knex_end; i += 1){
+            if (line[i].type != "name"){
+                throw new CustomError("Node name expected",
+                                      line[i].line,line[i].column);
+            }
             obj.connections.push(line[i].token);
         }
         
@@ -1145,6 +1167,11 @@ Device readers: each takes a line of tokens and returns a device object,
 //                throw new CustomError("Number expected",
 //                                props[2].line,props[2].column)
 //            }
+            if (!(props[i][0].token in obj.properties)){
+                throw new CustomError("Subcircuit "+inst.token+" has no property "+
+                                      props[i][0].token,props[i][0].line,
+                                      props[i][0].column);
+            }
             try{
                 obj.properties[props[i][0].token] = parse_number(props[i][2].token);
             } catch (err) {
