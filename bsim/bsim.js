@@ -71,6 +71,10 @@ $(function() {
         new BSim.DisassembledView(this, beta);
     });
 
+    $('.memory').each(function() {
+        new BSim.MemoryView(this, beta);
+    });
+
     // // Convenient way of loading a file for testing and such.
     // var neuter = function(e) {
     //     e.stopPropagation();

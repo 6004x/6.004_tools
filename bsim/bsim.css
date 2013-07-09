@@ -20,7 +20,7 @@ table.regfile {
     border: 1px solid gray;
 }
 
-.regfile, .disassembly, .tty {
+.regfile, .disassembly, .tty, .memory {
     font-family: Menlo, Monaco, monospace;
     font-size: small;
 }
@@ -34,7 +34,98 @@ pre.tty-output {
     padding: 5px;
 }
 
-.disassembly table {
+div.memory-holder {
+    float: right;
+    margin-right: 20px;
+    width: 120px;
+    display: none;
+}
+
+div.memory {
+    border: 1px solid gray;
+    height: 352px;
+}
+
+.maximised div.memory-holder {
+    display: block;
+}
+
+.memory td:nth-child(1) {
+    color: gray;
+    width: 40px;
+    text-align: right;
+    padding-right: 5px;
+}
+
+/* Highlight the last-written entries */
+.memory .last-write td {
+    color: white;
+}
+
+.memory .last-write.a4 td {
+    background-color: hsl(217, 67%, 90%);
+    color: black;
+}
+
+.memory .last-write.a3 td {
+    background-color: hsl(217, 67%, 80%);
+    color: black;
+}
+
+.memory .last-write.a2 td {
+    background-color: hsl(217, 67%, 70%);
+}
+
+.memory .last-write.a1 td {
+    background-color: hsl(217, 67%, 60%);
+}
+
+.memory .last-write.a0 td {
+    background-color: hsl(217, 67%, 50%);
+}
+
+/* Highlight the last-read entries */
+.memory .last-read td {
+    color: white;
+}
+
+.memory .last-read.b4 td {
+    background-color: hsl(120, 60%, 90%);
+    color: black;
+}
+
+.memory .last-read.b3 td {
+    background-color: hsl(120, 60%, 80%);
+    color: black;
+}
+
+.memory .last-read.b2 td {
+    background-color: hsl(120, 60%, 70%);
+}
+
+.memory .last-read.b1 td {
+    background-color: hsl(120, 60%, 60%);
+}
+
+.memory .last-read.b0 td {
+    background-color: hsl(120, 60%, 50%);
+}
+
+/* Deal with something being on both lists. */
+.memory .last-read.last-write td {
+    background-color: hsl(169, 60%, 70%);
+}
+
+/* If it's first in either list, it should be darker. */
+.memory .last-read.last-write.a0 td {
+    background-color: hsl(169, 60%, 50%);
+}
+
+.memory .last-read.last-write.b0 td {
+    background-color: hsl(169, 60%, 50%);
+}
+
+.disassembly table, .memory table {
     table-layout: fixed;
     border-spacing: 0px;
 }

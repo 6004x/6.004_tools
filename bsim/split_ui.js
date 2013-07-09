@@ -20,12 +20,12 @@
         };
 
         var maximise = function(maximise, minimise) {
-            maximise.show().addClass('span12', 'maximised').removeClass('span6');
+            maximise.show().addClass('span12 maximised').removeClass('span6');
             minimise.hide();
         };
 
         var splitSide = function(pane) {
-            pane.show().addClass('span6').removeClass('span12', 'maximised');
+            pane.show().addClass('span6').removeClass('span12 maximised');
         };
 
         var initialise = function() {

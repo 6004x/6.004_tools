@@ -57,19 +57,19 @@ var BigTable = function(container, width, height, row_height, column_count) {
     };
 
     // Adds a class the given row. If the optional parameter redraw is true, redraws the row immediately.
-    this.addRowClass = function(row, cls, redraw) {
+    this.addRowClass = function(row, cls, redraw_now) {
         if(!mData[row]) return;
         if(!~mData[row].cls.indexOf(' ' + cls + ' ')) {
             mData[row].cls += ' ' + cls + ' ';
-            if(redraw) redraw(row);
+            if(redraw_now) redraw(row);
         }
     };
 
     // Removes a class from the given row. If the optional parameter redraw is true, redraws the row immediately.
-    this.removeRowClass = function(row, cls, redraw) {
+    this.removeRowClass = function(row, cls, redraw_now) {
         if(!mData[row]) return;
         mData[row].cls = mData[row].cls.replace(' ' + cls + ' ', '');
-        if(redraw) redraw(row);
+        if(redraw_now) redraw(row);
     };
 
     // Attempts to centre the given row in the display.

@@ -21,6 +21,8 @@ BSim.Beta = function(mem_size) {
     // changes are signalled immediately and these are not used.
     var mChangedRegisters = {};
     var mChangedWords = {};
+    var mLastReads = [];
+    var mLastWrites = [];
 
     // Information not strictly related to running the Beta, but needed in BSim
     var mBreakpoints = {};
@@ -94,9 +96,17 @@ BSim.Beta = function(mem_size) {
         return mMemory[address];
     };
 
-    this.readWord = function(address) {
+    this.readWord = function(address, notify) {
         address &= ~SUPERVISOR_BIT;
         address &= 0xFFFFFFFC; // Force multiples of four.
+        if(notify) {
+            if(!mRunning) {
+                self.trigger('read:word', address);
+            } else {
+                mLastReads.push(address);
+                if(mLastReads.length > 5) mLastReads.shift();
+            }
+        }
         return (
             (self.readByte(address+3) << 24) |
             (self.readByte(address+2) << 16) |
@@ -110,7 +120,7 @@ BSim.Beta = function(mem_size) {
         mMemory[address] = value;
     };
 
-    this.writeWord = function(address, value) {
+    this.writeWord = function(address, value, notify) {
         value |= 0; // force to int.
         address &= ~SUPERVISOR_BIT;
         address &= 0xFFFFFFFC; // Force multiples of four.
@@ -121,6 +131,14 @@ BSim.Beta = function(mem_size) {
         this.writeByte(address + 0, (value & 0xFF));
 
         if(!mRunning) this.trigger('change:word', address, value);
+        if(notify) {
+            if(!mRunning) {
+                this.trigger('write:word', address);
+            } else {
+                mLastWrites.push(address);
+                if(mLastWrites.length > 5) mLastWrites.shift();
+            }
+        }
         else mChangedWords[address] = value;
     };
 
@@ -326,9 +344,13 @@ BSim.Beta = function(mem_size) {
             // Now relay all the changes that occurred during our quantum.
             self.trigger('change:bulk:word', mChangedWords);
             self.trigger('change:bulk:register', mChangedRegisters);
+            self.trigger('read:bulk:word', mLastReads);
+            self.trigger('write:bulk:word', mLastWrites);
             self.trigger('change:pc', mPC);
             mChangedRegisters = {};
             mChangedWords = {};
+            mLastReads = [];
+            mLastWrites = [];
 
             // Run again.
             _.defer(run_inner);

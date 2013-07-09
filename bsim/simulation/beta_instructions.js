@@ -220,7 +220,7 @@ BSim.Beta.Opcodes = {};
         name: 'LD',
         has_literal: true,
         exec: function LD(a, literal, c) {
-            this.writeRegister(c, this.readWord(this.readRegister(a) + literal));
+            this.writeRegister(c, this.readWord(this.readRegister(a) + literal, true));
         }
     });
 
@@ -229,7 +229,7 @@ BSim.Beta.Opcodes = {};
         name: 'LDR',
         has_literal: true,
         exec: function LDR(a, literal, c) {
-            this.writeRegister(c, this.readWord(this.getPC() + 4*literal));
+            this.writeRegister(c, this.readWord(this.getPC() + 4*literal, true));
         },
         disassemble: function(op, pc) {
             var target = op.literal*4 + pc;
@@ -345,7 +345,7 @@ BSim.Beta.Opcodes = {};
         name: 'ST',
         has_literal: true,
         exec: function ST(a, literal, c) {
-            this.writeWord(this.readRegister(a) + literal, this.readRegister(c));
+            this.writeWord(this.readRegister(a) + literal, this.readRegister(c), true);
         }
     });
 
