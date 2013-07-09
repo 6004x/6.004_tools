@@ -58,8 +58,9 @@ Splitter: splits a string into an array of tokens
 *******************************/
     function split(input_string,filename){
 //        var pattern = /".*"|0x[0-9a-fA-F]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]*)|\.?[A-Za-z][\w:\.,$#\[\]]*|=|\n|\u001e/g; 
-        var pattern = /".*"|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
+        var pattern = /".*"|\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
         
+        var fn_pattern = /^\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)$/;
         var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)/;
         var control_pattern = /^\..+/;
 //        var int_pattern = /\d+/;
@@ -94,7 +95,9 @@ Splitter: splits a string into an array of tokens
             
             //set the token's type
             var type;
-            if (string_pattern.test(matched_array[0])){
+            if (fn_pattern.test(matched_array[0])){
+                type = 'function';
+            } else if (string_pattern.test(matched_array[0])){
                 matched_array[0] = matched_array[0].replace(/"/g,'');
                 type = 'string';
             } else if (names_pattern.test(matched_array[0])){
@@ -1110,12 +1113,24 @@ Device readers: each takes a line of tokens and returns a device object,
         obj.connections.push(line[1].token);
         obj.connections.push(line[2].token);
         
-        var val_ar = []
-        for (var i = 3; i < line.length; i += 1){
-            val_ar.push(line[i].token);
+//        var val_ar = []
+//        for (var i = 3; i < line.length; i += 1){
+//            val_ar.push(line[i].token);
+//        }
+//        obj.properties.value = line[3];
+//        obj.properties.value.token = val_ar.join(" ");
+        if (line[3].type == "number"){
+            try{
+                obj.properties.value = parse_number(line[3].token);
+            } catch (err) {
+                throw new CustomError("Number Expected",line[3].line,line[3].column);
+            }
+        } else if (line[3].type != "function"){
+            throw new CustomError("Number or function expected",
+                                  line[3].line,line[3].column);
+        } else {
+            obj.properties.value = line[3].token;   
         }
-        obj.properties.value = line[3];
-        obj.properties.value.token = val_ar.join(" ");
         return obj;
     }
     
