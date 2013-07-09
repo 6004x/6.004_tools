@@ -23,6 +23,8 @@
         return this.file + ":" + this.line + ":" + this.column + ": " + this.message;
     };
 
+    // Reads an octal escape sequence, excluding the leading backslash.
+    // Throws a SyntaxError if the sequence is outside the acceptable range (one byte)
     var readOctalStringEscape = function(stream) {
         var sequence = '';
         while(!stream.eol() && sequence.length < 3) {
@@ -39,6 +41,9 @@
         return String.fromCharCode(value);
     };
 
+    // Reads one character from a string and returns it.
+    // If the character is equal to end_char, and it's not escaped,
+    // returns false instead (this lets you detect end of string)
     var readChar = function(stream, end_char) {
         var chr = stream.next();
         switch(chr) {
@@ -70,6 +75,7 @@
         }
     };
 
+    // Reads in a double-quoted string, or throws a SyntaxError if it can't.
     var readString = function(stream) {
         if(stream.next() != '"') {
             throw new SyntaxError("Expected a string here.", stream);
@@ -83,6 +89,9 @@
         throw new SyntaxError("Unterminated string constant", stream);
     };
 
+    // Parses the given text as a number (as understood by uasm)
+    // If this is not possible, returns NaN.
+    // This primarily exists as a helper for readNumber.
     var parseNumber = function(text) {
         // Hex
         if(/^0x/i.test(text)) {
@@ -103,6 +112,11 @@
         return NaN;
     };
 
+    // Reads a number out of the stream.
+    // If the stream doesn't appear to contain a number, returns null.
+    // If the stream does appear to contain a number, but actually doesn't, throws
+    // a SyntaxError.
+    // If the stream really does contain a number, returns it as a Number.
     var readNumber = function(stream, optional) {
         // This reads more than just sane numbers so we can actually see errors.
         // Anything this matches should be a number, though, so we can safely error
@@ -113,12 +127,14 @@
         var num = parseNumber(token);
         // If whatever we had was Not a Number, then it is a syntax error.
         if(isNaN(num) && !optional) {
-            throw new SyntaxError("Incomprehensible number " + token + ". Acceptable bases are hex (0x…), octal (0…), binary (0b…) and decimal.", stream);
+            throw new SyntaxError("Incomprehensible number " + token + ". Acceptable bases are hex (0x...), octal (0...), binary (0b...) and decimal.", stream);
         }
 
         return num;
     };
 
+    // Read any name symbol from the stream.
+    // Returns the name of the symbol if it exists, null if there isn't one.
     var readSymbol = function(stream) {
         eatSpace(stream);
         var match = stream.match(/^[\$\.@A-Z_][\$\.@A-Z0-9_]*/i);
@@ -130,6 +146,14 @@
         }
     };
 
+    // Reads in a 'term', as understood by an Expression.
+    // This understands the following as terms:
+    // - Integer literals
+    // - Symbols (e.g. variable names)
+    // - Parenthesised expressions
+    // - Characters (single character strings quoted with '')
+    // - Negations of the above (any of the above prefixed by a -)
+    // Returns the term, whatever it happens to be (number, symbol name, Expression, UnaryOperation)
     var readTerm = function(stream) {
         eatSpace(stream);
         // Is it a number?
@@ -139,13 +163,13 @@
         var symbol = readSymbol(stream);
         if(symbol !== null) return symbol;
 
-        if(stream.peek() == '-') {
-            stream.next();
+        if(stream.peek() == '-' || stream.peek() == '~' || stream.peek() == '+') {
+            var unary = stream.next();
             var next = readTerm(stream);
             if(next) {
-                return new Negate(next, stream.file(), stream.line_number());
+                return new UnaryOperation(unary, next, stream.file(), stream.line_number());
             } else {
-                throw new SyntaxError("Expected value to negate after unary negation operator.", stream);
+                throw new SyntaxError("Expected value after unary '" + unary + "' operator.", stream);
             }
         }
         if(stream.peek() == '(') {
@@ -162,10 +186,10 @@
             stream.next();
             var chr = readChar(stream, "'");
             if(chr === false) {
-                throw new SyntaxError("Zero-character char constant; char constants must have exactly one character.");
+                throw new SyntaxError("Zero-character char constant; char constants must have exactly one character.", stream);
             }
             if(stream.next() != "'") {
-                throw new SyntaxError("Multi-character char constant; char constants must have exactly one character (for more, try .ascii or .text)");
+                throw new SyntaxError("Multi-character char constant; char constants must have exactly one character (for more, try .ascii or .text)", stream);
             }
             return chr.charCodeAt(0);
         };
@@ -219,6 +243,7 @@
         return null;
     };
 
+    // Represents the location of a label in the code
     function Label(name, file, line) {
         this.name = name;
         this.file = file;
@@ -226,14 +251,19 @@
     };
     Label.prototype.assemble = function(context, out) {
         context.symbols[this.name] = context.dot;
+        context.labels[this.name] = context.dot;
     };
 
+    // Represents an invocation of a macro.
     function MacroInvocation(macro, args, file, line) {
         this.macro = macro;
         this.args = args;
         this.file = file;
         this.line = line;
     };
+    // Creates a MacroInvocation. Expects to be given the name of the macro as `token`, and a
+    // stream pointing immediately after the macro name 
+    // Parses the parenthesised argument list, or throws a SyntaxError if it can't.
     MacroInvocation.parse = function(token, stream) {
         var macro_name = token;
         var args = [];
@@ -277,11 +307,14 @@
         context.macros[this.macro][this.args.length].transclude(context, evaluated, out);
     };
 
+    // Represents an arithmetic operation; used as part of an Expression.
     function Operation(op, file, line) {
         this.op = op;
         this.file = file;
         this.line = line;
     };
+    // Returns the result of performing the Operation on a and b (a op b)
+    // a and b will be treated as unsigned integers.
     Operation.prototype.operate = function(a, b) {
         // All operations are done on 32-bit ints. Arithmetic operations are coerced
         // by bitwise OR with 0.
@@ -308,12 +341,34 @@
         return result;
     };
 
-    function Negate(value, file, line) {
+    // Indicates that the value should be subjected to some unary operation.
+    function UnaryOperation(op, value, file, line) {
+        this.op = op;
         this.value = value;
         this.file = file;
         this.line = line;
     };
+    UnaryOperation.prototype.evaluate = function(context, strict) {
+        var ops = {
+            '-': function(a) { return -a; },
+            '~': function(a) { return ~a; },
+            '+': function(a) { return +a; }
+        };
+        if(this.value instanceof Expression) {
+            this.value = this.value.evaluate(context, strict);
+        }
+        if(!_.has(ops, this.op)) {
+            throw new SyntaxError("Cannot perform unary operation '" + this.op + "'; no function defined.", this.file, this.line);
+        }
+        return ops[this.op](this.value);
+    }
 
+    // Represents an 'arithmetic expression'. This includes the degenerate cases of either an integer
+    // literal or a symbol name with no operations.
+    // Expressions may well contain nested Expressions.
+    // Returns null if passed something that doesn't look like an expression
+    // Returns an Expression if passed a valid expression
+    // Throws a SyntaxError if passed something that looks like an expression but isn't
     function Expression(expression, file, line) {
         this.expression = expression;
         this.file = file;
@@ -321,7 +376,7 @@
     };
     Expression.parse = function(stream) {
         var terms = []; // List of terms (which we don't generally evaluate while parsing)
-        var want_operation = false;
+        var want_operation = false; // We alternate between expecting a value and an expression.
         while(true) {
             eatSpace(stream);
             if(!want_operation) {
@@ -331,6 +386,8 @@
                     want_operation = true;
                     continue;
                 } else {
+                    // If we can't get a term and we already have some terms, that's a syntax error.
+                    // If we don't already have some terms, though, we just assume it's not an expression at all.
                     if(terms.length > 0) {
                         throw new SyntaxError("Expected operand after operator '" + _.last(terms).op + "'", stream);
                     } else {
@@ -348,12 +405,14 @@
                     break;
                 }
             }
-
-            // break;
         }
 
         return new Expression(terms, stream.file(), stream.line_number());
     };
+    // Evaluates an expression, given the variable values in context.
+    // If strict is false and it needs a variable that is either not yet set or currently has
+    // undefined value (due to forward dependencies), returns 'undefined'.
+    // If strict is true, it will instead throw a SyntaxError.
     Expression.prototype.evaluate = function(context, strict) {
         // Expressions should be alternate values and operations.
         // If this isn't true, something has gone wrong (internally; the parser phase
@@ -369,6 +428,7 @@
         // allows you to use undefinable values, assigning them a value of zero. Let's do
         // better.)
         var self = this;
+        // Evaluates a single term of the expression.
         var term = function(t) {
             if(_.isNumber(t)) {
                 return t;
@@ -384,22 +444,18 @@
                 }
                 return value;
             }
-            if(t instanceof Expression) {
+            // Evaluate expressions and unary operations recursively.
+            if(t instanceof Expression || t instanceof UnaryOperation) {
                 return t.evaluate(context, strict);
             }
-            if(t instanceof Negate) {
-                if(t.value instanceof Expression)
-                    return -t.value.evaluate(context, strict);
-                else
-                    return -t.value;
-            }
+            // We shouldn't be able to get here.
             console.log(t);
             throw "Unknown term type during expression evaluation.";
-        }
+        };
 
         var i = 0;
         var a = term(this.expression[i++]);
-        if(a === undefined) {
+        if(a === undefined) { // 'strict' handling is done in term().
             return undefined;
         }
 
@@ -423,6 +479,7 @@
         context.dot += 1;
     };
 
+    // Represents a Macro definition.
     function Macro(name, parameters, instructions, file, line) {
         this.name = name;
         this.parameters = parameters;
@@ -437,10 +494,11 @@
         }
         if(_.has(context.macros[this.name], this.parameters.length)) {
             var old = context.macros[this.name][this.parameters.length];
-            throw new SyntaxError("Redefinition of " + this.parameters.length + "-argument macro " + this.name + ". (Original at " + old.file + ":" + old.line, this.file, this.line + ")");
+            throw new SyntaxError("Redefinition of " + this.parameters.length + "-argument macro " + this.name + ". (Original at " + old.file + ":" + old.line + ")", this.file, this.line);
         }
         context.macros[this.name][this.parameters.length] = this;
     };
+    // Called by MacroInvocation to put a macro in place during assembly.
     Macro.prototype.transclude = function(context, args, out) {
         if(args.length != this.parameters.length) {
             throw "Wrong number of parameters in Macro transclude (MacroInvocation should not permit this!)";
@@ -455,8 +513,9 @@
         });
         // Revert back to the old scope.
         context.symbols = old_scope;
-    }
+    };
 
+    // Represents a .include statement.
     function Include(filename, file, line) {
         this.filename = filename;
         this.file = file;
@@ -476,6 +535,7 @@
         });
     }
 
+    // Represents a .align statement.
     function Align(expression, file, line) {
         this.expression = expression;
         this.file = file;
@@ -486,11 +546,12 @@
         return new Align(expression, stream.file(), stream.line_number());
     }
     Align.prototype.assemble = function(context, out) {
-        var align = this.expression.evaluate(context, true);
+        var align = this.expression ? this.expression.evaluate(context, true) : 4;
         if(context.dot % align === 0) return;
         context.dot = context.dot + (align - (context.dot % align));
     }
 
+    // Represnts both .ascii (null_terminated = false) and .text (null_terminated = true)
     function AssemblyString(text, null_terminated, file, line) {
         this.text = text;
         this.null_terminated = null_terminated;
@@ -516,6 +577,7 @@
         }
     };
 
+    // Represents .breakpoint
     function Breakpoint(file, line) {
         this.file = file;
         this.line = line;
@@ -524,26 +586,31 @@
         if(out) context.breakpoints.push(context.dot);
     }
 
+    // Represents .protect
     var Protect = function(file, line) {
         this.file = file;
         this.line = line;
     };
 
+    // Represents .unprotect
     var Unprotect = function(file, line) {
         this.file = file;
         this.line = line;
     };
 
+    // Represents .options
     var Options = function(options, file, line) {
         this.options = options;
         this.file = file;
         this.line = line;
     };
 
+    // Public Assembler interface. Constructor takes no arguments.
     var Assembler = function() {
         var mParsedFiles = {};
         var mPendingIncludes = [];
 
+        // Parses a macro definition
         var parse_macro = function(stream) {
             var macro_name = readSymbol(stream);
             if(macro_name === null) {
@@ -580,6 +647,7 @@
             return macro;
         };
 
+        // Parses a file (or a macro, if is_macro is true)
         var parse = function(stream, is_macro) {
             var fileContent = [];
             var allow_multiple_lines = !is_macro; // Macros are single-line by default
@@ -608,6 +676,8 @@
 
                     // Skip any whitespace
                     if(eatSpace(stream)) continue;
+                    // If we're at the end of the line, continue.
+                    if(stream.eol()) break;
 
                     // If we're in a multi-line macro and we find a }, it's time for us to exit.
                     if(is_macro && allow_multiple_lines && stream.peek() == "}") {
@@ -658,6 +728,9 @@
                                 var ascii = readString(stream);
                                 fileContent.push(new AssemblyString(ascii, command == "text", stream.file(), stream.line_number()));
                                 break;
+                            case "breakpoint":
+                                fileContent.push(new Breakpoint(stream.file(), stream.line_number()));
+                                break;
                             default:
                                 stream.skipToEnd();
                                 throw new SyntaxError("Unrecognised directive '." + command + "'", stream);
@@ -699,6 +772,7 @@
                     fileContent.push(expression);
 
                     if(expression === null) {
+                        // This is a collection of ways we can get here.
                         if(stream.peek() == ')') {
                             throw new SyntaxError("Unexpected closing parenthesis.", stream);
                         }
@@ -712,6 +786,7 @@
                             throw new SyntaxError("Unexpected closing brace '}' without matching open brace '{'", stream);
                         }
 
+                        // This is just the user being unreasonable
                         var bad_thing = stream.match(/^[^\s]+/) || stream.match(/^[^\b]+/) || stream.peek();
                         throw new SyntaxError("Unexpected '" + bad_thing + "'; giving up.", stream);
                     }
@@ -720,26 +795,41 @@
             return fileContent;
         };
 
+        // Given a syntax tree, returns a Uint8Array representing the program
+        // Alternatively, throws a SyntaxError.
         var run_assembly = function(syntax) {
             var context = {
                 symbols: {},
                 macros: {},
+                dot: 0,
+                // Things to be passed out to the driver.
                 breakpoints: [],
-                dot: 0
+                labels: {}
             };
+            // First pass: figure out where everything goes.
              _.each(syntax, function(item) {
                 item.assemble(context);
             });
+            // Reset our start position, but keep the values defined.
             var size = context.dot;
             context.dot = 0;
             var memory = new Uint8Array(size);
-            // Now do it again!
+            // Now do it again! Put things into our memory image this time.
             _.each(syntax, function(item) {
                 item.assemble(context, memory);
             });
-            return memory;
+            return {
+                image: memory,
+                breakpoints: context.breakpoints,
+                labels: context.labels
+            };
         };
 
+        // Public driver function.
+        // file: the name of the file
+        // content: the contents of the file
+        // callback(false, error_list): called on failure. error_list is a list of SyntaxErrors, if any
+        // callback(true, bytecode): called on success. bytecode is a Uint8Array containing the result of compilation.
         this.assemble = function(file, content, callback) {
             var stream = new StringStream(new FileStream(content, file));
             var errors = [];
@@ -770,7 +860,7 @@
                 if(errors.length) {
                     callback(false, errors);
                 } else {
-                    callback(true);
+                    callback(true, code);
                 }
             }
         };

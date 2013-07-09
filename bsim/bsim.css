@@ -1,0 +1,88 @@
+.tab-pane {
+    border-bottom: 1px solid #ddd;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+.nav-tabs {
+    margin-bottom: 0;
+}
+
+.nav-pills li {
+    cursor: pointer;
+}
+
+.regfile .register {
+    color: gray;
+    text-align: right;
+}
+
+table.regfile {
+    border: 1px solid gray;
+}
+
+.regfile, .disassembly, .tty {
+    font-family: Menlo, Monaco, monospace;
+    font-size: small;
+}
+
+pre.tty-output {
+    height: 100px;
+    overflow-y: auto;
+    background-color: #fafafa;
+    border: thin solid #eaeaea;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.disassembly table {
+    table-layout: fixed;
+    border-spacing: 0px;
+}
+
+.current-instruction {
+    background-color: #3874D7;
+    color: white;
+}
+
+.supervisor-mode .current-instruction {
+    background-color: #CC3729;
+}
+
+div.disassembly {
+    height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 500px;
+}
+
+.disassembly td {
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* Address */
+.disassembly td:nth-child(1) {
+    width: 40px;
+}
+
+/* Label */
+.disassembly td:nth-child(3) {
+    width: 150px;
+    max-width: 150px;
+}
+
+/* Disassembeld instruction */
+.disassembly  td:nth-child(4) {
+    width: 240px;
+}
+
+.disassembly .breakpoint {
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+    line-height: 18px;
+}
+
+/* This fixes the several pixel jump when toggling split screen caused by the right buttons being too tall. */
+.masthead {
+    height: 55px;
+}
