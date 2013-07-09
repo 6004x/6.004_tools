@@ -91,7 +91,7 @@ var Editor = function(container, mode) {
         if(!document) return false;
         var cm = document.cm;
         cm.addLineClass(line, 'background', 'cm-error-line');
-        cm.addLineWidget(line, create_error_widget(message), {noHScroll: true});
+        cm.addLineWidget(line, create_error_widget(message), {noHScroll: true, handleMouseEvents: true});
         cm.scrollIntoView({line: line, ch: column});
         var handle = cm.lineInfo(line).handle;
         mMarkedLines.push({filename: filename, handle: handle});
@@ -143,12 +143,12 @@ var Editor = function(container, mode) {
         if(!doc.cm.isClean(doc.generation)) {
             close.text("\u25CF"); // U+25CF BLACK CIRCLE
         } else {
-            close.text("\u00D7"); // U+00D7 MULTILPICATION SIGN
+            close.text("\u00D7"); // U+00D7 MULTIPLICATION SIGN
         }
     };
 
     var tab_mouse_enter = function() {
-        $(this).text("\u00D7"); // U+00D7 MULTILPICATION SIGN
+        $(this).text("\u00D7"); // U+00D7 MULTIPLICATION SIGN
     };
 
     this.openTab = function(filename, content, activate) {
