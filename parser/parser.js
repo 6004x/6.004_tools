@@ -469,26 +469,11 @@ Parse
 *******************************************************************************
 ******************************************************************************/
     
-    var globals;
+    var globals/**** testing only ****=["vdd","gnd"]/** end test **/;
     var plots;
     var options;
     var analyses;
-    var subcircuits;
-    var current_subckt;
-    
-    function parse(input_string,filename){
-        var token_array = tokenize(input_string,filename);
-        globals = [/*********** testing only! **********/"vdd","gnd"];
-        plots = [];
-        options = {};
-        analyses = [];
-        subcircuits = {_top_level_:{name:"_top_level_",
-                                    ports:[],
-                                    properties:{},
-                                    devices:[]
-                                   } 
-                       /*********** testing only! ***************/
-                       ,buffer:{name:"buffer",
+    var subcircuits /**** testing only **** = {buffer:{name:"buffer",
                                 ports:["a","z"],
                                 properties:{},
                                 devices:[
@@ -513,9 +498,24 @@ Parse
                                 {type:"nfet",
                                  ports:["D","G","S"],
                                  connections:["z","a","gnd"],
-                                 properties:{name:"PD",W:8,L:1}}
+                                 properties:{name:"ND",W:8,L:1}}
                             ]
-                           }
+                           }}/** end test **/;
+    var current_subckt;
+//    var netlist;
+    
+    function parse(input_string,filename){
+        var token_array = tokenize(input_string,filename);
+        globals = [];
+        plots = [];
+        options = {};
+        analyses = [];
+        var netlist = [];
+        subcircuits = {_top_level_:{name:"_top_level_",
+                                    ports:[],
+                                    properties:{},
+                                    devices:[]
+                                   } 
                       };
         current_subckt = subcircuits["_top_level_"];
         
@@ -543,8 +543,15 @@ Parse
                 continue;
             }
         }
-        return {globals:globals,options:options,plots:plots,
-                analyses:analyses,subckts:subcircuits};
+//        return {globals:globals,options:options,plots:plots,
+//                analyses:analyses,subckts:subcircuits};
+        netlist_instance("",{type:"instance",
+                             ports:[],
+                             connections:[],
+                             properties:{name:"_top_level_",
+                                         instanceOf:"_top_level_"}
+                            },netlist);
+        return netlist;
     }
     
 /*****************************
@@ -1151,7 +1158,9 @@ Device readers: each takes a line of tokens and returns a device object,
        
     
 /**********************************************
+**********************************************
 Flattening
+**********************************************
 **********************************************/
     
     function netlist_device(prefix, dev_obj, parent_obj, /*globals,*/JSON_netlist){
@@ -1221,16 +1230,16 @@ Flattening
                 for (var p = 0; p < nports; p += 1){
                     new_obj.connections[dev_obj.ports[p]] = local_connections[p];
                 }
+                JSON_netlist.push(new_obj);
             } else {
                 // recursive call
                 new_obj.connections = local_connections.slice(0);
-                netlist_instance(prefix+new_obj.properties.name, new_obj,
-                                 JSON_netlist);
-                                 
+                new_obj.ports = dev_obj.ports.slice(0);
+                console.log("new object:",new_obj);
+                netlist_instance(new_obj.properties.name, new_obj,
+                                 JSON_netlist);                  
             }
-            JSON_netlist.push(new_obj);
         }
-        console.log("netlist:",JSON_netlist);
     }
     
     function netlist_instance(prefix, inst_obj, /*globals,*/ JSON_netlist){
@@ -1364,15 +1373,20 @@ function netlistDevTest() { Parser.netlist_device("X1",
 
 // "TypeError: cannot read property "buffer" of undefined"
 // ?????????????????????????????????????????????????????????
-function netlistInstTest() { Parser.netlist_instance("Xtest",
-                                                     {type:"instance",
-                                                      ports:["a","z"],
-                                                      connections:["in","out"],
-                                                      properties:{name:"Xtest",
-                                                                instanceOf:"buffer"}
-                                                     },
-                                                     {type:"_top_level_",
-                                                      ports:[],
-                                                      connections:[],
-                                                      properties:{}},[]); }
+var JSON_netlist=[];
+function netlistInstTest() { 
+    Parser.netlist_instance("Xtest",
+                         {type:"instance",
+                          ports:["a","z"],
+                          connections:["in","out"],
+                          properties:{name:"Xtest",
+                                    instanceOf:"buffer"}
+                         },
+                         /*{type:"_top_level_",
+                          ports:[],
+                          connections:[],
+                          properties:{}},*/
+                         JSON_netlist);
+    console.log(JSON.stringify(JSON_netlist,null,"  "));
+}
 
