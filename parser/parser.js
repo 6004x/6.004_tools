@@ -893,7 +893,7 @@ Device readers: each takes a line of tokens and returns a device object,
     
     /*********************************************
     General linear device: (resistors, capacitors, inductors)
-        --ports: n_plus, n_minus
+        --ports: n1, n2
         --properties: name, value
     **********************************************/
     
@@ -920,7 +920,7 @@ Device readers: each takes a line of tokens and returns a device object,
     
     function read_linear(line,type){
         var obj = {type:type,
-                   ports:["n_plus","n_minus"],
+                   ports:["n1","n2"],
                    connections:[],
                    properties:{}
                   };
@@ -1075,7 +1075,7 @@ Device readers: each takes a line of tokens and returns a device object,
     
     /********************************************
     Sources: (voltage source, current source)
-        --ports: n_plus, n_minus
+        --ports: nplus, nminus
         --properties: name, value
     ********************************************/
     
@@ -1099,7 +1099,7 @@ Device readers: each takes a line of tokens and returns a device object,
     function read_source(line,type){
         // id n+ n- val
         var obj = {type:type,
-                   ports:["n_plus","n_minus"],
+                   ports:["nplus","nminus"],
                    connections:[],
                    properties:{name:line[0].token}
                   }
@@ -1119,13 +1119,14 @@ Device readers: each takes a line of tokens and returns a device object,
 //        }
 //        obj.properties.value = line[3];
 //        obj.properties.value.token = val_ar.join(" ");
-        if (line[3].type == "number"){
+        /*if (line[3].type == "number"){
             try{
                 obj.properties.value = parse_number(line[3].token);
             } catch (err) {
                 throw new CustomError("Number Expected",line[3].line,line[3].column);
             }
-        } else if (line[3].type != "function"){
+        } else*/ if (line[3].type != "function" /* test */ &&
+                     line[3].type != "number"){
             throw new CustomError("Number or function expected",
                                   line[3].line,line[3].column);
         } else {
@@ -1301,15 +1302,15 @@ Exports
     return {parse:parse,
 //            analyze:analyze,
 //            split:split,
-            tokenize:tokenize,
+//            tokenize:tokenize,
 //            parse1:parse1,
 //            include:include,
 //            parse_scaled:parse_scaled,
-            parse_number:parse_number,
-            read_device:read_device,
-            netlist_device:netlist_device,
-            netlist_instance:netlist_instance,
-            subcircuits:subcircuits
+//            parse_number:parse_number,
+//            read_device:read_device,
+//            netlist_device:netlist_device,
+//            netlist_instance:netlist_instance,
+//            subcircuits:subcircuits
               }
 }());
 

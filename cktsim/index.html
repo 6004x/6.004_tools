@@ -3,49 +3,21 @@
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
 <script src="highcharts/highcharts.js"></script>
 <script src="cktsim.js"></script>
+<script src="../parser/parser.js"></script>
 <script src="test.js"></script>
 </head>
 <body>
 <h2>CKTSIM test page</h2>
 
 <div class="cktsim">
-* Transient analysis test
-V1 1 0 step(1,0,1u)
-R1 1 2 1k
-C1 2 0 1n
-.tran 5u
-.plot 1 2
-</div>
-
-<div class="cktsim">
-* AC analysis test
-V1 1 0 step(1,0,1u)
-R1 1 2 1k
-C1 2 0 1n
-.ac V1 1 1G
-.plot 2
-</div>
-
-<div class="cktsim">
-* CMOS inverter
-Vdd vdd 0 1
-Vin in 0 pulse(0,1,1n,5n)
-Pup vdd in out W=8 L=1
-Ndown out in 0 W=4 L=1
-.tran 10n
-.plot in
-.plot out
-.plot I(Vdd)
-</div>
-
-<div class="cktsim">
-* inverting amplifier, gain = 2
-Vin in 0 sin(1M)
-Rin in 1 1k
-Rfeedback out 1 2k
-Oamp 0 1 out 0 1e5
-.tran 5u
-.plot in out
+// Lab 1 test
+Vmeter vds drain 0v
+Vds vds gnd 0v
+Vgs gate gnd 0v
+// N-channel mosfet
+N1 drain gate gnd w=2
+.dc Vds 0 5 .1 Vgs 0 5 1
+.plot I(Vmeter)
 </div>
 
 </body>
