@@ -1,21 +1,25 @@
-var fileSystem= function(){
+var FileSystem= function(){
 	var DEFAULT_SERVER;
-	var server;
+	var mServer;
+	var mUsername;
+
 	var openFiles=[];
 	var fileTree={};
+
 	var updated=true;
 	var online=false;
+
 	/*
 		fileTree contains a tree representation of a file list, starting with the rootnode,
 		and an dict to indicate all folders and files in the current node. In the dict, 
 		if it is a subfolder, that dict node has an arraw representing the structure of 
 		the subfolder, recursively. 
-		if it is a file, it might have a file, if it has been opened in the editor
+		if it is a file, it might have a file, it if has been opened in the editor
 	*/
 	/*
 	*	each file will have 2 attributes:
-		file.name (relative path of file)
-		file.data (String representation of file 'utf8')
+		file.name (relative path of file
+)		file.data (String representation of file 'utf8')
 
 		TO IMPLEMENT:
 		file.isOpen
@@ -23,13 +27,14 @@ var fileSystem= function(){
 	*
 	*/
 
-	//TODO: new folder, delete folder, delete items, version control
+	//TODO: delete folder, delete items, version control
 
 
 	var exports={};
-	function getFileList(username, callback, callbackFailed){
+	function getFileList(callback, callbackFailed){
 		//using username or some other sort of authentication, we can get the root folder of the user
-		console.log(Object.keys(fileTree).length);
+		if(fileTree)
+			console.log(Object.keys(fileTree).length);
 		// if(Object.keys(fileTree).length>0&&updated){
 		// 	return fileTree;
 		// }else if (!updated){
@@ -37,8 +42,8 @@ var fileSystem= function(){
 		// 	writeLocalStorageToServer();
 		// 	return fileTree;
 		// }
-		if(username){
-            sendAjaxRequest('/',null,'json',username, 'filelist', 
+		if(mUsername){
+            sendAjaxRequest('/',null,'json', 'filelist', 
             	function(data, status){
 	            	if(status=='success'){
 	            		
@@ -53,7 +58,7 @@ var fileSystem= function(){
 	            	if(callbackFailed)
 	            		callbackFailed(req, status, error);
 	            	online=false;
-	            	return readTreeFromLocalStorage;
+	            	//return readTreeFromLocalStorage();
             });	
             //callback will return with a file object
             console.log('request sent');
@@ -61,6 +66,8 @@ var fileSystem= function(){
 	}
 	function writeTreeToLocalStorage(){
 		console.log('writing tree to local storage');
+
+		//todo, divide up the data, make it asynchronous
 		localStorage.setItem('6004data', JSON.stringify(fileTree));
 	}
 	function readTreeFromLocalStorage(){
@@ -71,12 +78,12 @@ var fileSystem= function(){
 	function writeLocalStorageToServer(){
 		//tobe implemented;
 	}
-	function getFile(username, fileName, callback, callbackFailed){
+	function getFile(fileName, callback, callbackFailed){
 		//username or some sort of authentication
 		var file= getFileFromTree(fileName);
 		
-		if(username&&!file){
-			sendAjaxRequest(fileName,null, 'json', username, 'getFile', function(data, status){
+		if(online){
+			sendAjaxRequest(fileName,null, 'json', 'getFile', function(data, status){
 				callback(data, status)
 				if(status=='success')
 					writeFileToTree(data.name, data.data);
@@ -121,8 +128,8 @@ var fileSystem= function(){
 	}
 
 
-	function saveFile(username, file, callback, callbackFailed){
-		sendAjaxRequest(file.name, file.data,'json', username, 'saveFile', function(data, status){
+	function saveFile(file, callback, callbackFailed){
+		sendAjaxRequest(file.name, file.data,'json', 'saveFile', function(data, status){
 			callback(data, status);
 			writeFileToTree(file.name, file.data);
 			updated=false;
@@ -131,29 +138,30 @@ var fileSystem= function(){
 		
 	}
 
-	function newFile(username, file, callback, callbackFailed){
-		sendAjaxRequest(file.name, file.data,'json', username, 'newFile', callback, callbackFailed);
+	function newFile(file, callback, callbackFailed){
+		sendAjaxRequest(file.name, file.data,'json', 'newFile', callback, callbackFailed);
 		updated=false;
 	}	
-	function newFolder(username, folderName, callback, callbackFailed){
-		sendAjaxRequest(folderName,null,'json', username, 'newFolder', callback, callbackFailed);
+	function newFolder(folderName, callback, callbackFailed){
+		sendAjaxRequest(folderName,null,'json', 'newFolder', callback, callbackFailed);
 		updated=false;
 	}	
 
-	function sendAjaxRequest(filepath, fileData, dataType, username, query, callbackFunction, failFunction){
+	function sendAjaxRequest(filepath, fileData, dataType, query, callbackFunction, failFunction){
 		failFunction=failFunction||failResponse
 
         if(!fileData)
             fileData='none';
 
         console.log(fileData);
-        console.log(username);
-        url=server+'/'+filepath;
+        console.log(mUsername);
+        url=mServer+'/'+filepath;
 
         var req=$.ajax({
+        		type:"POST",
                 url:url, 
-                data:{dummy:'dummy', username:username,query:query, fdata:fileData},
-                username:username,
+                data:{dummy:'dummy', username:mUsername, query:query, fdata:fileData},
+                username:mUsername,
                 dataType:dataType,
             });
         req.done(function(data, status){
@@ -176,13 +184,17 @@ var fileSystem= function(){
     exports.newFile=newFile;
     exports.newFolder=newFolder;
 
-    exports.getServerName=function(){return DEFAULT_SERVER;};
+    exports.getServerName=function(){return mServer;};
+    exports.getUserName=function(){return mUsername;};
 
-    function setup(serverN){
-    	server=DEFAULT_SERVER||serverN;
-    	console.log(server);
+    function setup(username, server){
+    	mServer=server||DEFAULT_SERVER;
+    	mUsername=username;
+    	console.log(mServer);
     }
+
     exports.setup=setup;
     exports.getFileFromTree=getFileFromTree;
+
     return exports;
 }();
