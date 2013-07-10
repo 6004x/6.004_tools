@@ -593,6 +593,14 @@ Parse Control
                 }
                 read_dc(line);
                 break;
+            case ".ac":
+                if (current_subckt.name != "_top_level_"){
+                    throw new CustomError("Analyses not allowed inside "+
+                                    "subcircuit definitons",
+                                    line[0].line,line[0].column);
+                }
+                read_ac(line);
+                break;
             case ".subckt":
                 if (current_subckt.name != "_top_level_"){
                     throw new CustomError("Nested subcircuits not allowed",
@@ -644,12 +652,20 @@ Control statement readers
         line.shift();
         var plot_list = [];
         for (var i = 0; i < line.length; i += 1){
-            if (line[i].type != "name"){
+            
+            if (line[i].type == "function"){
+                // get the node name in the parentheses
+                var node = /\((.+)\)/.exec(line[i].token)[1];
+                if (!(/(^[A-Za-z][\w$:\[\]\.]*)/.test(node))){
+                    throw new CustomError("Node name expected",
+                                      line[i].line,line[i].column);
+                }
+            } else if (line[i].type != "name"){
                 throw new CustomError("Node name expected",
                                       line[i].line,line[i].column);
-            } else{
-                plot_list.push(line[i].token);
             }
+            plot_list.push(line[i].token);
+            
         }
         if (plot_list.length > 0){
             plots.push(plot_list);
@@ -737,7 +753,7 @@ Control statement readers
 //    }
     
     /*********************
-    Read DC: DC analyses
+    Read DC: DC analysis
     *********************/
     function read_dc(line){
         line.shift();
@@ -775,30 +791,58 @@ Control statement readers
     /**********************
     Parse DC: makes sure all parameters are valid
     **********************/
-//    function parse_dc(dc_obj){
-//        var temp_ps = {};
-//        for (var param in dc_obj.parameters){
-//            temp_ps[param] = dc_obj.parameters[param].token;
-//            if (param != "source1" && param != "source2"){
-//                temp_ps[param] = parse_number(temp_ps[param]);
-//            }
-//        }
-//        
-//        for (var i=1; i<=2; i+=1){
-//            if (temp_ps["start"+i] >= temp_ps["stop"+i]){
-//                throw new CustomError("Stop time must be greater than start time",
-//                                dc_obj.parameters["start"+i].line,
-//                                dc_obj.parameters["start"+i].column);
-//            }
-//            if (temp_ps["step"+i] <= 0) {
-//                throw new CustomError("Step interval must be a non-zero, positive number",
-//                                dc_obj.parameters["step"+i].line,
-//                                dc_obj.parameters["step"+i].line);
-//            }
-//        }
-//        dc_obj.parameters = temp_ps;
-//        return dc_obj;
-//    }
+    function parse_dc(dc_obj){
+        var temp_ps = {};
+        for (var param in dc_obj.parameters){
+            temp_ps[param] = dc_obj.parameters[param].token;
+            if (param != "source1" && param != "source2"){
+                temp_ps[param] = parse_number(temp_ps[param]);
+            }
+        }
+        
+        for (var i=1; i<=2; i+=1){
+            if (temp_ps["start"+i] >= temp_ps["stop"+i]){
+                throw new CustomError("Stop time must be greater than start time",
+                                dc_obj.parameters["start"+i].line,
+                                dc_obj.parameters["start"+i].column);
+            }
+            if (temp_ps["step"+i] <= 0) {
+                throw new CustomError("Step interval must be a non-zero, positive number",
+                                dc_obj.parameters["step"+i].line,
+                                dc_obj.parameters["step"+i].line);
+            }
+        }
+        dc_obj.parameters = temp_ps;
+        return dc_obj;
+    }
+
+    /*********************
+    Read AC: AC analysis
+    ************************/
+    function read_ac(line){
+        var ac_obj = {type:'ac',parameters:{}};
+        
+        if (line.length != 4){
+            throw new CustomError("Three arguments expected: "+
+                                  ".ac ac_source_name fstart fstop",
+                                  line[0].line,line[0].column);
+        }
+        
+        if (line[1].type != "name"){
+            throw new CustomError("Node name expected",line[1].line,line[1].column);
+        }
+        ac_obj.parameters.ac_source_name = line[1].token;
+        
+        var param_names = [null,null,"fstart","fstop"]
+        for (var i = 2; i <= 3; i += 1){
+            try {
+                ac_obj.parameters[param_names[i]] = parse_number(line[i].token);
+            } catch (err) {
+                throw new CustomError("Number expected",line[i].line,line[i].column);
+            }
+        }
+        analyses.push(ac_obj);
+    }
     
 /*******************************
 Read subcircuit: creates an entry in the subcircuit dictionary

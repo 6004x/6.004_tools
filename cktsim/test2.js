@@ -340,7 +340,7 @@ function parse_netlist(text) {
         }
         
     }
-//    console.log(JSON.stringify(netlist));
+    console.log(JSON.stringify(netlist));
     return {netlist: netlist, analyses: analyses, plots: plots};
 } 
 
@@ -360,7 +360,7 @@ function simulate(text,div) {
     var analyses = parse.analyses;
     var plots = parse.plots;
     
-//    console.log("Expected netlist:",netlist);
+//    console.log("My netlist:",netlist);
     
     if (netlist.length === 0) return;
     if (analyses.length === 0) return;
@@ -369,12 +369,12 @@ function simulate(text,div) {
         var analysis = analyses[0];
         switch (analysis.type) {
         case 'tran':
-            cktsim.transient_analysis(netlist, analysis./*parameters.*/tstop, [], function(ignore, results) {
+            cktsim.transient_analysis(netlist, analysis/*.parameters.*/tstop, [], function(ignore, results) {
                 tran_plot(div, results, plots);
             });
             break;
         case 'ac':
-            var results = cktsim.ac_analysis(netlist, analysis.fstart, analysis.fstop, analysis.ac_source_name);
+            var results = cktsim.ac_analysis(netlist, analysis/*.parameters*/.fstart, analysis/*.parameters*/.fstop, analysis/*.parameters*/.src_name);
             ac_plot(div, results, plots);
             break;
         case 'dc':

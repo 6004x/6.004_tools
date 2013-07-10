@@ -1,4 +1,5 @@
 function engineering_notation(n, nplaces, trim) {
+    
     if (n === 0) return '0';
     if (n === undefined) return 'undefined';
     if (trim === undefined) trim = true;
@@ -49,8 +50,10 @@ function engineering_notation(n, nplaces, trim) {
     return n.toPrecision(nplaces);
 }
 
-function suffix_formatter() {
-    return engineering_notation(this.value, 2);
+function suffix_formatter(value,axis) {
+    console.log("value:",value,"formatted:",
+                engineering_notation(value,2));
+    return engineering_notation(value, 2);
 }
 
 function tran_plot(div, results, plots) {
@@ -75,50 +78,70 @@ function tran_plot(div, results, plots) {
             }
             var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
             series.push({
-                name: current ? node : "Node " + node,
+                label: current ? node : "Node " + node,
                 data: plot,
-                lineWidth: 5,
-                units: current ? 'Amps (A)' : 'Volts (V)'
+//                lineWidth: 5,
+//                units: current ? 'Amps (A)' : 'Volts (V)'
             });
         }
         var plotdiv = $('<div style="width:600px;height:300px"></div>');
         div.append(plotdiv);
         var options = {
-            chart: {
-                type: 'line'
+            yaxis:{
+                axisLabel: current ? 'Amps (A)' : 'Volts (V)',
+                color:"#848484",
+                tickColor:"#dddddd",
+                tickFormatter:suffix_formatter,
+//                tickDecimals:2
             },
-            title: {
-                text: '' //title
+            xaxis:{
+                axisLabel:'Time (s)',
+                color:"#848484",
+                tickColor:"#dddddd",
+                tickFormatter:suffix_formatter,
+//                tickDecimals:2
             },
-            xAxis: {
-                title: {
-                    text: 'Time (s)'
-                },
-                labels: {
-                    formatter: suffix_formatter
-                },
-                type: 'linear',
-                gridLineWidth: 1
-            },
-            yAxis: {
-                title: {
-                    text: series[0].units //'Volts (v)'
-                },
-                labels: {
-                    formatter: suffix_formatter
-                },
-                type: 'linear',
-            },
-            series: series,
-            plotOptions: {
-                line: {
-                    marker: {
-                        enabled: false
-                    }
-                }
-            },
-        };
-        plotdiv.highcharts(options);
+            series:{
+                shadowSize:0 
+            }
+        }
+        $.plot(plotdiv,series,options);
+//        var options = {
+//            chart: {
+//                type: 'line'
+//            },
+//            title: {
+//                text: '' //title
+//            },
+//            xAxis: {
+//                title: {
+//                    text: 'Time (s)'
+//                },
+//                labels: {
+//                    formatter: suffix_formatter
+//                },
+//                type: 'linear',
+//                gridLineWidth: 1
+//            },
+//            yAxis: {
+//                title: {
+//                    text: series[0].units //'Volts (v)'
+//                },
+//                labels: {
+//                    formatter: suffix_formatter
+//                },
+//                type: 'linear',
+//            },
+//            series: series,
+//            plotOptions: {
+//                line: {
+//                    marker: {
+//                        enabled: false
+//                    }
+//                }
+//            },
+//        };
+//        plotdiv.highcharts(options);
     }
 }
 
