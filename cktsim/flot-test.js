@@ -51,8 +51,8 @@ function engineering_notation(n, nplaces, trim) {
 }
 
 function suffix_formatter(value,axis) {
-    console.log("value:",value,"formatted:",
-                engineering_notation(value,2));
+//    console.log("value:",value,"formatted:",
+//                engineering_notation(value,2));
     return engineering_notation(value, 2);
 }
 
@@ -92,20 +92,67 @@ function tran_plot(div, results, plots) {
                 color:"#848484",
                 tickColor:"#dddddd",
                 tickFormatter:suffix_formatter,
-//                tickDecimals:2
+                zoomRange:false,
+                panRange:false
             },
             xaxis:{
                 axisLabel:'Time (s)',
                 color:"#848484",
                 tickColor:"#dddddd",
                 tickFormatter:suffix_formatter,
-//                tickDecimals:2
+                zoomRange:[null,(
+                    results._time_[plot.length-1]-
+                    results._time_[0])],
+                panRange:[results._time_[0],
+                          results._time_[plot.length-1]]
+            },
+            zoom:{
+                interactive:true,
+                trigger:"dblclick"
             },
             series:{
                 shadowSize:0 
+            },
+            crosshair:{
+                mode:"x",
+                color:"#e8cfac"
+            },
+            selection:{
+                mode:"x"
             }
         }
-        $.plot(plotdiv,series,options);
+        var plotObj = $.plot(plotdiv,series,options);
+        
+        var zoomInButton = $('<button>+</button>');
+        var zoomResetButton = $('<button>Reset</button>');
+        var zoomOutButton = $('<button>-</button>');
+        var scrollLeftButton = $('<button>\<</button>');
+        var scrollRightButton = $('<button>\></button>');
+        zoomInButton.on("click",function(){
+            plotObj.zoom();
+        });
+        zoomResetButton.on("click",function(){
+            plotObj.zoom({amount:1e-10});
+        });
+        zoomOutButton.on("click",function(){
+            plotObj.zoomOut();
+        });
+        scrollLeftButton.on("click",function(){
+            plotObj.pan({left:-100});
+        });
+        scrollRightButton.on("click",function(){
+            plotObj.pan({left:100});
+        });
+        
+        div.append(zoomInButton,
+                   zoomResetButton,
+                   zoomOutButton,
+                   scrollLeftButton,
+                  scrollRightButton);
+        console.log("data:",plotObj.getData());
+        
+        
+        
 //        var options = {
 //            chart: {
 //                type: 'line'
