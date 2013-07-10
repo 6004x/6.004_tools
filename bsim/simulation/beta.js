@@ -106,11 +106,6 @@ BSim.Beta = function(mem_size) {
         return mLabels[address & ~SUPERVISOR_BIT] || null;
     };
 
-    this.readByte = function(address) {
-        address &= ~SUPERVISOR_BIT; // Drop supervisor bit
-        return mMemory.readByte(address);
-    };
-
     this.readWord = function(address, notify) {
         address &= (~SUPERVISOR_BIT) & 0xFFFFFFFC;
         if(notify) {
@@ -123,11 +118,6 @@ BSim.Beta = function(mem_size) {
         }
 
         return mMemory.readWord(address);
-    };
-
-    this.writeByte = function(address, value) {
-        address &= ~SUPERVISOR_BIT;
-        mMemory.writeByte(address, value);
     };
 
     this.writeWord = function(address, value, notify) {

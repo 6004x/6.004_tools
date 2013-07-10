@@ -1,43 +1,27 @@
 BSim.Beta.Memory = function(size) {
     var self = this;
-    var mMemory = new Uint8Array(0);
+    var mMemory = new Uint32Array(0);
 
     this.loadBytes = function(bytes) {
-        mMemory = new Uint8Array(bytes.length);
-        for(var i = 0; i < bytes.length; ++i) {
-            mMemory[i] = bytes[i];
+        mMemory = new Uint32Array(bytes.length / 4);
+        for(var i = 0; i < bytes.length; i += 4) {
+            mMemory[i/4] = (bytes[i+3] << 24) |
+                           (bytes[i+2] << 16) |
+                           (bytes[i+1] << 8)  |
+                            bytes[i+0];
         }
     };
 
-    this.readByte = function(address) {
-        return mMemory[address];
-    };
-
     this.readWord = function(address) {
-        address &= 0xFFFFFFFC; // Force multiples of four.
-        return (
-            (self.readByte(address+3) << 24) |
-            (self.readByte(address+2) << 16) |
-            (self.readByte(address+1) << 8)  |
-            self.readByte(address+0)
-        );
+        return mMemory[address >> 2];
     };
 
-    this.writeByte = function(address, value) {
-        mMemory[address] = value;
-    };
-
-    this.writeWord = function(address, value, notify) {
+    this.writeWord = function(address, value) {
         value |= 0; // force to int.
-        address &= 0xFFFFFFFC; // Force multiples of four.
-        this.writeByte(address + 3, (value >>> 24) & 0xFF);
-        this.writeByte(address + 2, (value >>> 16) & 0xFF);
-        this.writeByte(address + 1, (value >>> 8) & 0xFF);
-
-        this.writeByte(address + 0, (value & 0xFF));
+        mMemory[address >> 2] = value;
     };
 
     this.size = function() {
-        return mMemory.length;
+        return mMemory.length * 4;
     };
 };
