@@ -42,6 +42,7 @@ $(function() {
                 _.each(result.options, function(value, key) {
                     beta.setOption(key, value);
                 });
+                beta.getMemory().setProtectedRegions(result.protection)
             }
         });
     }
@@ -86,6 +87,8 @@ $(function() {
     $('.stack').each(function() {
         new BSim.StackView(this, beta);
     });
+
+    new BSim.Beta.ErrorHandler('body', beta);
 
     // // Convenient way of loading a file for testing and such.
     // var neuter = function(e) {

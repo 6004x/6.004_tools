@@ -591,12 +591,28 @@
         this.file = file;
         this.line = line;
     };
+    Protect.prototype.assemble = function(context, out) {
+        if(out) {
+            var last_range = _.last(context.protection);
+            if(!last_range || last_range.end != Infinity) {
+                context.protection.push({start: context.dot, end: Infinity});
+            }
+        }
+    }
 
     // Represents .unprotect
     var Unprotect = function(file, line) {
         this.file = file;
         this.line = line;
     };
+    Unprotect.prototype.assemble = function(context, out) {
+        if(out) {
+            var last_range = _.last(context.protection);
+            if(last_range && last_range.end == Infinity) {
+                last_range.end = context.dot;
+            }
+        }
+    }
 
     // Represents .options
     var Options = function(options, file, line) {
@@ -790,6 +806,12 @@
                             case "options":
                                 fileContent.push(Options.parse(stream));
                                 break;
+                            case "protect":
+                                fileContent.push(new Protect(stream.file(), stream.line_number()));
+                                break;
+                            case "unprotect":
+                                fileContent.push(new Unprotect(stream.file(), stream.line_number()));
+                                break;
                             default:
                                 stream.skipToEnd();
                                 throw new SyntaxError("Unrecognised directive '." + command + "'", stream);
@@ -864,7 +886,8 @@
                 // Things to be passed out to the driver.
                 breakpoints: [],
                 labels: {},
-                options: {}
+                options: {},
+                protection: []
             };
             // First pass: figure out where everything goes.
              _.each(syntax, function(item) {
@@ -882,7 +905,8 @@
                 image: memory,
                 breakpoints: context.breakpoints,
                 labels: context.labels,
-                options: context.options
+                options: context.options,
+                protection: context.protection
             };
         };
 
