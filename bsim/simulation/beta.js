@@ -122,7 +122,6 @@ BSim.Beta = function(mem_size) {
 
     this.writeWord = function(address, value, notify) {
         value |= 0; // force to int.
-        address &= (~SUPERVISOR_BIT) & 0xFFFFFFFC;
 
         mMemory.writeWord(address, value);
 
@@ -290,8 +289,10 @@ BSim.Beta = function(mem_size) {
         mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
         // Continue on with instructions as planned.
         var instruction = this.readWord(mPC);
+        var old_pc = mPC;
         mPC += 4; // Increment this early so that we have the right reference for exceptions.
         if(instruction === 0) {
+            mPC -= 4;
             return false;
         }
         var decoded = this.decodeInstruction(instruction);
@@ -305,11 +306,26 @@ BSim.Beta = function(mem_size) {
             return this.handleIllegalInstruction(decoded);
         }
         if(!mRunning) this.trigger('change:pc', mPC);
-        // console.log(op.disassemble(decoded));
-        if(op.has_literal) {
-            return op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
-        } else {
-            return op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
+        try {
+            var ret = null;
+            if(op.has_literal) {
+                ret = op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
+            } else {
+                ret = op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
+            }
+            if(ret === false) {
+                console.log("call failed");
+                this.setPC(old_pc, true);
+            }
+            return ret;
+        } catch(e) {
+            if(e instanceof BSim.Beta.RuntimeError) {
+                this.trigger('error', e);
+                this.setPC(old_pc, true);
+                return false;
+            } else {
+                throw e;
+            }
         }
     };
 
@@ -322,7 +338,8 @@ BSim.Beta = function(mem_size) {
     this.run = function(quantum) {
         this.trigger('run:start');
         mRunning = true;
-        setTimeout(function run_inner() {
+        _.defer(function run_inner() {
+            var exception = null;
             // Bail out if we're not supposed to run any more.
             if(!mRunning) {
                 self.trigger('run:stop');
@@ -357,7 +374,7 @@ BSim.Beta = function(mem_size) {
 
             // Run again.
             _.defer(run_inner);
-        }, 1);
+        });
     };
 
     this.stop = function() {
@@ -373,5 +390,13 @@ BSim.Beta = function(mem_size) {
         return mMemory.size();
     };
 
+    this.getMemory = function() {
+        return mMemory;
+    };
+
     return this;
+};
+
+BSim.Beta.RuntimeError = function(message) {
+    this.message = message;
 };

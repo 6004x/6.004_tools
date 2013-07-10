@@ -49,12 +49,10 @@ BSim.MemoryView = function(container, beta) {
     };
 
     var beta_bulk_read_word = function(addresses) {
-        console.log(addresses);
         _.each(addresses, beta_read_word);
     };
 
     var beta_bulk_write_word = function(addresses) {
-        console.log(addresses);
         _.each(addresses, beta_write_word);
     };
 
