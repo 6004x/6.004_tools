@@ -3,7 +3,7 @@ var FileSystem= function(){
     var mServer;
     var mUsername;
 
-    var openFiles=[];
+    var files=[];
     var fileTree={};
 
     var updated=true;
@@ -23,7 +23,7 @@ var FileSystem= function(){
 
         TO IMPLEMENT:
         file.isOpen
-        file.isSaved
+        file.onServer
     *
     */
 
@@ -45,8 +45,11 @@ var FileSystem= function(){
         if(mUsername){
             sendAjaxRequest('/',null,'json', 'filelist',
                 function(data, status){
+                    console.log(data);
+                    console.log(status);
                     if(status=='success'){
                         
+                        console.log('callback in filesys')
                         fileTree=data;
                         writeTreeToLocalStorage();
                         updated=true;
@@ -68,7 +71,19 @@ var FileSystem= function(){
         console.log('writing tree to local storage');
 
         //todo, divide up the data, make it asynchronous
-        localStorage.setItem('6004data', JSON.stringify(fileTree));
+
+        //var savedTree=traverseTree()
+        for(var i=0; i<files.length; i++){
+            var file = traverseTree(files[i], function(i, file, pathname, pathlength){
+                console.log('6004file'+pathname);
+                //localStorage.setItem('6004file'+pathname, JSON.stringify(fileTree));    
+
+                return true;
+            });
+            localStorage.setItem('6004file'+files[i], JSON.stringify(file));
+        }
+        localStorage.setItem('6004data', JSON.stringify(fileTree));    
+        
     }
     function readTreeFromLocalStorage(){
         //todo make it asynchronous
@@ -85,46 +100,55 @@ var FileSystem= function(){
         
         if(online){
             sendAjaxRequest(fileName,null, 'json', 'getFile', function(data, status){
-                callback(data, status)
-                if(status=='success')
-                    writeFileToTree(data.name, data.data);
+                if(status=='success'){
+                    callback(data);
+                    writeFileToTree(data.name, data.data, true);
+                }
             }, callbackFailed);
         }else if (file){
+            getFileFromTree[onServer]=false;
             return callback(file, 'success');
         } else {
-            alert('file could not be retieved')
+            alert('file could not be retrieved')
         }
     }
+    
+    function traverseTree(fileName, action){
+        var filePath=fileName.match(/(\w|\d|\.|\s)+/g);
+        console.log(filePath);
+        var followPath=fileTree;
+        for(var i in filePath){
+
+            // action function of 3 variables, the index, the current path, and the length
+            // of the whole filepath. 
+            // returns true if we can continue
+            if(action(i, followPath, filePath[i], filePath.length))
+                followPath=followPath[filePath[i]];//.slice(1)];
+        }
+        return followPath;
+    }
     function getFileFromTree(fileName){
-        var finalTree=traverseTree(fileName, function(i, tree){console.log(tree)} );
+        var finalTree=traverseTree(fileName, function(i, tree){console.log(tree); return true;} );
+
         if(finalTree.length==0)
             return false;
         //else there is a file
         return finalTree[0];
     }
-    function traverseTree(fileName, action){
-        var filePath=fileName.match(/\/(\w|\d|\.|\s)+/g);
-        console.log(filePath);
-        var followPath=fileTree;
-        for(var i in filePath){
-            action(i, followPath);
-            followPath=followPath[filePath[i].slice(1)];
-        }
-        console.log(fileName +' should now have a file attached to it')
-        writeTreeToLocalStorage();
-        return followPath;
-    }
-    function writeFileToTree(fileName, fileData){
-        var finalTree=traverseTree(fileName, function(i, followPath){
-            if(i==filePath.length-1){
+    function writeFileToTree(fileName, fileData, onServer){
+        var finalTree=traverseTree(fileName, function(i, followPath, currentPath, length){
+            if(i==length-1){
                 console.log(followPath);
                 console.log(fileName+' being written');
-                followPath[filePath[i].slice(1)]={name:fileName, data:fileData};
+                followPath[currentPath]={name:fileName, data:fileData, onServer:onServer};
                 console.log(followPath);
+                return false;
             }
+            return true;
         });
+        files.push(fileName);
         console.log(fileTree);
-        console.log(fileName +' should now have a file attached to it')
+        console.log(finalTree);console.log(' should now have a file attached to it')
         writeTreeToLocalStorage();
         return finalTree;
     }
@@ -149,28 +173,28 @@ var FileSystem= function(){
         updated=false;
     }   
 
-    function sendAjaxRequest(filepath, fileData, dataType, query, callbackFunction, failFunction){
+    function sendAjaxRequest(filePath, fileData, dataType, query, callbackFunction, failFunction){
         failFunction=failFunction||failResponse
 
         if(!fileData)
             fileData='none';
 
-        console.log(fileData);
-        console.log(mUsername);
-        url=mServer+'/'+filepath;
+        console.log(filePath);
+        console.log('path passed to ajax request');
+        url=mServer+filePath;
 
         var req=$.ajax({
-                //type:"POST",
+                type:"POST",
                 url:url, 
-                data:{dummy:'dummy', username:mUsername, query:query, fdata:fileData},
+                data:{dummy:'dummy', username:mUsername, query:query, fname:filePath, fdata:fileData},
                 username:mUsername,
                 dataType:dataType,
             });
         req.done(function(data, status){
-            console.log(data);
+            console.log(status);
             console.log('returned from server');
             //check if status is successful
-            callbackFunction(data, status);
+                callbackFunction(data, status);
         });
         req.fail(failFunction);
         req.always(function(request, status){
