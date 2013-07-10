@@ -17,8 +17,13 @@ $(function() {
     $('#split_pane').click(activeButton(split.split));
     $('#maximise_simulation').click(activeButton(split.maximiseRight));
 
+
     // Make an editor
     var editor = new Editor('#editor', 'uasm');
+
+    // Filesystem tree thing
+    FileSystem.setup('mattpf', 'http://localhost:8080');
+    Folders.setup('#filetree', editor, 'uasm');
 
     var do_assemble = function() {
         var filename = editor.currentTab();

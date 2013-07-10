@@ -11,6 +11,14 @@
     cursor: pointer;
 }
 
+#filetree {
+    display: none;
+}
+
+.maximised #filetree {
+    display: block;
+}
+
 .regfile .register {
     color: gray;
     text-align: right;
