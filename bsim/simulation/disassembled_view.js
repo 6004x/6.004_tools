@@ -90,8 +90,6 @@ BSim.DisassembledView = function(container, beta) {
     };
 
     var initialise = function() {
-        var length = 80;
-        build_rows(length);
         mContainer.append(mTable);
 
         mBeta.on('change:word', beta_change_word);

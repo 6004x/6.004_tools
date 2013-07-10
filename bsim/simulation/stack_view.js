@@ -62,24 +62,28 @@ BSim.StackView = function(container, beta) {
         if(!bp || bp > mBeta.readRegister(SP)) return;
         var row = bp / 4;
         if(top_frame) {
-            mTable.updateCell(row, 0, 'BP');
-            mCurrentAnnotations.push(row);
+            annotate(row, 'BP');
         }
-        mTable.updateCell(--row, 0, 'oldBP');
-        mCurrentAnnotations.push(row);
-        mTable.updateCell(--row, 0, 'oldSP');
-        mCurrentAnnotations.push(row);
+        annotate(--row, 'oldBP');
+        annotate(--row, 'oldSP');
 
         var return_instruction = mBeta.readWord(mBeta.readWord(bp - 8));
+        // If this instruction looks like ALLOCATE, assume we have a number of arguments
+        // equal to however many words we allocated.
         if(BSim.Common.FixUint(return_instruction & 0xFFFF0000) == 0xC7BD0000) {
             var arg_count = (return_instruction & 0xFFFF) >> 2;
             for(var arg = 1; arg <= arg_count; ++arg) {
-                mTable.updateCell(--row, 0, 'arg' + arg);
-                mCurrentAnnotations.push(row);
+                annotate(--row, 'arg' + arg);
             }
 
+            // Continue recursively.
             annotate_stack(mBeta.readWord(bp - 4), false);
         }
+    };
+
+    var annotate = function(row, value) {
+        mTable.updateCell(row, 0, value);
+        mCurrentAnnotations.push(row);
     };
 
     var beta_bulk_change_register = function(registers) {
