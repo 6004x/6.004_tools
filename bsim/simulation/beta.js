@@ -24,6 +24,10 @@ BSim.Beta = function(mem_size) {
     var mLastReads = [];
     var mLastWrites = [];
 
+    // Used for 'step back'
+    var mHistory = new Queue();
+    var mCurrentStep = {};
+
     // Information not strictly related to running the Beta, but needed in BSim
     var mBreakpoints = {};
     var mLabels = {};
@@ -140,6 +144,11 @@ BSim.Beta = function(mem_size) {
         value |= 0; // force to int.
         address &= ~SUPERVISOR_BIT;
         address &= 0xFFFFFFFC; // Force multiples of four.
+
+        // Implement undo
+        if(!_.has(mCurrentStep.words, address))
+            mCurrentStep.words[address] = this.readWord(address);
+
         this.writeByte(address + 3, (value >>> 24) & 0xFF);
         this.writeByte(address + 2, (value >>> 16) & 0xFF);
         this.writeByte(address + 1, (value >>> 8) & 0xFF);
@@ -166,6 +175,11 @@ BSim.Beta = function(mem_size) {
     this.writeRegister = function(register, value) {
         value |= 0; // force to int.
         if(register == 31) return;
+
+        // Implement undo
+        if(!_.has(mCurrentStep.registers, register))
+            mCurrentStep.registers[register] = this.readRegister(register);
+
         mRegisters[register] = value;
 
         if(!mRunning) this.trigger('change:register', register, value);
@@ -307,6 +321,13 @@ BSim.Beta = function(mem_size) {
                 return;
             }
         }
+        // Prepare undo
+        mCurrentStep = {
+            registers: {},
+            words: {},
+            pc: mPC
+        };
+
         mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
         // Continue on with instructions as planned.
         var instruction = this.readWord(mPC);
@@ -326,12 +347,34 @@ BSim.Beta = function(mem_size) {
         }
         if(!mRunning) this.trigger('change:pc', mPC);
         // console.log(op.disassemble(decoded));
+        var ret = undefined;
         if(op.has_literal) {
-            return op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
+            ret = op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
         } else {
-            return op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
+            ret = op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
         }
+
+        mHistory.enqueue(mCurrentStep);
+        if(mHistory.getLength() > 20) mHistory.dequeue();
+        return ret;
     };
+
+    this.undoCycle = function() {
+        if(!mHistory.length) return false;
+        var step = mHistory.popBack();
+        _.each(step.registers, function(value, register) {
+            self.writeRegister(register, value);
+        });
+        _.each(step.words, function(value, address) {
+            self.writeWord(address, value);
+        });
+        self.setPC(step.pc, true);
+        return true;
+    };
+
+    this.undoLength = function() {
+        return mHistory.getLength();
+    }
 
     // Runs the program to completion (if it terminates) or until stopped using
     // stop(). Yields to the UI every `quantum` emulated cycles.
