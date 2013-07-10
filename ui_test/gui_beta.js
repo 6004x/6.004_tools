@@ -40,7 +40,7 @@ var GUI=new function(){
                 //collapseName is name without whitespace
                
                 if(name.indexOf('.')>-1){
-                    var listVar=$('<li></li>').attr('data-parent', parentPath).append('<a href=#>'+name+'</a>');
+                    var listVar=$('<li></li>').attr('data-path', parentPath).append('<a href=#>'+name+'</a>');
                     listVar.on('click', getFile);
                     parentNode.append(listVar);
                 }
@@ -49,7 +49,7 @@ var GUI=new function(){
 
                         var folderName=name;
                         var collapserDiv=addDiv().addClass('folderContents');
-                        var collapser=$('<li class=folderName data-toggle=collapse href=#'+collapseName+'></li>').attr('data-parent', parentPath+folderName+'/');
+                        var collapser=$('<li class=folderName data-toggle=collapse href=#'+collapseName+'></li>').attr('data-path', parentPath+folderName+'/');
                         collapserDiv.append(collapser);
 
                         collapser.append('<a >'+'<i class="icon-chevron-down float-left open_indicator"></i>'+folderName+'</a>');
@@ -63,7 +63,7 @@ var GUI=new function(){
                                 });
 
                         collapser.find('.new_file').on('click', function(e){
-                            var current_path=$(e.currentTarget).parent().attr('data-parent');
+                            var current_path=$(e.currentTarget).parent().attr('data-path');
                             newFile(current_path);
                             e.stopPropagation();
                         });
@@ -125,7 +125,7 @@ var GUI=new function(){
             var node=$(e.currentTarget);
             console.log(node);
             var fileName=unescape(node.text());
-            var folderName=unescape(node.attr('data-parent'));
+            var folderName=unescape(node.attr('data-path'));
             console.log(fileName);
             if(folderName!='undefined'){
                 fileName=folderName+fileName;
@@ -308,8 +308,13 @@ var GUI=new function(){
         });
     }
     function newFile(file_path){
-        var fileName=window.prompt('What is the name of the new file you wish to make');
-        var new_file=new Object();
+        var valid=false;
+        var fileName='';
+        while(!valid){
+           fileName=window.prompt('What is the name of the new file you wish to make?\n it must contain a filetype');
+           if(fileName.indexOf('.')>0&&fileName.length>0&&fileName.indexOf('.')<(fileName.length-3))
+                valid=true;
+        }        var new_file=new Object();
         new_file.name=file_path+fileName;
         new_file.data='';
         fileSystem.newFile(username, new_file, function(data, status){
