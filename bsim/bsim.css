@@ -62,6 +62,26 @@ div.memory-holder {
     display: none;
 }
 
+.memory-key ul {
+    list-style: none;
+    margin-left: 0px;
+}
+
+.memory-key span {
+    display: inline-block;
+    width: 15px;
+    height: 10px;
+    border: 1px solid gray;
+}
+
+.memory-key .read {
+    background-color: hsl(120, 60%, 50%);
+}
+
+.memory-key .write {
+    background-color: hsl(217, 67%, 50%);
+}
+
 div.memory {
     border: 1px solid gray;
     height: 352px;
