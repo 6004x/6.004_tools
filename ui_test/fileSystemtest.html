@@ -32,7 +32,8 @@
         $(document).ready(function(){
             //pass in server location to fileSystem
             FileSystem.setup('dontony', 'http://localhost:8080');
-            editor = new Editor('.span9', 'jsim');
+            var mode='jsim';
+            editor = new Editor('.span9',mode);
             var set_height = function() {
                 editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
             }
@@ -40,7 +41,7 @@
             $(window).resize(set_height);
 
 
-            Folders.setup('.span3', editor);
+            Folders.setup('.span3', editor, mode);
             $('#user_input').val('');
         });
         </script>

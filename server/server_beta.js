@@ -8,22 +8,49 @@ my_http = require("http");
 
 my_http.createServer(function(request,response){
 
+    if (request.method == 'POST') {
+        console.log('post method');
+        var body = '';
+        request.on('data', function (data) {
+            body += data;
+            // 1e6 === 1 * Math.pow(10, 6) === 1 * 1000000 ~~~ 1MB
+            if (body.length > 1e6) { 
+                // FLOOD ATTACK OR FAULTY CLIENT, NUKE REQUEST
+                request.connection.destroy();
+            }
+        });
+        request.on('end', function () {
+
+            var POST = qs.parse(body);
+            // use POST
+            console.log(POST);
+            console.log('use post');
+            pathWorks(request, response, POST);
+        });
+        console.log(body);
+
+    }
+}).listen(8080);
+function pathWorks(request, response, data){
     var root_path=process.cwd();
     var lib_path=path.join(root_path, 'libraries')
     var user_path, full_path, shared_path;
 
     var file_path = unescape(url.parse(request.url).pathname);
-    var data=qs.parse(request.url);
+
     var user=data['username'];
     var query=String(data['query']);
+    console.log(request.url);
+    console.log('pathworks');
+    console.log(file_path);
     // console.log(data);
     // console.log(root_path);
     // sys.puts(request.url);
     // sys.puts(file_path);
     if(user){
-      user_path=path.join(lib_path, user);
-      shared_path=path.join(lib_path, 'shared')
-      full_path=path.join(user_path,file_path);
+        user_path=path.join(lib_path, user);
+        shared_path=path.join(lib_path, 'shared')
+        full_path=path.join(user_path,file_path);
     }  
     
     sys.puts(user + ' wants ' + query);
@@ -69,7 +96,8 @@ my_http.createServer(function(request,response){
         });
     }
     else if (query=='saveFile'||query=='newFile'){
-        var fdata=qs.parse(request.url)['fdata'];
+
+        var fdata=data['fdata'];
         fs.exists(path.dirname(full_path), function(exists){
             if(exists){
             fs.exists(full_path, function(exists){
@@ -183,6 +211,6 @@ my_http.createServer(function(request,response){
     after();
     });
   }
-}).listen(8080);  
+}
 sys.puts("Server Running on 8080");
 console.log(__dirname);
