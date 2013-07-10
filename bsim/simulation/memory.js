@@ -32,7 +32,7 @@ BSim.Beta.Memory = function(size) {
         if(mMemoryFlags[address >> 2]) {
             throw new BSim.Beta.RuntimeError("Attempted write to protected memory at 0x" + BSim.Common.FormatWord(address << 2));
         }
-        mMemory[address >> 2] = value;
+        mMemory[address] = value;
     };
 
     this.size = function() {
