@@ -1,7 +1,7 @@
 BSim.Beta = function(mem_size) {
     "use strict";
     var self = this;
-    var mMemory = new Uint8Array(mem_size); // TODO: it might make sense to use an Int32Array here.
+    var mMemory = new BSim.Beta.Memory(mem_size); // TODO: it might make sense to use an Int32Array here.
     var mRegisters = new Int32Array(32);
     var mRunning = false; // Only true when calling run(); not executeCycle().
     var mPC = 0x80000000;
@@ -54,14 +54,13 @@ BSim.Beta = function(mem_size) {
     this.loadBytes = function(bytes) {
         this.stop();
         this.reset();
-        mMemory = new Uint8Array(bytes.length);
-        this.trigger('resize:memory', bytes.length);
-        for(var i = 0; i < bytes.length; ++i) {
-            this.writeByte(i, bytes[i]);
-        }
+
+        mMemory.loadBytes(bytes);
+
         // Update the UI with our new program.
+        this.trigger('resize:memory', bytes.length);
         this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
-        var r = _.range(0, mMemory.length, 4);
+        var r = _.range(0, mMemory.size(), 4);
         this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
 
         this.clearBreakpoints();
@@ -109,12 +108,11 @@ BSim.Beta = function(mem_size) {
 
     this.readByte = function(address) {
         address &= ~SUPERVISOR_BIT; // Drop supervisor bit
-        return mMemory[address];
+        return mMemory.readByte(address);
     };
 
     this.readWord = function(address, notify) {
-        address &= ~SUPERVISOR_BIT;
-        address &= 0xFFFFFFFC; // Force multiples of four.
+        address &= (~SUPERVISOR_BIT) & 0xFFFFFFFC;
         if(notify) {
             if(!mRunning) {
                 self.trigger('read:word', address);
@@ -123,28 +121,20 @@ BSim.Beta = function(mem_size) {
                 if(mLastReads.length > 5) mLastReads.shift();
             }
         }
-        return (
-            (self.readByte(address+3) << 24) |
-            (self.readByte(address+2) << 16) |
-            (self.readByte(address+1) << 8)  |
-            self.readByte(address+0)
-        );
+
+        return mMemory.readWord(address);
     };
 
     this.writeByte = function(address, value) {
         address &= ~SUPERVISOR_BIT;
-        mMemory[address] = value;
+        mMemory.writeByte(address, value);
     };
 
     this.writeWord = function(address, value, notify) {
         value |= 0; // force to int.
-        address &= ~SUPERVISOR_BIT;
-        address &= 0xFFFFFFFC; // Force multiples of four.
-        this.writeByte(address + 3, (value >>> 24) & 0xFF);
-        this.writeByte(address + 2, (value >>> 16) & 0xFF);
-        this.writeByte(address + 1, (value >>> 8) & 0xFF);
+        address &= (~SUPERVISOR_BIT) & 0xFFFFFFFC;
 
-        this.writeByte(address + 0, (value & 0xFF));
+        mMemory.writeWord(address, value);
 
         if(!mRunning) this.trigger('change:word', address, value);
         if(notify) {
@@ -390,7 +380,7 @@ BSim.Beta = function(mem_size) {
 
     // Returns memory size in bytes.
     this.memorySize = function() {
-        return mMemory.length;
+        return mMemory.size();
     };
 
     return this;
