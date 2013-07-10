@@ -189,6 +189,7 @@ BSim.Beta.Opcodes = {};
         opcode: 0x23,
         name: 'DIV',
         exec: function DIV(a, b, c) {
+            if(!this.isOptionSet('div')) return this.handleIllegalInstruction();
             this.writeRegister(c, (this.readRegister(a) / this.readRegister(b))|0);
         }
     });
@@ -198,6 +199,7 @@ BSim.Beta.Opcodes = {};
         name: 'DIVC',
         has_literal: true,
         exec: function DIVC(a, literal, c) {
+            if(!this.isOptionSet('div')) return this.handleIllegalInstruction();
             this.writeRegister(c, (this.readRegister(a) / literal)|0);
         }
     });
@@ -242,6 +244,7 @@ BSim.Beta.Opcodes = {};
         opcode: 0x22,
         name: 'MUL',
         exec: function MUL(a, b, c) {
+            if(!this.isOptionSet('mul')) return this.handleIllegalInstruction();
             this.writeRegister(c, this.readRegister(a) * this.readRegister(b));
         }
     });
@@ -251,6 +254,7 @@ BSim.Beta.Opcodes = {};
         name: 'MULC',
         has_literal: true,
         exec: function MULC(a, literal, c) {
+            if(!this.isOptionSet('mul')) return this.handleIllegalInstruction();
             this.writeRegister(c, this.readRegister(a) * literal);
         }
     });
@@ -393,26 +397,28 @@ BSim.Beta.Opcodes = {};
                 case 0: // HALT
                     return false;
                 case 1: // RDCHAR
+                    if(!this.isOptionSet('tty')) return this.handleIllegalInstruction();
                     if(this.mKeyboardInput === null) {
                         this.setPC(this.getPC() - 4); // loop
                     } else {
                         if(this.mKeyboardInput == 13) this.mKeyboardInput = 10; // Use the expected newline.
-                        console.log("setting r0 to " + this.mKeyboardInput);
                         this.writeRegister(0, this.mKeyboardInput);
                         this.mKeyboardInput = null;
                     }
                     break;
                 case 2: // WRCHAR
+                    if(!this.isOptionSet('tty')) return this.handleIllegalInstruction();
                     var chr = String.fromCharCode(this.readRegister(a));
                     this.trigger('out:text', chr);
                     break;
-                case 3:
+                case 3: // CYCLE
                     this.writeRegister(0, this.getCycleCount());
                     break;
-                case 4:
+                case 4: // TIME
                     this.writeRegister(0, Date.now());
                     break;
-                case 5:
+                case 5: // MOUSE
+                    if(!this.isOptionSet('tty')) return this.handleIllegalInstruction();
                     this.writeRegister(0, this.mMouseCoords);
                     this.mMouseCoords = -1;
                     break;

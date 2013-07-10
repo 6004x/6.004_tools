@@ -44,10 +44,12 @@ BSim.StackView = function(container, beta) {
             mTable.endBatch();
         }
         if(register == BP || register == SP) {
-            mTable.startBatch();
-            clear_annotations();
-            annotate_stack(mBeta.readRegister(BP), true);
-            mTable.endBatch();
+            if(mBeta.isOptionSet('annotate')) {
+                mTable.startBatch();
+                clear_annotations();
+                annotate_stack(mBeta.readRegister(BP), true);
+                mTable.endBatch();
+            }
         }
     };
 
@@ -58,7 +60,6 @@ BSim.StackView = function(container, beta) {
     };
 
     var annotate_stack = function(bp, top_frame) {
-        console.log("annotate_stack(" + bp + ", " + top_frame + ")");
         if(!bp || bp > mBeta.readRegister(SP)) return;
         var row = bp / 4;
         if(top_frame) {

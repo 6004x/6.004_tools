@@ -604,6 +604,62 @@
         this.file = file;
         this.line = line;
     };
+    Options.parse = function(stream) {
+        var options = {};
+        while(!stream.eol()) {
+            eatSpace(stream);
+            var option = readSymbol(stream);
+            switch(option) {
+                case "notty":
+                    options.tty = false;
+                    break;
+                case "tty":
+                    options.tty = true;
+                    break;
+                case "clock":
+                case "clk":
+                    options.clock = true;
+                    break;
+                case "noclock":
+                case "noclk":
+                    options.clock = false;
+                    break;
+                case "annotate":
+                    options.annotate = true;
+                    break;
+                case "noannotate":
+                    options.annotate = false;
+                    break;
+                case "kalways":
+                    options.kalways = true;
+                    break;
+                case "nokalways":
+                    options.kalways = false;
+                    break;
+                case "div":
+                    options.div = true;
+                    break;
+                case "nodiv":
+                    options.div = false;
+                    break;
+                case "mul":
+                    options.mul = true;
+                    break;
+                case "nomul":
+                    options.mul = false;
+                    break;
+                default:
+                    throw new SyntaxError("Unrecognised option '" + option + "'", stream);
+                    break;
+            }
+        }
+        return new Options(options, stream.file(), stream.line_number());
+    };
+    Options.prototype.assemble = function(context, out) {
+        if(out) {
+            _.extend(context.options, this.options);
+        }
+    }
 
     // Public Assembler interface. Constructor takes no arguments.
     var Assembler = function() {
@@ -731,6 +787,9 @@
                             case "breakpoint":
                                 fileContent.push(new Breakpoint(stream.file(), stream.line_number()));
                                 break;
+                            case "options":
+                                fileContent.push(Options.parse(stream));
+                                break;
                             default:
                                 stream.skipToEnd();
                                 throw new SyntaxError("Unrecognised directive '." + command + "'", stream);
@@ -804,7 +863,8 @@
                 dot: 0,
                 // Things to be passed out to the driver.
                 breakpoints: [],
-                labels: {}
+                labels: {},
+                options: {}
             };
             // First pass: figure out where everything goes.
              _.each(syntax, function(item) {
@@ -821,7 +881,8 @@
             return {
                 image: memory,
                 breakpoints: context.breakpoints,
-                labels: context.labels
+                labels: context.labels,
+                options: context.options
             };
         };
 
@@ -856,7 +917,6 @@
                         throw e;
                     }
                 }
-                console.log(code);
                 if(errors.length) {
                     callback(false, errors);
                 } else {

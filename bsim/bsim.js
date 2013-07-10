@@ -34,6 +34,9 @@ $(function() {
                 beta.loadBytes(result.image);
                 beta.setBreakpoints(result.breakpoints);
                 beta.setLabels(result.labels);
+                _.each(result.options, function(value, key) {
+                    beta.setOption(key, value);
+                });
             }
         });
     }

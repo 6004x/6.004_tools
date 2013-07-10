@@ -27,6 +27,14 @@ BSim.Beta = function(mem_size) {
     // Information not strictly related to running the Beta, but needed in BSim
     var mBreakpoints = {};
     var mLabels = {};
+    var mOptions = {
+        clock: false,
+        div: true,
+        mul: true,
+        kalways: false,
+        tty: false,
+        annotate: false
+    };
 
     // Mostly exception stuff.
     var SUPERVISOR_BIT = 0x80000000;
@@ -58,6 +66,14 @@ BSim.Beta = function(mem_size) {
 
         this.clearBreakpoints();
         this.setLabels({});
+    };
+
+    this.setOption = function(option, enabled) {
+        mOptions[option] = enabled;
+    };
+
+    this.isOptionSet = function(option) {
+        return !!mOptions[option];
     };
 
     // Takes a list of breakpoint addresses and replaces all current breakpoints with them.
@@ -158,6 +174,7 @@ BSim.Beta = function(mem_size) {
 
     this.setPC = function(address, allow_supervisor) {
         if(!(mPC & SUPERVISOR_BIT) && !allow_supervisor) address &= ~SUPERVISOR_BIT;
+        if(this.isOptionSet('kalways')) address |= SUPERVISOR_BIT;
         mPC = address & 0xFFFFFFFC; // Only multiples of four are valid.
 
         if(!mRunning) this.trigger('change:pc', address);
@@ -217,7 +234,9 @@ BSim.Beta = function(mem_size) {
 
     // Triggers a clock interrupt
     this.clockInterrupt = function() {
-        mPendingInterrupts |= INTERRUPT_CLOCK;
+        if(this.isOptionSet('clock')) {
+            mPendingInterrupts |= INTERRUPT_CLOCK;
+        }
     };
 
     var doClockInterrupt = function() {
@@ -228,9 +247,11 @@ BSim.Beta = function(mem_size) {
 
     // Keyboard interrupt
     this.keyboardInterrupt = function(character) {
-        this.mKeyboardInput = character; // TODO: buffering?
-        mPendingInterrupts |= INTERRUPT_KEYBOARD;
-        console.log(character);
+        if(this.isOptionSet('tty')) {
+            this.mKeyboardInput = character; // TODO: buffering?
+            mPendingInterrupts |= INTERRUPT_KEYBOARD;
+            console.log(character);
+        }
     };
 
     var doKeyboardInterrupt = function() {
@@ -241,8 +262,10 @@ BSim.Beta = function(mem_size) {
 
     // Mouse interrupt
     this.mouseInterrupt = function(x, y) {
-        this.mMouseCoords = ((y & 0xFFFF) << 16) | (x & 0xFFFF);
-        mPendingInterrupts |= INTERRUPT_MOUSE;
+        if(this.isOptionSet('tty')) {
+            this.mMouseCoords = ((y & 0xFFFF) << 16) | (x & 0xFFFF);
+            mPendingInterrupts |= INTERRUPT_MOUSE;
+        }
     };
 
     var doMouseInterrupt = function() {
