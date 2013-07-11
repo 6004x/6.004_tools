@@ -277,9 +277,9 @@ var Folders=new function(){
         });
 
         //now adding editor buttons
-        editor.addButtonGroup([new ToolbarButton('Save', saveCurrentFile, 'Saves the current File')]);
+        // editor.addButtonGroup([new ToolbarButton('Save', saveCurrentFile, 'Saves the current File')]);
 
-        editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
+        // editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
 
 
     }

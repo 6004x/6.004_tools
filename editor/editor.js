@@ -152,6 +152,11 @@ var Editor = function(container, mode) {
     };
 
     this.openTab = function(filename, content, activate) {
+        // We can't open a file if we already have one at the same path (it wouldn't make sense and breaks things)
+        if(_.has(mOpenDocuments, filename)) {
+            focusTab(mOpenDocuments[filename]);
+            return;
+        }
         var has_location = true;
         // If no filename is given, invent one. We'll need to prompt later.
         if(!filename) {
@@ -266,7 +271,13 @@ var Editor = function(container, mode) {
     };
 
     var do_save = function() {
-        alert("This would save if there was anywhere useful to save to.");
+        if(!mCurrentDocument) return false;
+        var current_document = mCurrentDocument; // Keep this around so we don't get confused if user changes tab.
+        FileSystem.saveFile(current_document.name, function() {
+            // Mark the file as clean.
+            current_document.generation = current_document.cm.changeGeneration();
+            handle_change_tab_icon(current_document)
+        });
     };
 
     initialise();

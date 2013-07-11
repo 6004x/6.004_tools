@@ -22,7 +22,7 @@ $(function() {
     var editor = new Editor('#editor', 'uasm');
 
     // Filesystem tree thing
-    FileSystem.setup('mattpf', 'http://localhost:8080');
+    FileSystem.setup('mattpf', 'http://localhost:8080/');
     Folders.setup('#filetree', editor, 'uasm');
 
     var do_assemble = function() {
@@ -48,10 +48,7 @@ $(function() {
     }
 
     // Add some buttons to it
-    editor.addButtonGroup([new ToolbarButton('Assemble', do_assemble, 'Runs your program!'), new ToolbarButton('Export')]);
-    editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
-        editor.clearErrors();
-    })]);
+    editor.addButtonGroup([new ToolbarButton('Assemble', do_assemble, 'Runs your program!')]);
     // And a couple of tabs.
     editor.openTab('foo.uasm', '// Stuff goes here');
     var set_height = function() {

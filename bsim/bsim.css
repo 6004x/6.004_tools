@@ -19,6 +19,14 @@
     display: block;
 }
 
+#editor {
+    width: 100%;
+}
+
+.maximised #editor {
+    width: 74.46808510638297%;;
+}
+
 .regfile .register {
     color: gray;
     text-align: right;
