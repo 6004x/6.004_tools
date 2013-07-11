@@ -4,9 +4,9 @@ var qs = require('querystring');
 var fs = require('fs');
 var path=require('path');
 
-my_http = require("http");
+http_server = require("http");
 
-my_http.createServer(function(request,response){
+http_server.createServer(function(request,response){
 
     if (request.method == 'POST') {
         console.log('post method');
@@ -31,22 +31,22 @@ my_http.createServer(function(request,response){
 
     }
 }).listen(8080);
+
+
 function pathWorks(request, response, data){
-    var root_path=process.cwd();
-    var lib_path=path.join(root_path, 'libraries')
+    var root_path=process.cwd();//__dirname
+    var lib_path=path.join(root_path, 'libraries');
     var user_path, full_path, shared_path;
 
     var file_path = unescape(url.parse(request.url).pathname);
 
     var user=data['username'];
     var query=String(data['query']);
-    console.log(request.url);
-    console.log('pathworks');
-    console.log(file_path);
     // console.log(data);
     // console.log(root_path);
     // sys.puts(request.url);
     // sys.puts(file_path);
+
     if(user){
         user_path=path.join(lib_path, user);
         shared_path=path.join(lib_path, 'shared')
@@ -58,25 +58,21 @@ function pathWorks(request, response, data){
     if(query==='getFile'||query==='filelist'){
         console.log('file path is '+ full_path);
         fs.exists(full_path, function(exists){
-            if(!exists){
-              if(query==='getFile'){
+            if (!exists) {
+                if(query==='getFile'){
                 // it's not in user's directory, try shared directory
-                shared_file = path.join(shared_path, file_path);
-                fs.exists(shared_file,function(exists) {
-                  if (exists) send_file(shared_file);
-                  else {
+                    shared_file = path.join(shared_path, file_path);
+                    fs.exists(shared_file,function(exists) {
+                        if (exists) 
+                            send_file(shared_file);
+                        else {
                       // library not found, send empty one
-                      send_json('{}');
-                  }
-                });
-              }
-              response.writeHeader(404, 
-              {
-                "Content-Type": "text/plain",
-                "Access-Control-Allow-Origin":'*'
-              });
-              response.write('404 not found');
-              response.end();
+                            errorResponse('could not find the file');
+                        }
+                    });
+                }
+                else
+                    errorResponse('could not find the file');
             }
             else{
                 if(query==='filelist'){
@@ -88,10 +84,12 @@ function pathWorks(request, response, data){
                 else if (query==='getFile'){
                     console.log(full_path);
                     console.log('send_file');
-                    send_file(file_path, full_path);
-                      
+                    if(!fs.lstatSync(full_path).isDirectory())
+                        send_file(file_path, full_path);
+                    else{
+                        errorResponse('the file that you are speaking off does not exist');
+                    }   
                 }
-               
             }
         });
     }
@@ -100,12 +98,19 @@ function pathWorks(request, response, data){
         var fdata=data['fdata'];
         fs.exists(path.dirname(full_path), function(exists){
             if(exists){
-            fs.exists(full_path, function(exists){
-                save_file(file_path, full_path, fdata);
-            });
+                fs.exists(full_path, function(exists){
+                    if(!exists){
+                        save_file(file_path, full_path, fdata);
+                    }
+                    else{
+                        //merge? overwrite changes?
+                        save_file(file_path, full_path, fdata);
+                    }
+                    
+                });
             }
             else {
-                console.log('does not exist');
+                console.log('path of file does not exist');
                 var pathdiff=path.relative(full_path, user_path);
                 console.log(pathdiff);
                 console.log(full_path);
@@ -123,29 +128,30 @@ function pathWorks(request, response, data){
     } else if (query=='newFolder'){
         fs.exists((full_path), function(exists){
             if(exists){
-                console.log('path already exists at '+ file_path);
+                errorResponse('path already exists at '+ file_path);
             }else{
                 console.log('mkdir path');
                 fs.mkdir((full_path), function(err){
                     if(err){
                       console.log(err);
+                      errorResponse(err+' path could not be made')
                     } else {
                       console.log('didn\'t fail');
-                      send_json({user_path:user_path, status:'created'});
+                      send_json({user_path:user_path, status:'success'});
                     }
                 });
             }
         });
       }
 
-  function recurseThroughFolders(curr_path){
+    function recurseThroughFolders(curr_path){
       //console.log(curr_path);
       var files=fs.readdirSync(curr_path);
       var fileList={};
       for(var i=0; i <files.length; i++){
           var name = files[i];
-          if(name.indexOf('.')<0){
-            var new_path = path.join(curr_path, name)
+          var new_path=path.join(curr_path, name);
+          if(fs.lstatSync(new_path).isDirectory()){
             fileList[name]= recurseThroughFolders(new_path);
 
             //synchronois return of list of subfiles, only need to go one level down
@@ -155,33 +161,42 @@ function pathWorks(request, response, data){
 
         }
       return(fileList);
-  }
-  
-
-  function send_json(data) {
-      var sdata= JSON.stringify(data);
-      response.writeHead(200,{
-        'Content-Length': sdata.length,
-        'Content-Type': 'application/json',
-        "Access-Control-Allow-Origin":'*'
-            });
-      console.log(sdata);
-      response.end(sdata);
-      console.log('data sent');
     }
-  function send_file(file_path, full_path) {
-    fs.readFile(full_path,'utf8',function(err,data) {
-      if (err){
-        console.log(err);
-        throw err;
-      }
-      send_json({
-        name:file_path,
-        data:data,
-        status:'success',
-      });
-    });
-  }
+
+    function errorResponse(string){
+        response.writeHeader(404, 
+            {
+            "Content-Type": "text/plain",
+            "Access-Control-Allow-Origin":'*'
+            });
+        response.write('error: '+string);
+        response.end();
+    }
+    
+    function send_json(data) {
+        var sdata= JSON.stringify(data);
+        response.writeHead(200,{
+            'Content-Length': sdata.length,
+            'Content-Type': 'application/json',
+            "Access-Control-Allow-Origin":'*'
+        });
+        console.log(sdata);
+        response.end(sdata);
+        console.log('data sent');
+    }
+    function send_file(file_path, full_path) {
+        fs.readFile(full_path,'utf8',function(err,data) {
+            if (err){
+                console.log(err);
+                throw err;
+            }
+            send_json({
+                name:file_path,
+                data:data,
+                status:'success',
+            });
+        });
+    }
   function save_file(file_path, full_path, fdata) {
     fs.writeFile(full_path, fdata, 'utf8', function (err) {
       if (err){
@@ -197,6 +212,7 @@ function pathWorks(request, response, data){
         send_json({
           name:file_path,
           status:'success',
+          data:fdata,
         });
       }
     });
@@ -213,4 +229,3 @@ function pathWorks(request, response, data){
   }
 }
 sys.puts("Server Running on 8080");
-console.log(__dirname);

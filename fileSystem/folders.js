@@ -6,18 +6,20 @@ var Folders=new function(){
     //attaches file list to the default node
     function refreshFileList(){
         getFileList(rootNode.find('.filePaths'));
+
     }
 
     function getFileList(parentNode){
 
         parentNode.html('');
+        //clears out the old filelist
+        var username=FileSystem.getUserName();
+        //fileSYstem keeps track of the username
 
-        var username=FileSystem.getUserName();           
-                $('.testDiv').text(username);
+
         //fetch the filelist from server, then add the files to the filesystem.
         FileSystem.getFileList(
             function(data){
-                console.log(data);
                 // fileList=new Object;
                 // fileList[username]=data;
                 addFiles(data, parentNode, '/');
@@ -25,19 +27,40 @@ var Folders=new function(){
 
         function addFiles(fileList, parentNode, parentPath){
             //testing whether username chenged or not, to change data structure
-            
-                
-            console.log(fileList);
-
-            
+                        
             for(var name in fileList){
                 subList=fileList[name];
                 var collapseName='collapse'+name.replace(' ','_');
                 //collapseName is name without whitespace
                
+                //TODO: find a way to make this different
                 if(name.indexOf('.')>-1){
-                    var listVar=$('<li></li>').attr('data-path', parentPath).append('<a href=#>'+name+'</a>');
-                    listVar.on('click', getFile);
+                    var listVar=$('<li></li>').attr('data-path', parentPath+name).append($('<a href=#>'+name+'</a>').attr('data-path', parentPath+'/'+name));
+                    var delButton=$('<span>').addClass('btn btn-link del_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-minus>');
+                    delButton.attr({
+                                'data-toggle':"tooltip", 
+                                'title':"delete "+name,
+                                'data-trigger':'hover',
+                                'data-container':'body',
+                                });
+                    listVar.append(delButton)
+                    listVar.on('click', function(e){
+
+                        var node=$(e.currentTarget);
+                        // console.log(node.attr('data-path'));
+                        // var fileName=unescape(node.text());
+                        // var folderName=unescape(node.attr('data-path'));
+                        // if(folderName!='undefined'){
+                        //     fileName=folderName+fileName;
+                        // }
+                        getFile(node.attr('data-path'));
+                    });
+                    delButton.on('click', function(e){
+                        console.log('del button');
+                        var current_path=$(e.currentTarget).parent().attr('data-path');
+                            deleteFile(current_path);
+                            e.stopPropagation();
+                    });
                     parentNode.append(listVar);
                 }
                 else {
@@ -48,17 +71,18 @@ var Folders=new function(){
                         var collapser=$('<li class=folderName data-toggle=collapse href=#'+collapseName+'></li>').attr('data-path', parentPath+folderName+'/');
                         collapserDiv.append(collapser);
 
-                        collapser.append('<a >'+'<i class="icon-chevron-down float-left open_indicator"></i>'+folderName+'</a>');
+                        collapser.append('<a >'+'<i class="icon-chevron-down pull-left open_indicator"></i>'+folderName+'</a>');
                         collapser.find('i').addClass(collapseName);
-                        collapser.append('<span class="btn btn-link new_file pull-right" style="padding:0px"><i class=icon-plus></span>');
-                        collapser.find('.new_file').attr({
+                        var newButton=$('<span class="btn btn-link new_file pull-right" style="padding:0px"><i class=icon-plus></span>');
+                        collapser.append(newButton);
+                        newButton.attr({
                                 'data-toggle':"tooltip", 
                                 'title':"New File in this folder",
                                 'data-trigger':'hover',
                                 'data-container':'body',
                                 });
 
-                        collapser.find('.new_file').on('click', function(e){
+                        newButton.on('click', function(e){
                             var current_path=$(e.currentTarget).parent().attr('data-path');
                             newFile(current_path);
                             e.stopPropagation();
@@ -68,28 +92,32 @@ var Folders=new function(){
                         var subListUL=$('<ul id='+collapseName+' class ="collapse in"></ul>');
 
                         subListUL.on('shown', function(e){
-                            var id=$(e.currentTarget).attr('id');
-                            var arrow = rootNode.find('.folderName a>i ');
-                            arrow=arrow.filter(function(i, e){
-                                return $(e).hasClass(id);
-                            });
-                            if(arrow.hasClass('icon-chevron-right')){
-                                arrow.addClass('icon-chevron-down')
-                                arrow.removeClass('icon-chevron-right')
-                            }                            
-                            e.stopPropagation();
+                            if(!$(e.target).hasClass('btn')){
+                                var id=$(e.currentTarget).attr('id');
+                                var arrow = rootNode.find('.folderName a>i ');
+                                arrow=arrow.filter(function(i, e){
+                                    return $(e).hasClass(id);
+                                });
+                                if(arrow.hasClass('icon-chevron-right')){
+                                    arrow.addClass('icon-chevron-down')
+                                    arrow.removeClass('icon-chevron-right')
+                                }                            
+                                e.stopPropagation();
+                            }
                         });
                         subListUL.on('hidden', function(e){
-                            var id=$(e.currentTarget).attr('id');
-                            var arrow = rootNode.find('.folderName a>i ');
-                            arrow=arrow.filter(function(i, e){
-                                return $(e).hasClass(id);
-                            });
-                            if(arrow.hasClass('icon-chevron-down')){
-                                arrow.addClass('icon-chevron-right');
-                                arrow.removeClass('icon-chevron-down');
+                            if(!$(e.target).hasClass('btn')){
+                                var id=$(e.currentTarget).attr('id');
+                                var arrow = rootNode.find('.folderName a>i ');
+                                arrow=arrow.filter(function(i, e){
+                                    return $(e).hasClass(id);
+                                });
+                                if(arrow.hasClass('icon-chevron-down')){
+                                    arrow.addClass('icon-chevron-right');
+                                    arrow.removeClass('icon-chevron-down');
+                                }
+                                e.stopPropagation();
                             }
-                            e.stopPropagation();
                         });
 
                         if(Object.keys(subList).length>0){
@@ -99,7 +127,7 @@ var Folders=new function(){
                         }
                         else{
                             //the subfolder has no files inside, it's an empty folder
-                            console.log(name+ ' has no sublists');
+                            
                             subListUL.append('[empty folder]');
                         }
                         collapserDiv.append(subListUL);
@@ -117,22 +145,13 @@ var Folders=new function(){
     }
    
 
-    function getFile(e){
-            var node=$(e.currentTarget);
-            console.log(node);
-            var fileName=unescape(node.text());
-            var folderName=unescape(node.attr('data-path'));
-            console.log(fileName);
-            if(folderName!='undefined'){
-                fileName=folderName+fileName;
-            }
-            console.log(fileName);
+    function getFile(fileName){
+            console.log('getting '+fileName);
             FileSystem.getFile(fileName, displayFile);
             
         }
 
     function displayFile(file){
-        console.log('files');
         editor.openTab(file.name, file.data, true);
         openFiles.push({name:file.name, data:file.data});
     }
@@ -150,12 +169,10 @@ var Folders=new function(){
         var file=new Object();
         file.name=editor.currentTab();
         file.data=editor.content();
-        console.log(file);
         if(file.name){
             console.log('trying to save '+file.name);
-            FileSystem.saveFile(file, displaySave);
+            FileSystem.saveFile(file.name, file.data, displaySave);
         }
-
     }
 
    
@@ -163,30 +180,88 @@ var Folders=new function(){
 
     }
     function newFolder(){
-        var folderName=window.prompt('What is the name of the new folder you wish to make');
-        FileSystem.newFolder('/'+folderName, refreshFileList)
+        var isValid=false;
+        var regexp=/(<|>|\:|\"|\||\/|\\|\?|\*|\.)/g
+        var prompt='What is the name of the new folder you wish to make?';
+        var prompt2=' ';
+        while(!isValid){
+            var folderName=window.prompt(prompt+prompt2);
+            if(folderName==null){
+                console.log('user canceled');
+                isValid=true;
+                return;
+            }
+            if(isValidName(regexp, folderName)){
+                prompt2='\n'+folderName+' is invalid'+'\n Names cannot contain \\,\/,:,",<,>,,|,?,*';
+                isValid=false;
+            }else{
+                isValid=true;
+            }
+        }
+        if(folderName!=null)
+            FileSystem.newFolder('/'+folderName, refreshFileList)
+        else
+            console.log('null foldername, do nothing');
+    }
+
+    function isValidName(regexp, name){
+
+        return name.length>0&&!regexp.test(name);
     }
     function newFile(file_path){
-        var fileName=window.prompt('What is the name of the new file you wish to make');
-        var new_file=new Object();
-        new_file.name=file_path+fileName+'.'+editMode;
-        //todo, either editor.getmode, arbitrary value, or pased in mode
-        new_file.data='';
-        FileSystem.newFile(new_file, function(data, status){
-            console.log(data.status);
-            if(data.status=='success'){
-                displayFile(new_file);
-                refreshFileList();
+        var regexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~)/g
+        var prompt='What is the name of the new file you wish to make';
+        var isValid=false;
+        
+        var fileName='';
+        var newFileName='';
+        var prompt2='';
+        while(!isValid){
+            fileName=window.prompt(prompt+prompt2);
+            if(fileName==null){
+                console.log('user canceled');
+                isValid=true;
+                return;
             }
+            
+            if(!isValidName(regexp, fileName)){
+                prompt2='\n'+fileName+' is invalid'+'\n Names cannot contain \\, \/ , : , " , < , > , | , ? , * , or ~';
+                isValid=false;
+                continue;
+            }
+
+            if(fileName.indexOf('.')<0)
+                newFileName=file_path+fileName+'.'+editMode;
             else
-            {
-                alert('not successful');
+                newFileName=file_path+fileName;
+            
+
+            if (FileSystem.isFile(newFileName)){
+                prompt2='\n'+fileName+'.'+editMode+' is already a file, please choose another name';
+                isValid=false;
             }
-        });
+            else{
+                isValid=true;
+            }
+        }
+        var new_file={
+            name:newFileName,
+            data:'',
+        }
+        if(fileName!=null)
+            FileSystem.newFile(new_file.name, new_file.data, function(data){
+                console.log(data.status + 'new file');
+                displayFile(data);
+                refreshFileList();
+            });
+        else
+            console.log('null filename, abort');
 
     }
+    function deleteFile(path){
+        console.log(path);
+    }
     function commit(){
-        console.log('commited?');
     }
      function setup(root, editorN, mode){
         rootNode=$(root);
@@ -215,7 +290,6 @@ var Folders=new function(){
 
 
         $('#user_button').on('click', function(e){
-                console.log('button');
                 rootNode.find('.filePaths').html('');
                 refreshFileList();
             });
@@ -269,11 +343,9 @@ var Folders=new function(){
         });
         hideButton.on('click', function(e){
             hideNavBar();
-            console.log('hide feature unimplemented');
         });
         newFolderButton.on('click', function(e){
             newFolder();
-            console.log('new');
         });
 
         //now adding editor buttons
@@ -285,42 +357,13 @@ var Folders=new function(){
     }
 
     function hideNavBar(){
-        // sideBarWrapper.css('position', 'relative');
-        // var width=-(sideBarWrapper.width());
-
-        // console.log(width);
-        // sideBarWrapper.animate({'left' :width}, 500, 'swing', function(){
-        //         sideBarWrapper.detach();
-
-        // });
-        // var offset=-editorWrapper.offset().left+parseInt(editorWrapper.css('margin-left'));
-        // editorWrapper.animate({'left' :offset}, 500, 'swing', function(){
-        //     editorWrapper.removeClass('span10');
-        //     editorWrapper.css('left', 0);
-        // });
         rootNode.css('display', 'none');
     }
     function showNavBar(){
-        // if(sideBarWrapper.parent().length==0){
-        //     console.log(sideBarWrapper.parent());
-        //     rootNode.find('.row').prepend(sideBarWrapper);    
-        //     var width=(sideBarWrapper.width());
-        //     editorWrapper.addClass('span10');
-        //     editorWrapper.css('left', -width);
-        //     console.log(width);
-        //     editorWrapper.removeClass('float-right');
-            
-        //     sideBarWrapper.animate({'left' :0}, 500, 'swing', function(){
-                
-        //     });
-        //     editorWrapper.animate({'left' :0}, 500, 'swing', function(){
-                
-        //     });
-        // }
         rootNode.css('display', 'block');
     }
 
-    return {setup:setup};
+    return {setup:setup, refresh:refreshFileList};
 }();
 
 

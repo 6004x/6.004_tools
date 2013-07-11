@@ -4,9 +4,9 @@
     <title>ui test</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
     
-    <script src="http://www.parsecdn.com/js/parse-1.2.8.min.js"></script>
-    <link href="../bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen"></link>
-    <script src="../bootstrap/js/bootstrap.min.js"></script>
+    <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+    <link href="http://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+    <script src="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
     <script src="../editor/external/codemirror.js"></script>
         <script src="../editor/editor.js"></script>
@@ -16,22 +16,13 @@
         <script src="../editor/modes/jsim.js"></script>
         <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
          <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
-        <style type="text/css">
-            .tab-pane {
-                border-bottom: 1px solid #ddd;
-                border-left: 1px solid #ddd;
-                border-right: 1px solid #ddd;
-            }
-            .nav-tabs {
-                margin-bottom: 0;
-            }
-        </style>
-        <script src='../fileSystem.js'></script>
+        <script src='fileSystem.js'></script>
         <script src='folders.js'></script>
         <script>
         $(document).ready(function(){
             //pass in server location to fileSystem
             FileSystem.setup('dontony', 'http://localhost:8080');
+
             var mode='jsim';
             editor = new Editor('.span9',mode);
             var set_height = function() {
@@ -43,10 +34,19 @@
 
             Folders.setup('.span3', editor, mode);
             $('#user_input').val('');
+            Folders.refresh();
         });
         </script>
     </head>
     <style>
+        .tab-pane {
+            border-bottom: 1px solid #ddd;
+            border-left: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+        }
+        .nav-tabs {
+            margin-bottom: 0;
+        }
         .testDiv{
             border:solid 1px black;
         }
@@ -77,13 +77,6 @@
         }
         .modeButtons{
             padding-left: 30px;
-        }
-        button>img{
-            vertical-align: middle;
-            max-width: 25px;
-            max-height: 25px;
-            height:18px;
-            width:18px;
         }
     </style>
     <body>
