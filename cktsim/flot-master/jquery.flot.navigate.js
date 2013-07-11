@@ -3,6 +3,9 @@
 Copyright (c) 2007-2013 IOLA and Ole Laursen.
 Licensed under the MIT license.
 
+******************* Note by Stacey Terman: commented out lines 141-143 to stop 
+default mousewheel zooming ***************************
+
 The default behaviour is double click and scrollwheel up/down to zoom in, drag
 to pan. The plugin defines plot.zoom({ center }), plot.zoomOut() and
 plot.pan( offset ) so you easily can add custom controls. It also fires
@@ -135,9 +138,9 @@ Licensed under the MIT License ~ http://threedubmedia.googlecode.com/files/MIT-L
         }
 
         function onMouseWheel(e, delta) {
-            e.preventDefault();
-            onZoomClick(e, delta < 0);
-            return false;
+//            e.preventDefault();
+//            onZoomClick(e, delta < 0);
+//            return false;
         }
         
         var prevCursor = 'default', prevPageX = 0, prevPageY = 0,

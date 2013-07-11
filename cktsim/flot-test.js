@@ -175,12 +175,15 @@ function selection_setup(div,plotObj){
     });
     
     plotObj.getPlaceholder().on("plotunselected",function(event,ranges){
+        clearTimeout(updateSelTimeout);
         rangeTextDiv.hide();
     });
     
     function showSelRange(){
         updateSelTimeout = null;
         ranges = selRanges;
+        
+        if (ranges === null){ return; }
         
         var xrange = ranges.xaxis.to - ranges.xaxis.from;
         rangeTextDiv.find('.xrange').text("X range = "+suffix_formatter(xrange));
@@ -240,9 +243,7 @@ function tran_plot(div, results, plots) {
             var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
             dataseries.push({
                 label: current ? node : "Node " + node,
-                data: plot,
-//                lineWidth: 5,
-//                units: current ? 'Amps (A)' : 'Volts (V)'
+                data: plot
             });
         }
         var plotdiv = $('<div style="width:600px;height:300px"></div>');
@@ -300,6 +301,7 @@ function ac_plot(div, results, plots) {
     }
     
     for (var p = 0; p < plots.length; p += 1) {
+//        console.log("checkpoint 1");
         var plot_nodes = plots[p];
         var mplots = [];
         var pplots = [];
@@ -319,93 +321,78 @@ function ac_plot(div, results, plots) {
                 pplot.push([log_freq, phases[j]]);
             }
             mplots.push({
-                name: "Node " + node,
+                label: "Node " + node,
                 data: mplot,
-                lineWidth: 5
+//                lineWidth: 5
             });
             pplots.push({
-                name: "Node " + node,
+                label: "Node " + node,
                 data: pplot,
-                lineWidth: 5
+//                lineWidth: 5
             });
+//            console.log("checkpoint 2");
         }
-
-        var plotdiv = $('<div style="display: inline-block; width:400px;height:300px"></div>');
-        div.append(plotdiv);
-        plotdiv.highcharts({
-            chart: {
-                type: 'line'
+        
+        var xmin = mplots[0].data[0][0];
+        var len = mplots[0].data.length;
+        var xmax = mplots[0].data[len-1][0];
+        
+        var div1 = $('<div'/* style="display:inline-block"*/+'></div>');
+        var plotDiv = $('<div style="'/*display: inline-block;'*/+
+                        ' width:400px;height:300px"></div>');
+        div.append(div1);
+        div1.append(plotDiv);
+        var options = {
+            yaxis:{
+                axisLabel: 'Magnitude (dB)',
+                color:"#848484",
+                tickColor:"#dddddd",
+                tickFormatter:suffix_formatter,
+                zoomRange:false,
+                panRange:false
             },
-            title: {
-                text: '' //title
+            xaxis:{
+                axisLabel:'Frequency (log Hz)',
+                color:"#848484",
+                tickColor:"#dddddd",
+                tickFormatter:suffix_formatter,
+                zoomRange:[null,(xmax-xmin)],
+                panRange:[xmin,xmax]
             },
-            xAxis: {
-                title: {
-                    text: 'Frequency (log Hz)'
-                },
-                labels: {
-                    formatter: suffix_formatter
-                },
-                gridLineWidth: 1
+            zoom:{
+                interactive:true,
+                trigger:"dblclick"
             },
-            yAxis: {
-                title: {
-                    text: 'Magnitude (dB)'
-                },
-                labels: {
-                    formatter: suffix_formatter
-                },
+            series:{
+                shadowSize:0
             },
-            series: mplots,
-            plotOptions: {
-                line: {
-                    marker: {
-                        enabled: false
-                    }
-                }
+            crosshair:{
+                mode:"x",
+                color:"darkgray"
             },
-        });
-
-        plotdiv = $('<div style="display: inline-block; width:400px;height:300px"></div>');
-        div.append(plotdiv);
-        plotdiv.highcharts({
-            chart: {
-                type: 'line'
+            selection:{
+                mode:"x"
             },
-            title: {
-                text: '' //title
-            },
-            xAxis: {
-                title: {
-                    text: 'Frequency (log Hz)'
-                },
-                labels: {
-                    formatter: suffix_formatter
-                },
-                gridLineWidth: 1
-            },
-            yAxis: {
-                title: {
-                    text: 'Phase (deg)'
-                },
-                labels: {
-                    formatter: suffix_formatter
-                },
-                min: -180,
-                max: 180,
-                tickInterval: 45,
-                startOnTick: false,
-                endOnTick: false
-            },
-            series: pplots,
-            plotOptions: {
-                line: {
-                    marker: {
-                        enabled: false
-                    }
-                }
-            },
-        });
+            grid:{
+                hoverable:true,
+                autoHighlight:false
+            }
+        }
+        var plotObj = $.plot(plotDiv, mplots, options);
+//        console.log("checkpoint 2.5");
+        graph_setup(div1,plotObj);
+//        console.log("checkpoint 3");
+        
+        var div2 = $('<div'/* style="display:inline-block"*/+'></div>');
+        plotDiv = $('<div style="'/*display: inline-block;'*/+
+                    'width:400px;height:300px"></div>');
+        div.append(div2);
+        div2.append(plotDiv);
+        
+        options.yaxis.axisLabel = "Phase (deg)";
+        var plotObj = $.plot(plotDiv,pplots,options);
+        graph_setup(div2,plotObj);
+        console.log("checkpoint 4");
     }
 }
 

@@ -5,6 +5,9 @@ Licensed under the MIT license.
 
 */
 
+/******* Note by Stacey Terman: commented out lines 1603-1604 to allow 
+the maximum value to go above 0 even if all values are negative ****************/
+
 // first an inline dependency, jquery.colorhelpers.js, we inline it here
 // for convenience
 
@@ -1597,8 +1600,8 @@ Licensed under the MIT license.
                     }
                     if (opts.max == null) {
                         max += delta * margin;
-                        if (max > 0 && axis.datamax != null && axis.datamax <= 0)
-                            max = 0;
+//                        if (max > 0 && axis.datamax != null && axis.datamax <= 0)
+//                            max = 0;
                     }
                 }
             }
