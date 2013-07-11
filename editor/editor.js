@@ -92,6 +92,7 @@ var Editor = function(container, mode) {
         var cm = document.cm;
         cm.addLineClass(line, 'background', 'cm-error-line');
         cm.addLineWidget(line, create_error_widget(message), {noHScroll: true, handleMouseEvents: true});
+        focusTab(document);
         cm.scrollIntoView({line: line, ch: column});
         var handle = cm.lineInfo(line).handle;
         mMarkedLines.push({filename: filename, handle: handle});
@@ -273,7 +274,7 @@ var Editor = function(container, mode) {
     var do_save = function() {
         if(!mCurrentDocument) return false;
         var current_document = mCurrentDocument; // Keep this around so we don't get confused if user changes tab.
-        FileSystem.saveFile(current_document.name, function() {
+        FileSystem.saveFile({name: current_document.name, data: current_document.cm.getValue()}, function() {
             // Mark the file as clean.
             current_document.generation = current_document.cm.changeGeneration();
             handle_change_tab_icon(current_document)

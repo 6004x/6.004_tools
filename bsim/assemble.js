@@ -530,6 +530,7 @@
         if(!this.instructions) {
             throw "Attempting to assemble Include without parsing file contents.";
         }
+        console.log("Assembling include with: ", context, out);
         _.each(this.instructions, function(instruction) {
             instruction.assemble(context, out);
         });
@@ -719,8 +720,50 @@
             return macro;
         };
 
+        var parse_file = function(file, content, completion_callback, error_callback) {
+            var stream = new StringStream(new FileStream(content, file));
+            var errors = [];
+            var pending_includes = {};
+            var waiting = 0;
+
+            var insert_include = function(include) {
+                if(!_.has(pending_includes, include.filename)) pending_includes[include.filename] = [];
+                pending_includes[include.filename].push(include);
+                ++waiting;
+                FileSystem.getFile(include.filename, function(include_content) {
+                    parse_file(include_content.name, include_content.data, function(syntax) {
+                        --waiting;
+                        include.instructions = syntax;
+                        if(errors.length === 0 && waiting === 0) {
+                            completion_callback(our_syntax);
+                        }
+                    }, error_callback);
+                });
+            }
+
+            do {
+                try {
+                    var our_syntax = parse(stream, false, insert_include);
+                } catch(e) {
+                    if(e instanceof SyntaxError) {
+                        errors.push(e);
+                    } else {
+                        throw e;
+                    }
+                }
+            } while(stream.next_line());
+
+            if(errors.length > 0) {
+                error_callback(errors);
+            } else {
+                if(waiting === 0) {
+                    completion_callback(our_syntax);
+                }
+            }
+        }
+
         // Parses a file (or a macro, if is_macro is true)
-        var parse = function(stream, is_macro) {
+        var parse = function(stream, is_macro, include_callback) {
             var fileContent = [];
             var allow_multiple_lines = !is_macro; // Macros are single-line by default
             // Helpful bits of state
@@ -784,9 +827,10 @@
                             switch(command) {
                             case "include":
                                 var include = Include.parse(stream);
-                                if(!_.contains(mPendingIncludes, include.filename)) {
-                                    mPendingIncludes.push(include.filename);
+                                if(!include_callback) {
+                                    throw new SyntaxError(".include statement in illegal context.", stream);
                                 }
+                                include_callback(include);
                                 fileContent.push(include);
                                 break;
                             case "macro":
@@ -918,20 +962,9 @@
         this.assemble = function(file, content, callback) {
             var stream = new StringStream(new FileStream(content, file));
             var errors = [];
-            do {
-                try {
-                    var syntax = parse(stream);
-                } catch(e) {
-                    if(e instanceof SyntaxError) {
-                        errors.push(e);
-                    } else {
-                        throw e;
-                    }
-                }
-            } while(stream.next_line());
-            if(errors.length) {
-                callback(false, errors);
-            } else {
+            var can_succeed = true;
+
+            parse_file(file, content, function(syntax) {
                 try {
                     var code = run_assembly(syntax);
                 } catch(e) {
@@ -946,7 +979,9 @@
                 } else {
                     callback(true, code);
                 }
-            }
+            }, function(errors) {
+                callback(false, errors);
+            });
         };
     };
 
