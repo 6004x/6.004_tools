@@ -50,11 +50,172 @@ function engineering_notation(n, nplaces, trim) {
     return n.toPrecision(nplaces);
 }
 
-function suffix_formatter(value,axis) {
+function suffix_formatter(value) {
 //    console.log("value:",value,"formatted:",
 //                engineering_notation(value,2));
     return engineering_notation(value, 2);
 }
+
+
+/************************
+Interpolate code taken from flotcharts.org, tracking example
+*************************/
+function interpolate(series,x){
+    for (j = 0; j < series.data.length; j += 1) {
+        if (series.data[j][0] > x) {
+            break;
+        }
+    }
+
+    var y;
+    var p1 = series.data[j - 1];
+    var p2 = series.data[j];
+
+    if (p1 == null) {
+        y = p2[1];
+    } else if (p2 == null) {
+        y = p1[1];
+    } else {
+        y = p1[1] + (p2[1] - p1[1]) * (x - p1[0]) / (p2[0] - p1[0]);
+    }
+    return y;
+}
+
+function zoom_pan_setup(div,plotObj){
+    var zoomInButton = $('<button>+</button>');
+    var zoomResetButton = $('<button>Reset</button>');
+    var zoomOutButton = $('<button>-</button>');
+    var scrollLeftButton = $('<button>\<</button>');
+    var scrollRightButton = $('<button>\></button>');
+    zoomInButton.on("click",function(){
+        plotObj.clearSelection();
+        plotObj.zoom();
+    });
+    zoomResetButton.on("click",function(){
+        plotObj.clearSelection();
+        plotObj.zoom({amount:1e-10});
+    });
+    zoomOutButton.on("click",function(){
+        plotObj.clearSelection();
+        plotObj.zoomOut();
+    });
+    scrollLeftButton.on("click",function(){
+        plotObj.clearSelection();
+        plotObj.pan({left:-100});
+    });
+    scrollRightButton.on("click",function(){
+        plotObj.clearSelection();
+        plotObj.pan({left:100});
+    });
+    
+    div.append(zoomInButton,
+               zoomResetButton,
+               zoomOutButton,
+               scrollLeftButton,
+               scrollRightButton);
+}
+
+function hover_setup(div,plotObj){
+    var posTextDiv = $("<div><span class='xpos'></span></div>");
+    var posTextSpans = {};
+    div.append(posTextDiv);
+    
+    var updateMouseTimeout;
+        var latestPos;
+        plotObj.getPlaceholder().on("plothover", function(event,pos,item){
+            latestPos = pos;
+            if (!updateMouseTimeout){
+                updateMouseTimeout = setTimeout(showMousePos, 50);
+            }
+        });
+    
+    function showMousePos(){
+        updateMouseTimeout = null;
+        pos = latestPos;
+        var axes = plotObj.getAxes();
+        if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max ||
+            pos.y < axes.yaxis.min || pos.y > axes.yaxis.max) {
+            posTextDiv.hide();
+            return;
+        }
+
+        var i, j;
+        var dataset = plotObj.getData();
+        for (i = 0; i < dataset.length; i += 1) {
+            var series = dataset[i];
+
+            var y = interpolate(series,pos.x);
+            
+            posTextDiv.find('.xpos').text("X = "+suffix_formatter(pos.x));
+            if (posTextSpans["series"+i]===undefined){
+                var span = $("<span>"+series.label+" = "+
+                                             suffix_formatter(y)+"</span>")
+                posTextSpans["series"+i] = span;
+                posTextDiv.append("</br>",posTextSpans["series"+i]);
+            } else {
+                posTextSpans["series"+i].text(series.label+" = "+suffix_formatter(y));
+            }
+        }
+        posTextDiv.show();
+    }
+}
+
+function selection_setup(div,plotObj){
+    var rangeTextDiv = $("<div><span class='xrange'></span></div>");
+    var rangeTextSpans = {};
+    div.append(rangeTextDiv);
+    
+    var updateSelTimeout;
+    var selRanges;
+    plotObj.getPlaceholder().on("plotselecting", function(event,ranges){
+        if (!updateSelTimeout){
+            selRanges = ranges;
+            updateSelTimeout = setTimeout(showSelRange,50);
+        }
+    });
+    
+    plotObj.getPlaceholder().on("plotunselected",function(event,ranges){
+        rangeTextDiv.hide();
+    });
+    
+    function showSelRange(){
+        updateSelTimeout = null;
+        ranges = selRanges;
+        
+        var xrange = ranges.xaxis.to - ranges.xaxis.from;
+        rangeTextDiv.find('.xrange').text("X range = "+suffix_formatter(xrange));
+        
+        var dataset = plotObj.getData();
+        for (i = 0; i < dataset.length; i += 1) {
+            var series = dataset[i];
+
+            var y1 = interpolate(series, ranges.xaxis.from);
+            var y2 = interpolate(series, ranges.xaxis.to);
+            var yrange = y2-y1;
+            
+            if (rangeTextSpans["series"+i]===undefined){
+                var span = $("<span>"+series.label+" range = "+
+                                             suffix_formatter(yrange)+"</span>")
+                rangeTextSpans["series"+i] = span;
+                rangeTextDiv.append("</br>",rangeTextSpans["series"+i]);
+            } else {
+                rangeTextSpans["series"+i].text(series.label+" range = "+
+                                              suffix_formatter(yrange));
+            }
+        }
+        rangeTextDiv.show();
+    }
+}
+
+function graph_setup(div,plotObj){
+    zoom_pan_setup(div,plotObj);
+    
+    hover_setup(div,plotObj);
+    
+    selection_setup(div,plotObj);
+        
+}
+
 
 function tran_plot(div, results, plots) {
     if (results === undefined) {
@@ -64,7 +225,7 @@ function tran_plot(div, results, plots) {
     
     for (var p = 0; p < plots.length; p += 1) {
         var plot_nodes = plots[p];
-        var series = [];
+        var dataseries = [];
         for (var i = 0; i < plot_nodes.length; i += 1) {
             var node = plot_nodes[i];
             var values = results[node];
@@ -77,7 +238,7 @@ function tran_plot(div, results, plots) {
                 plot.push([results._time_[j], values[j]]);
             }
             var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
-            series.push({
+            dataseries.push({
                 label: current ? node : "Node " + node,
                 data: plot,
 //                lineWidth: 5,
@@ -111,84 +272,24 @@ function tran_plot(div, results, plots) {
                 trigger:"dblclick"
             },
             series:{
-                shadowSize:0 
+                shadowSize:0
             },
             crosshair:{
                 mode:"x",
-                color:"#e8cfac"
+                color:"darkgray"
             },
             selection:{
                 mode:"x"
+            },
+            grid:{
+                hoverable:true,
+                autoHighlight:false
             }
         }
-        var plotObj = $.plot(plotdiv,series,options);
+        var plotObj = $.plot(plotdiv,dataseries,options);
         
-        var zoomInButton = $('<button>+</button>');
-        var zoomResetButton = $('<button>Reset</button>');
-        var zoomOutButton = $('<button>-</button>');
-        var scrollLeftButton = $('<button>\<</button>');
-        var scrollRightButton = $('<button>\></button>');
-        zoomInButton.on("click",function(){
-            plotObj.zoom();
-        });
-        zoomResetButton.on("click",function(){
-            plotObj.zoom({amount:1e-10});
-        });
-        zoomOutButton.on("click",function(){
-            plotObj.zoomOut();
-        });
-        scrollLeftButton.on("click",function(){
-            plotObj.pan({left:-100});
-        });
-        scrollRightButton.on("click",function(){
-            plotObj.pan({left:100});
-        });
-        
-        div.append(zoomInButton,
-                   zoomResetButton,
-                   zoomOutButton,
-                   scrollLeftButton,
-                  scrollRightButton);
+        graph_setup(div,plotObj);
         console.log("data:",plotObj.getData());
-        
-        
-        
-//        var options = {
-//            chart: {
-//                type: 'line'
-//            },
-//            title: {
-//                text: '' //title
-//            },
-//            xAxis: {
-//                title: {
-//                    text: 'Time (s)'
-//                },
-//                labels: {
-//                    formatter: suffix_formatter
-//                },
-//                type: 'linear',
-//                gridLineWidth: 1
-//            },
-//            yAxis: {
-//                title: {
-//                    text: series[0].units //'Volts (v)'
-//                },
-//                labels: {
-//                    formatter: suffix_formatter
-//                },
-//                type: 'linear',
-//            },
-//            series: series,
-//            plotOptions: {
-//                line: {
-//                    marker: {
-//                        enabled: false
-//                    }
-//                }
-//            },
-//        };
-//        plotdiv.highcharts(options);
     }
 }
 
