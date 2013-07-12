@@ -275,9 +275,6 @@ var Grapher = (function(){
                     interactive:true,
                     trigger:"dblclick"
                 },
-                pan:{
-                    interactive:true
-                },
                 series:{
                     shadowSize:0
                 },
@@ -296,19 +293,7 @@ var Grapher = (function(){
             var plotObj = $.plot(plotdiv,dataseries,options);
             
             graph_setup(div,plotObj);
-            
-            var rangebutton = $('<button>Select</button>');
-            rangebutton.on("click",function(){
-                var plotopts = plotObj.getOptions();
-                plotopts.pan.interactive = false;
-                plotopts.selection.mode = "x";
-                plotObj.setupGrid();
-                plotObj.draw();
-            });
-            
-            div.append(rangebutton);
-            
-//            console.log("data:",plotObj.getData());
+            console.log("data:",plotObj.getData());
         }
     }
     

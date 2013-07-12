@@ -505,6 +505,7 @@ Parse
                             ]
                            }}/** end test **/;
     var current_subckt;
+    var used_names;
 //    var netlist;
     
     function parse(input_string,filename){
@@ -513,6 +514,7 @@ Parse
         plots = [];
         options = {};
         analyses = [];
+        used_names = [];
         var netlist = [];
         subcircuits = {_top_level_:{name:"_top_level_",
                                     ports:[],
@@ -705,7 +707,7 @@ Control statement readers
     Read tran: transient analyses
     *********************/
     function read_tran(line){
-        var tran_obj = {type:'tran',parameters:{}};
+        var tran_obj = {type:'tran',parameters:{},line:line[0].line};
         if (line.length != 2){
             throw new CustomError("One argument expected: .tran tstop",
                            line[1].line,line[1].column);
@@ -757,7 +759,7 @@ Control statement readers
     *********************/
     function read_dc(line){
         line.shift();
-        var dc_obj = {type:'dc',parameters:{}};
+        var dc_obj = {type:'dc',parameters:{},line:line[0].line};
         var param_names = ["source1","start1","stop1","step1",
                            "source2","start2","stop2","step2"];
         if (line.length != 2 && line.length != 4 && line.length != 8){
@@ -820,7 +822,7 @@ Control statement readers
     Read AC: AC analysis
     ************************/
     function read_ac(line){
-        var ac_obj = {type:'ac',parameters:{}};
+        var ac_obj = {type:'ac',parameters:{},line:line[0].line};
         
         if (line.length != 4){
             throw new CustomError("Three arguments expected: "+
@@ -1310,6 +1312,14 @@ Flattening
             new_obj.properties.name = addAffixes(new_obj.properties.name,
                                                  dev_index);
             new_obj.type = dev_obj.type;
+            
+            // check for duplicate device names
+            if (used_names.indexOf(new_obj.properties.name) != -1){
+                throw new CustomError("Duplicate device name: "+new_obj.properties.name,
+                                      dev_obj.line,0);
+            } 
+            
+            used_names.push(new_obj.properties.name);
                 
             if (dev_obj.type != "instance"){ 
                 new_obj.connections = {};

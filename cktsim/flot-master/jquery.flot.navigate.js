@@ -3,7 +3,7 @@
 Copyright (c) 2007-2013 IOLA and Ole Laursen.
 Licensed under the MIT license.
 
-******************* Note by Stacey Terman: commented out lines 141-143 to stop 
+******************* Note by Stacey Terman: lines 141-143 control
 default mousewheel zooming ***************************
 
 The default behaviour is double click and scrollwheel up/down to zoom in, drag
