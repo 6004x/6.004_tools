@@ -33,7 +33,14 @@ $(function() {
         assembler.assemble(filename, content, function(success, result) {
             if(!success) {
                 _.each(result, function(error) {
-                    editor.markErrorLine(error.file, error.message, error.line - 1, error.column);
+                    if(!_.contains(editor.filenames(), error.file)) {
+                        FileSystem.getFile(error.file, function(result) {
+                            editor.openTab(error.file, result.data, true);
+                            editor.markErrorLine(error.file, error.message, error.line - 1, error.column);
+                        });
+                    } else {
+                        editor.markErrorLine(error.file, error.message, error.line - 1, error.column);
+                    }
                 });
             } else {
                 beta.loadBytes(result.image);

@@ -20,7 +20,7 @@ var Folders=new function(){
                 console.log(data);
                 // fileList=new Object;
                 // fileList[username]=data;
-                addFiles(data, parentNode, '/');
+                addFiles(data, parentNode, '');
             }, noServer);
 
         function addFiles(fileList, parentNode, parentPath){
@@ -193,7 +193,8 @@ var Folders=new function(){
         editor=editorN;
         editMode=mode;
         //editorWrapper=addDiv().addClass('span10 folderStruct');
-        var buttonDiv=addDiv().addClass('btn-group group1 buttonDiv');
+        var toolbarDiv=addDiv().addClass('btn-toolbar');
+        var buttonDiv=addDiv().addClass('btn-group group1 buttonDiv').appendTo(toolbarDiv);
         addButtons(buttonDiv);
 
         sideBarNav=addDiv().addClass('sidebar-nav');
@@ -206,21 +207,23 @@ var Folders=new function(){
         //var rowOne=addDiv().addClass('row').append(sideBarWrapper).append(editorWrapper);
         //wrapper.append(rowOne);
 
-        var tempName=$("<div class='header buttonDiv'><h1 class='testDiv'>testing</h1>"
-            +"<button class='btn btn-info' id='user_button'>get filelist</button></div>");
+        // var tempName=$("<div class='header buttonDiv'><h1 class='testDiv'>testing</h1>"
+        //     +"<button class='btn btn-info' id='user_button'>get filelist</button></div>");
         
-        rootNode.append(tempName);
-        rootNode.append(buttonDiv);
+        // rootNode.append(tempName);
+        rootNode.append(toolbarDiv);
         rootNode.append(sideBarNav);
 
 
-        $('#user_button').on('click', function(e){
-                console.log('button');
-                rootNode.find('.filePaths').html('');
-                refreshFileList();
-            });
+        // $('#user_button').on('click', function(e){
+        //         console.log('button');
+        //         rootNode.find('.filePaths').html('');
+        //         refreshFileList();
+        //     });
+        
+        refreshFileList();
 
-        $('.btn').tooltip({'placement': 'bottom'});
+        $('.btn').tooltip({placement: 'top', container: 'body'});
     }
     function addDiv(){
         return $('<div></div>');
