@@ -35,6 +35,8 @@ BSim.Beta = function(mem_size) {
         tty: false,
         annotate: false
     };
+    var mVerifier = null;
+    var mTTYContent = '';
 
     // Mostly exception stuff.
     var SUPERVISOR_BIT = 0x80000000;
@@ -104,6 +106,14 @@ BSim.Beta = function(mem_size) {
 
     this.getLabel = function(address) {
         return mLabels[address & ~SUPERVISOR_BIT] || null;
+    };
+
+    this.setVerifier = function(verifier) {
+        this.mVerifier = verifier;
+    };
+
+    this.verifier = function() {
+        return this.mVerifier;
     };
 
     this.readWord = function(address, notify) {
@@ -187,9 +197,31 @@ BSim.Beta = function(mem_size) {
         };
     };
 
-    // This is a RESET exception, rather than actually resetting all state.
     this.reset = function() {
         this.setPC(SUPERVISOR_BIT | VEC_RESET, true);
+        mRegisters = new Int32Array(32);
+        mPendingInterrupts = 0;
+        mCycleCount = 0;
+        mClockCounter = 0;
+        mMemory.reset();
+        this.mMouseCoords = -1;
+        this.mKeyboardInput = null;
+        mTTYContent = '';
+
+        // Tell the world.
+        this.trigger('text:clear');
+        this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
+        var r = _.range(0, mMemory.size(), 4);
+        this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
+    };
+
+    this.ttyOut = function(text) {
+        mTTYContent += text;
+        this.trigger('text:out', text);
+    };
+
+    this.ttyContent = function() {
+        return mTTYContent;
     };
 
     this.inSupervisorMode = function() {

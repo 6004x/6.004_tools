@@ -675,7 +675,41 @@
         if(out) {
             _.extend(context.options, this.options);
         }
-    }
+    };
+
+    var TCheckoff = function(url, name, checksum, file, line) {
+        this.url = url;
+        this.name = name;
+        this.checksum = checksum;
+        this.file = file;
+        this.line = line;
+    };
+    TCheckoff.parse = function(stream) {
+        eatSpace(stream);
+        var url = readString(stream);
+        eatSpace(stream);
+        var name = readString(stream);
+        eatSpace(stream);
+        var checksum = Expression.parse(stream);
+        if(checksum === null) {
+            throw new SyntaxError("Expected tcheckoff checksum.", stream);
+        }
+        return new TCheckoff(url, name, checksum, stream.file(), stream.line_number());
+    };
+    TCheckoff.prototype.assemble = function(context, out) {
+        if(out) {
+            var checksum = this.checksum.evaluate(context, true);
+            if(context.checkoff) {
+                throw new SyntaxError("Multiple checkoffs found! Only one checkoff statement is accepted per program.", this.file, this.line);
+            }
+            context.checkoff = {
+                kind: 'tty',
+                url: this.url,
+                name: this.name,
+                checksum: checksum
+            };
+        }
+    };
 
     // Public Assembler interface. Constructor takes no arguments.
     var Assembler = function() {
@@ -857,6 +891,9 @@
                             case "unprotect":
                                 fileContent.push(new Unprotect(stream.file(), stream.line_number()));
                                 break;
+                            case "tcheckoff":
+                                fileContent.push(TCheckoff.parse(stream));
+                                break;
                             default:
                                 stream.skipToEnd();
                                 throw new SyntaxError("Unrecognised directive '." + command + "'", stream);
@@ -932,7 +969,8 @@
                 breakpoints: [],
                 labels: {},
                 options: {},
-                protection: []
+                protection: [],
+                checkoff: null
             };
             // First pass: figure out where everything goes.
              _.each(syntax, function(item) {
@@ -951,7 +989,8 @@
                 breakpoints: context.breakpoints,
                 labels: context.labels,
                 options: context.options,
-                protection: context.protection
+                protection: context.protection,
+                checkoff: context.checkoff
             };
         };
 

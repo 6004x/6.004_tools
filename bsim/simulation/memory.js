@@ -2,10 +2,12 @@ BSim.Beta.Memory = function(size) {
     var self = this;
     var mMemory = new Uint32Array(0);
     var mMemoryFlags = new Uint8Array(0);
+    var mOriginalMemory = new Uint32Array(0);
 
     this.loadBytes = function(bytes) {
         var words = bytes.length / 4;
         mMemory = new Uint32Array(words);
+        mOriginalMemory = new Uint32Array(words);
         mMemoryFlags = new Uint8Array(words);
         for(var i = 0; i < bytes.length; i += 4) {
             mMemory[i/4] = (bytes[i+3] << 24) |
@@ -13,7 +15,12 @@ BSim.Beta.Memory = function(size) {
                            (bytes[i+1] << 8)  |
                             bytes[i+0];
         }
+        mOriginalMemory = new Uint32Array(mMemory);
     };
+
+    this.reset = function() {
+        mMemory = new Uint32Array(mOriginalMemory);
+    }
 
     this.readWord = function(address) {
         address >>= 2;

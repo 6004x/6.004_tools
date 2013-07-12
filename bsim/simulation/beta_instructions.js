@@ -409,7 +409,7 @@ BSim.Beta.Opcodes = {};
                 case 2: // WRCHAR
                     if(!this.isOptionSet('tty')) return this.handleIllegalInstruction();
                     var chr = String.fromCharCode(this.readRegister(a));
-                    this.trigger('out:text', chr);
+                    this.ttyOut(chr);
                     break;
                 case 3: // CYCLE
                     this.writeRegister(0, this.getCycleCount());

@@ -31,8 +31,9 @@ BSim.StackView = function(container, beta) {
 
     var beta_change_register = function(register, value) {
         if(register == SP) {
-            mTable.startBatch();
             var row = value / 4;
+            if(row >= mTable.rowCount()) return;
+            mTable.startBatch();
             if(mLastSP !== null) {
                 mTable.removeRowClass(mLastSP, 'current-sp');
                 mTable.updateCell(mLastSP, 0, '');
