@@ -47,6 +47,10 @@ var BigTable = function(container, width, height, row_height, column_count) {
 
     // Update's the given column of the given row with the given data, which should be a string.
     this.updateCell = function(row, column, data) {
+        if(!mData[row]) {
+            console.warn("Update to nonexistent row " + row + " column " + column + " = " + data);
+            return;
+        }
         mData[row][column] = data;
         redraw(row);
     };

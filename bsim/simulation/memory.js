@@ -29,7 +29,7 @@ BSim.Beta.Memory = function(size) {
         if(address < 0 || address >= mMemory.length) {
             throw new BSim.Beta.RuntimeError("Attempted to write out of bounds address 0x" + BSim.Common.FormatWord(address << 2));
         }
-        if(mMemoryFlags[address >> 2]) {
+        if(mMemoryFlags[address]) {
             throw new BSim.Beta.RuntimeError("Attempted write to protected memory at 0x" + BSim.Common.FormatWord(address << 2));
         }
         mMemory[address] = value;

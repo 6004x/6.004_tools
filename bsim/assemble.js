@@ -530,7 +530,6 @@
         if(!this.instructions) {
             throw "Attempting to assemble Include without parsing file contents.";
         }
-        console.log("Assembling include with: ", context, out);
         _.each(this.instructions, function(instruction) {
             instruction.assemble(context, out);
         });
@@ -738,6 +737,8 @@
                             completion_callback(our_syntax);
                         }
                     }, error_callback);
+                }, function() {
+                    error_callback([new SyntaxError("File not found: " + include.filename, include.file, include.line)]);
                 });
             }
 

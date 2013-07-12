@@ -42,7 +42,8 @@ $(function() {
                 _.each(result.options, function(value, key) {
                     beta.setOption(key, value);
                 });
-                beta.getMemory().setProtectedRegions(result.protection)
+                beta.getMemory().setProtectedRegions(result.protection);
+                $('#split_pane').click();
             }
         });
     }
@@ -50,7 +51,7 @@ $(function() {
     // Add some buttons to it
     editor.addButtonGroup([new ToolbarButton('Assemble', do_assemble, 'Runs your program!')]);
     // And a couple of tabs.
-    editor.openTab('foo.uasm', '// Stuff goes here');
+    editor.openTab(null, '');
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
     }

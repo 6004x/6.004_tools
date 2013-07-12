@@ -16,7 +16,6 @@ BSim.DisassembledView = function(container, beta) {
     };
 
     var beta_change_word = function(address, value) {
-        console.log(address, value);
         mTable.updateCell(address / 4, 1, BSim.Common.FormatWord(value));
         mTable.updateCell(address / 4, 3, disassemble_value(address, value));
     };

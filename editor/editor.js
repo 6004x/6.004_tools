@@ -178,7 +178,7 @@ var Editor = function(container, mode) {
             generation: cm.changeGeneration() // The generation at last save. We can use this to track cleanliness of document.
         };
 
-        var a = $('<a>', {href: '#' + id}).text(filename).click(function(e) { e.preventDefault(); focusTab(doc); });
+        var a = $('<a>', {href: '#' + id}).text(_.last(filename.split('/'))).click(function(e) { e.preventDefault(); focusTab(doc); });
         tab.append(a);
         // Build us a 'close' button. It uses an X when the document is clean and a circle when dirty, except
         // when hovered over.
