@@ -15,7 +15,7 @@ var Folders=new function(){
         //clears out the old filelist
         var username=FileSystem.getUserName();
         //FileSystem keeps track of the username
-        $('.testDiv').val(FileSystem.getUserName());
+        $('.testDiv').text(username);
 
         //fetch the filelist from server, then add the files to the filesystem.
         FileSystem.getFileList(
@@ -38,7 +38,7 @@ var Folders=new function(){
                     var listVar=$('<li></li>').attr('data-path', parentPath+name).append($('<a href=#>'+name+'</a>').attr('data-path', parentPath+name));
                     var delButton=$('<span>Delete '+name+'</span>').addClass('btn btn-link del_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-trash>');
                     var delDrop=addDiv('dropdown pull-right');
-                    delDrop.append($('<a class="btn dropdown-toggle" data-toggle="dropdown" href="#"><span class="caret"></span></a>').css('padding', '0px 5px 0px 3px').css('height', '16px'));
+                    var delDropToggle=($('<button class="btn dropdown-toggle" data-toggle="dropdown" href="#"><span class="caret"></span></button>').css('padding', '0px 5px 0px 3px').css('height', '16px'));
                     var delDropUL=$('<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel"></ul>').css('z-index', 20);
                     
 
@@ -48,29 +48,31 @@ var Folders=new function(){
                     //             'data-trigger':'hover',
                     //             'data-container':'body',
                     //             });
+                    delDrop.append(delDropToggle);
                     delDropUL.append(delButton);
                     delDrop.append(delDropUL);
-                    listVar.append(delDrop)
+                    listVar.append(delDrop);
                     listVar.on('click', function(e){
 
                         var node=$(e.currentTarget);
                         console.log(node);
-                        // console.log(node.attr('data-path'));
-                        // var fileName=unescape(node.text());
-                        // var folderName=unescape(node.attr('data-path'));
-                        // if(folderName!='undefined'){
-                        //     fileName=folderName+fileName;
-                        // }
                         getFile(node.attr('data-path'));
                     });
+
                     delButton.on('click', function(e){
                         e.stopPropagation();
                         console.log('del button');
-                        var current_path=$(e.currentTarget).parent().attr('data-path');
+                        console.log($(e.currentTarget).parent().parent())
+                        var current_path=$(e.currentTarget).parents('li').attr('data-path');
                         console.log(current_path);
                         deleteFile(current_path);
-                            
                     });
+
+                    delDropToggle.on('click', function(e){
+                        e.stopPropagation();
+                        console.log($(e.currentTarget).parent('.dropdown').find('.dropdown-menu').toggle());
+
+                    })
                     parentNode.append(listVar);
                 }
                 else {
@@ -376,7 +378,7 @@ var Folders=new function(){
                 refreshFileList();
             });
 
-        $('.btn').tooltip({'placement': 'bottom'});
+        $('.btn').tooltip({'placement': 'bottom', container:'body'});
     }
     function addDiv(classes){
         if(!classes)
@@ -386,7 +388,7 @@ var Folders=new function(){
     function addButtons(buttonDiv){   
         var hideButton=$('<button></button>').addClass('btn hideNavBar').attr({
                 'data-toggle':"tooltip", 
-                'title':"HIde Folders",
+                'title':"Hide Folders",
                 'data-trigger':'hover'
                 });
         hideButton.append('<i class=icon-chevron-left></i>');

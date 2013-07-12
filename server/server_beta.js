@@ -66,7 +66,7 @@ function pathWorks(request, response, data){
 						if (exists) 
 							sendFile(shared_file);
 						else {
-					  // library not found, send empty one
+						// library not found, send empty one
 							errorResponse('could not find the file');
 						}
 					});
@@ -80,7 +80,7 @@ function pathWorks(request, response, data){
 					var fileList=recurseThroughFolders(full_path);
 					console.log('returned from fileList');
 					sendJSON(fileList);
-				  }
+					}
 				else if (query==='getFile'){
 					console.log(full_path);
 					console.log('sendFile');
@@ -133,45 +133,45 @@ function pathWorks(request, response, data){
 				console.log('mkdir path');
 				fs.mkdir((full_path), function(err){
 					if(err){
-					  console.log(err);
-					  errorResponse(err+' path could not be made')
+						console.log(err);
+						errorResponse(err+' path could not be made')
 					} else {
-					  console.log('didn\'t fail');
-					  sendJSON({user_path:user_path, status:'success'});
+						console.log('didn\'t fail');
+						sendJSON({user_path:user_path, status:'success'});
 					}
 				});
 			}
 		});
-  	} else if (query=='deleteFile'){
-  		fs.exists((full_path), function(exists){
-  			if(exists){
-  				hideFile(full_path, file_path);
-  			} else { //doesn't exists
-  				errorResponse(file_path +' does not exist');
-  			}
-  		});
+		} else if (query=='deleteFile'){
+			fs.exists((full_path), function(exists){
+				if(exists){
+					hideFile(full_path, file_path);
+			} else { //doesn't exists
+					errorResponse(file_path +' does not exist');
+				}
+			});
 	}
 
 	function recurseThroughFolders(curr_path){
-	  //console.log(curr_path);
-	  	var files=fs.readdirSync(curr_path);
-	 	var fileList={};
-	  	for(var i=0; i <files.length; i++){
-		  	var name = files[i];
-		  	var new_path=path.join(curr_path, name);
-		  	if(name.indexOf('~')<0){
-			  	if(fs.lstatSync(new_path).isDirectory()){
+		//console.log(curr_path);
+			var files=fs.readdirSync(curr_path);
+		var fileList={};
+			for(var i=0; i <files.length; i++){
+				var name = files[i];
+				var new_path=path.join(curr_path, name);
+				if(name.indexOf('~')<0){
+					if(fs.lstatSync(new_path).isDirectory()){
 					fileList[name]= recurseThroughFolders(new_path);
 
 				//synchronois return of list of subfiles, only need to go one level down
-			  	}else{
+					}else{
 					fileList[name]=[];
-			  	}
+					}
 			} else {
 				console.log(name +' is a deleted file, folder, or backed up');
 			}
 		}
-	  return(fileList);
+		return(fileList);
 	}
 
 	function errorResponse(string){
@@ -209,44 +209,44 @@ function pathWorks(request, response, data){
 	}
 	function saveFile(file_path, full_path, fdata) {
 		fs.writeFile(full_path, fdata, 'utf8', function (err) {
-	  		if (err){
+				if (err){
 				sys.puts(err);
 				sendJSON({
-		  			name:file_path,
-		  			status:'failed',
-		  			data:fdata,
-		  			error:err,
+						name:file_path,
+						status:'failed',
+						data:fdata,
+						error:err,
 				});
-	  		}
-	  		else {
+				}
+				else {
 				console.log(file_path+ ' saved!');
 				sendJSON({
-		  			name:file_path,
-		  			status:'success',
-		  			data:fdata,
+						name:file_path,
+						status:'success',
+						data:fdata,
 				});
-	  		}
+				}
 		});
-  	}
-  	function hideFile(full_path, file_path){
-  		fs.rename(full_path, full_path+'~del', function (err) {
-		  	if (err) throw err;
-		  	console.log(file_path+'~del');
-		  	sendJSON({
-		  		status:'success',
-		  		name:file_path,
-		  	});
+		}
+		function hideFile(full_path, file_path){
+			fs.rename(full_path, full_path+'~del', function (err) {
+				if (err) throw err;
+				console.log(file_path+'~del');
+				sendJSON({
+					status:'success',
+					name:file_path,
+				});
 		});
-  	}
-  	function create_user_path() {
-  		fs.exists(user_path,function(exists) {
+		}
+		function create_user_path() {
+			fs.exists(user_path,function(exists) {
 			if (!exists)
 				fs.mkdir(user_path,function(err) {
-				  	if (err) throw(err);
-		  			// after();
-	  			});
+						if (err) throw(err);
+						// after();
+					});
 			// after();
 		});
-  	}
+		}
 }
 sys.puts("Server Running on 8080");

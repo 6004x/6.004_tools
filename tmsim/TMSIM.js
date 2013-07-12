@@ -1,124 +1,268 @@
-var TMSIM = function(){
-
+var TMSIM = function(data){
+	
 }
 
-var TSM=function(){
+function TSM(){
+	var self=this;
 	var curr_state;
 	var list_of_states;
 
+	//state has two characteristics:
+	/** 
+		state name:
+		transition:
+			current symbol:
+				[(state name)', write, move]
+	**/
+
+	var tapeList=new LinkedList();
+
+	this.setup=function(states, startState, tape){
+		console.log(states);
+		tapeList.init(tape);
+		list_of_states=states;
+		start_state=list_of_states[startState];
+		return self;
+	}
+	this.start=function(){
+		console.log('beginning turing machine');
+		var new_state=start_state;
+		var valid = true;
+		while(valid){
+			new_state=this.step(new_state);
+			if(!new_state)
+				valid=false;
+			
+		}
+		console.log('ended turing machine');
+	}
+	this.step=function(new_state){
+		var old_state=new_state;
+		var tapeRead=tapeList.peek();
+		var state_transition=old_state.transition[tapeRead];
+		// console.log(state_transition.next_state);
+		if(state_transition.next_state === '*halt*'){
+			valid=false;
+			tapeList.printLL();
+			console.log('halting the sm');
+			return false;
+		} else if (state_transition.next_state === '*error*'){
+			valid=false;
+			tapeList.printLL();
+			console.log('encountered an error');
+			return false;
+		}
+
+		new_state=list_of_states[state_transition.next_state];
+		tapeList.traverse(state_transition.write, state_transition.move);
+		return new_state;
+	}
+	return this;
 }
+
+
 
 var Tape=function(){
-	var 
+	var tapeList=LinkedList().append('-');
+
 }
 
 
-
-function LinkedList(){
-	var self=this;
-	var first;
-	var last;
-	var size=0;
-
-	//attaches a node with data as the last pointer of the LL
-	this.append=function(data){
-
-		if(first==null){
-			first=new llnode(data);
-			last=first;
-			first.next=last.next=null;
-			first.prev=last.prev=null;
+var busyBeaver5={
+	'A':{
+		name:'A',
+		transition:{
+			'-':{
+				next_state:'B',
+				write:'1',
+				move:'r'
+			},
+			'1':{
+				next_state:'C',
+				write:'1',
+				move:'l'
+			},
+		},
+	},
+	'B':{
+		name:'B',
+		transition:{
+			'-':{
+				next_state:'A',
+				write:'-',
+				move:'l'
+			},
+			'1':{
+				next_state:'D',
+				write:'-',
+				move:'l'
+			},
 		}
-		else{
-			var temp= new llnode(data);
-			last.next.prev=last;
-			last=last.next;
-			last.next=null;
+	},
+	'C':{
+		name:'C',
+		transition:{
+			'-':{
+				next_state:'A',
+				write:'1',
+				move:'l'
+			},
+			'1':{
+				next_state:'*halt*',
+				write:'1',
+				move:'l'
+			},
 		}
-		size++;
-		return self;
-	}
+	},
+	'D':{
+		name:'D',
+		transition:{
+			'-':{
+				next_state:'B',
+				write:'1',
+				move:'l'
+			},
+			'1':{
+				next_state:'E',
+				write:'1',
+				move:'r'
+			},
+		},
+	},
+	'E':{
+		name:'E',
+		transition:{
+			'-':{
+				next_state:'D',
+				write:'-',
+				move:'r'
+			},
+			'1':{
+				next_state:'B',
+				write:'-',
+				move:'r'
+			},
+		},
+	},	
+};
 
-	//attaches a node with data as the first pointer of the LL
-	this.prepend=function(data){
-
-		if(first==null){
-			first=new llnode(data);
-			last=first;
-			first.next=last.next=null;
-			first.prev=last.prev=null;
-		}
-		else{
-			var temp = new llnode(data);
-			temp.next=first;
-			temp.prev=null;
-			first=temp;
-		}
-		size++;
-		return self;
-	}
-
-	//finds first instance of this data and removes it
-	this.remove=function(data){
-		if(size==0)
-			return false;
-		else{
-			printLL();
-			var current=first;
-			while(current!=null){
-				if(current.data==data){
-					//then this node is the one we must delete
-					if(current.prev){
-						//there exists a previous node, is not the first node
-						current.prev.next=current.next;
-						current.next.prev=current.prev;
-						console.log('deleted');
-						console.log(current);
-						size--;
-						printLL();
-						return self;
-					}else{
-						first=first.next;
-						first.prev=null;
-						size--;
-						printLL();
-						console.log('deleted first');
-						return self;
-					}
-				}
-				current=current.next;
+var firstTSM={
+	'b':{
+		name:'b',
+		transition:{
+			'-':{
+				next_state:'c',
+				write:'0',
+				move:'l',
+			},
+			'0':{
+				next_state:'*halt*',
+				write:'-',
+				move:'l',
 			}
-			console.log(data+' not found');
-			return self;
 		}
-	}
-
-	this.printLL=function(){
-		var current=first;
-		var arrayLL=[];
-		while(current!=null){
-			arrayLL.push(current);
-			current=current.next;
+	},
+	'c':{
+		name:'c',
+		transition:{
+			'-':{
+				next_state:'e',
+				write:'-',
+				move:'l',
+			},
+			'0':{
+				next_state:'*halt*',
+				write:'-',
+				move:'l',
+			}
 		}
-		console.log(arrayLL);
-	}
+	},
+	'e':{
+		name:'e',
+		transition:{
+			'-':{
+				next_state:'f',
+				write:'1',
+				move:'l',
+			},
+			'0':{
+				next_state:'*halt*',
+				write:'-',
+				move:'l',
+			}
+		}
+	},
+	'f':{
+		name:'f',
+		transition:{
+			'-':{
+				next_state:'b',
+				write:'-',
+				move:'l',
+			},
+			'0':{
+				next_state:'*halt*',
+				write:'-',
+				move:'l',
+			}
+		}
+	},
+}
+//should be [0,-,1,-]
+var testArr=[];
+for(var i=0; i<24; i++){
+	testArr.push('-');
+}
+testArr.push('0');
+firsttsmTest=TSM().setup(firstTSM, 'b', testArr).start();
 
-	function llnode(newData){
-		this.data=newData;
-		this.next=null;
-		this.prev=null;
+var busyBeaver3={
+	'A':{
+		name:'A',
+		transition:{
+			'-':{
+				next_state:'B',
+				write:'1',
+				move:'r',
+			},
+			'1':{
+				next_state:'C',
+				move:'l',
+				write:'1',
+			}
+		}
+	},
+	'B':{
+		name:'B',
+		transition:{
+			'-':{
+				next_state:'A',
+				write:'1',
+				move:'l',
+			},
+			'1':{
+				next_state:'B',
+				move:'r',
+				write:'1',
+			}
+		}
+	},
+	'C':{
+		name:'C',
+		transition:{
+			'-':{
+				next_state:'B',
+				write:'1',
+				move:'l',
+			},
+			'1':{
+				next_state:'*halt*',
+				move:'-',
+				write:'1',
+			}
+		}
 	}
 }
+var tsmTest=TSM().setup(busyBeaver5, 'A').start();
 
 
-var LL1=new LinkedList();
-var LL2=new LinkedList();
-var LL3=new LinkedList();
-
-LL1.append('s').prepend('r').append('t').prepend('q').prepend('a').prepend('p').remove('a').append('u');
-
-console.log(LL1);
-LL1.printLL;
-
-LL2.append('1').remove('2').remove('1').remove('1').append('3');
-LL2.printLL
