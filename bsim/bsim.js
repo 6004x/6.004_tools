@@ -50,6 +50,12 @@ $(function() {
                     beta.setOption(key, value);
                 });
                 beta.getMemory().setProtectedRegions(result.protection);
+                if(result.checkoff) {
+                    if(result.checkoff.kind == 'tty') {
+                        var verifier = new BSim.TextVerifier(beta, result.checkoff.checksum);
+                        beta.setVerifier(verifier);
+                    }
+                }
                 $('#split_pane').click();
             }
         });

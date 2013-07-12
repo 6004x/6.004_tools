@@ -6,6 +6,7 @@ BSim.Controls = function(container, beta) {
     var mRunButton = $('<button class="btn btn-run"><i class="icon-play"></i></button>');
     var mFastRunButton = $('<button class="btn btn-fast-run"><i class="icon-forward"></i></button>');
     var mStepButton = $('<button class="btn btn-step"><i class="icon-step-forward"></i></button>');
+    var mVerifyButton = $('<button class="btn btn-verify">Checkoff</button>');
 
     var toggle_run = function() {
         if(mBeta.isRunning()) {
@@ -27,6 +28,18 @@ BSim.Controls = function(container, beta) {
         mBeta.reset();
     };
 
+    var handle_checkoff = function() {
+        var verifier = mBeta.verifier();
+        if(!verifier) {
+            alert("No verification statements found.");
+        }
+        if(!verifier.verify()) {
+            alert(verifier.getMessage());
+        } else {
+            alert("Checkoff complete!");
+        }
+    };
+
     var beta_run_start = function() {
         mRunButton.find('i').removeClass('icon-play').addClass('icon-pause');
         mStepButton.attr("disabled", "disabled");
@@ -44,8 +57,10 @@ BSim.Controls = function(container, beta) {
         mStepButton.click(handle_step);
         mResetButton.click(handle_reset);
         mFastRunButton.click(handle_fast_run);
+        mVerifyButton.click(handle_checkoff);
         mGroup.append(mResetButton, mStepButton, mRunButton, mFastRunButton);
         mContainer.addClass('btn-toolbar').append(mGroup);
+        mContainer.append(mVerifyButton);
 
         mBeta.on('run:start', beta_run_start);
         mBeta.on('run:stop', beta_run_stop);
