@@ -55,7 +55,11 @@ pre.tty-output {
     background-color: #fafafa;
     border: thin solid #eaeaea;
     border-radius: 5px;
-    padding: 5px;
+    margin-top: 10px;
+}
+
+.tty {
+    width: calc(97.2% - 20px);
 }
 
 div.stack-holder {
@@ -208,7 +212,8 @@ div.disassembly {
     height: 200px;
     overflow-y: auto;
     overflow-x: hidden;
-    width: 500px;
+    width: 450px;
+    border: 1px solid gray;
 }
 
 .disassembly td {
@@ -223,8 +228,9 @@ div.disassembly {
 
 /* Label */
 .disassembly td:nth-child(3) {
-    width: 150px;
-    max-width: 150px;
+    width: 100px;
+    max-width: 100px;
+    text-overflow: ellipsis;
 }
 
 /* Disassembeld instruction */
