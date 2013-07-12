@@ -18,13 +18,19 @@
 <h2>CKTSIM test page</h2>
 
     
-<div class="cktsim">
-// Transient analysis test
+<div class="cktsim">// Transient analysis test
+                
+.global gnd  
+                
+.subckt transtest n1 n2
 V1 n1 gnd step(1,0,1u)
 R1 n1 n2 1k
 C1 n2 gnd 1n
+.ends
+                
+X1 a b transtest
 .tran 5u
-.plot n1 n2
+.plot a b
 </div>
     
 <div class="cktsim">

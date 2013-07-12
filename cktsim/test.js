@@ -386,23 +386,23 @@ function simulate(text,div) {
     }   
 }
 
-//function setup_test(div) {
-//    var text = div.text();
-//    div.empty();
-//    div.append('<hr></hr><textarea rows="10" cols="50"></textarea><button style="vertical-align:top">Simulate</button><div class="results"></div>');
-//    var textarea = div.find('textarea');
-//    var plotdiv = div.find('.results');
-//
-//    div.find('button').on('click',function () {
-//        simulate(textarea.val(),plotdiv)
-//    })
-//
-//    textarea.val(text);
-//    simulate(text,plotdiv);
-//}
+function setup_test(div) {
+    var text = div.text();
+    div.empty();
+    div.append('<hr></hr><textarea rows="10" cols="50"></textarea><button style="vertical-align:top">Simulate</button><div class="results"></div>');
+    var textarea = div.find('textarea');
+    var plotdiv = div.find('.results');
 
-//$(document).ready(function() {
-//    $('.cktsim').each(function() {
-//        setup_test($(this));
-//    });
-//});
+    div.find('button').on('click',function () {
+        simulate(textarea.val(),plotdiv)
+    })
+
+    textarea.val(text);
+    simulate(text,plotdiv);
+}
+
+$(document).ready(function() {
+    $('.cktsim').each(function() {
+        setup_test($(this));
+    });
+});

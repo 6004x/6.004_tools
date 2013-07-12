@@ -15,7 +15,7 @@
                 font-family:monospace;
                 display:block;
                 vertical-align:bottom;
-                min-height:200px;
+                height:400px;
                 font-size:16pt;
                 border:1px solid black;
                 margin:10px;
@@ -47,19 +47,40 @@
     <body>
         <div>
             <div class="demo">
-// Lab 1 stuff:
-.global vdd gnd
-            </div>
-            
-<!--
-            <div class="demo">
-.subckt foo a z bar=1 bim=2
-R1 a z 10k
+// Transient analysis test
+                
+.global gnd  
+                
+.subckt transtest n1 n2
+V1 n1 gnd step(1,0,1u)
+R1 n1 n2 1k
+C1 n2 gnd 1n
 .ends
                 
-Xfoo1 n1 n2 foo bar=2
+X1 a b transtest
+.tran 5u
+.plot a b
             </div>
             
+
+            <div class="demo">
+// Transient analysis test
+                
+.global gnd  
+                
+.subckt transtest n1 n2
+V1 n1 gnd step(1,0,1u)
+R1 n1 n2 1k
+C1 n2 gnd 1n
+.ends
+                
+X1 a b transtest
+X2 c d transtest
+.tran 5u
+.plot a b
+.plot c d
+            </div>
+<!--
             <div class="demo">
 .global vdd gnd
 .subckt inv a z drive=2
