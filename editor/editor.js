@@ -274,7 +274,7 @@ var Editor = function(container, mode) {
     var do_save = function() {
         if(!mCurrentDocument) return false;
         var current_document = mCurrentDocument; // Keep this around so we don't get confused if user changes tab.
-        FileSystem.saveFile({name: current_document.name, data: current_document.cm.getValue()}, function() {
+        FileSystem.saveFile(current_document.name, current_document.cm.getValue(), function() {
             // Mark the file as clean.
             current_document.generation = current_document.cm.changeGeneration();
             handle_change_tab_icon(current_document)
