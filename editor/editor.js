@@ -2,6 +2,7 @@ var Editor = function(container, mode) {
     var self = this; // Tracking 'this' can be finicky; use 'self' instead.
     var mContainer = $(container);
     var mToolbarHolder; // Element holding the toolbar
+    var mToolbar;
     var mTabHolder; // Element holding the tabs
     var mCurrentDocument = null; // Current document object
     var mSyntaxMode = mode; // The syntax mode for the editors
@@ -14,11 +15,7 @@ var Editor = function(container, mode) {
 
 
     this.addButtonGroup = function(buttons) {
-        var group = $('<div class="btn-group">');
-        _.each(buttons, function(button) {
-            button.render(group);
-        });
-        mToolbarHolder.append(group);
+        mToolbar.addButtonGroup(buttons);
     };
 
     var focusTab = function(doc) {
@@ -246,7 +243,8 @@ var Editor = function(container, mode) {
 
     var initialise = function() {
         // Build up our editor UI.
-        mToolbarHolder = $('<div class="btn-toolbar">');
+        mToolbarHolder = $('<div>');
+        mToolbar = new Toolbar(mToolbarHolder);
         // Add some basic button groups
         self.addButtonGroup([
             new ToolbarButton('icon-file', create_new_document, "New file"),
@@ -285,30 +283,3 @@ var Editor = function(container, mode) {
 };
 Editor.IsSetUp = false;
 
-var ToolbarButton = function(icon, callback, tooltip) {
-    var self = this;
-    var mTooltip = tooltip;
-    var mIcon = icon;
-    var mCallback = callback;
-    var mElement = null;
-
-    self.render = function(container) {
-        if(mElement) {
-            mElement.remove();
-            mElement = null;
-        }
-        // Special case: if 'icon' is a string starting with 'icon-', assume they wanted a Bootstrap icon.
-        // Otherwise it's whatever jQuery makes of it.
-        if(/^icon-/.test(mIcon)) {
-            mIcon = $('<i>').addClass(mIcon);
-        }
-        mElement = $('<button class="btn">').append(mIcon);
-        if(mTooltip) {
-            mElement.tooltip({title: mTooltip, placement: 'top', delay: 100, container: 'body'});
-        }
-        if(mCallback) {
-            mElement.click(mCallback);
-        }
-        container.append(mElement);
-    };
-};
