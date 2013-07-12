@@ -1,7 +1,7 @@
 BSim.Beta = function(mem_size) {
     "use strict";
     var self = this;
-    var mMemory = new Uint8Array(mem_size); // TODO: it might make sense to use an Int32Array here.
+    var mMemory = new BSim.Beta.Memory(mem_size); // TODO: it might make sense to use an Int32Array here.
     var mRegisters = new Int32Array(32);
     var mRunning = false; // Only true when calling run(); not executeCycle().
     var mPC = 0x80000000;
@@ -39,6 +39,8 @@ BSim.Beta = function(mem_size) {
         tty: false,
         annotate: false
     };
+    var mVerifier = null;
+    var mTTYContent = '';
 
     // Mostly exception stuff.
     var SUPERVISOR_BIT = 0x80000000;
@@ -58,14 +60,13 @@ BSim.Beta = function(mem_size) {
     this.loadBytes = function(bytes) {
         this.stop();
         this.reset();
-        mMemory = new Uint8Array(bytes.length);
-        this.trigger('resize:memory', bytes.length);
-        for(var i = 0; i < bytes.length; ++i) {
-            this.writeByte(i, bytes[i]);
-        }
+
+        mMemory.loadBytes(bytes);
+
         // Update the UI with our new program.
+        this.trigger('resize:memory', bytes.length);
         this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
-        var r = _.range(0, mMemory.length, 4);
+        var r = _.range(0, mMemory.size(), 4);
         this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
 
         this.clearBreakpoints();
@@ -111,14 +112,16 @@ BSim.Beta = function(mem_size) {
         return mLabels[address & ~SUPERVISOR_BIT] || null;
     };
 
-    this.readByte = function(address) {
-        address &= ~SUPERVISOR_BIT; // Drop supervisor bit
-        return mMemory[address];
+    this.setVerifier = function(verifier) {
+        this.mVerifier = verifier;
+    };
+
+    this.verifier = function() {
+        return this.mVerifier;
     };
 
     this.readWord = function(address, notify) {
-        address &= ~SUPERVISOR_BIT;
-        address &= 0xFFFFFFFC; // Force multiples of four.
+        address &= (~SUPERVISOR_BIT) & 0xFFFFFFFC;
         if(notify) {
             if(!mRunning) {
                 self.trigger('read:word', address);
@@ -127,17 +130,8 @@ BSim.Beta = function(mem_size) {
                 if(mLastReads.length > 5) mLastReads.shift();
             }
         }
-        return (
-            (self.readByte(address+3) << 24) |
-            (self.readByte(address+2) << 16) |
-            (self.readByte(address+1) << 8)  |
-            self.readByte(address+0)
-        );
-    };
 
-    this.writeByte = function(address, value) {
-        address &= ~SUPERVISOR_BIT;
-        mMemory[address] = value;
+        return mMemory.readWord(address);
     };
 
     this.writeWord = function(address, value, notify) {
@@ -149,11 +143,7 @@ BSim.Beta = function(mem_size) {
         if(!_.has(mCurrentStep.words, address))
             mCurrentStep.words[address] = this.readWord(address);
 
-        this.writeByte(address + 3, (value >>> 24) & 0xFF);
-        this.writeByte(address + 2, (value >>> 16) & 0xFF);
-        this.writeByte(address + 1, (value >>> 8) & 0xFF);
-
-        this.writeByte(address + 0, (value & 0xFF));
+        mMemory.writeWord(address, value);
 
         if(!mRunning) this.trigger('change:word', address, value);
         if(notify) {
@@ -222,9 +212,32 @@ BSim.Beta = function(mem_size) {
         };
     };
 
-    // This is a RESET exception, rather than actually resetting all state.
     this.reset = function() {
         this.setPC(SUPERVISOR_BIT | VEC_RESET, true);
+        mRegisters = new Int32Array(32);
+        mPendingInterrupts = 0;
+        mCycleCount = 0;
+        mClockCounter = 0;
+        mMemory.reset();
+        this.mMouseCoords = -1;
+        this.mKeyboardInput = null;
+        mTTYContent = '';
+
+        // Tell the world.
+        this.trigger('text:clear');
+        this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
+        var r = _.range(0, mMemory.size(), 4);
+        this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
+    };
+
+    this.ttyOut = function(text) {
+        mCurrentStep.tty = mTTYContent;
+        mTTYContent += text;
+        this.trigger('text:out', text);
+    };
+
+    this.ttyContent = function() {
+        return mTTYContent;
     };
 
     this.inSupervisorMode = function() {
@@ -325,14 +338,17 @@ BSim.Beta = function(mem_size) {
         mCurrentStep = {
             registers: {},
             words: {},
-            pc: mPC
+            pc: mPC,
+            tty: null
         };
 
         mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
         // Continue on with instructions as planned.
         var instruction = this.readWord(mPC);
+        var old_pc = mPC;
         mPC += 4; // Increment this early so that we have the right reference for exceptions.
         if(instruction === 0) {
+            mPC -= 4;
             return false;
         }
         var decoded = this.decodeInstruction(instruction);
@@ -346,17 +362,31 @@ BSim.Beta = function(mem_size) {
             return this.handleIllegalInstruction(decoded);
         }
         if(!mRunning) this.trigger('change:pc', mPC);
-        // console.log(op.disassemble(decoded));
-        var ret = undefined;
-        if(op.has_literal) {
-            ret = op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
-        } else {
-            ret = op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
+        try {
+            var ret = null;
+            if(op.has_literal) {
+                ret = op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
+            } else {
+                ret = op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
+            }
+            if(ret === false) {
+                console.log("call failed");
+                this.setPC(old_pc, true);
+            }
+            mHistory.push(mCurrentStep);
+            if(mHistory.length() > 50) mHistory.shift();
+            return ret;
+        } catch(e) {
+            if(e instanceof BSim.Beta.RuntimeError) {
+                this.trigger('error', e);
+                this.setPC(old_pc, true);
+                return false;
+            } else {
+                throw e;
+            }
         }
 
-        mHistory.push(mCurrentStep);
-        if(mHistory.length() > 50) mHistory.shift();
-        return ret;
+        return false;
     };
 
     this.undoCycle = function() {
@@ -369,6 +399,10 @@ BSim.Beta = function(mem_size) {
             self.writeWord(address, value);
         });
         self.setPC(step.pc, true);
+        if(step.tty) {
+            mTTYContent = step.tty;
+            self.trigger('text:replace', mTTYContent);
+        }
         return true;
     };
 
@@ -385,7 +419,8 @@ BSim.Beta = function(mem_size) {
     this.run = function(quantum) {
         this.trigger('run:start');
         mRunning = true;
-        setTimeout(function run_inner() {
+        _.defer(function run_inner() {
+            var exception = null;
             // Bail out if we're not supposed to run any more.
             if(!mRunning) {
                 self.trigger('run:stop');
@@ -420,7 +455,7 @@ BSim.Beta = function(mem_size) {
 
             // Run again.
             _.defer(run_inner);
-        }, 1);
+        });
     };
 
     this.stop = function() {
@@ -433,8 +468,16 @@ BSim.Beta = function(mem_size) {
 
     // Returns memory size in bytes.
     this.memorySize = function() {
-        return mMemory.length;
+        return mMemory.size();
+    };
+
+    this.getMemory = function() {
+        return mMemory;
     };
 
     return this;
+};
+
+BSim.Beta.RuntimeError = function(message) {
+    this.message = message;
 };

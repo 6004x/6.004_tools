@@ -92,6 +92,7 @@ var Editor = function(container, mode) {
         var cm = document.cm;
         cm.addLineClass(line, 'background', 'cm-error-line');
         cm.addLineWidget(line, create_error_widget(message), {noHScroll: true, handleMouseEvents: true});
+        focusTab(document);
         cm.scrollIntoView({line: line, ch: column});
         var handle = cm.lineInfo(line).handle;
         mMarkedLines.push({filename: filename, handle: handle});
@@ -152,6 +153,11 @@ var Editor = function(container, mode) {
     };
 
     this.openTab = function(filename, content, activate) {
+        // We can't open a file if we already have one at the same path (it wouldn't make sense and breaks things)
+        if(_.has(mOpenDocuments, filename)) {
+            focusTab(mOpenDocuments[filename]);
+            return;
+        }
         var has_location = true;
         // If no filename is given, invent one. We'll need to prompt later.
         if(!filename) {
@@ -172,7 +178,7 @@ var Editor = function(container, mode) {
             generation: cm.changeGeneration() // The generation at last save. We can use this to track cleanliness of document.
         };
 
-        var a = $('<a>', {href: '#' + id}).text(filename).click(function(e) { e.preventDefault(); focusTab(doc); });
+        var a = $('<a>', {href: '#' + id}).text(_.last(filename.split('/'))).click(function(e) { e.preventDefault(); focusTab(doc); });
         tab.append(a);
         // Build us a 'close' button. It uses an X when the document is clean and a circle when dirty, except
         // when hovered over.
@@ -266,7 +272,13 @@ var Editor = function(container, mode) {
     };
 
     var do_save = function() {
-        alert("This would save if there was anywhere useful to save to.");
+        if(!mCurrentDocument) return false;
+        var current_document = mCurrentDocument; // Keep this around so we don't get confused if user changes tab.
+        FileSystem.saveFile(current_document.name, current_document.cm.getValue(), function() {
+            // Mark the file as clean.
+            current_document.generation = current_document.cm.changeGeneration();
+            handle_change_tab_icon(current_document)
+        });
     };
 
     initialise();

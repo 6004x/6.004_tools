@@ -11,6 +11,30 @@
     cursor: pointer;
 }
 
+button.btn {
+    cursor: pointer;
+}
+
+#filetree {
+    display: none;
+    float: left;
+}
+
+.maximised #filetree {
+    display: block;
+    width: 250px;
+}
+
+#editor {
+    width: 100%;
+    float: left;
+}
+
+.maximised #editor {
+    width: -webkit-calc(100% - 250px);
+    width: calc(100% - 260px);
+}
+
 .regfile .register {
     color: gray;
     text-align: right;

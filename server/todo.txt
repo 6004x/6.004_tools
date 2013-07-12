@@ -1,9 +1,15 @@
 to add
 
-save/delete
+delete
+indexedDB?
+algorithm for local storage?
+version control
 
-NEW FILE
-NEW DIRECTORY
+cygwin apache server for authentication
+ca server certificate
+environment variables pass to node
+
+
 	filesystem object
 
 	load(path to file, callback)
@@ -28,14 +34,6 @@ NEW DIRECTORY
 newfile with me
 
 
-localstorage with server storage
-how does code mirror due offline
-rudimentary version control
-
-
-cygwin apache server for authentication
-ca server certificate
-environment variables pass to node
 
 
 roboant

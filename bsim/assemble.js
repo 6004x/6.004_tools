@@ -591,12 +591,28 @@
         this.file = file;
         this.line = line;
     };
+    Protect.prototype.assemble = function(context, out) {
+        if(out) {
+            var last_range = _.last(context.protection);
+            if(!last_range || last_range.end != Infinity) {
+                context.protection.push({start: context.dot, end: Infinity});
+            }
+        }
+    }
 
     // Represents .unprotect
     var Unprotect = function(file, line) {
         this.file = file;
         this.line = line;
     };
+    Unprotect.prototype.assemble = function(context, out) {
+        if(out) {
+            var last_range = _.last(context.protection);
+            if(last_range && last_range.end == Infinity) {
+                last_range.end = context.dot;
+            }
+        }
+    }
 
     // Represents .options
     var Options = function(options, file, line) {
@@ -659,7 +675,41 @@
         if(out) {
             _.extend(context.options, this.options);
         }
-    }
+    };
+
+    var TCheckoff = function(url, name, checksum, file, line) {
+        this.url = url;
+        this.name = name;
+        this.checksum = checksum;
+        this.file = file;
+        this.line = line;
+    };
+    TCheckoff.parse = function(stream) {
+        eatSpace(stream);
+        var url = readString(stream);
+        eatSpace(stream);
+        var name = readString(stream);
+        eatSpace(stream);
+        var checksum = Expression.parse(stream);
+        if(checksum === null) {
+            throw new SyntaxError("Expected tcheckoff checksum.", stream);
+        }
+        return new TCheckoff(url, name, checksum, stream.file(), stream.line_number());
+    };
+    TCheckoff.prototype.assemble = function(context, out) {
+        if(out) {
+            var checksum = this.checksum.evaluate(context, true);
+            if(context.checkoff) {
+                throw new SyntaxError("Multiple checkoffs found! Only one checkoff statement is accepted per program.", this.file, this.line);
+            }
+            context.checkoff = {
+                kind: 'tty',
+                url: this.url,
+                name: this.name,
+                checksum: checksum
+            };
+        }
+    };
 
     // Public Assembler interface. Constructor takes no arguments.
     var Assembler = function() {
@@ -703,8 +753,52 @@
             return macro;
         };
 
+        var parse_file = function(file, content, completion_callback, error_callback) {
+            var stream = new StringStream(new FileStream(content, file));
+            var errors = [];
+            var pending_includes = {};
+            var waiting = 0;
+
+            var insert_include = function(include) {
+                if(!_.has(pending_includes, include.filename)) pending_includes[include.filename] = [];
+                pending_includes[include.filename].push(include);
+                ++waiting;
+                FileSystem.getFile(include.filename, function(include_content) {
+                    parse_file(include_content.name, include_content.data, function(syntax) {
+                        --waiting;
+                        include.instructions = syntax;
+                        if(errors.length === 0 && waiting === 0) {
+                            completion_callback(our_syntax);
+                        }
+                    }, error_callback);
+                }, function() {
+                    error_callback([new SyntaxError("File not found: " + include.filename, include.file, include.line)]);
+                });
+            }
+
+            do {
+                try {
+                    var our_syntax = parse(stream, false, insert_include);
+                } catch(e) {
+                    if(e instanceof SyntaxError) {
+                        errors.push(e);
+                    } else {
+                        throw e;
+                    }
+                }
+            } while(stream.next_line());
+
+            if(errors.length > 0) {
+                error_callback(errors);
+            } else {
+                if(waiting === 0) {
+                    completion_callback(our_syntax);
+                }
+            }
+        }
+
         // Parses a file (or a macro, if is_macro is true)
-        var parse = function(stream, is_macro) {
+        var parse = function(stream, is_macro, include_callback) {
             var fileContent = [];
             var allow_multiple_lines = !is_macro; // Macros are single-line by default
             // Helpful bits of state
@@ -768,9 +862,10 @@
                             switch(command) {
                             case "include":
                                 var include = Include.parse(stream);
-                                if(!_.contains(mPendingIncludes, include.filename)) {
-                                    mPendingIncludes.push(include.filename);
+                                if(!include_callback) {
+                                    throw new SyntaxError(".include statement in illegal context.", stream);
                                 }
+                                include_callback(include);
                                 fileContent.push(include);
                                 break;
                             case "macro":
@@ -789,6 +884,15 @@
                                 break;
                             case "options":
                                 fileContent.push(Options.parse(stream));
+                                break;
+                            case "protect":
+                                fileContent.push(new Protect(stream.file(), stream.line_number()));
+                                break;
+                            case "unprotect":
+                                fileContent.push(new Unprotect(stream.file(), stream.line_number()));
+                                break;
+                            case "tcheckoff":
+                                fileContent.push(TCheckoff.parse(stream));
                                 break;
                             default:
                                 stream.skipToEnd();
@@ -864,7 +968,9 @@
                 // Things to be passed out to the driver.
                 breakpoints: [],
                 labels: {},
-                options: {}
+                options: {},
+                protection: [],
+                checkoff: null
             };
             // First pass: figure out where everything goes.
              _.each(syntax, function(item) {
@@ -882,7 +988,9 @@
                 image: memory,
                 breakpoints: context.breakpoints,
                 labels: context.labels,
-                options: context.options
+                options: context.options,
+                protection: context.protection,
+                checkoff: context.checkoff
             };
         };
 
@@ -894,20 +1002,9 @@
         this.assemble = function(file, content, callback) {
             var stream = new StringStream(new FileStream(content, file));
             var errors = [];
-            do {
-                try {
-                    var syntax = parse(stream);
-                } catch(e) {
-                    if(e instanceof SyntaxError) {
-                        errors.push(e);
-                    } else {
-                        throw e;
-                    }
-                }
-            } while(stream.next_line());
-            if(errors.length) {
-                callback(false, errors);
-            } else {
+            var can_succeed = true;
+
+            parse_file(file, content, function(syntax) {
                 try {
                     var code = run_assembly(syntax);
                 } catch(e) {
@@ -922,7 +1019,9 @@
                 } else {
                     callback(true, code);
                 }
-            }
+            }, function(errors) {
+                callback(false, errors);
+            });
         };
     };
 
