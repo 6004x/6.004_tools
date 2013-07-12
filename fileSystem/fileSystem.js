@@ -5,6 +5,7 @@ var FileSystem= function(){
 
     var openFiles=[];
     var allFiles=[];
+    var allFolders=[];
     var fileTree={};
 
     var updated=true;
@@ -50,7 +51,12 @@ var FileSystem= function(){
                         
                         console.log('callback in filesys')
                         fileTree=data;
+                        allFiles=[];
+                        allFolders=[];
                         makeListOfFiles(fileTree,'');
+
+                        console.log(allFolders);
+                        console.log(allFiles);
                         writeTreeToLocalStorage();
                         updated=true;
                         online=true;
@@ -70,11 +76,15 @@ var FileSystem= function(){
         for(key in currTree){
             if(isFile(key, currTree[key]))
                 allFiles.push(path+'/'+key);
-            else
+            else{
+                allFolders.push(path+'/'+key);
                 makeListOfFiles(currTree[key], path+'/'+key);
+            }
         }
     }
     function isFile(name, contents){
+
+        //todo:make this better
         if(name.indexOf('.')>0)
             return true;
         return false;
@@ -100,7 +110,6 @@ var FileSystem= function(){
     function readTreeFromLocalStorage(){
         //todo make it asynchronous
         var x= JSON.parse(localStorage.getItem('6004data'));
-        console.log(x);
         return x;
     }
     function writeLocalStorageToServer(){
@@ -179,6 +188,10 @@ var FileSystem= function(){
         sendAjaxRequest(folderName,null,'json', 'newFolder', callback, callbackFailed);
         updated=false;
     }   
+    function deleteFile(fileName, callback, callbackFailed){
+        sendAjaxRequest(fileName,null,'json', 'deleteFile', callback, callbackFailed);
+        updated=false;
+    }
 
     function sendAjaxRequest(filePath, fileData, dataType, query, callbackFunction, failFunction){
         failFunction=failFunction||failResponse;
@@ -188,10 +201,7 @@ var FileSystem= function(){
 
 
         url=mServer+filePath;
-        console.log(url);
-        console.log(filePath);
         var data={dummy:'dummy', username:mUsername, query:query, fname:filePath, fdata:fileData}
-        console.log(data);
         var req=$.ajax({
                 type:"POST",
                 url:url, 
@@ -200,6 +210,7 @@ var FileSystem= function(){
             });
         req.done(function(data, status){
             //check if status is successful
+            updated=true;
                 callbackFunction(data, status);
         });
         req.fail(failFunction);
@@ -216,12 +227,17 @@ var FileSystem= function(){
     exports.saveFile=saveFile;
     exports.newFile=newFile;
     exports.newFolder=newFolder;
+    exports.deleteFile =deleteFile;
 
     exports.getServerName=function(){return mServer;};
     exports.getUserName=function(){return mUsername;};
     exports.isFile=function(fileName){
         console.log(fileName+' check if in allfiles');
         return _.contains(allFiles, fileName)
+    }
+    exports.isFolder=function(folderName){
+        console.log(folderName+' check if in allFolders');
+        return _.contains(allFolders, folderName)
     }
     function setup(username, server){
 

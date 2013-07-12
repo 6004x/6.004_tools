@@ -14,8 +14,8 @@ var Folders=new function(){
         parentNode.html('');
         //clears out the old filelist
         var username=FileSystem.getUserName();
-        //fileSYstem keeps track of the username
-
+        //FileSystem keeps track of the username
+        $('.testDiv').val(FileSystem.getUserName());
 
         //fetch the filelist from server, then add the files to the filesystem.
         FileSystem.getFileList(
@@ -35,18 +35,26 @@ var Folders=new function(){
                
                 //TODO: find a way to make this different
                 if(name.indexOf('.')>-1){
-                    var listVar=$('<li></li>').attr('data-path', parentPath+name).append($('<a href=#>'+name+'</a>').attr('data-path', parentPath+'/'+name));
-                    var delButton=$('<span>').addClass('btn btn-link del_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-minus>');
-                    delButton.attr({
-                                'data-toggle':"tooltip", 
-                                'title':"delete "+name,
-                                'data-trigger':'hover',
-                                'data-container':'body',
-                                });
-                    listVar.append(delButton)
+                    var listVar=$('<li></li>').attr('data-path', parentPath+name).append($('<a href=#>'+name+'</a>').attr('data-path', parentPath+name));
+                    var delButton=$('<span>Delete '+name+'</span>').addClass('btn btn-link del_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-trash>');
+                    var delDrop=addDiv('dropdown pull-right');
+                    delDrop.append($('<a class="btn dropdown-toggle" data-toggle="dropdown" href="#"><span class="caret"></span></a>').css('padding', '0px 5px 0px 3px').css('height', '16px'));
+                    var delDropUL=$('<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel"></ul>').css('z-index', 20);
+                    
+
+                    // delButton.attr({
+                    //             'data-toggle':"tooltip", 
+                    //             'title':"delete "+name,
+                    //             'data-trigger':'hover',
+                    //             'data-container':'body',
+                    //             });
+                    delDropUL.append(delButton);
+                    delDrop.append(delDropUL);
+                    listVar.append(delDrop)
                     listVar.on('click', function(e){
 
                         var node=$(e.currentTarget);
+                        console.log(node);
                         // console.log(node.attr('data-path'));
                         // var fileName=unescape(node.text());
                         // var folderName=unescape(node.attr('data-path'));
@@ -56,10 +64,12 @@ var Folders=new function(){
                         getFile(node.attr('data-path'));
                     });
                     delButton.on('click', function(e){
+                        e.stopPropagation();
                         console.log('del button');
                         var current_path=$(e.currentTarget).parent().attr('data-path');
-                            deleteFile(current_path);
-                            e.stopPropagation();
+                        console.log(current_path);
+                        deleteFile(current_path);
+                            
                     });
                     parentNode.append(listVar);
                 }
@@ -67,7 +77,7 @@ var Folders=new function(){
                     //it is a folder, we must go deeper
 
                         var folderName=name;
-                        var collapserDiv=addDiv().addClass('folderContents');
+                        var collapserDiv=addDiv('folderContents');
                         var collapser=$('<li class=folderName data-toggle=collapse href=#'+collapseName+'></li>').attr('data-path', parentPath+folderName+'/');
                         collapserDiv.append(collapser);
 
@@ -156,11 +166,19 @@ var Folders=new function(){
         openFiles.push({name:file.name, data:file.data});
     }
     function displaySave(file){
-        var alert=addDiv().addClass('alert alert-success');
-        alert.append($('<button type="button" class="close" data-dismiss="alert" href=#>&times;</button>'
-            +'<div><strong>Saved!</strong> '+file.name+' has been saved successfully</div>'));
-        rootNode.prepend(alert);
+        cornerAlert('Saved', file.name+' has been saved successfully', 'success');
+    }
 
+    function cornerAlert(title, description, type){
+        var cornerAlert=addDiv('alert alert-'+type).css({
+            'position':'absolute',
+            'width':rootNode.width()-40,
+        });
+        cornerAlert.append($('<button type="button" class="close" data-dismiss="alert" href=#>&times;</button>'
+            +'<div><strong>'+title+'!</strong><br/> '+description+'</div>'));
+
+        rootNode.prepend(cornerAlert);
+        cornerAlert.fadeOut(5000, function(){cornerAlert.detach();});
     }
 
 //current tab is file name
@@ -176,58 +194,111 @@ var Folders=new function(){
     }
 
    
-    function addModals(){
+    function addModal(id, header, message, confirm, cancel, confirmFunction){
+        cancel=cancel||'Cancel';
+        confirm=confirm||'Ok';
+        var modal=addDiv('modal hide fade').attr({'id': id,});
+        var headerDiv=addDiv('modal-header');
+        headerDiv.append('<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>');
+        headerDiv.append('<h3>'+header+'</h3>');
+        var bodyDiv=addDiv('modal-body').append(message);
+        var footerDiv=addDiv('modal-footer');
+        var buttonDismiss=$('<button>').addClass('btn btn-alert').attr({    
+            'data-dismiss':"modal",
+            'aria-hidden':true,
+        }).append(cancel);
+        var buttonConfirm=$('<button>').addClass('btn btn-primary').append(confirm);
 
+        footerDiv.append(buttonDismiss, buttonConfirm);
+
+        modal.append(headerDiv, bodyDiv, footerDiv);
+        rootNode.append(modal);
+
+        buttonConfirm.on('click', function(e){
+            console.log(e);
+            var modal=$(e.currentTarget).parents('.modal');
+            confirmFunction(modal);
+        })
+        return modal;
     }
-    function newFolder(){
+    function newFolder(file_path){
         var isValid=false;
         var regexp=/(<|>|\:|\"|\||\/|\\|\?|\*|\.)/g
         var prompt='What is the name of the new folder you wish to make?';
         var prompt2=' ';
-        while(!isValid){
-            var folderName=window.prompt(prompt+prompt2);
+        var innerDiv=addDiv('inner-modal');
+        innerDiv.append('<p class=firstP>'+prompt+'</p>');
+        innerDiv.append('<div class="input-prepend"><span class="add-on">'+FileSystem.getUserName()+file_path+'</span><input class='
+            +'span2" type="text" placeholder="Type Folder Name Here"></div>');
+
+        addModal('newFolder', 'New Folder', innerDiv, 'Create New Folder',null,function(modal){
+            var folderName=modal.find('input').val();
+            var folderPath=folderName;
             if(folderName==null){
                 console.log('user canceled');
-                isValid=true;
+                isValid=false;
+                modal.modal('hide');
+                modal.detach();
                 return;
             }
-            if(isValidName(regexp, folderName)){
+            if(!isValidName(regexp, folderName)){
                 prompt2='\n'+folderName+' is invalid'+'\n Names cannot contain \\,\/,:,",<,>,,|,?,*';
                 isValid=false;
-            }else{
-                isValid=true;
+                return;
             }
-        }
-        if(folderName!=null)
-            FileSystem.newFolder('/'+folderName, refreshFileList)
-        else
-            console.log('null foldername, do nothing');
+            folderPath=file_path+folderName;
+            
+
+            if (FileSystem.isFolder(folderPath)){
+                prompt2=folderPath+' is already a folder, please choose another name';
+                modal.find('p').append('<br/>'+prompt2);
+                return;
+            }
+            if(folderName!=null){
+                FileSystem.newFolder(folderPath, function(){
+                    refreshFileList()
+                    modal.modal('hide');
+                    modal.detach();
+                });
+            }
+            else    
+                console.log('null foldername, do nothing');
+        }).modal('show');
     }
 
     function isValidName(regexp, name){
-
-        return name.length>0&&!regexp.test(name);
+        var regMatch=name.match(regexp);
+        return name.length > 0 && ! regMatch;
     }
     function newFile(file_path){
-        var regexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~)/g
+        var innerDiv=addDiv('inner-modal');
+
+        var regexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~)/g;
         var prompt='What is the name of the new file you wish to make';
         var isValid=false;
-        
+        innerDiv.append('<p class=firstP>'+prompt+'</p>');
+        innerDiv.append('<div class="input-prepend"><span class="add-on">'+FileSystem.getUserName()+file_path+'</span><input class='
+            +'span2" type="text" placeholder="Type File Name Here"></div>');
         var fileName='';
         var newFileName='';
         var prompt2='';
-        while(!isValid){
-            fileName=window.prompt(prompt+prompt2);
+        addModal('newFile', 'New File', innerDiv, 'Create New File',null,function(modal){
+            fileName=modal.find('input').val();
+            console.log(fileName+ ' obtained from modal')
+
             if(fileName==null){
                 console.log('user canceled');
-                isValid=true;
+                isValid=false;
+                modal.modal('hide');
+                modal.detach();
                 return;
             }
             
             if(!isValidName(regexp, fileName)){
-                prompt2='\n'+fileName+' is invalid'+'\n Names cannot contain \\, \/ , : , " , < , > , | , ? , * , or ~';
+                prompt2='Invalid Name.<br/> Names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~';
                 isValid=false;
-                continue;
+                modal.find('p').append('<br/>'+prompt2);
+                return;
             }
 
             if(fileName.indexOf('.')<0)
@@ -238,28 +309,43 @@ var Folders=new function(){
 
             if (FileSystem.isFile(newFileName)){
                 prompt2='\n'+fileName+'.'+editMode+' is already a file, please choose another name';
-                isValid=false;
+                modal.find('p').append('<br/>'+prompt2);
+                return;
             }
-            else{
-                isValid=true;
-            }
-        }
-        var new_file={
-            name:newFileName,
-            data:'',
-        }
-        if(fileName!=null)
-            FileSystem.newFile(new_file.name, new_file.data, function(data){
-                console.log(data.status + 'new file');
-                displayFile(data);
-                refreshFileList();
-            });
-        else
-            console.log('null filename, abort');
 
+            var new_file={
+                name:newFileName,
+                data:'',
+            }
+            if(fileName!=null)
+                FileSystem.newFile(new_file.name, new_file.data, function(data){
+                    console.log(data.status + 'new file');
+                    displayFile(data);
+                    refreshFileList();
+                    modal.modal('hide');
+                    modal.detach();
+                });
+            else{
+                console.log('null filename, abort');
+
+            }
+        }).modal('show');
+        
     }
     function deleteFile(path){
         console.log(path);
+        var confirm=window.confirm('are you sure you want to delete '+path+'?');
+        if(confirm){
+            FileSystem.deleteFile(path, function(data){
+
+                refreshFileList();
+                showDelete(data);
+            });
+        }
+    }
+    function showDelete(data){
+        cornerAlert('Deleted', data.name+' has been deleted from your directory','error' );
+
     }
     function commit(){
     }
@@ -267,19 +353,14 @@ var Folders=new function(){
         rootNode=$(root);
         editor=editorN;
         editMode=mode;
-        //editorWrapper=addDiv().addClass('span10 folderStruct');
-        var buttonDiv=addDiv().addClass('btn-group group1 buttonDiv');
+        //editorWrapper=addDiv('span10 folderStruct');
+        var buttonDiv=addDiv('btn-group group1 buttonDiv');
         addButtons(buttonDiv);
 
-        sideBarNav=addDiv().addClass('sidebar-nav');
+        sideBarNav=addDiv('sidebar-nav');
         var filePaths=$('<ul></ul>').addClass('nav nav-list nav-stacked filePaths');
         
         sideBarNav.append(filePaths);
-
-
-        
-        //var rowOne=addDiv().addClass('row').append(sideBarWrapper).append(editorWrapper);
-        //wrapper.append(rowOne);
 
         var tempName=$("<div class='header buttonDiv'><h1 class='testDiv'>testing</h1>"
             +"<button class='btn btn-info' id='user_button'>get filelist</button></div>");
@@ -289,6 +370,7 @@ var Folders=new function(){
         rootNode.append(sideBarNav);
 
 
+
         $('#user_button').on('click', function(e){
                 rootNode.find('.filePaths').html('');
                 refreshFileList();
@@ -296,8 +378,10 @@ var Folders=new function(){
 
         $('.btn').tooltip({'placement': 'bottom'});
     }
-    function addDiv(){
-        return $('<div></div>');
+    function addDiv(classes){
+        if(!classes)
+            classes='';
+        return $('<div></div>').addClass(classes);
     }
     function addButtons(buttonDiv){   
         var hideButton=$('<button></button>').addClass('btn hideNavBar').attr({
@@ -345,7 +429,8 @@ var Folders=new function(){
             hideNavBar();
         });
         newFolderButton.on('click', function(e){
-            newFolder();
+            
+            newFolder('/');
         });
 
         //now adding editor buttons
