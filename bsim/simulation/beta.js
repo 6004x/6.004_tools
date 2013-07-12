@@ -25,7 +25,7 @@ BSim.Beta = function(mem_size) {
     var mLastWrites = [];
 
     // Used for 'step back'
-    var mHistory = new Queue();
+    var mHistory = new Dequeue();
     var mCurrentStep = {};
 
     // Information not strictly related to running the Beta, but needed in BSim
@@ -354,14 +354,14 @@ BSim.Beta = function(mem_size) {
             ret = op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
         }
 
-        mHistory.enqueue(mCurrentStep);
-        if(mHistory.getLength() > 20) mHistory.dequeue();
+        mHistory.push(mCurrentStep);
+        if(mHistory.length() > 50) mHistory.shift();
         return ret;
     };
 
     this.undoCycle = function() {
         if(!mHistory.length) return false;
-        var step = mHistory.popBack();
+        var step = mHistory.pop();
         _.each(step.registers, function(value, register) {
             self.writeRegister(register, value);
         });
@@ -373,7 +373,7 @@ BSim.Beta = function(mem_size) {
     };
 
     this.undoLength = function() {
-        return mHistory.getLength();
+        return mHistory.length();
     }
 
     // Runs the program to completion (if it terminates) or until stopped using
