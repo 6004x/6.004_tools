@@ -56,7 +56,7 @@ $(function() {
                         beta.setVerifier(verifier);
                     }
                 }
-                $('#split_pane').click();
+                $('#maximise_simulation').click();
             }
         });
     }
