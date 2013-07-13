@@ -158,7 +158,7 @@
                     var token = read_symbol(stream, state);
                     ++state.arg_count;
                     if(!token) return 'error';
-                    console.log(token);
+                    //console.log(token);
                     switch(state.arg_count) {
                     case 1:
                         if(has(state.states, token)) return 'variable-2';

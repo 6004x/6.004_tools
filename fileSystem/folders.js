@@ -436,13 +436,27 @@ var Folders=new function(){
         });
 
         //now adding editor buttons
-        editor.addButtonGroup([new ToolbarButton('Save', saveCurrentFile, 'Saves the current File')]);
+        editor.addButtonGroup([new ToolbarButton('Save', saveCurrentFile, 'Saves the current File'),new ToolbarButton('show folders',showNavBar, '')]);
+        editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')])
 
-        editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
 
 
     }
+    function tmsimAssemble(){
+        var file=new Object();
+        file.name=editor.currentTab();
+        file.data=editor.content();
+        if(file.name){
+            var parsedDict = TMSIM.parse(file.data);
+            editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
 
+            var parsedTSM = TMSIM.developMachine(parsedDict);
+            editor.openTab(file.name+'tsmed', JSON.stringify(parsedTSM), true);
+
+            var tsm = new TSM().setup(parsedTSM);
+            tsm.start();
+        }
+    }
     function hideNavBar(){
         rootNode.css('display', 'none');
     }
