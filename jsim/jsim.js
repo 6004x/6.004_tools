@@ -41,11 +41,15 @@ $(function() {
     })]);
     // And a couple of tabs.
     editor.openTab('foo.jsim', '// Transient analysis test\n'+
+'.global gnd\n'+
+'.subckt transtest n1 n2\n'+
 'V1 n1 gnd step(1,0,1u)\n'+
 'R1 n1 n2 1k\n'+
 'C1 n2 gnd 1n\n'+
+'.ends\n'+
+'Xtest a b transtest\n'+
 '.tran 5u\n'+
-'.plot n1 n2\n');
+'.plot a b\n');
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
     }

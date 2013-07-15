@@ -1332,7 +1332,7 @@ Flattening
                 // recursive call
                 new_obj.connections = local_connections.slice(0);
                 new_obj.ports = dev_obj.ports.slice(0);
-                console.log("new object:",new_obj);
+//                console.log("new object:",new_obj);
                 netlist_instance(new_obj.properties.name, new_obj,
                                  JSON_netlist);                  
             }
