@@ -135,7 +135,7 @@ var BigTable = function(container, width, height, row_height, column_count) {
     };
 
     var initialise = function() {
-        mScroller = $('<div>').css({width: mWidth, height: mHeight, position: 'absolute', top: 0, left: 0, overflow: 'scroll'});
+        mScroller = $('<div>').css({width: mWidth, height: mHeight, position: 'absolute', top: 0, left: 0, 'overflow-y': 'scroll'});
         mContent = $('<table>').css({width: mWidth, height: mHeight, position: 'absolute', top: 0, left: 0});
         mScrollContent = $('<div>');
 
