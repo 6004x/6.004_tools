@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JSim</title>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script src="../editor/external/codemirror.js"></script>
+        <script src="../editor/editor.js"></script>
+        <script src="../editor/external/codemirror-extensions.js"></script>
+        <script src="../editor/modes/jsim.js"></script>
+        <script src="../bsim/external/sstream.js"></script>
+        <script src="../bsim/split_ui.js"></script>
+        
+        <script src="../parser/parser.js"></script>
+        <script src="../cktsim/cktsim.js"></script>
+        
+        <script src="../../cktsim/flot-master/jquery.flot.js"></script>
+        <script src="../../cktsim/flot-master/jquery.flot.axislabels.js"></script>
+        <script src="../../cktsim/flot-master/jquery.flot.navigate.js"></script>
+        <script src="../../cktsim/flot-master/jquery.flot.crosshair.js"></script>
+        <script src="../../cktsim/flot-master/jquery.flot.selection.js"></script>
+        <script src="../../cktsim/flot-master/jquery.flot.resize.js"></script>
+        
+<!--        <script src="../cktsim/flot-test.js"></script>-->
+        <script src="simulator.js"></script>
+        
+        <script src="jsim.js"></script>
+        
+        <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
+        <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+<!--        <link rel="stylesheet" type="text/css" href="bsim.css">-->
+    </head>
+    <body>
+        <div class="container-fluid">
+            <div class="masthead">
+                <ul class="pull-right nav nav-pills">
+                    <li class="active" id="maximise_editor"><a>Editor</a></li>
+                    <li id="split_pane"><a>Split</a></li>
+                    <li id="maximise_simulation"><a>Simulation</a></li>
+                </ul>
+                <h1>JSim</h1>
+            </div>
+            <div id="split-container">
+                <div id="editor-pane">
+                    <div id="editor"></div>
+                </div>
+                <div id="simulation-pane">
+                    <div class="plot-holder"></div>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript">
+        </script>
+    </body>
+</html>
