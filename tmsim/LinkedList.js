@@ -6,46 +6,31 @@ function LinkedList(){
 	var size=0;
 
 	//attaches a node with data as the last pointer of the LL
-	this.append=function(data){
-
-		if(first==null){
-			first=new llnode(data);
-			last=first;
-			first.next=last.next=null;
-			first.prev=last.prev=null;
-		}
-		else{
-			var temp= new llnode(data);
-			last.next=temp;
-			last.next.prev=last;
-			last=last.next;
-			last.next=null;
-		}
-		size++;
-		return self;
-	}
-
+	
 	this.init=function(list){
 		if(list){
 			makeList(list);
 		}
-		else{
+		else if (!first) {
+		//initialise by adding the first blank node
 			this.append('-');
+			self.printLL();
 		}
-
-			current=null;
-			this.traverse();
+		//reset the current node
+		current=first;
 	}
 	function makeList(list){
 		for (var i = 0; i < list.length; i++){
 			self.append(list[i]);
 		}
+		self.printLL();
+		console.log('initiated list');
 	}
-	this.traverse =function(new_data, direction){
+	this.traverse =function(write, direction){
 		if(current){
 			// console.log(direction);
 			// console.log('current');
-			current.data=new_data;
+			current.data=write;
 			if(direction === 'l'){
 				//move tape left so we must move to next
 				current=current.next;
@@ -87,12 +72,14 @@ function LinkedList(){
 	this.prepend=function(data){
 
 		if(first==null){
+			//list is empty, so we make this node the first and last node
 			first=new llnode(data);
 			last=first;
 			first.next=last.next=null;
 			first.prev=last.prev=null;
 		}
 		else{
+			//attach temp node to the first node and make it the first node
 			var temp = new llnode(data);
 			temp.next=first;
 			first.prev=temp;
@@ -102,10 +89,29 @@ function LinkedList(){
 		size++;
 		return self;
 	}
+	this.append=function(data){
 
+		if(first==null){
+		//list is empty, so we make this node the first and last node
+			first=new llnode(data);
+			last=first;
+			first.next=last.next=null;
+			first.prev=last.prev=null;
+		}
+		else{
+			//attach temp node to be the last node
+			var temp= new llnode(data);
+			last.next=temp;
+			temp.prev=last;
+			last=temp;
+			last.next=null;
+		}
+		size++;
+		return self;
+	}
 	//finds first instance of this data and removes it
 	this.remove=function(data){
-		if(size==0)
+		if(size == 0)
 			return self;
 		else{
 			var tempNode=first;
@@ -138,6 +144,7 @@ function LinkedList(){
 			console.log(data+' not found');
 			return self;
 		}
+		//should not get here
 		console.log('error')
 		return self;
 	}

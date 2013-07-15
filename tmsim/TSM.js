@@ -42,7 +42,7 @@ function TSM(){
 		var old_state=new_state;
 		var tapeRead=tapeList.peek();
 		var state_transition=old_state.transition[tapeRead];
-		// console.log(state_transition.new_state);
+		// console.log(new_state);
 		if(state_transition.new_state === '*halt*'){
 			valid=false;
 			tapeList.printLL();
@@ -66,6 +66,5 @@ function TSM(){
 
 var Tape=function(){
 	var tapeList=LinkedList().append('-');
-
 }
 

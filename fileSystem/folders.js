@@ -448,13 +448,14 @@ var Folders=new function(){
         file.data=editor.content();
         if(file.name){
             var parsedDict = TMSIM.parse(file.data);
-            editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
+            //editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
 
             var parsedTSM = TMSIM.developMachine(parsedDict);
             editor.openTab(file.name+'tsmed', JSON.stringify(parsedTSM), true);
-
-            var tsm = new TSM().setup(parsedTSM);
-            tsm.start();
+            if(parsedTSM)
+            {   var tsm = new TSM().setup(parsedTSM);
+                tsm.start();
+            }
         }
     }
     function hideNavBar(){
