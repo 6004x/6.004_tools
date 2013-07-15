@@ -121,10 +121,6 @@ Graph setup functions
         zoom_pan_setup(div,plotObj);
         hover_setup(div,plotObj);
         selection_setup(div,plotObj);  
-        
-//        div.on("split", function(){console.log("ui split");});
-//        div.on("maxLeft",function(){console.log("maxed left");});
-//        div.on("maxRight",function(){console.log("maxed right");});
     }
     
     /*******************
@@ -166,6 +162,7 @@ Graph setup functions
         plotObj.getPlaceholder().on("mousewheel",function(evt){
             evt.preventDefault();
 //            console.log("delta:",evt.originalEvent);
+            plotObj.clearSelection();
             plotObj.pan({left:-1*evt.originalEvent.wheelDeltaX});
         });
 //        plotObj.getPlaceholder().on("click",function(){ console.log("click");});
@@ -187,13 +184,13 @@ Graph setup functions
         plotObj.getPlaceholder().append(posTextDiv);
         
         var updateMouseTimeout;
-            var latestPos;
-            plotObj.getPlaceholder().on("plothover", function(event,pos,item){
-                latestPos = pos;
-                if (!updateMouseTimeout){
-                    updateMouseTimeout = setTimeout(showMousePos, 50);
-                }
-            });
+        var latestPos;
+        plotObj.getPlaceholder().on("plothover", function(event,pos,item){
+            latestPos = pos;
+            if (!updateMouseTimeout){
+                updateMouseTimeout = setTimeout(showMousePos, 50);
+            }
+        });
         
         /*******************
         showMousePos: called when a hover event is received and updates displayed values
@@ -209,23 +206,24 @@ Graph setup functions
                 pos.y < axes.yaxis.min || pos.y > axes.yaxis.max) {
                 posTextDiv.hide();
                 return;
-            }
+            }  
     
             var i, j;
             var dataset = plotObj.getData();
             for (i = 0; i < dataset.length; i += 1) {
                 var series = dataset[i];
+                
+                posTextDiv.find('.xpos').text("X = "+suffix_formatter(pos.x)+series.xUnits);
     
                 var y = interpolate(series,pos.x);
                 
-                posTextDiv.find('.xpos').text("X = "+suffix_formatter(pos.x));
+                var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
                 if (innerPosTextDivs["series"+i]===undefined){
-                    var span = $("<div>"+series.label+" = "+
-                                                 suffix_formatter(y)+"</div>")
-                    innerPosTextDivs["series"+i] = span;
+                    var innerDiv = $("<div>"+divText+"</div>");
+                    innerPosTextDivs["series"+i] = innerDiv;
                     posTextDiv.append(innerPosTextDivs["series"+i]);
                 } else {
-                    innerPosTextDivs["series"+i].text(series.label+" = "+suffix_formatter(y));
+                    innerPosTextDivs["series"+i].text(divText);
                 }
             }
             posTextDiv.show();
@@ -243,7 +241,6 @@ Graph setup functions
         rangeTextDiv.css("bottom",plotObj.getPlotOffset().bottom + 30);
         rangeTextDiv.css("left",plotObj.getPlotOffset().left + 5);
         rangeTextDiv.hide();
-        
         
         var updateSelTimeout;
         var selRanges;
@@ -268,25 +265,28 @@ Graph setup functions
             
             if (ranges === null){ return; }
             
+            var xUnits = plotObj.getAxes().xaxis.units;
+            
             var xrange = ranges.xaxis.to - ranges.xaxis.from;
-            rangeTextDiv.find('.xrange').text("X range = "+suffix_formatter(xrange));
             
             var dataset = plotObj.getData();
             for (i = 0; i < dataset.length; i += 1) {
                 var series = dataset[i];
+                
+                rangeTextDiv.find('.xrange').text("X range = "+suffix_formatter(xrange)+
+                                              series.xUnits);
     
                 var y1 = interpolate(series, ranges.xaxis.from);
                 var y2 = interpolate(series, ranges.xaxis.to);
                 var yrange = y2-y1;
                 
+                var divText = series.label+" range = "+suffix_formatter(yrange)+series.yUnits;
                 if (innerRangeTextDivs["series"+i]===undefined){
-                    var span = $("<div>"+series.label+" range = "+
-                                                 suffix_formatter(yrange)+"</div>")
-                    innerRangeTextDivs["series"+i] = span;
+                    var innerDiv = $("<div>"+divText+"</div>");
+                    innerRangeTextDivs["series"+i] = innerDiv;
                     rangeTextDiv.append(innerRangeTextDivs["series"+i]);
                 } else {
-                    innerRangeTextDivs["series"+i].text(series.label+" range = "+
-                                                  suffix_formatter(yrange));
+                    innerRangeTextDivs["series"+i].text(divText);
                 }
             }
             rangeTextDiv.show();
@@ -380,7 +380,9 @@ Graphing functions
                 // add a series object to 'dataseries'
                 dataseries.push({
                     label: current ? node : "Node " + node,
-                    data: plot
+                    data: plot,
+                    xUnits: 's',
+                    yUnits: current ? 'A' : 'V'
                 });
             }
 
@@ -392,7 +394,7 @@ Graphing functions
             div.append(plotdiv);
             
             // customize options
-            var options = $.extend(true,{},default_options)
+            var options = $.extend(true,{},default_options);
             options.yaxis.axisLabel = current ? 'Amps (A)' : 'Volts (V)';
             options.xaxis.axisLabel = 'Time (s)';
             options.xaxis.zoomRange = [null, (xmax-xmin)];
@@ -444,11 +446,15 @@ Graphing functions
                 // push both series objects into their respective lists
                 mplots.push({
                     label: "Node " + node,
-                    data: mplot
+                    data: mplot,
+                    xUnits: 'Hz',
+                    yUnits: 'dB'
                 });
                 pplots.push({
                     label: "Node " + node,
-                    data: pplot
+                    data: pplot,
+                    xUnits: 'Hz',
+                    yUnits: 'deg'
                 });
             }
             
@@ -464,7 +470,7 @@ Graphing functions
             div1.append(plotDiv);
             
             // customize options for magnitude graph
-            var options = $.extend(true, {}, default_options)
+            var options = $.extend(true, {}, default_options);
             options.yaxis.axisLabel = 'Magnitude (dB)';
             options.xaxis.axisLabel = 'Frequency (log Hz)';
             options.xaxis.zoomRange = [null,(xmax-xmin)];

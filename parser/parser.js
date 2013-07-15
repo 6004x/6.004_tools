@@ -256,7 +256,7 @@ iterator interpreter: interprets and expands an iterator
         var j = parseInt(param_array[1]);
         var k;
         var reverse = false;
-        if (param_array.length>2){ 
+        if (param_array.length > 2){ 
             k = parseInt(param_array[2]); 
             if (i > j) { k *= -1; }
             if (k === 0){
