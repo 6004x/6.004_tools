@@ -20,7 +20,6 @@ BSim.Controls = function(container, beta) {
     };
 
     var handle_fast_run = function() {
-        // Safari is too 
         mBeta.run(25000); // Subject to tweaking. Very large values may cause UI sluggishness on slow browsers.
     };
 
