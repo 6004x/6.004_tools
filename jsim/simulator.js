@@ -200,6 +200,9 @@ Graph setup functions
             pos = latestPos;
             
 //            console.log("offset:",plotObj.getPlotOffset());
+            var divWidth = plotObj.width() - 
+                plotObj.getPlaceholder().find('.legend div').width() - 20;
+            posTextDiv.css("max-width",divWidth);
             
             var axes = plotObj.getAxes();
             if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max ||
@@ -235,6 +238,7 @@ Graph setup functions
     *************************/
     function selection_setup(div,plotObj){
         var rangeTextDiv = $("<div class='posText'><div class='xrange'></div></div>");
+        
         var innerRangeTextDivs = {};
         div.append(rangeTextDiv);
         
@@ -265,9 +269,11 @@ Graph setup functions
             
             if (ranges === null){ return; }
             
-            var xUnits = plotObj.getAxes().xaxis.units;
-            
             var xrange = ranges.xaxis.to - ranges.xaxis.from;
+            
+            var divWidth = plotObj.width() - 
+                plotObj.getPlaceholder().find('.legend div').width() - 20;
+            rangeTextDiv.css("max-width",divWidth);
             
             var dataset = plotObj.getData();
             for (i = 0; i < dataset.length; i += 1) {
@@ -390,7 +396,7 @@ Graphing functions
             var xmax = results._time_[plot.length-1];
             
             // prepare a div
-            var plotdiv = $('<div class="placeholder" style="width:600px;height:300px"></div>');
+            var plotdiv = $('<div class="placeholder" style="width:90%;height:300px"></div>');
             div.append(plotdiv);
             
             // customize options

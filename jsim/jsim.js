@@ -48,8 +48,10 @@ $(function() {
 'C1 n2 gnd 1n\n'+
 '.ends\n'+
 'Xtest a b transtest\n'+
+'X2 c d transtest\n'+
+'X3 e f transtest\n'+
 '.tran 5u\n'+
-'.plot a b\n');
+'.plot a b c d e f\n');
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
     }
