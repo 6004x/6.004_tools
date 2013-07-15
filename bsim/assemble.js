@@ -677,14 +677,14 @@
         }
     };
 
-    var TCheckoff = function(url, name, checksum, file, line) {
+    var Checkoff = function(url, name, checksum, file, line) {
         this.url = url;
         this.name = name;
         this.checksum = checksum;
         this.file = file;
         this.line = line;
     };
-    TCheckoff.parse = function(stream) {
+    Checkoff.parse = function(stream) {
         eatSpace(stream);
         var url = readString(stream);
         eatSpace(stream);
@@ -692,22 +692,96 @@
         eatSpace(stream);
         var checksum = Expression.parse(stream);
         if(checksum === null) {
-            throw new SyntaxError("Expected tcheckoff checksum.", stream);
+            throw new SyntaxError("Expected checkoff checksum.", stream);
         }
-        return new TCheckoff(url, name, checksum, stream.file(), stream.line_number());
+        console.log(this.prototype.constructor);
+        return new this.prototype.constructor(url, name, checksum, stream.file(), stream.line_number());
     };
-    TCheckoff.prototype.assemble = function(context, out) {
+    Checkoff.prototype.assemble = function(context, out) {
         if(out) {
-            var checksum = this.checksum.evaluate(context, true);
             if(context.checkoff) {
                 throw new SyntaxError("Multiple checkoffs found! Only one checkoff statement is accepted per program.", this.file, this.line);
             }
             context.checkoff = {
-                kind: 'tty',
+                kind: this.kind,
                 url: this.url,
                 name: this.name,
-                checksum: checksum
+                checksum: this.checksum.evaluate(context, true)
             };
+            console.log(context);
+        }
+    };
+
+    var TCheckoff = function(url, name, checksum, file, line) {
+        Checkoff.call(this, url, name, checksum, file, line);
+        this.kind = 'tty';
+    };
+    TCheckoff.prototype = Object.create(Checkoff.prototype, {constructor: {value: TCheckoff}});
+    TCheckoff.parse = Checkoff.parse;
+
+    var PCheckoff = function(url, name, checksum, file, line) {
+        Checkoff.call(this, url, name, checksum, file, line);
+        this.kind = 'memory';
+        this.running_checksum = 36038;
+    };
+    PCheckoff.prototype = Object.create(Checkoff.prototype, {constructor: {value: PCheckoff}});
+    PCheckoff.parse = Checkoff.parse;
+    PCheckoff.prototype.assemble = function(context, out) {
+        Checkoff.prototype.assemble.call(this, context, out);
+        if(out) {
+            console.log(context);
+            context.checkoff.running_checksum = 36038;
+            context.checkoff.addresses = {};
+        }
+    }
+
+    var Verify = function(address, words, checksum, file, line) {
+        this.address = address;
+        this.words = words;
+        this.file = file;
+        this.line = line;
+        this.checksum_contribution = checksum;
+    };
+    Verify.parse = function(stream) {
+        eatSpace(stream);
+        var address = readNumber(stream, false)
+        if(address === null) {
+            throw new SyntaxError("Expected address", stream);
+        }
+        eatSpace(stream);
+        var count = readNumber(stream, false);
+        if(count === null) {
+            throw new SyntaxError("Expected number of words", stream);
+        }
+        var list = [];
+        var checksum = 0;
+        for(var i = 0; i < count; ++i) {
+            eatSpace(stream);
+            var value = readNumber(stream, false);
+            if(value === null) {
+                throw new SyntaxError("Expected " + count + " words; only got " + list.length + ".", stream);
+            }
+            list.push(value);
+            var i32 = new Int32Array(1);
+            i32[0] = value;
+            i32[0] += (address + i*4);
+            i32[0] *= i+1;
+            i32[0] += checksum;
+            console.log(i32[0]);
+            checksum = i32[0];
+        }
+        return new Verify(address, list, checksum, stream.file(), stream.line_number());
+    };
+    Verify.prototype.assemble = function(context, out) {
+        if(out) {
+            if(!context.checkoff || context.checkoff.kind != 'memory') {
+                throw new SyntaxError(".verify statements are only legal after a .pcheckoff statement.", this.file, this.line);
+            }
+            var i32 = new Int32Array(1);
+            i32[0] = context.checkoff.running_checksum + this.checksum_contribution;
+            context.checkoff.running_checksum = i32[0];
+            // var values = _.map(this.words, function(v) { return v.evaluate(context, true); });
+            _.extend(context.checkoff.addresses, _.object(_.range(this.address, this.address+this.words.length*4, 4), this.words));
         }
     };
 
@@ -893,6 +967,12 @@
                                 break;
                             case "tcheckoff":
                                 fileContent.push(TCheckoff.parse(stream));
+                                break;
+                            case "pcheckoff":
+                                fileContent.push(PCheckoff.parse(stream));
+                                break;
+                            case "verify":
+                                fileContent.push(Verify.parse(stream));
                                 break;
                             default:
                                 stream.skipToEnd();

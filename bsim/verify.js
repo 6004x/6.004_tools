@@ -33,3 +33,34 @@ BSim.TextVerifier = function(beta, checksum) {
         return mMessage;
     };
 };
+
+BSim.MemoryVerifier = function(beta, addresses, checksum, expected_checksum) {
+    var mBeta = beta;
+    var mAddresses = addresses;
+    var mValid = (checksum === expected_checksum);
+    var mMessage = null;
+
+    this.verify = function() {
+        if(!mValid) {
+            mMessage = "Checkoff failed: invalid checksum";
+            console.log(checksum, expected_checksum);
+            return false;
+        }
+        for(var address in mAddresses) {
+            // if(!_.has(mAddresses, address)) continue;
+            var value = mAddresses[address];
+            if(mBeta.readWord(address) != value) {
+                console.log(mAddresses);
+                mMessage = "Checkoff failed. At memory location 0x" + BSim.Common.FormatWord(parseInt(address,10)) 
+                + " expected value 0x" + BSim.Common.FormatWord(value) 
+                + " but got 0x" + BSim.Common.FormatWord(mBeta.readWord(address));
+                return false;
+            }
+        };
+        return true;
+    };
+
+    this.getMessage = function() {
+        return mMessage;
+    };
+};

@@ -22,7 +22,7 @@ $(function() {
     var editor = new Editor('#editor', 'uasm');
 
     // Filesystem tree thing
-    FileSystem.setup('mattpf', 'http://18.62.29.137:8080/');
+    FileSystem.setup('mattpf', 'http://localhost:8080/');
     Folders.setup('#filetree', editor, 'uasm');
 
     var do_assemble = function() {
@@ -53,6 +53,9 @@ $(function() {
                 if(result.checkoff) {
                     if(result.checkoff.kind == 'tty') {
                         var verifier = new BSim.TextVerifier(beta, result.checkoff.checksum);
+                        beta.setVerifier(verifier);
+                    } else if(result.checkoff.kind == 'memory') {
+                        var verifier = new BSim.MemoryVerifier(beta, result.checkoff.addresses, result.checkoff.checksum, result.checkoff.running_checksum);
                         beta.setVerifier(verifier);
                     }
                 }
