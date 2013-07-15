@@ -58,6 +58,8 @@ $(function() {
                         var verifier = new BSim.MemoryVerifier(beta, result.checkoff.addresses, result.checkoff.checksum, result.checkoff.running_checksum);
                         beta.setVerifier(verifier);
                     }
+                } else {
+                    beta.setVerifier(null);
                 }
                 $('#maximise_simulation').click();
             }

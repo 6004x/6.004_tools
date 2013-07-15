@@ -36,6 +36,7 @@ BSim.Controls = function(container, beta) {
         var verifier = mBeta.verifier();
         if(!verifier) {
             alert("No verification statements found.");
+            return;
         }
         if(!verifier.verify()) {
             alert(verifier.getMessage());
