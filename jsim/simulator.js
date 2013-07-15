@@ -325,10 +325,11 @@ Graph setup functions
         },
         crosshair:{
             mode:"x",
-            color:"#747474"
+            color:"#916e75"
         },
         selection:{
-            mode:"x"
+            mode:"x",
+            color:'#cfbfc2'
         },
         grid:{
             hoverable:true,
@@ -453,14 +454,14 @@ Graphing functions
                 mplots.push({
                     label: "Node " + node,
                     data: mplot,
-                    xUnits: 'Hz',
-                    yUnits: 'dB'
+                    xUnits: ' log Hz',
+                    yUnits: ' dB'
                 });
                 pplots.push({
                     label: "Node " + node,
                     data: pplot,
-                    xUnits: 'Hz',
-                    yUnits: 'deg'
+                    xUnits: ' log Hz',
+                    yUnits: ' deg'
                 });
             }
             
@@ -471,7 +472,7 @@ Graphing functions
             // prepare divs for magnitude graph
             var div1 = $('<div'/* style="display:inline-block"*/+'></div>');
             var plotDiv = $('<div class="placeholder" style="'/*display: inline-block;'*/+
-                            ' width:400px;height:300px"></div>');
+                            ' width:90%;height:300px"></div>');
             div.append(div1);
             div1.append(plotDiv);
             
@@ -489,7 +490,7 @@ Graphing functions
             // prepare divs for phase graphs
             var div2 = $('<div'/* style="display:inline-block"*/+'></div>');
             plotDiv = $('<div class="placeholder"style="'/*display: inline-block;'*/+
-                        'width:400px;height:300px"></div>');
+                        'width:90%;height:300px"></div>');
             div.append(div2);
             div2.append(plotDiv);
             
@@ -517,8 +518,11 @@ Graphing functions
         
         if (netlist.length === 0) return;
         if (analyses.length === 0) return;
+        
+        console.log("analyses:",analyses)
     
         for (var i = 0; i < analyses.length; i += 1){
+            console.log("simulating analysis ",analyses[i]);
             try {
                 var analysis = analyses[i];
                 switch (analysis.type) {

@@ -88,7 +88,7 @@ CodeMirror.defineMode('jsim', function() {
                 return 'comment';
             }
             if(!state.in_args) {
-                if(stream.match(/^.(checkoff|connect|dc|end|global|include|model|mverify|op|options|plot|plotdef|subckt|ends|temp|tempdir|tran|verify|gsubckt)\b/i)) {
+                if(stream.match(/^.(checkoff|connect|dc|ac|end|global|include|model|mverify|op|options|plot|plotdef|subckt|ends|temp|tempdir|tran|verify|gsubckt)\b/i)) {
                     state.in_args = true;
                     return 'keyword';
                 }

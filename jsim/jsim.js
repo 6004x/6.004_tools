@@ -48,10 +48,16 @@ $(function() {
 'C1 n2 gnd 1n\n'+
 '.ends\n'+
 'Xtest a b transtest\n'+
-'X2 c d transtest\n'+
-'X3 e f transtest\n'+
 '.tran 5u\n'+
-'.plot a b c d e f\n');
+'.plot a b\n');
+    
+    editor.openTab('ac.jsim',''+
+'// AC analysis test\n'+
+'V1 n1 gnd step(1,0,1u)\n'+
+'R1 n1 n2 1k\n'+
+'C1 n2 gnd 1n\n'+
+'.ac V1 1 1G\n'+
+'.plot n2');
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
     }
