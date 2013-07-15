@@ -21,8 +21,8 @@ BSim.Beta = function(mem_size) {
     // changes are signalled immediately and these are not used.
     var mChangedRegisters = {};
     var mChangedWords = {};
-    var mLastReads = new Dequeue();
-    var mLastWrites = new Dequeue();
+    var mLastReads = [];
+    var mLastWrites = [];
 
     // Used for 'step back'
     var mHistory = new Dequeue();
@@ -462,8 +462,8 @@ BSim.Beta = function(mem_size) {
             self.trigger('change:pc', mPC);
             mChangedRegisters = {};
             mChangedWords = {};
-            mLastReads = new Dequeue();
-            mLastWrites = new Dequeue();
+            mLastReads = [];
+            mLastWrites = [];
 
             // Run again.
             _.defer(run_inner);
