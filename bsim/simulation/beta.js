@@ -21,12 +21,20 @@ BSim.Beta = function(mem_size) {
     // changes are signalled immediately and these are not used.
     var mChangedRegisters = {};
     var mChangedWords = {};
-    var mLastReads = [];
-    var mLastWrites = [];
+    var mLastReads = new Dequeue();
+    var mLastWrites = new Dequeue();
 
     // Used for 'step back'
     var mHistory = new Dequeue();
     var mCurrentStep = {};
+    // The below two are an optimisation for Safari. While V8 and whatever Firefox uses can
+    // optimise for the 'class' pattern formed by UndoStep, Safari cannot. This means that
+    // accessing mCurrentStep.registers is extremely slow, even when mCurrentStep is an
+    // instance of a recognisable class (UndoStep). To work around this, we instead use
+    // variables to hold the frequently accessed members of mCurrentStep, then stuff them
+    // in at the end of each cycle.
+    var mCurrentStepRegisters = {};
+    var mCurrentStepWords = {};
 
     // Information not strictly related to running the Beta, but needed in BSim
     var mBreakpoints = {};
@@ -54,6 +62,13 @@ BSim.Beta = function(mem_size) {
     var INTERRUPT_CLOCK = 0x02;
     var INTERRUPT_KEYBOARD = 0x04;
     var INTERRUPT_MOUSE = 0x08;
+
+    var UndoStep = function(pc) {
+        this.registers = {};
+        this.words = {};
+        this.pc = pc;
+        this.tty = null;
+    };
 
     _.extend(this, Backbone.Events);
 
@@ -140,8 +155,8 @@ BSim.Beta = function(mem_size) {
         address &= 0xFFFFFFFC; // Force multiples of four.
 
         // Implement undo
-        if(!_.has(mCurrentStep.words, address))
-            mCurrentStep.words[address] = this.readWord(address);
+        if(!_.has(mCurrentStepWords, address))
+            mCurrentStepWords[address] = this.readWord(address);
 
         mMemory.writeWord(address, value);
 
@@ -167,8 +182,8 @@ BSim.Beta = function(mem_size) {
         if(register == 31) return;
 
         // Implement undo
-        if(!_.has(mCurrentStep.registers, register))
-            mCurrentStep.registers[register] = this.readRegister(register);
+        if(!_.has(mCurrentStepRegisters, register))
+            mCurrentStepRegisters[register] = this.readRegister(register);
 
         mRegisters[register] = value;
 
@@ -335,12 +350,7 @@ BSim.Beta = function(mem_size) {
             }
         }
         // Prepare undo
-        mCurrentStep = {
-            registers: {},
-            words: {},
-            pc: mPC,
-            tty: null
-        };
+        mCurrentStep = new UndoStep(mPC);
 
         mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
         // Continue on with instructions as planned.
@@ -373,6 +383,8 @@ BSim.Beta = function(mem_size) {
                 console.log("call failed");
                 this.setPC(old_pc, true);
             }
+            mCurrentStep.registers = mCurrentStepRegisters;
+            mCurrentStep.words = mCurrentStepWords;
             mHistory.push(mCurrentStep);
             if(mHistory.length() > 50) mHistory.shift();
             return ret;
@@ -450,8 +462,8 @@ BSim.Beta = function(mem_size) {
             self.trigger('change:pc', mPC);
             mChangedRegisters = {};
             mChangedWords = {};
-            mLastReads = [];
-            mLastWrites = [];
+            mLastReads = new Dequeue();
+            mLastWrites = new Dequeue();
 
             // Run again.
             _.defer(run_inner);
