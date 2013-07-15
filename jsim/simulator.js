@@ -157,6 +157,13 @@ Graph setup functions
                    zoomOutButton,
                    scrollLeftButton,
                    scrollRightButton);
+        
+        plotObj.getPlaceholder().on("mousewheel",function(evt){
+            evt.preventDefault();
+//            console.log("delta:",evt.originalEvent);
+            plotObj.pan({left:-1*evt.originalEvent.wheelDeltaX});
+        });
+//        plotObj.getPlaceholder().on("click",function(){ console.log("click");});
     }
     
     /***********************
