@@ -1,14 +1,20 @@
-var TMSIM = function(){
+function TMSIM(){
 
 	var tsm = new TSM();
 	var quotedRegExp = /\"[^\n]+\"/;
 	var multiLineRegExp = /\/\*(.|\n)*\*\//;
+	var commentRegExp = /\/\/(.)*\n/;
 	var variableRegExp = /[^\s\/\\\"\']+/
-	var selectedRegExp = /\[(\"[^\n]+\"|[^\s\/"']+)+\]\b/
+	var selectedRegExp = /\[(\"[^\n]+\"|[^\s\/"']+)+\]/
 	var commentRegExp = /\/\/|\/\*|\*\/|\n/
 	var regexp = new RegExp('('+multiLineRegExp.source+'|'+commentRegExp.source+'|'+quotedRegExp.source +'|'+ variableRegExp.source+'|'+selectedRegExp.source +')', 'g');
 	var oldRegexp=/(\"[^\n]+\"|\[\w+\]|\w+\b|\*\w+\b\*|^[^\s\/"']+|\n|-|\/\/|\/\*|\*\/)/g
 	
+
+	var list_of_results={};
+	var list_of_results1={};
+	var list_of_tapes={};
+
 	function parse(stream){
 		//console.log(stream);
 		var tokens=stream.match(regexp);
@@ -28,20 +34,20 @@ var TMSIM = function(){
 			var token = tokens[i];
 			var type = getType(token);
 
-
+			if (type == 'multi_comment_start'){
+				parseState = 'none';
+				lineCount+=token.match(/\n/g).length;
+				continue;
+			} else if (type == 'line_comment'){
+				oldParseState = parseState;
+				parseState = 'line_comment';
+				continue;
+			}
 			if(parseState == 'none'){
 				//expecting a keyword or comment
 
 				if(type == 'keyword'){
 					parseState = token;
-				}
-				else if (type == 'line_comment'){
-					oldParseState = parseState;
-					parseState = 'line_comment';
-				}
-				else if (type == 'multi_comment_start'){
-					parseState = 'none';
-					console.log('multi_line_comment start');
 				}
 				else if (type!='newline'){
 					console.log("expecting a keyword or comment, " + token + ' is not a keyword');
@@ -89,14 +95,6 @@ var TMSIM = function(){
 					// console.log('continuing multi line comment');
 					continue;
 				}
-			} else if (type == 'line_comment'){
-				oldParseState = parseState;
-				parseState = 'line_comment';
-				continue;
-			} else if (type == 'multi_comment_start'){
-				parseState = 'none';
-				console.log('multi_line_comment start')
-				continue;
 			} else if (type == 'multi_comment_end'){
 				if (parseState != 'multi_line_comment'){
 					console.log('you ended a comment that you didn\'t start')
@@ -182,7 +180,7 @@ var TMSIM = function(){
 					} else if (parseState == 'result'){
 						resultCount++;
 					} else if (parseState == 'result1'){
-						resultoneCount++;
+						resultoneCount++;	
 					} else if (parseState == 'checkoff'){
 						checkoffCount++;
 					} else {
@@ -192,35 +190,15 @@ var TMSIM = function(){
 					parseState = token;
 					continue;
 				} else if (parseState == 'line_comment') {
-					console.log('do nothing, continue with comment');
-
 					continue;
 				} else if (parseState == 'multi_line_comment'){
-					console.log('continuing multi line comment');
 					continue;
 				}
 			}
 		}
 
 		return parseDict;
-		function getType(token){
-			if(token.match(/(action|symbols|states|tape|result|result1|checkoff)\b/))
-				return 'keyword';
-			else if (token.match(/\/\//))
-				return 'line_comment';
-			else if (token.match(/\/\*/))
-				return 'multi_comment_start';
-			else if (token.match(/\*\//))
-				return 'multi_comment_end';
-			else if (token.match(/\n/))
-				return 'newline';
-			else if (token.match(variableRegExp)||token.match(quotedRegExp))
-				return 'variable';
-			else{
-				console.log(token+' is not a valid keyword');
-				console.log(' at line '+lineCount);
-			}
-		}
+		
 	}
 	function developMachine(dict){
 		var keys = Object.keys(dict);
@@ -287,15 +265,29 @@ var TMSIM = function(){
 				console.log('states has been instantiated');
 			} else if (stringContains(key, 'tape')) {
 				console.log('tape');
+				
+				var tapeName = args[0];
+				var tapeContents = args.slice(1);
+				list_of_tapes[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
+				list_of_tapes[tapeName].printLL();
+			} else if (stringContains(key, 'result1')) {
+				console.log('result1 at line ' +lineNumber);
 				console.log(args);
 				var tapeName = args[0];
-
+				var tapeResult=  args[1];
+				console.log(args);
+				if (args[2]){
+					console.log('your result1 at '+lineNumber+' can only have one argument');
+					break;
+				}
+				list_of_results1[tapeName]=tapeResult;
 			} else if (stringContains(key, 'result')) {
 				console.log('result');
-				console.log(args);
-			} else if (stringContains(key, 'result1')) {
-				console.log('result');
-				console.log(args);
+				
+				var tapeName = args[0];
+				var tapeContents = args.slice(1);
+				list_of_results[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
+				list_of_tapes[tapeName].printLL();
 			} else if (stringContains(key, 'checkoff')) {
 				console.log('checkoff');
 				console.log(args);
@@ -304,18 +296,88 @@ var TMSIM = function(){
 				console.log('at line '+ lineNumber);
 			}
 		}
-		function keyCompare(a,b){
-			if(stringContains(a,'action'))
-				return 1;
-			else if(stringContains(b, 'action'))
-				return -1;
-			return 0;
+		tsm.setup(tsmDict);
+		var results = '';
+		for(key in list_of_tapes){
+			results +=key+': ';
+			var list = list_of_tapes[key];
+			results +=String(list.toArray())+'\n';
+			
+			tsm.replaceTape(list);
+			tsm.start();
+			console.log(list.peek());
+			results+='results: '+String(list.toArray())+'\n';
+			if (list_of_results[key]){
+				console.log(list_of_results[key]);
+				results+='result: '+String(list.equals(list_of_results[key]))
+			} else if (list_of_results1[key]){
+				console.log(list_of_results1[key]);
+				results+='result1: '+String(list.peek()==(list_of_results1[key]))
+			}
+			results+='\n\n';
 		}
-		return tsmDict;
+		console.log(list_of_tapes);
+		console.log(list_of_results);
+		console.log(list_of_results1);
+		return results;
+	}
+
+	//HELPER FUNCTIONS
+	function keyCompare(a,b){
+		if(stringContains(b,'action'))
+			return -1;
+		else if(stringContains(a, 'action'))
+			return 1;
+		return -1;
+	}
+	function getType(token){
+		
+		if (token.match(/\/\//))
+			return 'line_comment';
+		else if (token.match(/\/\*/))
+			return 'multi_comment_start';
+		else if(token.match(/(action|symbols|states|tape|result|result1|checkoff)\b/))
+			return 'keyword';
+		else if (token.match(/\*\//))
+			return 'multi_comment_end';
+		else if (token.match(/\n/))
+			return 'newline';
+		else if (token.match(variableRegExp)||token.match(quotedRegExp))
+			return 'variable';
+		else{
+			console.log(token+' is not a valid keyword');
+			console.log(' at line '+lineCount);
+		}
+	}
+	function initiateList(tokens, tapeName, lineNumber){
+		var tapeContents = [];
+		var selected = false;
+		var selectedIndex = 0;
+		for (var j = 0; j < tokens.length; j++){
+			var token = tokens[j];
+			if(token.match(selectedRegExp)){
+				//this is the one that we want to start the tsm on 
+			
+				if(!selected){
+					//then we haven;t selected one yet, good
+					selectedIndex=j;
+					tapeContents.push(token.slice(1, token.length-1));
+					selected = true;
+				} else {
+					console.log('tape '+tapeName+' at '+lineNumber);
+					console.log('you have 2 selected variables at the tape, you can only have one')
+					break;
+				}
+
+			} else {
+				tapeContents.push(token)
+			}
+		}
+		return (new LinkedList()).init(tapeContents, selectedIndex);
 	}
 
 	return {parse:parse, developMachine:developMachine}
-}();
+};
 
 // var dict = TMSIM.parse('states A B C .  action  A   -      B  1 r\naction  A   1      C  1 l')
 // console.log(dict);

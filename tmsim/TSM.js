@@ -3,7 +3,6 @@ function TSM(){
 	var self=this;
 	var start_state;
 	var list_of_states;
-
 	//state has two characteristics:
 	/** 
 		name:
@@ -12,19 +11,27 @@ function TSM(){
 				[new_state, write, move]
 	**/
 
-	var tapeList=new LinkedList();
+	var mTape=new LinkedList();
 
-	this.setup=function(states, startState, tape){
+	this.setup=function(states, startState, tape, tapeIndex){
 		console.log(states);
-		tapeList.init(tape);
+		mTape.init(tape, tapeIndex);
 		list_of_states=states;
 		if(startState)
 			start_state=list_of_states[startState];
 		else {
+		//if no start state is defined, then we take the first state that was instantiated
 			start_state=list_of_states[Object.keys(list_of_states)[0]];
 			console.log(Object.keys(list_of_states)[0]);
 		}
 		return self;
+	}
+	this.replaceTape = function(tape){
+		mTape = tape;
+	}
+	this.editTape = function(tape, tapeIndex){
+		mTape.init(tape, tapeIndex);
+		console.log('attaching new tape');
 	}
 	this.start=function(){
 		console.log('beginning turing machine');
@@ -37,27 +44,33 @@ function TSM(){
 			
 		}
 		console.log('ended turing machine');
+		return mTape;
 	}
 	this.step=function(new_state){
 		var old_state=new_state;
-		var tapeRead=tapeList.peek();
+		var tapeRead=mTape.peek();
 		var state_transition=old_state.transition[tapeRead];
+		
+		new_state=list_of_states[state_transition.new_state];
+		mTape.traverse(state_transition.write, state_transition.move);
 		// console.log(new_state);
 		if(state_transition.new_state === '*halt*'){
 			valid=false;
-			tapeList.printLL();
+			mTape.printLL();
 			console.log('halting the sm');
 			return false;
 		} else if (state_transition.new_state === '*error*'){
 			valid=false;
-			tapeList.printLL();
+			mTape.printLL();
 			console.log('encountered an error');
 			return false;
 		}
 
-		new_state=list_of_states[state_transition.new_state];
-		tapeList.traverse(state_transition.write, state_transition.move);
 		return new_state;
+	}
+	this.compare = function(tape){
+		//compares tape to mTape
+
 	}
 	return this;
 }

@@ -7,29 +7,31 @@ function LinkedList(){
 
 	//attaches a node with data as the last pointer of the LL
 	
-	this.init=function(list){
+	this.init=function(list, currentIndex){
 		if(list){
-			makeList(list);
+			makeList(list, currentIndex);
 		}
 		else if (!first) {
 		//initialise by adding the first blank node
 			this.append('-');
 			self.printLL();
+			current=first;
 		}
 		//reset the current node
-		current=first;
+		return self;
 	}
-	function makeList(list){
+	function makeList(list, currentIndex){
 		for (var i = 0; i < list.length; i++){
 			self.append(list[i]);
+			if(i==currentIndex)
+				current = last;
+			size++;
 		}
-		self.printLL();
 		console.log('initiated list');
+		console.log('current at '+currentIndex+' with data '+current.data);
 	}
 	this.traverse =function(write, direction){
 		if(current){
-			// console.log(direction);
-			// console.log('current');
 			current.data=write;
 			if(direction === 'l'){
 				//move tape left so we must move to next
@@ -149,22 +151,69 @@ function LinkedList(){
 		return self;
 	}
 
-	this.printLL=function(){
+	this.toArray = function(){
 		var tempNode=first;
 		var arrayLL=[];
 		while(tempNode!=null){
 			arrayLL.push(tempNode.data);
 			tempNode=tempNode.next;
 		}
-		console.log(arrayLL);
+		return arrayLL;
+	}
+	this.printLL=function(){
+		console.log(self.toArray());
 	}
 
-	function llnode(newData){
-		this.data=newData;
-		this.next=null;
-		this.prev=null;
+	this.getCurrentNode = function(){
+		return self.current;
 	}
+	this.equals=function(otherLL){
+		mArray = self.toArray();
+		tArray = otherLL.toArray();
+		if(mArray.length!=tArray.length){
+			console.log('tapes are different size');
+			return false;
+		}
+		var equalArray = true;
+		for (var i =0; i < mArray.length; i++){
+			if(equalArray)
+				equalArray = (mArray[i] == tArray[i]);
+		}
+		if (equalArray){
+			console.log('tapes are the same');
+			//now we must traverse and see if current is the same in both.
+			var tempMCurr = self.getCurrentNode();
+			var tempTCurr = otherLL.getCurrentNode();
+			
+			if(tempMCurr!=tempTCurr){
+				console.log('current is not the same');
+				return false;
+			}
+
+			var compare = true;
+			while(tempMCurr!=null){
+				compare = tempMCurr.data==tempTCurr.data;
+				//can we do this?
+				if(!compare)
+					break;
+				tempMCurr = tempMCurr.next;
+				tempTCurr = tempTCurr.next
+			}
+			if(!compare)
+				console.log("the two lists don't match");
+			return compare;
+		}
+		console.log(mArray===tArray)
+		return false;
+	}
+	function llnode(newData){
+		this.data = newData;
+		this.next = null;
+		this.prev = null;
+	}
+	return self;
 }
+
 
 function lltest(){
 
@@ -173,7 +222,9 @@ function lltest(){
 	var LL3=new LinkedList();
 
 	LL1.append('s').prepend('r').append('t').prepend('q').prepend('a').prepend('p').remove('a').append('u');
-
+	LL3.append('s').prepend('r').append('t').prepend('q').prepend('a').prepend('p').remove('a').append('u');
+	console.log(LL1.equals(LL3));
+	console.log(LL3.equals(LL1));
 	// console.log(LL1.traverse('l'));
 	// console.log(LL1.traverse('r'));
 	// console.log(LL1.traverse('l'));
@@ -187,6 +238,7 @@ function lltest(){
 	// console.log(LL1.traverse('l'));
 
 	LL1.printLL();
+	LL3.printLL();
 
 	LL2.append('1').remove('2').remove('1').remove('1').append('3');
 	LL2.printLL();

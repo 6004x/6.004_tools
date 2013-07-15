@@ -446,16 +446,14 @@ var Folders=new function(){
         var file=new Object();
         file.name=editor.currentTab();
         file.data=editor.content();
+        var tmsim = new TMSIM();
         if(file.name){
-            var parsedDict = TMSIM.parse(file.data);
+            var parsedDict = tmsim.parse(file.data);
             //editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
 
-            var parsedTSM = TMSIM.developMachine(parsedDict);
-            editor.openTab(file.name+'tsmed', JSON.stringify(parsedTSM), true);
-            if(parsedTSM)
-            {   var tsm = new TSM().setup(parsedTSM);
-                tsm.start();
-            }
+            var results = tmsim.developMachine(parsedDict);
+            editor.openTab(file.name+'tsmed', results, true);
+
         }
     }
     function hideNavBar(){

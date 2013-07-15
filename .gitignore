@@ -1,4 +1,5 @@
-.DS_Store
-bsim/.DS_Store
-editor/.DS_Store
-parser/.DS_Store
+.gitignore
+bootstrap/*
+server/dontony/*
+server/libraries/*
+

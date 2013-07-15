@@ -1,3 +1,14 @@
 tmsim design doc
 
 parseStates: actions, 
+
+
+
+errors encounterd:
+multi line comment not recognize (comment*/)
+end of // comment not increase count
+
+check if result tape has valid symbols
+check for duplicate actions
+
+checkoff checks the size of the table
