@@ -117,9 +117,14 @@ Graph setup functions
     Graph setup: calls all the other setup functions. Consolidated for neatness.
     ******************/
     function graph_setup(div,plotObj){
+        div.css("position","relative");
         zoom_pan_setup(div,plotObj);
         hover_setup(div,plotObj);
-        selection_setup(div,plotObj);       
+        selection_setup(div,plotObj);  
+        
+//        div.on("split", function(){console.log("ui split");});
+//        div.on("maxLeft",function(){console.log("maxed left");});
+//        div.on("maxRight",function(){console.log("maxed right");});
     }
     
     /*******************
@@ -170,9 +175,16 @@ Graph setup functions
     Hover setup: displays values when the graph is moused over
     **********************/
     function hover_setup(div,plotObj){
-        var posTextDiv = $("<div><span class='xpos'></span></div>");
-        var posTextSpans = {};
-        div.append(posTextDiv);
+        var posTextDiv = $("<div class='posText'><div class='xpos'></div></div>");
+        
+        var top = plotObj.getPlotOffset().top;
+        var left = plotObj.getPlotOffset().left;
+        posTextDiv.css("left",left + 5);
+        posTextDiv.css("top",top + 5);
+        posTextDiv.hide();
+        
+        var innerPosTextDivs = {};
+        plotObj.getPlaceholder().append(posTextDiv);
         
         var updateMouseTimeout;
             var latestPos;
@@ -189,6 +201,9 @@ Graph setup functions
         function showMousePos(){
             updateMouseTimeout = null;
             pos = latestPos;
+            
+//            console.log("offset:",plotObj.getPlotOffset());
+            
             var axes = plotObj.getAxes();
             if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max ||
                 pos.y < axes.yaxis.min || pos.y > axes.yaxis.max) {
@@ -204,13 +219,13 @@ Graph setup functions
                 var y = interpolate(series,pos.x);
                 
                 posTextDiv.find('.xpos').text("X = "+suffix_formatter(pos.x));
-                if (posTextSpans["series"+i]===undefined){
-                    var span = $("<span>"+series.label+" = "+
-                                                 suffix_formatter(y)+"</span>")
-                    posTextSpans["series"+i] = span;
-                    posTextDiv.append("</br>",posTextSpans["series"+i]);
+                if (innerPosTextDivs["series"+i]===undefined){
+                    var span = $("<div>"+series.label+" = "+
+                                                 suffix_formatter(y)+"</div>")
+                    innerPosTextDivs["series"+i] = span;
+                    posTextDiv.append(innerPosTextDivs["series"+i]);
                 } else {
-                    posTextSpans["series"+i].text(series.label+" = "+suffix_formatter(y));
+                    innerPosTextDivs["series"+i].text(series.label+" = "+suffix_formatter(y));
                 }
             }
             posTextDiv.show();
@@ -221,9 +236,14 @@ Graph setup functions
     Selection setup: shows the range of values covered by a selection
     *************************/
     function selection_setup(div,plotObj){
-        var rangeTextDiv = $("<div><span class='xrange'></span></div>");
-        var rangeTextSpans = {};
+        var rangeTextDiv = $("<div class='posText'><div class='xrange'></div></div>");
+        var innerRangeTextDivs = {};
         div.append(rangeTextDiv);
+        
+        rangeTextDiv.css("bottom",plotObj.getPlotOffset().bottom + 30);
+        rangeTextDiv.css("left",plotObj.getPlotOffset().left + 5);
+        rangeTextDiv.hide();
+        
         
         var updateSelTimeout;
         var selRanges;
@@ -259,13 +279,13 @@ Graph setup functions
                 var y2 = interpolate(series, ranges.xaxis.to);
                 var yrange = y2-y1;
                 
-                if (rangeTextSpans["series"+i]===undefined){
-                    var span = $("<span>"+series.label+" range = "+
-                                                 suffix_formatter(yrange)+"</span>")
-                    rangeTextSpans["series"+i] = span;
-                    rangeTextDiv.append("</br>",rangeTextSpans["series"+i]);
+                if (innerRangeTextDivs["series"+i]===undefined){
+                    var span = $("<div>"+series.label+" range = "+
+                                                 suffix_formatter(yrange)+"</div>")
+                    innerRangeTextDivs["series"+i] = span;
+                    rangeTextDiv.append(innerRangeTextDivs["series"+i]);
                 } else {
-                    rangeTextSpans["series"+i].text(series.label+" range = "+
+                    innerRangeTextDivs["series"+i].text(series.label+" range = "+
                                                   suffix_formatter(yrange));
                 }
             }
@@ -282,12 +302,13 @@ Graph setup functions
             tickColor:"#dddddd",
             tickFormatter:suffix_formatter,
             zoomRange:false,
-            panRange:false
+            panRange:false,
+            autoscaleMargin: 0.05
         },
         xaxis:{
             color:"#848484",
             tickColor:"#dddddd",
-            tickFormatter:suffix_formatter,
+            tickFormatter:suffix_formatter
         },
         zoom:{
             interactive:true,
@@ -298,7 +319,7 @@ Graph setup functions
         },
         crosshair:{
             mode:"x",
-            color:"darkgray"
+            color:"#747474"
         },
         selection:{
             mode:"x"

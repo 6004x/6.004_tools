@@ -26,7 +26,7 @@ $(function() {
         editor.clearErrors();
         var content = editor.content()
         var filename = editor.currentTab();
-        var div = $('#simulation-pane')
+        div = $('#simulation-pane');
         try{
             Simulator.simulate(content,filename,div);
         } catch (err) {
