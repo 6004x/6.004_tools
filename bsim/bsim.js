@@ -104,7 +104,7 @@ $(function() {
         new BSim.StackView(this, beta);
     });
 
-    new BSim.Beta.ErrorHandler('body', beta);
+    new BSim.Beta.ErrorHandler(beta);
 
     // // Convenient way of loading a file for testing and such.
     // var neuter = function(e) {

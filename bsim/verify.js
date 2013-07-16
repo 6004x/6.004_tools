@@ -42,7 +42,7 @@ BSim.MemoryVerifier = function(beta, addresses, checksum, expected_checksum) {
 
     this.verify = function() {
         if(!mValid) {
-            mMessage = "Checkoff failed: invalid checksum";
+            mMessage = "<strong>Checkoff failed</strong>: invalid checksum";
             console.log(checksum, expected_checksum);
             return false;
         }
@@ -51,9 +51,10 @@ BSim.MemoryVerifier = function(beta, addresses, checksum, expected_checksum) {
             var value = mAddresses[address];
             if(mBeta.readWord(address) != value) {
                 console.log(mAddresses);
-                mMessage = "Checkoff failed. At memory location 0x" + BSim.Common.FormatWord(parseInt(address,10)) 
-                + " expected value 0x" + BSim.Common.FormatWord(value) 
-                + " but got 0x" + BSim.Common.FormatWord(mBeta.readWord(address));
+                mMessage = "<p><strong>Checkoff failed.</strong></p><table><tr><td>Memory location:</td><td><code>0x" + BSim.Common.FormatWord(parseInt(address,10)) 
+                + "</code></td></tr><tr><td>Expected value:</td><td><code>0x" + BSim.Common.FormatWord(value) 
+                + "</code></td></tr><tr><td>Actual value:</td><td><code>0x" + BSim.Common.FormatWord(mBeta.readWord(address))
+                + "</code></td></tr></table>";
                 return false;
             }
         };

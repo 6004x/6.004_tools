@@ -34,15 +34,19 @@ BSim.Controls = function(container, beta) {
 
     var handle_checkoff = function() {
         var verifier = mBeta.verifier();
+        var dialog = new ModalDialog();
+        dialog.setTitle("Checkoff Result").addButton("Dismiss", "dismiss");
         if(!verifier) {
-            alert("No verification statements found.");
+            dialog.setText("No verification statements found.");
             return;
         }
         if(!verifier.verify()) {
-            alert(verifier.getMessage());
+            dialog.setContent(verifier.getMessage());
         } else {
-            alert("Checkoff complete!");
+            dialog.setText("Checkoff complete!");
+            dialog.addButton("Submit", _.identity, 'btn-primary'); // dummy button for now.
         }
+        dialog.show();
     };
 
     var beta_run_start = function() {
