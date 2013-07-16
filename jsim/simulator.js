@@ -211,14 +211,18 @@ Graph setup functions
         var updateMouseTimeout;
         var latestPos;
         plotObj.getPlaceholder().on("plothover", function(event,pos,item){
-            latestPos = pos;
             
             $.each(allPlots, function(index,value){
-                if (value != plotObj.getPlaceholder()){
-                    value.setCrosshair(pos)
+                if (value != plotObj){
+                    value.setCrosshair(pos);
                 }
+                value.getPlaceholder().trigger("showPosTooltip",pos)
             });
             
+        });
+        
+        plotObj.getPlaceholder().on("showPosTooltip", function(event,pos){
+            latestPos = pos;
             if (!updateMouseTimeout){
                 updateMouseTimeout = setTimeout(showMousePos, 50);
             }
@@ -282,13 +286,11 @@ Graph setup functions
         var selRanges;
         plotObj.getPlaceholder().on("plotselecting", function(event,ranges){
             $.each(allPlots, function(index, value) {
-                value.setSelection(ranges);
-            });
-            
-            if (!updateSelTimeout){
-                selRanges = ranges;
-                updateSelTimeout = setTimeout(showSelRange,50);
-            }
+                if (value != plotObj){
+                    value.setSelection(ranges);
+                }
+                value.getPlaceholder().trigger("showRangeTooltip",ranges);
+            }); 
         });
         
         plotObj.getPlaceholder().on("plotunselected",function(event,ranges){
@@ -298,6 +300,13 @@ Graph setup functions
             
             clearTimeout(updateSelTimeout);
             rangeTextDiv.hide();
+        });
+        
+        plotObj.getPlaceholder().on("showRangeTooltip",function(event,ranges){
+            if (!updateSelTimeout){
+                selRanges = ranges;
+                updateSelTimeout = setTimeout(showSelRange,50);
+            }
         });
         
         /*****************
@@ -349,12 +358,14 @@ Graph setup functions
             tickFormatter:suffix_formatter,
             zoomRange:false,
             panRange:false,
-            autoscaleMargin: 0.05
+            autoscaleMargin: 0.05,
+            axisLabelUseCanvas:true
         },
         xaxis:{
             color:"#848484",
             tickColor:"#dddddd",
-            tickFormatter:suffix_formatter
+            tickFormatter:suffix_formatter,
+            axisLabelUseCanvas:true
         },
         zoom:{
             interactive:true,
