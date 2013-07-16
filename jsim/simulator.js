@@ -127,11 +127,36 @@ Graph setup functions
     Zoom/pan setup: sets up zooming and panning buttons
     ********************/
     function zoom_pan_setup(div,plotObj){
-        var zoomInButton = $('<button>+</button>');
-        var zoomResetButton = $('<button>Reset</button>');
-        var zoomOutButton = $('<button>-</button>');
-        var scrollLeftButton = $('<button>\<</button>');
-        var scrollRightButton = $('<button>\></button>');
+        var zoomInButton = $('<button class="btn btn-mini">'+
+                             '<i class="icon-zoom-in"></i></button>').tooltip({
+            delay:100,
+            container:'body',
+            title:'Zoom In'
+        });
+        var zoomResetButton = $('<button class="btn btn-mini">'+
+                             '<i class="icon-search"></i></button>').tooltip({
+            delay:100,
+            container:'body',
+            title:'Reset Zoom'
+        });
+        var zoomOutButton = $('<button class="btn btn-mini">'+
+                             '<i class="icon-zoom-out"></i></button>').tooltip({
+            delay:100,
+            container:'body',
+            title:'Zoom Out'
+        });
+        var scrollLeftButton = $('<button class="btn btn-mini">'+
+                             '<i class="icon-chevron-left"></i></button>').tooltip({
+            delay:100,
+            container:'body',
+            title:'Pan Left'
+        });
+        var scrollRightButton = $('<button class="btn btn-mini">'+
+                             '<i class="icon-chevron-right"></i></button>').tooltip({
+            delay:100,
+            container:'body',
+            title:'Pan Right'
+        });
         zoomInButton.on("click",function(){
             plotObj.clearSelection();
             plotObj.zoom();
@@ -153,11 +178,14 @@ Graph setup functions
             plotObj.pan({left:100});
         });
         
-        div.append(zoomInButton,
+        var btnGroup1 = $('<div class="btn-group"></div>');
+        btnGroup1.append(zoomInButton,
                    zoomResetButton,
-                   zoomOutButton,
-                   scrollLeftButton,
+                   zoomOutButton);
+        var btnGroup2 = $('<div class="btn-group"></div>');
+        btnGroup2.append(scrollLeftButton,
                    scrollRightButton);
+        div.append(btnGroup1,btnGroup2);
         
         plotObj.getPlaceholder().on("mousewheel",function(evt){
             evt.preventDefault();
@@ -521,31 +549,31 @@ Graphing functions
         
         console.log("analyses:",analyses)
     
-        for (var i = 0; i < analyses.length; i += 1){
-            console.log("simulating analysis ",analyses[i]);
-            try {
-                var analysis = analyses[i];
-                switch (analysis.type) {
-                case 'tran':
-                    cktsim.transient_analysis(netlist, analysis.parameters.tstop,
-                                              [], function(ignore, results) {
-                        tran_plot(div, results, plots);
-                    });
-                    break;
-                case 'ac':
-                    var results = cktsim.ac_analysis(netlist, analysis.parameters.fstart,
-                                                     analysis.parameters.fstop,
-                                                     analysis.parameters.ac_source_name);
-                    ac_plot(div, results, plots);
-                    break;
-                case 'dc':
-                    break;
-                }
+//        for (var i = 0; i < analyses.length; i += 1){
+//            console.log("simulating analysis ",analyses[i]);
+        try {
+            var analysis = analyses[0];
+            switch (analysis.type) {
+            case 'tran':
+                cktsim.transient_analysis(netlist, analysis.parameters.tstop,
+                                          [], function(ignore, results) {
+                    tran_plot(div, results, plots);
+                });
+                break;
+            case 'ac':
+                var results = cktsim.ac_analysis(netlist, analysis.parameters.fstart,
+                                                 analysis.parameters.fstop,
+                                                 analysis.parameters.ac_source_name);
+                ac_plot(div, results, plots);
+                break;
+            case 'dc':
+                break;
             }
-            catch (err) {
-                throw new Parser.CustomError(err,analysis.line,0);
-            }   
         }
+        catch (err) {
+            throw new Parser.CustomError(err,analysis.line,0);
+        }   
+//        }
     }
 
 /*********************
