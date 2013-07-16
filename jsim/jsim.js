@@ -49,7 +49,8 @@ $(function() {
 '.ends\n'+
 'Xtest a b transtest\n'+
 '.tran 5u\n'+
-'.plot a b\n');
+'.plot a b\n\n'+
+'.plot a b');
     
     editor.openTab('ac.jsim',''+
 '// AC analysis test\n'+
@@ -57,7 +58,7 @@ $(function() {
 'R1 n1 n2 1k\n'+
 'C1 n2 gnd 1n\n'+
 '.ac V1 1 1G\n'+
-'.plot n2');
+'.plot n2\n');
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
     }

@@ -116,7 +116,10 @@ Graph setup functions
     /*****************
     Graph setup: calls all the other setup functions. Consolidated for neatness.
     ******************/
+    var allPlots = [];
+    
     function graph_setup(div,plotObj){
+        allPlots.push(plotObj);
         div.css("position","relative");
         zoom_pan_setup(div,plotObj);
         hover_setup(div,plotObj);
@@ -209,6 +212,13 @@ Graph setup functions
         var latestPos;
         plotObj.getPlaceholder().on("plothover", function(event,pos,item){
             latestPos = pos;
+            
+            $.each(allPlots, function(index,value){
+                if (value != plotObj.getPlaceholder()){
+                    value.setCrosshair(pos)
+                }
+            });
+            
             if (!updateMouseTimeout){
                 updateMouseTimeout = setTimeout(showMousePos, 50);
             }
@@ -262,15 +272,19 @@ Graph setup functions
         var rangeTextDiv = $("<div class='posText'><div class='xrange'></div></div>");
         
         var innerRangeTextDivs = {};
-        div.append(rangeTextDiv);
+        plotObj.getPlaceholder().append(rangeTextDiv);
         
-        rangeTextDiv.css("bottom",plotObj.getPlotOffset().bottom + 30);
+        rangeTextDiv.css("bottom",plotObj.getPlotOffset().bottom + 5);
         rangeTextDiv.css("left",plotObj.getPlotOffset().left + 5);
         rangeTextDiv.hide();
         
         var updateSelTimeout;
         var selRanges;
         plotObj.getPlaceholder().on("plotselecting", function(event,ranges){
+            $.each(allPlots, function(index, value) {
+                value.setSelection(ranges);
+            });
+            
             if (!updateSelTimeout){
                 selRanges = ranges;
                 updateSelTimeout = setTimeout(showSelRange,50);
@@ -278,6 +292,10 @@ Graph setup functions
         });
         
         plotObj.getPlaceholder().on("plotunselected",function(event,ranges){
+            $.each(allPlots, function(index, value){
+                value.clearSelection();
+            });
+            
             clearTimeout(updateSelTimeout);
             rangeTextDiv.hide();
         });
@@ -541,10 +559,10 @@ Graphing functions
         if (netlist.length === 0) return;
         if (analyses.length === 0) return;
         
-        console.log("analyses:",analyses)
+//        console.log("analyses:",analyses)
+        
+        allPlots = [];
     
-//        for (var i = 0; i < analyses.length; i += 1){
-//            console.log("simulating analysis ",analyses[i]);
         try {
             var analysis = analyses[0];
             switch (analysis.type) {
@@ -566,8 +584,7 @@ Graphing functions
         }
         catch (err) {
             throw new Parser.CustomError(err,analysis.line,0);
-        }   
-//        }
+        }
     }
 
 /*********************
