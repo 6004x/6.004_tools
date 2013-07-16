@@ -1,7 +1,7 @@
 BSim.Beta = function(mem_size) {
     "use strict";
     var self = this;
-    var mMemory = new Uint8Array(mem_size); // TODO: it might make sense to use an Int32Array here.
+    var mMemory = new BSim.Beta.Memory(mem_size); // TODO: it might make sense to use an Int32Array here.
     var mRegisters = new Int32Array(32);
     var mRunning = false; // Only true when calling run(); not executeCycle().
     var mPC = 0x80000000;
@@ -21,10 +21,34 @@ BSim.Beta = function(mem_size) {
     // changes are signalled immediately and these are not used.
     var mChangedRegisters = {};
     var mChangedWords = {};
+    var mLastReads = [];
+    var mLastWrites = [];
+
+    // Used for 'step back'
+    var mHistory = new Dequeue();
+    var mCurrentStep = {};
+    // The below two are an optimisation for Safari. While V8 and whatever Firefox uses can
+    // optimise for the 'class' pattern formed by UndoStep, Safari cannot. This means that
+    // accessing mCurrentStep.registers is extremely slow, even when mCurrentStep is an
+    // instance of a recognisable class (UndoStep). To work around this, we instead use
+    // variables to hold the frequently accessed members of mCurrentStep, then stuff them
+    // in at the end of each cycle.
+    var mCurrentStepRegisters = {};
+    var mCurrentStepWords = {};
 
     // Information not strictly related to running the Beta, but needed in BSim
     var mBreakpoints = {};
     var mLabels = {};
+    var mOptions = {
+        clock: false,
+        div: true,
+        mul: true,
+        kalways: false,
+        tty: false,
+        annotate: false
+    };
+    var mVerifier = null;
+    var mTTYContent = '';
 
     // Mostly exception stuff.
     var SUPERVISOR_BIT = 0x80000000;
@@ -39,23 +63,37 @@ BSim.Beta = function(mem_size) {
     var INTERRUPT_KEYBOARD = 0x04;
     var INTERRUPT_MOUSE = 0x08;
 
+    var UndoStep = function(pc) {
+        this.registers = {};
+        this.words = {};
+        this.pc = pc;
+        this.tty = null;
+    };
+
     _.extend(this, Backbone.Events);
 
     this.loadBytes = function(bytes) {
         this.stop();
         this.reset();
-        mMemory = new Uint8Array(bytes.length);
-        this.trigger('resize:memory', bytes.length);
-        for(var i = 0; i < bytes.length; ++i) {
-            this.writeByte(i, bytes[i]);
-        }
+
+        mMemory.loadBytes(bytes);
+
         // Update the UI with our new program.
+        this.trigger('resize:memory', bytes.length);
         this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
-        var r = _.range(0, mMemory.length, 4);
+        var r = _.range(0, mMemory.size(), 4);
         this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
 
         this.clearBreakpoints();
         this.setLabels({});
+    };
+
+    this.setOption = function(option, enabled) {
+        mOptions[option] = enabled;
+    };
+
+    this.isOptionSet = function(option) {
+        return !!mOptions[option];
     };
 
     // Takes a list of breakpoint addresses and replaces all current breakpoints with them.
@@ -89,39 +127,49 @@ BSim.Beta = function(mem_size) {
         return mLabels[address & ~SUPERVISOR_BIT] || null;
     };
 
-    this.readByte = function(address) {
-        address &= ~SUPERVISOR_BIT; // Drop supervisor bit
-        return mMemory[address];
+    this.setVerifier = function(verifier) {
+        this.mVerifier = verifier;
     };
 
-    this.readWord = function(address) {
-        address &= ~SUPERVISOR_BIT;
-        address &= 0xFFFFFFFC; // Force multiples of four.
-        return (
-            (self.readByte(address+3) << 24) |
-            (self.readByte(address+2) << 16) |
-            (self.readByte(address+1) << 8)  |
-            self.readByte(address+0)
-        );
+    this.verifier = function() {
+        return this.mVerifier;
     };
 
-    this.writeByte = function(address, value) {
-        address &= ~SUPERVISOR_BIT;
-        mMemory[address] = value;
+    this.readWord = function(address, notify) {
+        address &= (~SUPERVISOR_BIT) & 0xFFFFFFFC;
+        if(notify) {
+            if(!mRunning) {
+                self.trigger('read:word', address);
+            } else {
+                mLastReads.push(address);
+                if(mLastReads.length > 5) mLastReads.shift();
+            }
+        }
+
+        return mMemory.readWord(address);
     };
 
-    this.writeWord = function(address, value) {
+    this.writeWord = function(address, value, notify) {
         value |= 0; // force to int.
         address &= ~SUPERVISOR_BIT;
         address &= 0xFFFFFFFC; // Force multiples of four.
-        this.writeByte(address + 3, (value >>> 24) & 0xFF);
-        this.writeByte(address + 2, (value >>> 16) & 0xFF);
-        this.writeByte(address + 1, (value >>> 8) & 0xFF);
 
-        this.writeByte(address + 0, (value & 0xFF));
+        // Implement undo
+        if(!_.has(mCurrentStepWords, address))
+            mCurrentStepWords[address] = this.readWord(address);
+
+        mMemory.writeWord(address, value);
 
         if(!mRunning) this.trigger('change:word', address, value);
-        else mChangedWords[address] = value;
+        if(notify) {
+            if(!mRunning) {
+                this.trigger('write:word', address);
+            } else {
+                mLastWrites.push(address);
+                if(mLastWrites.length > 5) mLastWrites.shift();
+            }
+        }
+        mChangedWords[address] = value;
     };
 
     this.readRegister = function(register) {
@@ -132,6 +180,11 @@ BSim.Beta = function(mem_size) {
     this.writeRegister = function(register, value) {
         value |= 0; // force to int.
         if(register == 31) return;
+
+        // Implement undo
+        if(!_.has(mCurrentStepRegisters, register))
+            mCurrentStepRegisters[register] = this.readRegister(register);
+
         mRegisters[register] = value;
 
         if(!mRunning) this.trigger('change:register', register, value);
@@ -140,6 +193,7 @@ BSim.Beta = function(mem_size) {
 
     this.setPC = function(address, allow_supervisor) {
         if(!(mPC & SUPERVISOR_BIT) && !allow_supervisor) address &= ~SUPERVISOR_BIT;
+        if(this.isOptionSet('kalways')) address |= SUPERVISOR_BIT;
         mPC = address & 0xFFFFFFFC; // Only multiples of four are valid.
 
         if(!mRunning) this.trigger('change:pc', address);
@@ -173,9 +227,32 @@ BSim.Beta = function(mem_size) {
         };
     };
 
-    // This is a RESET exception, rather than actually resetting all state.
     this.reset = function() {
         this.setPC(SUPERVISOR_BIT | VEC_RESET, true);
+        mRegisters = new Int32Array(32);
+        mPendingInterrupts = 0;
+        mCycleCount = 0;
+        mClockCounter = 0;
+        mMemory.reset();
+        this.mMouseCoords = -1;
+        this.mKeyboardInput = null;
+        mTTYContent = '';
+
+        // Tell the world.
+        this.trigger('text:clear');
+        this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
+        var r = _.range(0, mMemory.size(), 4);
+        this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
+    };
+
+    this.ttyOut = function(text) {
+        mCurrentStep.tty = mTTYContent;
+        mTTYContent += text;
+        this.trigger('text:out', text);
+    };
+
+    this.ttyContent = function() {
+        return mTTYContent;
     };
 
     this.inSupervisorMode = function() {
@@ -199,7 +276,9 @@ BSim.Beta = function(mem_size) {
 
     // Triggers a clock interrupt
     this.clockInterrupt = function() {
-        mPendingInterrupts |= INTERRUPT_CLOCK;
+        if(this.isOptionSet('clock')) {
+            mPendingInterrupts |= INTERRUPT_CLOCK;
+        }
     };
 
     var doClockInterrupt = function() {
@@ -210,9 +289,11 @@ BSim.Beta = function(mem_size) {
 
     // Keyboard interrupt
     this.keyboardInterrupt = function(character) {
-        this.mKeyboardInput = character; // TODO: buffering?
-        mPendingInterrupts |= INTERRUPT_KEYBOARD;
-        console.log(character);
+        if(this.isOptionSet('tty')) {
+            this.mKeyboardInput = character; // TODO: buffering?
+            mPendingInterrupts |= INTERRUPT_KEYBOARD;
+            console.log(character);
+        }
     };
 
     var doKeyboardInterrupt = function() {
@@ -223,8 +304,10 @@ BSim.Beta = function(mem_size) {
 
     // Mouse interrupt
     this.mouseInterrupt = function(x, y) {
-        this.mMouseCoords = ((y & 0xFFFF) << 16) | (x & 0xFFFF);
-        mPendingInterrupts |= INTERRUPT_MOUSE;
+        if(this.isOptionSet('tty')) {
+            this.mMouseCoords = ((y & 0xFFFF) << 16) | (x & 0xFFFF);
+            mPendingInterrupts |= INTERRUPT_MOUSE;
+        }
     };
 
     var doMouseInterrupt = function() {
@@ -266,11 +349,16 @@ BSim.Beta = function(mem_size) {
                 return;
             }
         }
+        // Prepare undo
+        mCurrentStep = new UndoStep(mPC);
+
         mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
         // Continue on with instructions as planned.
         var instruction = this.readWord(mPC);
+        var old_pc = mPC;
         mPC += 4; // Increment this early so that we have the right reference for exceptions.
         if(instruction === 0) {
+            mPC -= 4;
             return false;
         }
         var decoded = this.decodeInstruction(instruction);
@@ -284,13 +372,55 @@ BSim.Beta = function(mem_size) {
             return this.handleIllegalInstruction(decoded);
         }
         if(!mRunning) this.trigger('change:pc', mPC);
-        // console.log(op.disassemble(decoded));
-        if(op.has_literal) {
-            return op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
-        } else {
-            return op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
+        try {
+            var ret = null;
+            if(op.has_literal) {
+                ret = op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
+            } else {
+                ret = op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
+            }
+            if(ret === false) {
+                console.log("call failed");
+                this.setPC(old_pc, true);
+            }
+            mCurrentStep.registers = mCurrentStepRegisters;
+            mCurrentStep.words = mCurrentStepWords;
+            mHistory.push(mCurrentStep);
+            if(mHistory.length() > 50) mHistory.shift();
+            return ret;
+        } catch(e) {
+            if(e instanceof BSim.Beta.RuntimeError) {
+                this.trigger('error', e);
+                this.setPC(old_pc, true);
+                return false;
+            } else {
+                throw e;
+            }
         }
+
+        return false;
     };
+
+    this.undoCycle = function() {
+        if(!mHistory.length) return false;
+        var step = mHistory.pop();
+        _.each(step.registers, function(value, register) {
+            self.writeRegister(register, value);
+        });
+        _.each(step.words, function(value, address) {
+            self.writeWord(address, value);
+        });
+        self.setPC(step.pc, true);
+        if(step.tty) {
+            mTTYContent = step.tty;
+            self.trigger('text:replace', mTTYContent);
+        }
+        return true;
+    };
+
+    this.undoLength = function() {
+        return mHistory.length();
+    }
 
     // Runs the program to completion (if it terminates) or until stopped using
     // stop(). Yields to the UI every `quantum` emulated cycles.
@@ -301,7 +431,8 @@ BSim.Beta = function(mem_size) {
     this.run = function(quantum) {
         this.trigger('run:start');
         mRunning = true;
-        setTimeout(function run_inner() {
+        _.defer(function run_inner() {
+            var exception = null;
             // Bail out if we're not supposed to run any more.
             if(!mRunning) {
                 self.trigger('run:stop');
@@ -326,13 +457,17 @@ BSim.Beta = function(mem_size) {
             // Now relay all the changes that occurred during our quantum.
             self.trigger('change:bulk:word', mChangedWords);
             self.trigger('change:bulk:register', mChangedRegisters);
+            self.trigger('read:bulk:word', mLastReads);
+            self.trigger('write:bulk:word', mLastWrites);
             self.trigger('change:pc', mPC);
             mChangedRegisters = {};
             mChangedWords = {};
+            mLastReads = [];
+            mLastWrites = [];
 
             // Run again.
             _.defer(run_inner);
-        }, 1);
+        });
     };
 
     this.stop = function() {
@@ -345,8 +480,16 @@ BSim.Beta = function(mem_size) {
 
     // Returns memory size in bytes.
     this.memorySize = function() {
-        return mMemory.length;
+        return mMemory.size();
+    };
+
+    this.getMemory = function() {
+        return mMemory;
     };
 
     return this;
+};
+
+BSim.Beta.RuntimeError = function(message) {
+    this.message = message;
 };

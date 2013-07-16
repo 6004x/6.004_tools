@@ -146,7 +146,7 @@ var FileSystem= function(){
             if(action(i, followPath, pathArray[i], pathArray.length))
                 followPath=followPath[pathArray[i]];//.slice(1)];
         }
-        return followPath;
+        return followPath || []; // wtf?
     }
     function getFileFromTree(fileName){
         var finalTree=traverseTree(fileName, function(i, tree){return true;} );
@@ -195,6 +195,7 @@ var FileSystem= function(){
     }
 
     function sendAjaxRequest(filePath, fileData, dataType, query, callbackFunction, failFunction){
+        console.log(failFunction);
         failFunction=failFunction||failResponse;
 
         if(!fileData)
