@@ -156,24 +156,44 @@ Graph setup functions
                              '<i class="icon-chevron-right"></i></button>').tooltip(tooltipOpts);
         
         zoomInButton.on("click",function(){
-            plotObj.clearSelection();
-            plotObj.zoom();
+//            plotObj.clearSelection();
+//            plotObj.zoom();
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.zoom();
+            });
         });
         zoomResetButton.on("click",function(){
-            plotObj.clearSelection();
-            plotObj.zoom({amount:1e-10});
+//            plotObj.clearSelection();
+//            plotObj.zoom({amount:1e-10});
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.zoom({amount:1e-10});
+            });
         });
         zoomOutButton.on("click",function(){
-            plotObj.clearSelection();
-            plotObj.zoomOut();
+//            plotObj.clearSelection();
+//            plotObj.zoomOut();
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.zoomOut();
+            });
         });
         scrollLeftButton.on("click",function(){
-            plotObj.clearSelection();
-            plotObj.pan({left:-100});
+//            plotObj.clearSelection();
+//            plotObj.pan({left:-100});
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.pan({left:-100});
+            });
         });
         scrollRightButton.on("click",function(){
-            plotObj.clearSelection();
-            plotObj.pan({left:100});
+//            plotObj.clearSelection();
+//            plotObj.pan({left:100});
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.pan({left:100});
+            });
         });
         
         var btnGroup = $('<div class="btn-group btn-group-vertical zoompan"></div>');
@@ -191,18 +211,32 @@ Graph setup functions
         plotObj.getPlaceholder().on("mousewheel",function(evt){
             evt.preventDefault();
 //            console.log("delta:",evt.originalEvent);
-            plotObj.clearSelection();
-            plotObj.pan({left:-1*evt.originalEvent.wheelDeltaX});
+//            plotObj.clearSelection();
+//            plotObj.pan({left:-1*evt.originalEvent.wheelDeltaX});
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.pan({left:-1*evt.originalEvent.wheelDeltaX});
+            });
         });
         
-//        plotObj.getPlaceholder().on("plotpan",function(evt,args){
-//            args.preventEvent = true;
-//            plotObj.pan(args);
-//        });
-//        plotObj.getPlaceholder().on("plotzoom",function(evt,args){
-//            args.preventEvent = true;
-//            plotObj.zoom(args);
+        plotObj.getPlaceholder().on("dblclick",function(evt){
+            evt.preventDefault();
+            
+            var center = {};
+            center.left = evt.pageX - plotObj.offset().left;
+            center.top = evt.pageY - plotObj.offset().top;
+            
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                if (evt.shiftKey){
+                    item.zoomOut({center:center});
+                    return;
+                }
+                item.zoom({center:center});
+            });
         });
+        
+        
     }
     
     /***********************
@@ -299,7 +333,9 @@ Graph setup functions
         plotObj.getPlaceholder().on("plotselecting", function(event,ranges){
             $.each(allPlots, function(index, value) {
                 if (value != plotObj){
-                    value.setSelection(ranges);
+                    if (ranges){
+                        value.setSelection(ranges);
+                    }
                 }
                 value.getPlaceholder().trigger("showRangeTooltip",ranges);
             }); 
@@ -328,7 +364,7 @@ Graph setup functions
             updateSelTimeout = null;
             ranges = selRanges;
             
-            if (ranges === null){ return; }
+            if (!ranges){ return; }
             
             var xrange = ranges.xaxis.to - ranges.xaxis.from;
             
@@ -382,10 +418,10 @@ Graph setup functions
             axisLabelColor:'rgb(84,84,84)',
             axisLabelPadding:5
         },
-        zoom:{
-            interactive:true,
-            trigger:"dblclick"
-        },
+//        zoom:{
+//            interactive:true,
+//            trigger:"dblclick"
+//        },
         series:{
             shadowSize:0
         },
