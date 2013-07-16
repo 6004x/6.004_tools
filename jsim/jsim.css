@@ -16,3 +16,13 @@
     margin-left: 5px;
     margin-right: 5px;
 }
+
+.placeholder {
+    display:inline-block;
+}
+
+.zoompan {
+    display:inline-block;
+    vertical-align:top;
+    position:relative;
+}

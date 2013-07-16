@@ -127,36 +127,28 @@ Graph setup functions
     Zoom/pan setup: sets up zooming and panning buttons
     ********************/
     function zoom_pan_setup(div,plotObj){
+        var tooltipOpts = {delay:100, container:'body', placement:'right'}
+        
+        tooltipOpts.title = 'Zoom In';
         var zoomInButton = $('<button class="btn btn-mini">'+
-                             '<i class="icon-zoom-in"></i></button>').tooltip({
-            delay:100,
-            container:'body',
-            title:'Zoom In'
-        });
+                             '<i class="icon-zoom-in"></i></button>').tooltip(tooltipOpts);
+        
+        tooltipOpts.title = 'Reset Zoom';
         var zoomResetButton = $('<button class="btn btn-mini">'+
-                             '<i class="icon-search"></i></button>').tooltip({
-            delay:100,
-            container:'body',
-            title:'Reset Zoom'
-        });
+                             '<i class="icon-search"></i></button>').tooltip(tooltipOpts);
+        
+        tooltipOpts.title = 'Zoom Out';
         var zoomOutButton = $('<button class="btn btn-mini">'+
-                             '<i class="icon-zoom-out"></i></button>').tooltip({
-            delay:100,
-            container:'body',
-            title:'Zoom Out'
-        });
+                             '<i class="icon-zoom-out"></i></button>').tooltip(tooltipOpts);
+        
+        tooltipOpts.title = 'Pan Left'
         var scrollLeftButton = $('<button class="btn btn-mini">'+
-                             '<i class="icon-chevron-left"></i></button>').tooltip({
-            delay:100,
-            container:'body',
-            title:'Pan Left'
-        });
+                             '<i class="icon-chevron-left"></i></button>').tooltip(tooltipOpts);
+        
+        tooltipOpts.title = 'Pan Right';
         var scrollRightButton = $('<button class="btn btn-mini">'+
-                             '<i class="icon-chevron-right"></i></button>').tooltip({
-            delay:100,
-            container:'body',
-            title:'Pan Right'
-        });
+                             '<i class="icon-chevron-right"></i></button>').tooltip(tooltipOpts);
+        
         zoomInButton.on("click",function(){
             plotObj.clearSelection();
             plotObj.zoom();
@@ -178,14 +170,17 @@ Graph setup functions
             plotObj.pan({left:100});
         });
         
-        var btnGroup1 = $('<div class="btn-group"></div>');
-        btnGroup1.append(zoomInButton,
+        var btnGroup = $('<div class="btn-group btn-group-vertical zoompan"></div>');
+        btnGroup.append(zoomInButton,
                    zoomResetButton,
-                   zoomOutButton);
-        var btnGroup2 = $('<div class="btn-group"></div>');
-        btnGroup2.append(scrollLeftButton,
-                   scrollRightButton);
-        div.append(btnGroup1,btnGroup2);
+                   zoomOutButton,
+                   scrollLeftButton,
+                   scrollRightButton
+                        );
+        div.append(btnGroup);
+        
+        btnGroup.css("top",plotObj.height()/2 - 40);
+        
         
         plotObj.getPlaceholder().on("mousewheel",function(evt){
             evt.preventDefault();
@@ -193,7 +188,6 @@ Graph setup functions
             plotObj.clearSelection();
             plotObj.pan({left:-1*evt.originalEvent.wheelDeltaX});
         });
-//        plotObj.getPlaceholder().on("click",function(){ console.log("click");});
     }
     
     /***********************
