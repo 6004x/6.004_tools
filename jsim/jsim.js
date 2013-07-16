@@ -29,7 +29,7 @@ $(function() {
     Folders.refresh();
     
     function dls(){
-        split.split();
+        $('#split_pane').click();
         editor.clearErrors();
         var content = editor.content()
         var filename = editor.currentTab();

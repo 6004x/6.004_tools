@@ -7,18 +7,15 @@
         var mRight = $(right_node);
 
         this.split = function() {
-            mContainer.addClass('span9');
             splitSide(mLeft);
             splitSide(mRight);
         };
 
         this.maximiseLeft = function() {
-            mContainer.addClass('span9');
             maximise(mLeft, mRight);
         };
 
         this.maximiseRight = function() {
-            mContainer.removeClass('span9');
             maximise(mRight, mLeft);
         };
 
