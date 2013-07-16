@@ -302,39 +302,3 @@ var Editor = function(container, mode) {
     initialise();
 };
 Editor.IsSetUp = false;
-
-<<<<<<< HEAD
-// Represents a toolbar button for the editor.
-// icon: a string (displayed as a string), a Bootstrap icon (any string beginning 'icon-'), or a DOM node
-// callback: called when the button is clicked.
-// tooltip: tooltip displayed when the user hovers over the button (optional)
-var ToolbarButton = function(icon, callback, tooltip) {
-    var self = this;
-    var mTooltip = tooltip;
-    var mIcon = icon;
-    var mCallback = callback;
-    var mElement = null;
-
-    // Renders the button in the given jQuery container element.
-    self.render = function(container) {
-        if(mElement) {
-            mElement.remove();
-            mElement = null;
-        }
-        // Special case: if 'icon' is a string starting with 'icon-', assume they wanted a Bootstrap icon.
-        // Otherwise it's whatever jQuery makes of it.
-        if(/^icon-/.test(mIcon)) {
-            mIcon = $('<i>').addClass(mIcon);
-        }
-        mElement = $('<button class="btn">').append(mIcon);
-        if(mTooltip) {
-            mElement.tooltip({title: mTooltip, placement: 'top', delay: 100, container: 'body'});
-        }
-        if(mCallback) {
-            mElement.click(mCallback);
-        }
-        container.append(mElement);
-    };
-};
-=======
->>>>>>> master
