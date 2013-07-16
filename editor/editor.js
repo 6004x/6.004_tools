@@ -189,10 +189,24 @@ var Editor = function(container, mode) {
         doc.tab.removeClass('active');
     };
 
-    var closeTab = function(doc) {
+    var closeTab = function(doc, force) {
         if(!doc) return;
-        if(!doc.cm.isClean(doc.generation)) {
-            alert("Document has unsaved changes!\nTODO: Handle this.");
+        if(!doc.cm.isClean(doc.generation) && !force) {
+            var dialog = new ModalDialog();
+            dialog.setTitle("Unsaved document");
+            dialog.setContent("<p><strong>Do you want to save the changes you made to " + doc.name + "?</strong></p>"
+                + "<p>Your changes will be lost if you don't save them.</p>");
+            dialog.addButton("Don't save", function() {
+                closeTab(doc, true);
+                dialog.dismiss();
+            }, "btn-danger");
+            dialog.addButton("Cancel", "dismiss");
+            dialog.addButton("Save", function() {
+                do_save();
+                closeTab(doc, true);
+                dialog.dismiss();
+            }, "btn-primary");
+            dialog.show();
             return;
         }
         // Figure out what document we should open next by taking siblings of our object.
@@ -231,9 +245,6 @@ var Editor = function(container, mode) {
             styleActiveLine: true,
             value: content,
             mode: mSyntaxMode
-        });
-        cm.on('save', function() {
-            alert("This would save, if it had anything to save to.");
         });
         return cm;
     };

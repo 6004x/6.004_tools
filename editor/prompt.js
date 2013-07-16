@@ -24,7 +24,9 @@ var ModalDialog = function() {
         if(callback === 'dismiss') {
             button.attr('data-dismiss', 'modal');
         } else if(_.isFunction(callback)) {
-            callback(this);
+            button.click(function() {
+                callback(this);
+            });
         } else {
             throw new Error("Button added with illegal callback!");
         }
