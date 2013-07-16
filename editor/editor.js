@@ -288,6 +288,8 @@ var Editor = function(container, mode) {
         mTabHolder = $('<ul class="nav nav-tabs">');
         mContainer.append(mTabHolder);
 
+        $(window).bind('beforeunload', handle_page_unload);
+
         // Do some one-time setup.
         if(!Editor.IsSetUp) {
             CodeMirror.commands.save = do_save;
@@ -308,6 +310,16 @@ var Editor = function(container, mode) {
             current_document.generation = current_document.cm.changeGeneration();
             handle_change_tab_icon(current_document)
         });
+    };
+
+    var handle_page_unload = function() {
+        for(var name in mOpenDocuments) {
+            if(!_.has(mOpenDocuments, name)) continue;
+            var doc = mOpenDocuments[name];
+            if(!doc.cm.isClean(doc.generation)) {
+                return "You have unsaved files. If you leave the page you will lose your unsaved work."
+            }
+        }
     };
 
     initialise();
