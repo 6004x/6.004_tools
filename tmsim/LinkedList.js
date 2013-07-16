@@ -55,7 +55,6 @@ function LinkedList(){
 					return current.data;
 				}
 			} else if (direction==='-'){
-				console.log('staying put');
 				return current.data;
 			} else {
 				console.log(direction + ' is invalid');

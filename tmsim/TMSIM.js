@@ -1,13 +1,13 @@
 function TMSIM(){
 
 	var tsm = new TSM();
-	var quotedRegExp = /\"[^\n]+\"/;
+	var quotedRegExp = /\"([^\n\"]|\\\"|\\\/)+\"/;
 	var multiLineRegExp = /\/\*(.|\n)*\*\//;
 	var commentRegExp = /\/\/(.)*\n/;
 	var variableRegExp = /[^\s\/\\\"\']+/
 	var selectedRegExp = /\[(\"[^\n]+\"|[^\s\/"']+)+\]/
 	var commentRegExp = /\/\/|\/\*|\*\/|\n/
-	var keywordRegExp = /(action|symbols|states|tape|result|result1|checkoff)\b/
+	var keywordRegExp = /^(action|symbols|states|tape|result|result1|checkoff)\b/
 	var regexp = new RegExp('('+multiLineRegExp.source+'|'+keywordRegExp+'|'+commentRegExp.source+'|'+quotedRegExp.source +'|'+ variableRegExp.source+'|'+selectedRegExp.source +')', 'g');
 	var oldRegexp=/(\"[^\n]+\"|\[\w+\]|\w+\b|\*\w+\b\*|^[^\s\/"']+|\n|-|\/\/|\/\*|\*\/)/g
 	

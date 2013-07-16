@@ -56,8 +56,8 @@ function TSM(){
 		// console.log(new_state);
 		if(state_transition.new_state === '*halt*'){
 			valid=false;
-			mTape.printLL();
-			console.log('halting the sm');
+			// mTape.printLL();
+			// console.log('halting the sm');
 			return false;
 		} else if (state_transition.new_state === '*error*'){
 			valid=false;
