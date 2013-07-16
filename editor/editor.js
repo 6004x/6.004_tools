@@ -288,7 +288,7 @@ var Editor = function(container, mode) {
         mTabHolder = $('<ul class="nav nav-tabs">');
         mContainer.append(mTabHolder);
 
-        $(window).bind('beforeunload', handle_page_unload);
+        $(window).on('beforeunload', handle_page_unload);
 
         // Do some one-time setup.
         if(!Editor.IsSetUp) {
@@ -317,7 +317,7 @@ var Editor = function(container, mode) {
             if(!_.has(mOpenDocuments, name)) continue;
             var doc = mOpenDocuments[name];
             if(!doc.cm.isClean(doc.generation)) {
-                return "You have unsaved files. If you leave the page you will lose your unsaved work."
+                return "You have unsaved files. If you leave the page you will lose your unsaved work.";
             }
         }
     };
