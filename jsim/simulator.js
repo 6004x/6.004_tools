@@ -69,8 +69,11 @@ Number formatting functions
     /*******************
     Suffix formatter: calls engineering_notation on a number with two decimal places specified
     ********************/
-    function suffix_formatter(value) {
-        return engineering_notation(value, 2);
+    function suffix_formatter(value,axis) {
+//        console.log("axis:",axis);
+        var base = engineering_notation(value, 2);
+        if (axis && axis.options.units){ return base+axis.options.units; }
+        else { return base; }
     }
     
 /**************************************************
@@ -359,13 +362,16 @@ Graph setup functions
             zoomRange:false,
             panRange:false,
             autoscaleMargin: 0.05,
-            axisLabelUseCanvas:true
+            axisLabelUseCanvas:true,
+            axisLabelColor:'rgb(84,84,84)',
         },
         xaxis:{
             color:"#848484",
             tickColor:"#dddddd",
             tickFormatter:suffix_formatter,
-            axisLabelUseCanvas:true
+            axisLabelUseCanvas:true,
+            axisLabelColor:'rgb(84,84,84)',
+            axisLabelPadding:5
         },
         zoom:{
             interactive:true,
@@ -457,6 +463,9 @@ Graphing functions
             options.xaxis.axisLabel = 'Time (s)';
             options.xaxis.zoomRange = [null, (xmax-xmin)];
             options.xaxis.panRange = [xmin, xmax];
+            
+            options.xaxis.units = 's';
+            options.yaxis.units = current? 'A' : 'V';
         
             // graph the data
             var plotObj = $.plot(plotdiv,dataseries,options);
@@ -534,6 +543,8 @@ Graphing functions
             options.xaxis.zoomRange = [null,(xmax-xmin)];
             options.xaxis.panRange = [xmin, xmax];
             
+            options.yaxis.units = ' dB';
+            
             // graph magnitude
             var plotObj = $.plot(plotDiv, mplots, options);
             graph_setup(div1, plotObj);
@@ -546,7 +557,8 @@ Graphing functions
             div2.append(plotDiv);
             
             // customize options for phase graph
-            options.yaxis.axisLabel = "Phase (deg)";
+            options.yaxis.axisLabel = "Phase (degrees)";
+            options.yaxis.units = '\u00B0';
             
             // graph phase
             var plotObj = $.plot(plotDiv, pplots, options);
