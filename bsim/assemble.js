@@ -127,7 +127,7 @@
         var num = parseNumber(token);
         // If whatever we had was Not a Number, then it is a syntax error.
         if(isNaN(num) && !optional) {
-            throw new SyntaxError("Incomprehensible number " + token + ". Acceptable bases are hex (0x…), octal (0…), binary (0b…) and decimal.", stream);
+            throw new SyntaxError("Incomprehensible number " + token + ". Acceptable bases are hex (0x...), octal (0...), binary (0b...) and decimal.", stream);
         }
 
         return num;
@@ -251,6 +251,7 @@
     };
     Label.prototype.assemble = function(context, out) {
         context.symbols[this.name] = context.dot;
+        context.labels[this.name] = context.dot;
     };
 
     // Represents an invocation of a macro.
@@ -545,7 +546,7 @@
         return new Align(expression, stream.file(), stream.line_number());
     }
     Align.prototype.assemble = function(context, out) {
-        var align = this.expression.evaluate(context, true);
+        var align = this.expression ? this.expression.evaluate(context, true) : 4;
         if(context.dot % align === 0) return;
         context.dot = context.dot + (align - (context.dot % align));
     }
@@ -590,18 +591,198 @@
         this.file = file;
         this.line = line;
     };
+    Protect.prototype.assemble = function(context, out) {
+        if(out) {
+            var last_range = _.last(context.protection);
+            if(!last_range || last_range.end != Infinity) {
+                context.protection.push({start: context.dot, end: Infinity});
+            }
+        }
+    }
 
     // Represents .unprotect
     var Unprotect = function(file, line) {
         this.file = file;
         this.line = line;
     };
+    Unprotect.prototype.assemble = function(context, out) {
+        if(out) {
+            var last_range = _.last(context.protection);
+            if(last_range && last_range.end == Infinity) {
+                last_range.end = context.dot;
+            }
+        }
+    }
 
     // Represents .options
     var Options = function(options, file, line) {
         this.options = options;
         this.file = file;
         this.line = line;
+    };
+    Options.parse = function(stream) {
+        var options = {};
+        while(!stream.eol()) {
+            eatSpace(stream);
+            var option = readSymbol(stream);
+            switch(option) {
+                case "notty":
+                    options.tty = false;
+                    break;
+                case "tty":
+                    options.tty = true;
+                    break;
+                case "clock":
+                case "clk":
+                    options.clock = true;
+                    break;
+                case "noclock":
+                case "noclk":
+                    options.clock = false;
+                    break;
+                case "annotate":
+                    options.annotate = true;
+                    break;
+                case "noannotate":
+                    options.annotate = false;
+                    break;
+                case "kalways":
+                    options.kalways = true;
+                    break;
+                case "nokalways":
+                    options.kalways = false;
+                    break;
+                case "div":
+                    options.div = true;
+                    break;
+                case "nodiv":
+                    options.div = false;
+                    break;
+                case "mul":
+                    options.mul = true;
+                    break;
+                case "nomul":
+                    options.mul = false;
+                    break;
+                default:
+                    throw new SyntaxError("Unrecognised option '" + option + "'", stream);
+                    break;
+            }
+        }
+        return new Options(options, stream.file(), stream.line_number());
+    };
+    Options.prototype.assemble = function(context, out) {
+        if(out) {
+            _.extend(context.options, this.options);
+        }
+    };
+
+    var Checkoff = function(url, name, checksum, file, line) {
+        this.url = url;
+        this.name = name;
+        this.checksum = checksum;
+        this.file = file;
+        this.line = line;
+    };
+    Checkoff.parse = function(stream) {
+        eatSpace(stream);
+        var url = readString(stream);
+        eatSpace(stream);
+        var name = readString(stream);
+        eatSpace(stream);
+        var checksum = Expression.parse(stream);
+        if(checksum === null) {
+            throw new SyntaxError("Expected checkoff checksum.", stream);
+        }
+        console.log(this.prototype.constructor);
+        return new this.prototype.constructor(url, name, checksum, stream.file(), stream.line_number());
+    };
+    Checkoff.prototype.assemble = function(context, out) {
+        if(out) {
+            if(context.checkoff) {
+                throw new SyntaxError("Multiple checkoffs found! Only one checkoff statement is accepted per program.", this.file, this.line);
+            }
+            context.checkoff = {
+                kind: this.kind,
+                url: this.url,
+                name: this.name,
+                checksum: this.checksum.evaluate(context, true)
+            };
+            console.log(context);
+        }
+    };
+
+    var TCheckoff = function(url, name, checksum, file, line) {
+        Checkoff.call(this, url, name, checksum, file, line);
+        this.kind = 'tty';
+    };
+    TCheckoff.prototype = Object.create(Checkoff.prototype, {constructor: {value: TCheckoff}});
+    TCheckoff.parse = Checkoff.parse;
+
+    var PCheckoff = function(url, name, checksum, file, line) {
+        Checkoff.call(this, url, name, checksum, file, line);
+        this.kind = 'memory';
+        this.running_checksum = 36038;
+    };
+    PCheckoff.prototype = Object.create(Checkoff.prototype, {constructor: {value: PCheckoff}});
+    PCheckoff.parse = Checkoff.parse;
+    PCheckoff.prototype.assemble = function(context, out) {
+        Checkoff.prototype.assemble.call(this, context, out);
+        if(out) {
+            console.log(context);
+            context.checkoff.running_checksum = 36038;
+            context.checkoff.addresses = {};
+        }
+    }
+
+    var Verify = function(address, words, checksum, file, line) {
+        this.address = address;
+        this.words = words;
+        this.file = file;
+        this.line = line;
+        this.checksum_contribution = checksum;
+    };
+    Verify.parse = function(stream) {
+        eatSpace(stream);
+        var address = readNumber(stream, false)
+        if(address === null) {
+            throw new SyntaxError("Expected address", stream);
+        }
+        eatSpace(stream);
+        var count = readNumber(stream, false);
+        if(count === null) {
+            throw new SyntaxError("Expected number of words", stream);
+        }
+        var list = [];
+        var checksum = 0;
+        for(var i = 0; i < count; ++i) {
+            eatSpace(stream);
+            var value = readNumber(stream, false);
+            if(value === null) {
+                throw new SyntaxError("Expected " + count + " words; only got " + list.length + ".", stream);
+            }
+            list.push(value);
+            var i32 = new Int32Array(1);
+            i32[0] = value;
+            i32[0] += (address + i*4);
+            i32[0] *= i+1;
+            i32[0] += checksum;
+            console.log(i32[0]);
+            checksum = i32[0];
+        }
+        return new Verify(address, list, checksum, stream.file(), stream.line_number());
+    };
+    Verify.prototype.assemble = function(context, out) {
+        if(out) {
+            if(!context.checkoff || context.checkoff.kind != 'memory') {
+                throw new SyntaxError(".verify statements are only legal after a .pcheckoff statement.", this.file, this.line);
+            }
+            var i32 = new Int32Array(1);
+            i32[0] = context.checkoff.running_checksum + this.checksum_contribution;
+            context.checkoff.running_checksum = i32[0];
+            // var values = _.map(this.words, function(v) { return v.evaluate(context, true); });
+            _.extend(context.checkoff.addresses, _.object(_.range(this.address, this.address+this.words.length*4, 4), this.words));
+        }
     };
 
     // Public Assembler interface. Constructor takes no arguments.
@@ -646,8 +827,52 @@
             return macro;
         };
 
+        var parse_file = function(file, content, completion_callback, error_callback) {
+            var stream = new StringStream(new FileStream(content, file));
+            var errors = [];
+            var pending_includes = {};
+            var waiting = 0;
+
+            var insert_include = function(include) {
+                if(!_.has(pending_includes, include.filename)) pending_includes[include.filename] = [];
+                pending_includes[include.filename].push(include);
+                ++waiting;
+                FileSystem.getFile(include.filename, function(include_content) {
+                    parse_file(include_content.name, include_content.data, function(syntax) {
+                        --waiting;
+                        include.instructions = syntax;
+                        if(errors.length === 0 && waiting === 0) {
+                            completion_callback(our_syntax);
+                        }
+                    }, error_callback);
+                }, function() {
+                    error_callback([new SyntaxError("File not found: " + include.filename, include.file, include.line)]);
+                });
+            }
+
+            do {
+                try {
+                    var our_syntax = parse(stream, false, insert_include);
+                } catch(e) {
+                    if(e instanceof SyntaxError) {
+                        errors.push(e);
+                    } else {
+                        throw e;
+                    }
+                }
+            } while(stream.next_line());
+
+            if(errors.length > 0) {
+                error_callback(errors);
+            } else {
+                if(waiting === 0) {
+                    completion_callback(our_syntax);
+                }
+            }
+        }
+
         // Parses a file (or a macro, if is_macro is true)
-        var parse = function(stream, is_macro) {
+        var parse = function(stream, is_macro, include_callback) {
             var fileContent = [];
             var allow_multiple_lines = !is_macro; // Macros are single-line by default
             // Helpful bits of state
@@ -675,6 +900,8 @@
 
                     // Skip any whitespace
                     if(eatSpace(stream)) continue;
+                    // If we're at the end of the line, continue.
+                    if(stream.eol()) break;
 
                     // If we're in a multi-line macro and we find a }, it's time for us to exit.
                     if(is_macro && allow_multiple_lines && stream.peek() == "}") {
@@ -709,9 +936,10 @@
                             switch(command) {
                             case "include":
                                 var include = Include.parse(stream);
-                                if(!_.contains(mPendingIncludes, include.filename)) {
-                                    mPendingIncludes.push(include.filename);
+                                if(!include_callback) {
+                                    throw new SyntaxError(".include statement in illegal context.", stream);
                                 }
+                                include_callback(include);
                                 fileContent.push(include);
                                 break;
                             case "macro":
@@ -724,6 +952,27 @@
                             case "text":
                                 var ascii = readString(stream);
                                 fileContent.push(new AssemblyString(ascii, command == "text", stream.file(), stream.line_number()));
+                                break;
+                            case "breakpoint":
+                                fileContent.push(new Breakpoint(stream.file(), stream.line_number()));
+                                break;
+                            case "options":
+                                fileContent.push(Options.parse(stream));
+                                break;
+                            case "protect":
+                                fileContent.push(new Protect(stream.file(), stream.line_number()));
+                                break;
+                            case "unprotect":
+                                fileContent.push(new Unprotect(stream.file(), stream.line_number()));
+                                break;
+                            case "tcheckoff":
+                                fileContent.push(TCheckoff.parse(stream));
+                                break;
+                            case "pcheckoff":
+                                fileContent.push(PCheckoff.parse(stream));
+                                break;
+                            case "verify":
+                                fileContent.push(Verify.parse(stream));
                                 break;
                             default:
                                 stream.skipToEnd();
@@ -795,8 +1044,13 @@
             var context = {
                 symbols: {},
                 macros: {},
+                dot: 0,
+                // Things to be passed out to the driver.
                 breakpoints: [],
-                dot: 0
+                labels: {},
+                options: {},
+                protection: [],
+                checkoff: null
             };
             // First pass: figure out where everything goes.
              _.each(syntax, function(item) {
@@ -810,30 +1064,27 @@
             _.each(syntax, function(item) {
                 item.assemble(context, memory);
             });
-            return memory;
+            return {
+                image: memory,
+                breakpoints: context.breakpoints,
+                labels: context.labels,
+                options: context.options,
+                protection: context.protection,
+                checkoff: context.checkoff
+            };
         };
 
         // Public driver function.
         // file: the name of the file
         // content: the contents of the file
-        // callback(success, error_list): called on completion. error_list is a list of SyntaxErrors, if any
+        // callback(false, error_list): called on failure. error_list is a list of SyntaxErrors, if any
+        // callback(true, bytecode): called on success. bytecode is a Uint8Array containing the result of compilation.
         this.assemble = function(file, content, callback) {
             var stream = new StringStream(new FileStream(content, file));
             var errors = [];
-            do {
-                try {
-                    var syntax = parse(stream);
-                } catch(e) {
-                    if(e instanceof SyntaxError) {
-                        errors.push(e);
-                    } else {
-                        throw e;
-                    }
-                }
-            } while(stream.next_line());
-            if(errors.length) {
-                callback(false, errors);
-            } else {
+            var can_succeed = true;
+
+            parse_file(file, content, function(syntax) {
                 try {
                     var code = run_assembly(syntax);
                 } catch(e) {
@@ -843,13 +1094,14 @@
                         throw e;
                     }
                 }
-                console.log(code);
                 if(errors.length) {
                     callback(false, errors);
                 } else {
-                    callback(true);
+                    callback(true, code);
                 }
-            }
+            }, function(errors) {
+                callback(false, errors);
+            });
         };
     };
 

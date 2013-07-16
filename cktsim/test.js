@@ -238,6 +238,7 @@ function ac_plot(div, results, plots) {
     }
 }
 
+/*
 // parse "prop=value" tokens
 function parse_properties(tokens,properties) {
     for (var i = 0; i < tokens.length; i += 1) {
@@ -341,11 +342,16 @@ function parse_netlist(text) {
     }
     console.log(JSON.stringify(netlist));
     return {netlist: netlist, analyses: analyses, plots: plots};
-}
+} */
 
 function simulate(text,div) {
     div.empty();  // we'll fill this with results
-    var parse = parse_netlist(text);
+    try{
+        var parse = Parser.parse(text);
+    } catch (e) {
+        div.append("Message: ",e.message,"\nLine: ",e.line,"\nColumn: ",e.column);
+    }
+//    var parse = parse_netlist(text);
     if ((typeof parse) === 'string') {
         div.text(parse);
         return;
@@ -353,6 +359,9 @@ function simulate(text,div) {
     var netlist = parse.netlist;
     var analyses = parse.analyses;
     var plots = parse.plots;
+    
+//    console.log("My netlist:",netlist);
+    
     if (netlist.length === 0) return;
     if (analyses.length === 0) return;
 
@@ -360,12 +369,12 @@ function simulate(text,div) {
         var analysis = analyses[0];
         switch (analysis.type) {
         case 'tran':
-            cktsim.transient_analysis(netlist, analysis.tstop, [], function(ignore, results) {
+            cktsim.transient_analysis(netlist, analysis.parameters.tstop, [], function(ignore, results) {
                 tran_plot(div, results, plots);
             });
             break;
         case 'ac':
-            var results = cktsim.ac_analysis(netlist, analysis.fstart, analysis.fstop, analysis.ac_source_name);
+            var results = cktsim.ac_analysis(netlist, analysis.parameters.fstart, analysis.parameters.fstop, analysis.parameters.ac_source_name);
             ac_plot(div, results, plots);
             break;
         case 'dc':

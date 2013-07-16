@@ -15,16 +15,17 @@
                 font-family:monospace;
                 display:block;
                 vertical-align:bottom;
-                height:200px;
+                height:400px;
                 font-size:16pt;
                 border:1px solid black;
                 margin:10px;
                 width:90%;
+                word-wrap:break-word;
             }
             
             .output {
                 white-space:pre;
-                font-family:monospace;
+                font-family:"Times";
                 display:block;
                 vertical-align:bottom;
                 border: 1px black solid;
@@ -34,6 +35,7 @@
                 background-color:white;
                 margin:10px;
                 width:90%;
+                word-wrap:break-word;
             }
             
             .demo button {
@@ -44,28 +46,70 @@
     </head>
     <body>
         <div>
-            <div class="demo">foo bar</div>
-            <div class="demo">foo bar // comment</div>
-            <div class="demo">foo /* comment */ bar</div>
-            <div class="demo">foo
-
-                
-bar</div>
-            <div class="demo">foo /* comment
-still_comment */ bar</div>
-            <div class="demo">foo /*
-
-
-lots of newlines! */
-bar</div>
-            <div class="demo">2 2k 2.2 2e2 2.2e2 0x20 020 0b10</div>
-            <div class="demo">A[0:2] B[2:0] C[0:4:2] D[0:1][2:3]</div>
-            <div class="demo">A#2 B#2#2 C[0:1]#2</div>
-            <div class="demo">A[0:1:0]</div>
             <div class="demo">
+// Transient analysis test
+                
+.global gnd  
+                
+.subckt transtest n1 n2
+V1 n1 gnd step(1,0,1u)
+R1 n1 n2 1k
+C1 n2 gnd 1n
+.ends
+                
+X1 a b transtest
+.tran 5u
+.plot a b
+            </div>
+            
 
+            <div class="demo">
+// Transient analysis test
+                
+.global gnd  
+                
+.subckt transtest n1 n2
+V1 n1 gnd step(1,0,1u)
+R1 n1 n2 1k
+C1 n2 gnd 1n
+.ends
+                
+X1 a b transtest
+X2 c d transtest
+.tran 5u
+.plot a b
+.plot c d
+            </div>
+<!--
+            <div class="demo">
+.global vdd gnd
+.subckt inv a z drive=2
+Ppu vdd a z w=4
+Npd z a gnd w=2
+.ends
+                
+.subckt buffer a z
+X1 a n1 inv drive=2
+X2 n1 z inv drive=4
+.ends
+                
+.options A=1 B=2
+                
+Xtest in out buffer //instance
+V1 in gnd step(0,1,1n)
 
-A[0:1:0]</div>
+.tran 10n
+.plot in
+.plot out
+            </div>
+            <div class="demo">.global gnd vdd
+.subckt inv a z
+Pup z a vdd w=1
+Ndown gnd a z w=1
+.ends
+Xtest in out inv</div>
+-->
+
         </div>
     </body>
 </html>

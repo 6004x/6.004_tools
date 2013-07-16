@@ -7,6 +7,11 @@
 // Copyright (C) 2011-2013 Massachusetts Institute of Technology
 // Chris Terman and Jacob White
 
+/*************** Notes by Stacey: 
+I changed the ground node at line 210 to 'gnd'
+
+*****/
+
 var cktsim = (function() {
 
     // JSON circuit description: [{type: device_type,
@@ -205,7 +210,7 @@ var cktsim = (function() {
         var i, component, connections;
 
         // set up mapping for all ground connections
-        this.node_map['0'] = this.gnd_node();
+        this.node_map['gnd'] = this.gnd_node();
 
         // process each component in the JSON netlist (see schematic.js for format)
         var found_ground = false; // is some component hooked to gnd?

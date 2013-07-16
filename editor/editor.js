@@ -5,6 +5,7 @@ var Editor = function(container, mode) {
     var self = this; // Tracking 'this' can be finicky; use 'self' instead.
     var mContainer = $(container);
     var mToolbarHolder; // Element holding the toolbar
+    var mToolbar;
     var mTabHolder; // Element holding the tabs
     var mCurrentDocument = null; // Current document object
     var mSyntaxMode = mode; // The syntax mode for the editors
@@ -17,11 +18,7 @@ var Editor = function(container, mode) {
 
     // Given a list of ToolbarButtons, adds a button group.
     this.addButtonGroup = function(buttons) {
-        var group = $('<div class="btn-group">');
-        _.each(buttons, function(button) {
-            button.render(group);
-        });
-        mToolbarHolder.append(group);
+        mToolbar.addButtonGroup(buttons);
     };
 
     // Focuses the tab for the given filename.
@@ -63,6 +60,7 @@ var Editor = function(container, mode) {
         var cm = document.cm;
         cm.addLineClass(line, 'background', 'cm-error-line');
         cm.addLineWidget(line, create_error_widget(message), {noHScroll: true, handleMouseEvents: true});
+        focusTab(document);
         cm.scrollIntoView({line: line, ch: column});
         var handle = cm.lineInfo(line).handle;
         mMarkedLines.push({filename: filename, handle: handle});
@@ -89,6 +87,11 @@ var Editor = function(container, mode) {
     // If activate is true, the tab will be focused. If false, the tab will be focused only if there are
     // no other documents currently open.
     this.openTab = function(filename, content, activate) {
+        // We can't open a file if we already have one at the same path (it wouldn't make sense and breaks things)
+        if(_.has(mOpenDocuments, filename)) {
+            focusTab(mOpenDocuments[filename]);
+            return;
+        }
         var has_location = true;
         // If no filename is given, invent one. We'll need to prompt later.
         if(!filename) {
@@ -109,7 +112,7 @@ var Editor = function(container, mode) {
             generation: cm.changeGeneration() // The generation at last save. We can use this to track cleanliness of document.
         };
 
-        var a = $('<a>', {href: '#' + id}).text(filename).click(function(e) { e.preventDefault(); focusTab(doc); });
+        var a = $('<a>', {href: '#' + id}).text(_.last(filename.split('/'))).click(function(e) { e.preventDefault(); focusTab(doc); });
         tab.append(a);
         // Build us a 'close' button. It uses an X when the document is clean and a circle when dirty, except
         // when hovered over.
@@ -259,7 +262,8 @@ var Editor = function(container, mode) {
 
     var initialise = function() {
         // Build up our editor UI.
-        mToolbarHolder = $('<div class="btn-toolbar">');
+        mToolbarHolder = $('<div>');
+        mToolbar = new Toolbar(mToolbarHolder);
         // Add some basic button groups
         self.addButtonGroup([
             new ToolbarButton('icon-file', create_new_document, "New file"),
@@ -286,13 +290,20 @@ var Editor = function(container, mode) {
     };
 
     var do_save = function() {
-        alert("This would save if there was anywhere useful to save to.");
+        if(!mCurrentDocument) return false;
+        var current_document = mCurrentDocument; // Keep this around so we don't get confused if user changes tab.
+        FileSystem.saveFile(current_document.name, current_document.cm.getValue(), function() {
+            // Mark the file as clean.
+            current_document.generation = current_document.cm.changeGeneration();
+            handle_change_tab_icon(current_document)
+        });
     };
 
     initialise();
 };
 Editor.IsSetUp = false;
 
+<<<<<<< HEAD
 // Represents a toolbar button for the editor.
 // icon: a string (displayed as a string), a Bootstrap icon (any string beginning 'icon-'), or a DOM node
 // callback: called when the button is clicked.
@@ -325,3 +336,5 @@ var ToolbarButton = function(icon, callback, tooltip) {
         container.append(mElement);
     };
 };
+=======
+>>>>>>> master

@@ -1,9 +1,9 @@
-var parser = (function(){
+var Parser = (function(){
     
 /********************************
 Error object:
 *********************************/
-    function Error(message,line,column){
+    function CustomError(message,line,column){
         this.message = message;
         this.line = line;
         this.column = column;
@@ -25,9 +25,10 @@ Analyzer: removes comments and line extensions
         // slash-star till star-slash
         
         function newline_track(match){
-            // replace everything that isn't a newline with a blank string
+            // replace everything that isn't a newline/record separator with a space
             var replaced1 = match.replace(/[^\n\u001e]/g," ");
-            // now replace all newlines with record separators
+            // now replace all newlines with record separators so that line numbers
+            // can be tracked accurately
             return replaced1.replace(/\n/g,"\u001e");
         }
         
@@ -40,9 +41,6 @@ Analyzer: removes comments and line extensions
         // record separator for each newline.
         var extended_string = decommented1_string.replace(line_ext_pattern,
                                                           newline_track);
-//        console.log("extended string:",extended_string);
-        
-        
         
         // remove multi-line comments by replacing them with a record
         // separator for each newline
@@ -60,18 +58,19 @@ Splitter: splits a string into an array of tokens
 *******************************/
     function split(input_string,filename){
 //        var pattern = /".*"|0x[0-9a-fA-F]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]*)|\.?[A-Za-z][\w:\.,$#\[\]]*|=|\n|\u001e/g; 
-        var pattern = /".*"|-?[\w:\.,$#\[\]]+|=|\/\*|\n|\u001e/g;
+        var pattern = /".*"|\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
         
-        var names_pattern = /(^[A-Za-z][\w,$:\[\]\.]*)|(^\d$)/;
+        var fn_pattern = /^\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)$/;
+        var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)/;
         var control_pattern = /^\..+/;
-        var int_pattern = /\d+/;
-        var exp_pattern = /-?\d*\.?\d+[eE]-?\d+/;
-        var float_pattern = /-?\d*\.\d+/;
-        var scaled_pattern = /-?\d*\.?\d+[A-Za-z]+/;
-        var hex_pattern = /^0x[0-9a-fA-F]+/;
-        var octal_pattern = /^0[0-7]+/;
-        var binary_pattern = /^0b[01]+/;
-        var file_pattern = /".*"/;
+//        var int_pattern = /\d+/;
+//        var exp_pattern = /-?\d*\.?\d+[eE]-?\d+/;
+//        var float_pattern = /-?\d*\.\d+/;
+//        var scaled_pattern = /-?\d*\.?\d+[A-Za-z]+/;
+//        var hex_pattern = /^0x[0-9a-fA-F]+/;
+//        var octal_pattern = /^0[0-7]+/;
+//        var binary_pattern = /^0b[01]+/;
+        var string_pattern = /".*"/;
         var num_pattern = /^(([+-]?\d*\.?)|(0x)|(0b))\d+(([eE]-?\d+)|[A-Za-z]*)/;
 //        var num_pattern = /[+-]?\d*\.?\d+([A-Za-z]*|[eE]-?\d+)/;
         
@@ -96,11 +95,15 @@ Splitter: splits a string into an array of tokens
             
             //set the token's type
             var type;
-            if (file_pattern.test(matched_array[0])){
+            if (fn_pattern.test(matched_array[0])){
+                type = 'function';
+            } else if (string_pattern.test(matched_array[0])){
                 matched_array[0] = matched_array[0].replace(/"/g,'');
                 type = 'string';
             } else if (names_pattern.test(matched_array[0])){
                 type = 'name';
+            } else if (num_pattern.test(matched_array[0])){
+                type = 'number';
             } else if (control_pattern.test(matched_array[0])){
                 type = 'control';
 //            } else if (exp_pattern.test(matched_array[0])){
@@ -117,23 +120,22 @@ Splitter: splits a string into an array of tokens
 //                type = 'float';
 //            } else if (int_pattern.test(matched_array[0])){
 //                type = 'int';
-            } else if (num_pattern.test(matched_array[0])){
-                type = 'number';
-            } else if (matched_array[0]== "="){
+            } else if (matched_array[0] == "="){
                 type = 'equals'
             } else {
                 type = null;   
             }
             
             // check for unclosed comments
-            if (matched_array[0]=="/*"){
-                throw new Error("Unclosed comment",lineNumber);
+            if (matched_array[0] == "/*"){
+                throw new CustomError("Unclosed comment",lineNumber);
             }
             
             // find column offset
             var offset = matched_array.index - lastLineOffset;
             
-            if (matched_array[0]!="\u001e"){
+            // don't include record separators as tokens
+            if (matched_array[0] != "\u001e"){
                 substrings.push({token:matched_array[0],
                                  line:lineNumber,
                                  column:offset,
@@ -148,23 +150,23 @@ Splitter: splits a string into an array of tokens
                 lastLineOffset = matched_array.index + 1;
             }
         }
-//        console.log(substrings);
         return substrings;
     }
     
 /********************************
+~DEPRECATED~
 Match token: if the first token in the given array is t, return true;
 otherwise, return false
     --args: -t: a token to be matched
             -token_array: the array of tokens t comes from
     --returns: true if the first token in the array matches t, false otherwise
 **********************************/
-    function match_token(t,token_array){
-        if (token_array.length > 0 && token_array[0].token==t){
-            return true;
-        }
-        return false;
-    }
+//    function match_token(t,token_array){
+//        if (token_array.length > 0 && token_array[0].token==t){
+//            return true;
+//        }
+//        return false;
+//    }
     
 /********************************
 Iterater expander: expands iterators such as A[0:5] and duplicators such as B#3
@@ -184,17 +186,17 @@ into the proper sequences
         
         while (token_array.length > 0){
             current = token_array[0];
-//            console.log("current token obj:",current);
             var iter_match_array;
             var dupe_match_array;
             var duped_token_array = [];
             var new_token_array = [];
             
-            if (current.type=='name'){
-                if((dupe_match_array=duplicator_pattern.exec(current.token))!==null){
+            if (current.type == 'name'){
+                if((dupe_match_array = duplicator_pattern.exec(current.token))
+                   !== null){
                     var repetitions = parseInt(dupe_match_array[0].slice(1));
                     var dupe_string = current.token.slice(0,dupe_match_array.index);
-                    for (var i=0; i<repetitions; i+=1){
+                    for (var i = 0; i < repetitions; i += 1){
                         duped_token_array.push({token:dupe_string,
                                                 line:current.line,
                                                 type:'name',
@@ -205,7 +207,8 @@ into the proper sequences
                     expanded_array = expanded_array.concat(duped_token_array);
                     token_array.shift();
                 }else
-                if((iter_match_array=iterator_pattern.exec(current.token))!==null){
+                if((iter_match_array = iterator_pattern.exec(current.token))
+                   !== null){
                     var iter_string = iter_match_array[0];
 //                    console.log("iter string:",iter_string);
                     var front_string = current.token.slice(0,iter_match_array.index);
@@ -216,9 +219,9 @@ into the proper sequences
                     try{
                         new_iter_strings = iter_interpret(iter_string);
                     } catch(err) {
-                        throw new Error(err,current.line,current.column);
+                        throw new CustomError(err,current.line,current.column);
                     }
-                    for (var i=0; i < new_iter_strings.length; i+=1){
+                    for (var i = 0; i < new_iter_strings.length; i += 1){
                         var new_token_obj = {token:front_string+new_iter_strings[i]+
                                             end_string,
                                              line:current.line,
@@ -238,7 +241,6 @@ into the proper sequences
                 expanded_array.push(token_array.shift());
             }
         }
-//        console.log("expanded array:",expanded_array);
         return expanded_array;
     }
     
@@ -248,21 +250,21 @@ iterator interpreter: interprets and expands an iterator
     --returns: an array of strings of the form ["[a]","[a+k]","[a+2k]",...,"[b]"]
 ********************************/
     function iter_interpret(iterator_string){
-        // get the two to three numbers from the string
+        // get the two to three parameters from the iterator string
         var param_array = iterator_string.match(/\d+/g);
-        var a = parseInt(param_array[0]);
-        var b = parseInt(param_array[1]);
+        var i = parseInt(param_array[0]);
+        var j = parseInt(param_array[1]);
         var k;
         var reverse = false;
         if (param_array.length>2){ 
             k = parseInt(param_array[2]); 
-            // if the step is indicated and the step is invalid, throw an error
-            if (a>b) { k *= -1; }
-            if (k===0){
+            if (i > j) { k *= -1; }
+            if (k === 0){
+                // if the step is indicated and invalid, throw an error
                 throw "Invalid iterator";
             }
         }
-        else if (a<b){ k = 1; }
+        else if (i < j){ k = 1; }
         else { k = -1; }
         
         // if the step is negative, set the reverse parameter
@@ -272,13 +274,13 @@ iterator interpreter: interprets and expands an iterator
         // if reversed, negate the start, stop, and step so that there is only one
         // while loop needed
         if (reverse){
-            a *= -1;
-            b *= -1;
+            i *= -1;
+            j *= -1;
             k *= -1; 
         }
         var result = [];
-        var temp = a;
-        while (temp <= b){
+        var temp = i;
+        while (temp <= j){
             var temp2;
             // if the loop is using negated parameters, be sure to send the real
             // number back
@@ -394,409 +396,6 @@ Parse Number: taken from cktsim.js by Chris Terman, with permission. Slightly
         throw "Number expected";
     }
     
-/*********************************
-Tokenize: takes a raw string, does decommenting/extending, tokenizes it, and expands
-iterators and duplicators, and includes files
-    --args: -input_string: a string representing the file contents
-            -filename: a string representing the unique name of the file
-    --returns: an array of strings (tokens)
-*********************************/
-    function tokenize(input_string,filename){
-         return include(iter_expand(split(analyze(input_string),filename)));
-    }
-    
-/***********************
-Parse ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-***********************/
-    
-    var globals = [];
-    var plots = [];
-    var options = {};
-    var analyses = [];
-    var subcircuits = {_top_level_:{type:"toplevel",
-                                    connections:{},
-                                    properties:{},
-                                    devices:[]
-                                   }
-                      };
-    var current_subckt = subcircuits["_top_level_"];
-    var devices = [] // DEBUG ONLY!!!!!!!!!!
-    
-    function parse(input_string,filename){
-        var token_array = tokenize(input_string,filename);
-        
-        var toParse = [];
-        
-        // go through tokens one line at a time
-        while (token_array.length > 0){
-            var current = token_array[0];
-            if(current.token != "\n"){
-                toParse.push(token_array.shift());
-            } else if (toParse.length != 0) { 
-                if (toParse[0].type=="control"){ 
-                    parse_control(toParse);
-                    toParse = [];
-                } else {
-                    current_subckt.devices.push(parse_device(toParse));
-                    token_array.shift();
-                    toParse = [];
-                }
-            } else {
-                token_array.shift();
-                continue;
-            }
-        }
-        console.log("globals:",globals,"options:",options,"plots:",plots,
-                    "analyses:",JSON.stringify(analyses),/*"devices:",
-                   JSON.stringify(devices),*/"subckts:",subcircuits);
-    }
-    
-/*****************************
-Parse Control 
-    --args: -line: a list of tokens representing the line with a control statement
-    --returns: none
-******************************/
-    function parse_control(line){
-        switch (line[0].token.toLowerCase()){
-            case ".connect":
-                throw new Error("Not implemented yet",line[0].row,line[0].column);
-                break;
-            case ".global":
-                read_global(line);
-                break;
-            case ".options":
-                read_options(line);
-                break;
-            case ".plot":
-                read_plot(line);
-                break;
-            case ".tran":
-                read_tran(line);
-                break;
-            case ".dc":
-                read_dc(line);
-                break;
-            case ".subckt":
-                current_subckt = read_subcircuit(line);
-                break;
-            case ".ends":
-                current_subckt = subcircuits["_top_level_"];
-                break;
-            default:
-                throw new Error("Invalid control statement",
-                                line[0].line,line[0].column);
-                break;
-        }
-    }
-    
-/************************
-Control statement readers
-************************/
-    
-    /*********************
-    Global: for global nodes
-    *********************/
-    function read_global(line){
-        line.shift();
-        if (line.length === 0){
-            throw new Error("No global nodes specified",
-                            line[0].line,line[0].column);
-        }
-        for (var i=0; i<line.length; i+=1){
-            globals.push(line.shift().token);
-        }
-    }
-    
-    /*********************
-    Plot: which nodes to plot
-    *********************/
-    function read_plot(line){
-        line.shift();
-        var plot_list=[];
-        while (line.length > 0){
-            plot_list.push(line.shift().token);
-        }
-        if (plot_list.length > 0){
-            plots.push(plot_list);
-        } else {
-            throw new Error("Node name expected",
-                            line[0].line,line[0].column);
-        }
-    }
-    
-    /*********************
-    Options: global options
-    *********************/
-    function read_options(line){
-        line.shift();
-        while (line.length > 0){
-            if (line.length < 3){
-                throw new Error("Assignment expected",
-                                line[0].line,line[0].column);
-            }
-            if (line[1].token != "="){
-                throw new Error("Assignment expected",
-                                line[0].line,line[0].column);
-            }
-            options[line[0].token] = line[2].token;
-            line=line.slice(3);
-        }
-    }
-    
-    /*********************
-    Tran: transient analyses
-    *********************/
-    function read_tran(line){
-        line.shift();
-        var tran_obj = {type:'tran',parameters:{}};
-        for (var i=0;i<line.length;i+=1){
-            if (i==line.length-1){
-                tran_obj.parameters["tstop"]=parse_number(line[i].token);
-            } else {
-                tran_obj.parameters["tstep"+i] =
-                    parse_number(line[i].token);
-            }
-        }
-        analyses.push(tran_obj);
-    }
-    
-    /*********************
-    DC: DC analyses
-    *********************/
-    function read_dc(line){
-        line.shift();
-        var dc_obj = {type:'dc',parameters:{}};
-        var param_names = ["source1","start1","stop1","step1",
-                           "source2","start2","stop2","step2"];
-        if (line.length != 4 && line.length != 8){
-            throw new Error("Ill-formed .dc statement",
-                           line[0].line,line[0].column);
-        }
-        
-        for (var i=0; i<line.length;i+=1){
-            dc_obj.parameters[param_names[i]]=line[i].token;
-        }
-        analyses.push(dc_obj);
-    }
-    
-/*******************************
-Read subcircuit: creates an entry in the subcircuit dictionary
-    --args: -line: the token array representing the line to read
-    --returns: a subcircuit object with a name, ports list, properties dict, 
-                and device list
-*********************************/
-    function read_subcircuit(line){
-        line.shift();
-        var obj = {name:line[0].token,
-                   ports:[],
-                   properties:{},
-                   devices:[]
-                  }
-        line.shift();
-        while (line.length > 0){
-            if (line.length > 1){
-                if (line[1].token == "="){
-                    if (line.length < 3){
-                        throw new Error("Number expected",
-                                        line[1].line,line[1].column);
-                    } else {
-                        obj.properties[line[0].token]=line[2].token;
-                        line = line.slice(3);
-                        continue;
-                    }
-                }
-            }
-            obj.ports.push(line.shift().token);
-        }
-        subcircuits[obj.name]=obj;
-        return obj;
-    }
-    
-/*******************************
-Parse Device: takes a line representing a device and creates a device object
-    --args: -line: the array of tokens representing the device statement
-    --returns: a device object
-*******************************/
-    function parse_device(line){
-        var device_obj;
-        // type of device based on first letter of first token
-        switch (line[0].token[0]){
-            case "R":
-                device_obj = parse_resistor(line);
-                break;
-            case "C":
-                device_obj = parse_capacitor(line);
-                break;
-            case "L":
-                device_obj = parse_inductor(line);
-                break;
-            case "P":
-                device_obj = parse_pfet(line);
-                break;
-            case "N":
-                device_obj = parse_nfet(line);
-                break;
-            case "V":
-                device_obj = parse_vsource(line);
-                break;
-            case "I":
-                device_obj = parse_isource(line);
-                break;
-            case "X":
-                device_obj = parse_instance(line);
-                break;
-            default:
-                throw new Error("Invalid device type",line[0].line,line[0].column);
-        }
-        return device_obj;
-    }
-    
-/*********************************
-Device parsers
-*********************************/
-    
-    /*************************
-    General linear device: (resistors, capacitors, inductors)
-        --connections: n_plus, n_minus
-        --properties: name, value
-    **************************/
-    
-    /**************************
-    Resistor
-    **************************/
-    function parse_resistor(line){
-        return parse_linear(line,"resistor",
-                            "Positive, non-zero value expected");
-    }
-    
-    /********************
-    Capacitor
-    ***********************/
-    function parse_capacitor(line){
-        return parse_linear(line,"capacitor","Positive value expected");
-    }
-    
-    /*********************
-    Inductor 
-    **********************/
-    function parse_inductor(line){
-        return parse_linear(line,"inductor","Positive value expected");
-    }
-    
-    function parse_linear(line,type,err_msg){
-//        console.log("line:",line);
-        var obj = {type:type,
-                   connections:{},
-                   properties:{}
-                  };
-        if (line.length != 4){
-            throw new Error("Three arguments expected",line[0].line,line[0].column);
-        }
-        
-        obj.properties.name = line[0].token.slice(1);
-        for (var i=1;i<=2;i+=1){
-            if (line[i].type != 'name'){
-                throw new Error("Node name expected", 
-                                line[i].line, line[i].column)
-            }
-        }
-        obj.connections.n_plus = line[1].token;
-        obj.connections.n_minus = line[2].token;
-        
-        try{
-            obj.properties.value = parse_number(line[3].token);
-        } catch (err) {
-            throw new Error("Number expected",line[3].line,line[3].column);
-        }
-            
-        if ((type=="resistor" && obj.properties.value == 0) ||
-            (obj.properties.value < 0)){
-            throw new Error(err_msg,line[3].line,line[3].column);
-        }
-        return obj;
-    }
-    
-    /*************************
-    Mosfets: (pfets, nfets)
-        --connections: D, G, S
-        --properties: name, [scaled] length, [scaled] width
-    **************************/
-    
-    /********************
-    PFET
-    *********************/
-    function parse_pfet(line){
-        return parse_fet(line,"pfet");
-    }
-    
-    /********************
-    NFET
-    *********************/
-    function parse_nfet(line){
-        return parse_fet(line,"nfet");
-    }
-    
-    function parse_fet(line,type){
-        var obj = {type:type,
-                   connections:{},
-                   properties:{name:line[0].token.slice(1),L:1}
-                  }
-        if ((line.length !=10) && (line.length !=7)){
-            throw new Error("Ill-formed device declaration",
-                            line[0].line,line[0].column);
-        }
-        
-        obj.connections.D = line[1].token;
-        obj.connections.G = line[2].token;
-        obj.connections.S = line[3].token;
-        
-        if (line[5].token != "="){
-            throw new Error("Assignment expected",line[5].line,line[5].column);
-        }
-        obj.properties[line[4].token.toUpperCase()]=line[6].token;
-        if (line.length==10){
-            if (line[8].token != "="){
-                throw new Error("Assignment expected",line[8].line,line[8].column);
-            }
-            obj.properties[line[7].token.toUpperCase()]=line[9].token;
-        }
-        
-        if (obj.properties.W === undefined){
-            throw new Error("Mosfet width must be specified",
-                            line[0].line,line[0].column);
-        }
-        return obj;
-    }
-    
-    /****************************
-    Voltage source
-    *****************************/
-    function parse_vsource(line){
-        throw new Error("voltage sources aren't implemented yet",
-                       line[0].line,line[0].column);
-    }
-    
-    /****************************
-    Current source
-    ***************************/
-    function parse_isource(line){
-        throw new Error("current sources aren't implemented yet",
-                       line[0].line,line[0].column);
-    }
-    
-    /*****************************
-    Instance
-    *******************************/
-    function parse_instance(line){
-        var inst_of = line.slice(-1).token;
-        
-        if (!(inst_of in subcircuits)){
-            throw new Error("Invalid device name",line[-1].line,line[-1].column);
-        }
-    }
-    
-
-    
 /******************************
 filename_to_contents: takes a file path and returns the string representing its 
 content
@@ -804,7 +403,7 @@ content
     --returns: a string representing the contents of the file
 *******************************/
     function filename_to_contents(filename){
-        if (pseudo_files[filename]===undefined){
+        if (pseudo_files[filename] === undefined){
             throw "File does not exist";
         } else {
             return pseudo_files[filename];
@@ -818,7 +417,7 @@ Include: takes a parsed array of tokens and includes all the files
 ***************************/
     
     function include(token_array){
-        var included_files = [token_array[0].origin_file]; // ??????????????????
+        var included_files = [token_array[0].origin_file];
         // list of filenames that have already been included 
         var new_token_array = [];
         
@@ -828,17 +427,18 @@ Include: takes a parsed array of tokens and includes all the files
                 var file = token_array[1];
                 console.log("file:",file);
                 if (!(file.type == "string")){
-                    throw new Error("Filename expected",current.line,current.column);
+                    throw new CustomError("Filename expected",
+                                          current.line,current.column);
                 } else {
                     var filename = file.token;
-                    if (included_files.indexOf(filename)==-1) {
+                    if (included_files.indexOf(filename) == -1) {
                         included_files.push(filename);
                         
                         var contents;
                         try{
                             contents = filename_to_contents(filename);
                         } catch(err) {
-                            throw new Error(err,current.line,current.column);
+                            throw new CustomError(err,current.line,current.column);
                         }
                         contents = tokenize(contents,filename);
                         token_array.shift();
@@ -854,19 +454,917 @@ Include: takes a parsed array of tokens and includes all the files
         }
         return new_token_array;
     }
+    
+/*********************************
+Tokenize: takes a raw string, does decommenting/extending, tokenizes it, and expands
+iterators and duplicators, and includes files
+    --args: -input_string: a string representing the file contents
+            -filename: a string representing the unique name of the file
+    --returns: an array of strings (tokens)
+*********************************/
+    function tokenize(input_string,filename){
+         return include(iter_expand(split(analyze(input_string),filename)));
+    }
+    
+/******************************************************************************
+*******************************************************************************
+Parse 
+*******************************************************************************
+******************************************************************************/
+    
+    var globals/**** testing only ****=["vdd","gnd"]/** end test **/;
+    var plots;
+    var options;
+    var analyses;
+    var subcircuits /**** testing only **** = {buffer:{name:"buffer",
+                                ports:["a","z"],
+                                properties:{},
+                                devices:[
+                                    {type:"instance",
+                                     ports:["a","z"],
+                                     connections:["a","n1"],
+                                     properties:{name:"X1",instanceOf:"inv"}},
+                                    {type:"instance",
+                                     ports:["a","z"],
+                                     connections:["n1","z"],
+                                     properties:{name:"X2",instanceOf:"inv"}}
+                                ]
+                               },
+                       inv:{name:"inv",
+                            ports:["a","z"],
+                            properties:{drive:2},
+                            devices:[
+                                {type:"pfet",
+                                 ports:["D","G","S"],
+                                 connections:["vdd","a","z"],
+                                 properties:{name:"PU",W:8,L:1}},
+                                {type:"nfet",
+                                 ports:["D","G","S"],
+                                 connections:["z","a","gnd"],
+                                 properties:{name:"ND",W:8,L:1}}
+                            ]
+                           }}/** end test **/;
+    var current_subckt;
+    var used_names;
+//    var netlist;
+    
+    function parse(input_string,filename){
+        var token_array = tokenize(input_string,filename);
+        globals = [];
+        plots = [];
+        options = {};
+        analyses = [];
+        used_names = [];
+        var netlist = [];
+        subcircuits = {_top_level_:{name:"_top_level_",
+                                    ports:[],
+                                    properties:{},
+                                    devices:[]
+                                   } 
+                      };
+        current_subckt = subcircuits["_top_level_"];
+        
+        var toParse = [];
+        
+        // go through tokens one line at a time, and pass the line to the 
+        // appropriate handler
+        while (token_array.length > 0){
+            var current = token_array[0];
+            
+            // transfer the tokens of one line to toParse
+            if(current.token != "\n"){
+                toParse.push(token_array.shift());
+            } else if (toParse.length != 0) { 
+                if (toParse[0].type == "control"){ 
+                    parse_control(toParse);
+                    toParse = [];
+                } else {
+                    current_subckt.devices.push(read_device(toParse));
+                    token_array.shift();
+                    toParse = [];
+                }
+            } else {
+                token_array.shift();
+                continue;
+            }
+        }
+        netlist_instance("",{type:"instance",
+                             ports:[],
+                             connections:[],
+                             properties:{name:"_top_level_",
+                                         instanceOf:"_top_level_"}
+                            },netlist);
+        
+        return {globals:globals,options:options,plots:plots,
+                analyses:analyses,netlist:netlist};
+    }
+    
+/*****************************
+Parse Control 
+    --args: -line: a list of tokens representing the line with a control statement
+    --returns: none
+******************************/
+    function parse_control(line){
+        switch (line[0].token.toLowerCase()){
+            case ".connect":
+                throw new CustomError("Connect not implemented yet",
+                                line[0].row,line[0].column);
+                break;
+            case ".global":
+                read_global(line);
+                break;
+            case ".options":
+                read_options(line);
+                break;
+            case ".plot":
+                read_plot(line);
+                break;
+            case ".tran":
+                if (current_subckt.name != "_top_level_"){
+                    throw new CustomError("Analyses not allowed inside "+
+                                    "subcircuit definitons",
+                                    line[0].line,line[0].column);
+                }
+                read_tran(line);
+                break;
+            case ".dc":
+                if (current_subckt.name != "_top_level_"){
+                    throw new CustomError("Analyses not allowed inside "+
+                                    "subcircuit definitons",
+                                    line[0].line,line[0].column);
+                }
+                read_dc(line);
+                break;
+            case ".ac":
+                if (current_subckt.name != "_top_level_"){
+                    throw new CustomError("Analyses not allowed inside "+
+                                    "subcircuit definitons",
+                                    line[0].line,line[0].column);
+                }
+                read_ac(line);
+                break;
+            case ".subckt":
+                if (current_subckt.name != "_top_level_"){
+                    throw new CustomError("Nested subcircuits not allowed",
+                                    line[0].line,line[0].column);
+                }
+                current_subckt = read_subcircuit(line);
+                break;
+            case ".ends":
+                if (current_subckt.name == "_top_level_"){
+                    throw new CustomError(".ends statement without matching .subckt",
+                                    line[0].line,line[0].column);
+                }
+                current_subckt = subcircuits["_top_level_"];
+                break;
+            default:
+                throw new CustomError("Invalid control statement",
+                                line[0].line,line[0].column);
+                break;
+        }
+    }
+    
+/************************
+Control statement readers
+************************/
+    
+    /*********************
+    Read global: for global nodes
+    *********************/
+    function read_global(line){
+        line.shift();
+        if (line.length === 0){
+            throw new CustomError("No global nodes specified",
+                            line[0].line,line[0].column);
+        }
+        for (var i = 0; i < line.length; i += 1){
+            if (line[i].type != "name"){
+                throw new CustomError("Node name expected",
+                                      line[i].line,line[i].column);
+            } else {
+                globals.push(line[i].token);
+            }
+        }
+    }
+    
+    /*********************
+    Read plot: which nodes to plot
+    *********************/
+    function read_plot(line){
+        line.shift();
+        var plot_list = [];
+        for (var i = 0; i < line.length; i += 1){
+            
+            if (line[i].type == "function"){
+                // get the node name in the parentheses
+                var node = /\((.+)\)/.exec(line[i].token)[1];
+                if (!(/(^[A-Za-z][\w$:\[\]\.]*)/.test(node))){
+                    throw new CustomError("Node name expected",
+                                      line[i].line,line[i].column);
+                }
+            } else if (line[i].type != "name"){
+                throw new CustomError("Node name expected",
+                                      line[i].line,line[i].column);
+            }
+            plot_list.push(line[i].token);
+            
+        }
+        if (plot_list.length > 0){
+            plots.push(plot_list);
+        } else {
+            throw new CustomError("Node name expected",
+                            line[0].line,line[0].column);
+        }
+    }
+    
+    /*********************
+    Read options: global options
+    *********************/
+    function read_options(line){
+        line.shift();
+        while (line.length > 0){
+            if (line.length < 3){
+                throw new CustomError("Assignment expected",
+                                line[0].line,line[0].column);
+            }
+            if (line[1].token != "="){
+                throw new CustomError("Assignment expected",
+                                line[0].line,line[0].column);
+            }
+//            if (line[2].type != "number"){
+//                throw new CustomError("Number expected",line[2].line,line[2].column);
+//            }
+            try{
+                options[line[0].token] = parse_number(line[2].token);
+            } catch (err) {
+                throw new CustomError("Number expected",line[2].line,line[2].column);
+            }
+            line = line.slice(3);
+        }
+    }
+    
+    /*********************
+    Read tran: transient analyses
+    *********************/
+    function read_tran(line){
+        var tran_obj = {type:'tran',parameters:{},line:line[0].line};
+        if (line.length != 2){
+            throw new CustomError("One argument expected: .tran tstop",
+                           line[1].line,line[1].column);
+        }
+//        if (line[1].type != "number"){
+//            throw new CustomError("Number expected",line[1].line,line[1].column)
+//        }
+//        else{
+//            tran_obj.parameters.tstop = line[1];
+//        } 
+        try{
+            tran_obj.parameters.tstop = parse_number(line[1].token);
+        } catch(err){
+            throw new CustomError("Number expected",line[1].line,line[1].column);
+        }
+        analyses.push(tran_obj);
+    }
+    
+    /********************
+    Parse tran: make sure a given transient analysis is valid
+    *********************/
+//    function parse_tran(tran_obj){
+//        var temp_ps = {}
+//        var num_ps = 0;
+//        for (var param in tran_obj.parameters){
+//            temp_ps[param] = parse_number(tran_obj.parameters[param].token);
+//            num_ps += 1;
+//        }
+//        for (var i = 0; i < num_ps; i += 1){
+//            if (i == num_ps-1){
+//                if (temp_ps["tstep"+i] >= temp_ps["tstop"]){
+//                    throw new CustomError("Time steps must be listed in increasing order",
+//                                    tran_obj.parameters["tstep"+i].line,
+//                                    tran_obj.parameters["tstep"+i].column);
+//                }
+//            } else if (temp_ps["tstep"+i] >= temp_ps["tstep"+(i+1)]) {
+//                throw new CustomError("Time steps must be listed in increasing order",
+//                                tran_obj.parameters["tstep"+i].line,
+//                                tran_obj.parameters["tstep"+i].column);
+//            }
+//        }
+//        
+//        tran_obj.parameters = temp_ps;
+//        return tran_obj;
+//    }
+    
+    /*********************
+    Read DC: DC analysis
+    *********************/
+    function read_dc(line){
+        line.shift();
+        var dc_obj = {type:'dc',parameters:{},line:line[0].line};
+        var param_names = ["source1","start1","stop1","step1",
+                           "source2","start2","stop2","step2"];
+        if (line.length != 2 && line.length != 4 && line.length != 8){
+            throw new CustomError("Two, four or eight parameters expected: "+
+                                  "src1, [start1, stop1, step1], [src2, start2, "+
+                                  "stop2, step2]",
+                           line[0].line,line[0].column);
+        }
+        
+        for (var i = 0; i < line.length; i += 1){
+            if (i == 0 || i == 4){
+                if (line[i].type != "name"){
+                    throw new CustomError("Node name expected",
+                                    line[i].line, line[i].column);
+                } else {
+                    dc_obj.parameters[param_names[i]] = line[i].token;
+                }
+            } else {
+                try{
+                    line[i].token = parse_number(line[i].token);
+                } catch (err) {
+                    throw new CustomError("Number expected",
+                                          line[i].line,line[i].column);
+                }
+            }
+        }
+        dc_obj = parse_dc(dc_obj);
+        analyses.push(dc_obj);
+    }
+    
+    /**********************
+    Parse DC: makes sure all parameters are valid
+    **********************/
+    function parse_dc(dc_obj){
+        var temp_ps = {};
+        for (var param in dc_obj.parameters){
+            temp_ps[param] = dc_obj.parameters[param].token;
+            if (param != "source1" && param != "source2"){
+                temp_ps[param] = parse_number(temp_ps[param]);
+            }
+        }
+        
+        for (var i=1; i<=2; i+=1){
+            if (temp_ps["start"+i] >= temp_ps["stop"+i]){
+                throw new CustomError("Stop time must be greater than start time",
+                                dc_obj.parameters["start"+i].line,
+                                dc_obj.parameters["start"+i].column);
+            }
+            if (temp_ps["step"+i] <= 0) {
+                throw new CustomError("Step interval must be a non-zero, positive number",
+                                dc_obj.parameters["step"+i].line,
+                                dc_obj.parameters["step"+i].line);
+            }
+        }
+        dc_obj.parameters = temp_ps;
+        return dc_obj;
+    }
+
+    /*********************
+    Read AC: AC analysis
+    ************************/
+    function read_ac(line){
+        var ac_obj = {type:'ac',parameters:{},line:line[0].line};
+        
+        if (line.length != 4){
+            throw new CustomError("Three arguments expected: "+
+                                  ".ac ac_source_name fstart fstop",
+                                  line[0].line,line[0].column);
+        }
+        
+        if (line[1].type != "name"){
+            throw new CustomError("Node name expected",line[1].line,line[1].column);
+        }
+        ac_obj.parameters.ac_source_name = line[1].token;
+        
+        var param_names = [null,null,"fstart","fstop"]
+        for (var i = 2; i <= 3; i += 1){
+            try {
+                ac_obj.parameters[param_names[i]] = parse_number(line[i].token);
+            } catch (err) {
+                throw new CustomError("Number expected",line[i].line,line[i].column);
+            }
+        }
+        analyses.push(ac_obj);
+    }
+    
+/*******************************
+Read subcircuit: creates an entry in the subcircuit dictionary
+    --args: -line: the token array representing the line to read
+    --returns: a subcircuit object with a name, ports list, properties dict, 
+                and device list
+*********************************/
+    function read_subcircuit(line){
+        line.shift();
+        var obj = {name:line[0].token,
+                   ports:[],
+                   properties:{},
+                   devices:[]
+                  }
+        if (line[0].token == "_top_level_"){
+            throw new CustomError("Reserved name",line[0].line,line[0].column);
+        }
+        line.shift();
+        
+        while (line.length > 0){
+            if (line.length > 1){
+                if (line[1].token == "="){
+                    if (line.length < 3){
+                        throw new CustomError("Assignment expected",
+                                        line[1].line,line[1].column);
+                    } else {
+                        try{
+                            obj.properties[line[0].token] = 
+                                parse_number(line[2].token);
+                        } catch (err) {
+                            throw new CustomError("Number expected",
+                                                  line[2].line,line[2].token);
+                        }
+                        line = line.slice(3);
+                        continue;
+                    }
+                }
+            }
+            obj.ports.push(line.shift().token);
+        }
+        subcircuits[obj.name] = obj;
+        return obj;
+    }
+    
+/*******************************
+Read Device: takes a line representing a device and creates a device object
+    --args: -line: the array of tokens representing the device statement
+    --returns: a device object
+*******************************/
+    function read_device(line){
+        var device_obj;
+        // type of device based on first letter of first token
+        switch (line[0].token[0]){
+            case "R":
+                device_obj = read_resistor(line);
+                break;
+            case "C":
+                device_obj = read_capacitor(line);
+                break;
+            case "L":
+                device_obj = read_inductor(line);
+                break;
+            case "P":
+                device_obj = read_pfet(line);
+                break;
+            case "N":
+                device_obj = read_nfet(line);
+                break;
+            case "V":
+                device_obj = read_vsource(line);
+                break;
+            case "I":
+                device_obj = read_isource(line);
+                break;
+            case "X":
+                device_obj = read_instance(line);
+                break;
+            default:
+                throw new CustomError("Invalid device type",
+                                      line[0].line,line[0].column);
+        }
+        device_obj.line = line[0].line;
+        return device_obj;
+    }
+    
+/******************************************************************
+*******************************************************************
+Device readers: each takes a line of tokens and returns a device object,
+                parameters _not_ checked for correctness
+*******************************************************************
+******************************************************************/
+    
+    /*********************************************
+    General linear device: (resistors, capacitors, inductors)
+        --ports: n1, n2
+        --properties: name, value
+    **********************************************/
+    
+    /**************************
+    Resistor
+    **************************/
+    function read_resistor(line){
+        return read_linear(line,"resistor");
+    }
+    
+    /********************
+    Capacitor
+    ***********************/
+    function read_capacitor(line){
+        return read_linear(line,"capacitor");
+    }
+    
+    /*********************
+    Inductor 
+    **********************/
+    function read_inductor(line){
+        return read_linear(line,"inductor");
+    }
+    
+    function read_linear(line,type){
+        var obj = {type:type,
+                   ports:["n1","n2"],
+                   connections:[],
+                   properties:{}
+                  };
+//        if (line.length != 4){
+//            throw new CustomError("Ill-formed device statement",
+//                            line[0].line,line[0].column);
+//        }
+        
+        obj.properties.name = line[0].token;
+//        for (var i=1;i<=2;i+=1){
+//            if (line[i].type != 'name'){
+//                throw new CustomError("Node name expected", 
+//                                line[i].line, line[i].column)
+//            }
+//        }
+//        obj.connections.push(line[1].token);
+//        obj.connections.push(line[2].token);
+        line.shift();
+        for (var i = 0; i < line.length-1; i += 1){
+            if (line[i].type != "name"){
+                throw new CustomError("Node name expected",
+                                      line[i].line,line[i].column);
+            }
+            obj.connections.push(line[i].token);
+        }
+        
+        var end = line.length;
+        try{
+            obj.properties.value = parse_number(line[end-1].token);
+        } catch (err) {
+            throw new CustomError("Number expected",
+                                  line[end-1].line,line[end-1].column);
+        }
+//        if (line[end-1].type != "number"){
+//            throw new CustomError("Number expected",line[end-1].line,line[end-1].column);
+//        }
+//        obj.properties.value = line[3];
+        
+        return obj;
+    }
+    
+    /*******************************************
+    Mosfets: (pfets, nfets)
+        --ports: D, G, S
+        --properties: name, [scaled] length, [scaled] width
+    *******************************************/
+    
+    /********************
+    PFET
+    *********************/
+    function read_pfet(line){
+        return read_fet(line,"pfet");
+    }
+    
+    /********************
+    NFET
+    *********************/
+    function read_nfet(line){
+        return read_fet(line,"nfet");
+    }
+    
+    /*********************
+    General FET
+    **********************/
+    function read_fet(line,type){
+        var obj = {type:type,
+                   ports:["D","G","S"],
+                   connections:[],
+                   properties:{name:line[0].token,L:1}
+                  }
+        line.shift();
+//        if ((line.length !=10) && (line.length !=7)){
+//            throw new CustomError("Ill-formed device declaration",
+//                            line[0].line,line[0].column);
+//        }
+        
+//        for (var i=1; i<=3; i+=1){
+//            if (line[i].type != "name"){
+//                throw new CustomError("Node name expected",
+//                                line[i].line,line[i].column);
+//            }
+//        }
+//        obj.connections.push(line[1].token);
+//        obj.connections.push(line[2].token);
+//        obj.connections.push(line[3].token);
+        
+        var end = line.length;
+        var knex_end = line.length - 3;
+        
+        // the last argument should be an assignment (W or L)
+        if (line[end-2].token != "="){
+            throw new CustomError("Assignment expected",
+                            line[end-2].line,line[end-2].column);
+        }
+//        if (line[end-1].type != "number"){
+//            throw new CustomError("Number expected",
+//                                  line[end-1].line,line[end-1].column);
+//        }
+        if (line[end-3].token.toUpperCase() != "L" &&
+            line[end-3].token.toUpperCase() != "W"){
+            throw new CustomError("Mosfet has no property "+
+                                  line[end-3].token,line[end-3].line,
+                                  line[end-3].column);
+        }
+        
+        try{
+            obj.properties[line[end-3].token.toUpperCase()] = 
+                parse_number(line[end-1].token);
+        } catch (err) {
+            throw new CustomError("Number expected",
+                                  line[end-1].line,line[end-1].column);
+        }
+        
+        if (line[end-5] !== undefined){
+            if (line[end-5].token == "="){
+//                if (line[end-4].type != "number"){
+//                    throw new CustomError("Number expected",
+//                                    line[end-4].line,line[end-4].column);
+//                }
+                if (line[end-6].token.toUpperCase() != "L" &&
+                    line[end-6].token.toUpperCase() != "W"){
+                    throw new CustomError("Mosfet has no property "+
+                                          line[end-6].token,line[end-6].line,
+                                          line[end-6].column);
+                }
+                try{
+                    obj.properties[line[end-6].token.toUpperCase()] = 
+                        parse_number(line[end-4].token);
+                } catch (err) {
+                    throw new CustomError("Number expected", line[end-4].line,
+                                          line[end-4].column);
+                }
+                knex_end -= 3;
+            }
+        }
+        
+        if (obj.properties.W === undefined){
+            throw new CustomError("Mosfet width must be specified",
+                            line[0].line,line[0].column);
+        }
+        
+        for (var i = 0; i < knex_end; i += 1){
+            if (line[i].type != "name"){
+                throw new CustomError("Node name expected",
+                                      line[i].line,line[i].column);
+            }
+            obj.connections.push(line[i].token);
+        }
+        
+        return obj;
+    }
+    
+    /********************************************
+    Sources: (voltage source, current source)
+        --ports: nplus, nminus
+        --properties: name, value
+    ********************************************/
+    
+    /****************************
+    Voltage source
+    *****************************/
+    function read_vsource(line){
+        return read_source(line,"voltage source");
+    }
+    
+    /****************************
+    Current source
+    ***************************/
+    function read_isource(line){
+        return read_source(line,"current source");
+    }
+    
+    /**********************
+    General source
+    ***********************/
+    function read_source(line,type){
+        // id n+ n- val
+        var obj = {type:type,
+                   ports:["nplus","nminus"],
+                   connections:[],
+                   properties:{name:line[0].token}
+                  }
+        for (var i = 1; i <= 2; i += 1){
+            if (line[i].type != "name"){
+                throw new CustomError("Node name expected",
+                                line[i].line,line[i].column);
+            }
+        }
+        
+        obj.connections.push(line[1].token);
+        obj.connections.push(line[2].token);
+        
+//        var val_ar = []
+//        for (var i = 3; i < line.length; i += 1){
+//            val_ar.push(line[i].token);
+//        }
+//        obj.properties.value = line[3];
+//        obj.properties.value.token = val_ar.join(" ");
+        /*if (line[3].type == "number"){
+            try{
+                obj.properties.value = parse_number(line[3].token);
+            } catch (err) {
+                throw new CustomError("Number Expected",line[3].line,line[3].column);
+            }
+        } else*/ if (line[3].type != "function" /* test */ &&
+                     line[3].type != "number"){
+            throw new CustomError("Number or function expected",
+                                  line[3].line,line[3].column);
+        } else {
+            obj.properties.value = line[3].token;   
+        }
+        return obj;
+    }
+    
+    /*****************************
+    Instance: instance of user-specified subcircuit
+    *******************************/
+    function read_instance(line){
+        var props = [];
+        if (line.length >= 4){
+            try{
+                while (line[line.length-2].token == "="){
+                    props.push(line.slice(-3));
+                    line = line.slice(0,-3);
+                }
+            } catch (err) {}
+        }
+//        console.log("props:",props);
+
+        var inst = line[line.length-1];
+        if (!(inst.token in subcircuits)){
+            throw new CustomError("Can't find definition for subcircuit "+inst.token,
+                            inst.line,inst.column);
+        }
+        
+        var obj = {type:"instance",
+                   connections:[],
+                   ports:subcircuits[inst.token].ports,
+                   properties:{instanceOf:inst.token, name:line[0].token}
+                  }
+        line.shift();
+        
+        var parent_props = subcircuits[inst.token].properties;
+        for (var item in parent_props){
+            if (item != "name"){
+                obj.properties[item] = parent_props[item];
+            }
+        }
+        
+        
+        for (var i = 0; i < line.length-1; i += 1){
+            if (line[i].type != "name"){
+                throw new CustomError("Node name expected",
+                                line[i].line,line[i].column);
+            }
+            obj.connections.push(line[i].token);
+        }
+        for (var i = 0; i < props.length; i += 1){
+//            if (props[i][2].type != "number"){
+//                throw new CustomError("Number expected",
+//                                props[2].line,props[2].column)
+//            }
+            if (!(props[i][0].token in obj.properties)){
+                throw new CustomError("Subcircuit "+inst.token+" has no property "+
+                                      props[i][0].token,props[i][0].line,
+                                      props[i][0].column);
+            }
+            try{
+                obj.properties[props[i][0].token] = parse_number(props[i][2].token);
+            } catch (err) {
+                throw new CustomError("Number expected",
+                                      props[i][2].line, props[i][2].column);
+            }
+        }
+        
+        return obj;
+    }
+       
+    
+/**********************************************
+**********************************************
+Flattening
+**********************************************
+**********************************************/
+    
+    function netlist_device(prefix, dev_obj, parent_obj, /*globals,*/JSON_netlist){
+        var nports = dev_obj.ports.length;
+        var nknex = dev_obj.connections.length;
+        if (nknex % nports !== 0){
+            throw new CustomError("Expected a multiple of "+nports+" connections",
+                                  dev_obj.line,0);
+        }
+        var ndevices = nknex/nports;
+        var local_props = {};
+        for (var item in dev_obj.properties){
+            local_props[item] = dev_obj.properties[item];
+            // this is where expressions would be evaluated, with parent properties
+            // giving values of expression symbols.
+        }
+        
+        /***** helper function *******/
+        function addAffixes(name,index){
+            if (prefix != ""){
+                name = prefix + "." + name;
+            }
+            if (ndevices != 1){
+                name = name + "#" + index;
+            }
+            return name;
+        }
+        
+        var buckets = [];
+        var temp_knex = dev_obj.connections.slice(0);
+        while (temp_knex.length > 0){
+            buckets.push(temp_knex.splice(0,ndevices));
+        }
+//        console.log("number of buckets:",buckets.length,"buckets:",buckets);
+        // the ith device will take the ith element from each bucket as its ports
+        
+        var new_obj;
+        var local_connections;
+        for (var dev_index = 0; dev_index < ndevices; dev_index += 1){
+            new_obj = {};
+            local_connections = [];
+            for (var j = 0; j < buckets.length; j += 1){
+                // j is the port number
+                var signal = buckets[j][dev_index];
+                
+                if (globals.indexOf(signal) != -1){
+                    local_connections.push(signal);
+                } else if (parent_obj.ports.indexOf(signal) != -1) {
+                    var si = parent_obj.ports.indexOf(signal);
+                    local_connections.push(parent_obj.connections[si]);
+                } else {
+                    local_connections.push(addAffixes(signal,dev_index));
+                } 
+            }
+//            console.log("device index:",dev_index,"local knex:",local_connections);
+            new_obj.properties = {};
+            for (var item in local_props){
+                new_obj.properties[item] = local_props[item];
+            }
+            new_obj.properties.name = addAffixes(new_obj.properties.name,
+                                                 dev_index);
+            new_obj.type = dev_obj.type;
+            
+            // check for duplicate device names
+            if (used_names.indexOf(new_obj.properties.name) != -1){
+                throw new CustomError("Duplicate device name: "+new_obj.properties.name,
+                                      dev_obj.line,0);
+            } 
+            
+            used_names.push(new_obj.properties.name);
+                
+            if (dev_obj.type != "instance"){ 
+                new_obj.connections = {};
+                // map ports to connections
+                for (var p = 0; p < nports; p += 1){
+                    new_obj.connections[dev_obj.ports[p]] = local_connections[p];
+                }
+                JSON_netlist.push(new_obj);
+            } else {
+                // recursive call
+                new_obj.connections = local_connections.slice(0);
+                new_obj.ports = dev_obj.ports.slice(0);
+                console.log("new object:",new_obj);
+                netlist_instance(new_obj.properties.name, new_obj,
+                                 JSON_netlist);                  
+            }
+        }
+    }
+    
+    function netlist_instance(prefix, inst_obj, /*globals,*/ JSON_netlist){
+        var subckt_def = subcircuits[inst_obj.properties.instanceOf];
+        for (var i = 0; i < subckt_def.devices.length; i += 1){
+            netlist_device(prefix, subckt_def.devices[i], inst_obj, JSON_netlist);
+        }
+    }
+    
+    
+    
+
        
 /***************************
 Exports
 ****************************/
     return {parse:parse,
-            analyze:analyze,
-            split:split,
-            tokenize:tokenize,
+//            analyze:analyze,
+//            split:split,
+//            tokenize:tokenize,
 //            parse1:parse1,
-            include:include,
+//            include:include,
 //            parse_scaled:parse_scaled,
-            parse_number:parse_number,
-            parse_device:parse_device
+//            parse_number:parse_number,
+//            read_device:read_device,
+//            netlist_device:netlist_device,
+//            netlist_instance:netlist_instance,
+//            subcircuits:subcircuits
               }
 }());
 
@@ -895,6 +1393,9 @@ var include_text = '.include "foo"\n.include "bar"\nR1 a b 10 //this is a commen
 var control_text = ".global vdd\n.options a=1 b=2\n.subckt foo a z\nR1 a z 10k\n"
 +".ends\nCcap a z 5\n.tran 10ns\n.plot a z 0\n\n\nPpfet z a 0 W=2\n"
 +"Nnfet 0 a z W=4 L=3";
+
+var subckt_test_text = ".subckt foo a z\nR1 a z 10k\n.ends\n"+
+                       "Xtest a b foo prop1=1 prop2=1\n";
 
 function test1(){parser.split(raw_text);}
 function test2(){parser.decomment(parser.line_extend(parser.split(test2_text)));}
@@ -932,5 +1433,57 @@ function test16(string){ console.log(JSON.stringify(parser.parse_device(
 function test17(){ parser.parse("Rrtest a b 10k\nCctest c d 5\n"+
                                "Lltest e f 3\nMmtest 0 x z 0 nenh sw=2 sl=2"); }
 
-function test18(){ parser.parse(control_text); }
+function psSubcktTest(){ return Parser.parse(subckt_test_text); }
+
+
+function psDevTest(){ return parser.parse(
+"Rtest a z 10k\n"+
+"Ctest a z 5\n"+
+"Ltest a z 2\n"+
+"Ptest d g s w=2\n"+
+"Ntest d g s w=2"
+
+); }
+
+function psCtlTest(){ return parser.parse(
+    ".plot a b\n"+
+    ".plot c d\n"+
+    ".tran 10ns\n"+
+    ".tran 1 2 3 4 5\n"+
+    ".dc foo 0 5 0.5\n"+
+    ".dc bar 5 6 0.1\n"+
+    ".global gnd vdd\n"+
+    ".options A=1 B=2"
+    
+); }
+
+function netlistDevTest() { Parser.netlist_device("X1",
+                                  {type:"pfet", 
+                                   ports:["D","G","S"],
+                                   connections:["vdd","a","z"],
+                                   properties:{name:"PU",W:8,L:1}
+                                  },
+                                  {type:"instance",
+                                   ports:["a","z"],
+                                   connections:["in","n1"],
+                                   properties:{name:"X1"}}, ["vdd"],[]); }
+
+// "TypeError: cannot read property "buffer" of undefined"
+// ?????????????????????????????????????????????????????????
+var JSON_netlist=[];
+function netlistInstTest() { 
+    Parser.netlist_instance("Xtest",
+                         {type:"instance",
+                          ports:["a","z"],
+                          connections:["in","out"],
+                          properties:{name:"Xtest",
+                                    instanceOf:"buffer"}
+                         },
+                         /*{type:"_top_level_",
+                          ports:[],
+                          connections:[],
+                          properties:{}},*/
+                         JSON_netlist);
+    console.log(JSON.stringify(JSON_netlist,null,"  "));
+}
 

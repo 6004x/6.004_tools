@@ -1,0 +1,250 @@
+.tab-pane {
+    border-bottom: 1px solid #ddd;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+.nav-tabs {
+    margin-bottom: 0;
+}
+
+.nav-pills li {
+    cursor: pointer;
+}
+
+button.btn {
+    cursor: pointer;
+}
+
+#filetree {
+    display: none;
+    float: left;
+}
+
+.maximised #filetree {
+    display: block;
+    width: 250px;
+}
+
+#editor {
+    width: 100%;
+    float: left;
+}
+
+.maximised #editor {
+    width: -webkit-calc(100% - 250px);
+    width: calc(100% - 260px);
+}
+
+.regfile .register {
+    color: gray;
+    text-align: right;
+}
+
+table.regfile {
+    border: 1px solid gray;
+}
+
+.regfile, .disassembly, .tty, .memory, .stack {
+    font-family: Menlo, Monaco, monospace;
+    font-size: small;
+}
+
+pre.tty-output {
+    height: 100px;
+    overflow-y: auto;
+    background-color: #fafafa;
+    border: thin solid #eaeaea;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+.tty {
+    width: calc(97.2% - 20px);
+}
+
+div.stack-holder {
+    float: right;
+    margin-right: 20px;
+    width: 170px;
+    display: none;
+}
+
+div.stack {
+    border: 1px solid gray;
+    height: 352px;
+}
+
+.stack td:nth-child(1) {
+    width: 30px;
+    text-align: right;
+}
+
+.maximised div.stack-holder {
+    display: block;
+}
+
+div.memory-holder {
+    float: right;
+    margin-right: 20px;
+    width: 140px;
+    display: none;
+}
+
+.memory-key ul {
+    list-style: none;
+    margin-left: 0px;
+}
+
+.memory-key span {
+    display: inline-block;
+    width: 15px;
+    height: 10px;
+    border: 1px solid gray;
+}
+
+.memory-key .read {
+    background-color: hsl(120, 60%, 50%);
+}
+
+.memory-key .write {
+    background-color: hsl(217, 67%, 50%);
+}
+
+div.memory {
+    border: 1px solid gray;
+    height: 352px;
+}
+
+.maximised div.memory-holder {
+    display: block;
+}
+
+.memory td:nth-child(1), .stack td:nth-child(2) {
+    color: gray;
+    width: 40px;
+    text-align: right;
+    padding-right: 5px;
+}
+
+/* Highlight the last-written entries */
+.memory .last-write td {
+    color: white;
+}
+
+.memory .last-write.a4 td {
+    background-color: hsl(217, 67%, 90%);
+    color: black;
+}
+
+.memory .last-write.a3 td {
+    background-color: hsl(217, 67%, 80%);
+    color: black;
+}
+
+.memory .last-write.a2 td {
+    background-color: hsl(217, 67%, 70%);
+}
+
+.memory .last-write.a1 td {
+    background-color: hsl(217, 67%, 60%);
+}
+
+.memory .last-write.a0 td {
+    background-color: hsl(217, 67%, 50%);
+}
+
+/* Highlight the last-read entries */
+.memory .last-read td {
+    color: white;
+}
+
+.memory .last-read.b4 td {
+    background-color: hsl(120, 60%, 90%);
+    color: black;
+}
+
+.memory .last-read.b3 td {
+    background-color: hsl(120, 60%, 80%);
+    color: black;
+}
+
+.memory .last-read.b2 td {
+    background-color: hsl(120, 60%, 70%);
+}
+
+.memory .last-read.b1 td {
+    background-color: hsl(120, 60%, 60%);
+}
+
+.memory .last-read.b0 td {
+    background-color: hsl(120, 60%, 50%);
+}
+
+/* Deal with something being on both lists. */
+.memory .last-read.last-write td {
+    background-color: hsl(169, 60%, 70%);
+}
+
+/* If it's first in either list, it should be darker. */
+.memory .last-read.last-write.a0 td {
+    background-color: hsl(169, 60%, 50%);
+}
+
+.memory .last-read.last-write.b0 td {
+    background-color: hsl(169, 60%, 50%);
+}
+
+.disassembly table, .memory table, .stack table {
+    table-layout: fixed;
+    border-spacing: 0px;
+}
+
+.current-instruction {
+    background-color: #3874D7;
+    color: white;
+}
+
+.supervisor-mode .current-instruction {
+    background-color: #CC3729;
+}
+
+div.disassembly {
+    height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 450px;
+    border: 1px solid gray;
+}
+
+.disassembly td {
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* Address */
+.disassembly td:nth-child(1) {
+    width: 40px;
+}
+
+/* Label */
+.disassembly td:nth-child(3) {
+    width: 100px;
+    max-width: 100px;
+    text-overflow: ellipsis;
+}
+
+/* Disassembeld instruction */
+.disassembly  td:nth-child(4) {
+    width: 240px;
+}
+
+.disassembly .breakpoint {
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+    line-height: 18px;
+}
+
+/* This fixes the several pixel jump when toggling split screen caused by the right buttons being too tall. */
+.masthead {
+    height: 55px;
+}
