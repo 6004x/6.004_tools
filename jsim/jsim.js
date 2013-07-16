@@ -1,6 +1,8 @@
 JSim = {};
 
 $(function() {
+    FileSystem.setup('seterman', 'http://localhost:8080');
+    
     var split = new SplitUI('#split-container', '#editor-pane', '#simulation-pane');
     split.maximiseLeft();
 
@@ -19,7 +21,12 @@ $(function() {
 
 
     // Make an editor
-    var editor = new Editor('#editor', 'jsim');
+    var mode = 'jsim';
+    var editor = new Editor('#editor', mode);
+    
+    Folders.setup('.span3', editor, mode);
+
+    Folders.refresh();
     
     function dls(){
         split.split();
@@ -35,7 +42,7 @@ $(function() {
     }
 
     // Add some buttons to it
-    editor.addButtonGroup([new ToolbarButton('Simulate (device)', dls, 'Device-level simulation'), new ToolbarButton('Export')]);
+    editor.addButtonGroup([new ToolbarButton('Simulate (device)', dls, 'Device-level simulation')]);
     editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
         editor.clearErrors();
     })]);

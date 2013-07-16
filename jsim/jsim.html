@@ -12,9 +12,14 @@
         <script src="../editor/modes/jsim.js"></script>
         <script src="../bsim/external/sstream.js"></script>
         <script src="../bsim/split_ui.js"></script>
+        <script src="../editor/toolbar.js"></script>
+        <script src="../editor/prompt.js"></script>
         
         <script src="../parser/parser.js"></script>
         <script src="../cktsim/cktsim.js"></script>
+    
+        <script src='../fileSystem/fileSystem.js'></script>
+        <script src='../fileSystem/folders.js'></script>
         
         <script src="../../cktsim/flot-master/jquery.flot.js"></script>
         <script src="../../cktsim/flot-master/jquery.flot.axislabels_custom.js"></script>
@@ -43,12 +48,15 @@
                 </ul>
                 <h1>JSim</h1>
             </div>
-            <div id="split-container">
-                <div id="editor-pane">
-                    <div id="editor"></div>
-                </div>
-                <div id="simulation-pane">
-                    <div class="plot-holder"></div>
+            <div class="row row-fluid">
+                <div class="span3"></div>
+                <div id="split-container" class="span9">
+                    <div id="editor-pane">
+                        <div id="editor"></div>
+                    </div>
+                    <div id="simulation-pane">
+                        <div class="plot-holder"></div>
+                    </div>
                 </div>
             </div>
         </div>

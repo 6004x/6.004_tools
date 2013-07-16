@@ -431,10 +431,7 @@ var Folders=new function(){
         });
 
         //now adding editor buttons
-        editor.addButtonGroup([new ToolbarButton('Save', saveCurrentFile, 'Saves the current File'),new ToolbarButton('show folders',showNavBar, '')]);
-        editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')])
-
-
+        editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
 
     }
     function tmsimAssemble(){
