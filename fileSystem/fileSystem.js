@@ -135,15 +135,16 @@ var FileSystem= function(){
     }
     
     function traverseTree(fileName, action){
-        var filePath=fileName.match(/(\w|\d|\.|\s)+/g);
+        var pathArray=fileName.match(/[^<>\:\"\|\/\\\?\*]+/g);
+        console.log(pathArray);
         var followPath=fileTree;
-        for(var i in filePath){
+        for(var i in pathArray){
 
             // action function of 3 variables, the index, the current path, the current path name
-            //, and the length of the whole filepath. 
+            //, and the length of the whole pathArray. 
             // returns true if we can continue
-            if(action(i, followPath, filePath[i], filePath.length))
-                followPath=followPath[filePath[i]];//.slice(1)];
+            if(action(i, followPath, pathArray[i], pathArray.length))
+                followPath=followPath[pathArray[i]];//.slice(1)];
         }
         return followPath;
     }

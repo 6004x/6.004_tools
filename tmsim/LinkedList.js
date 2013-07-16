@@ -163,11 +163,25 @@ function LinkedList(){
 	this.printLL=function(){
 		console.log(self.toArray());
 	}
+	this.toString = function (){
+		var tempNode=first;
+		var stringLL = '';
+		while(tempNode!=null){
+			if(tempNode == current)
+				stringLL += '['+tempNode.data+'], ';
+			else
+				stringLL += ''+tempNode.data+', ';
+			tempNode=tempNode.next;
+		}
+		return stringLL;
+	}
 
 	this.getCurrentNode = function(){
 		return self.current;
 	}
 	this.equals=function(otherLL){
+		//dependent on access to the other current node... might scrap that for array representation
+
 		mArray = self.toArray();
 		tArray = otherLL.toArray();
 		if(mArray.length!=tArray.length){
@@ -186,7 +200,7 @@ function LinkedList(){
 			var tempTCurr = otherLL.getCurrentNode();
 			
 			if(tempMCurr!=tempTCurr){
-				console.log('current is not the same');
+				console.log('current node is not the same');
 				return false;
 			}
 

@@ -7,13 +7,15 @@ function TMSIM(){
 	var variableRegExp = /[^\s\/\\\"\']+/
 	var selectedRegExp = /\[(\"[^\n]+\"|[^\s\/"']+)+\]/
 	var commentRegExp = /\/\/|\/\*|\*\/|\n/
-	var regexp = new RegExp('('+multiLineRegExp.source+'|'+commentRegExp.source+'|'+quotedRegExp.source +'|'+ variableRegExp.source+'|'+selectedRegExp.source +')', 'g');
+	var keywordRegExp = /(action|symbols|states|tape|result|result1|checkoff)\b/
+	var regexp = new RegExp('('+multiLineRegExp.source+'|'+keywordRegExp+'|'+commentRegExp.source+'|'+quotedRegExp.source +'|'+ variableRegExp.source+'|'+selectedRegExp.source +')', 'g');
 	var oldRegexp=/(\"[^\n]+\"|\[\w+\]|\w+\b|\*\w+\b\*|^[^\s\/"']+|\n|-|\/\/|\/\*|\*\/)/g
 	
 
 	var list_of_results={};
 	var list_of_results1={};
 	var list_of_tapes={};
+	var checkoff = {};
 
 	function parse(stream){
 		//console.log(stream);
@@ -30,7 +32,22 @@ function TMSIM(){
 		var resultCount=0;
 		var resultoneCount=0;
 		var checkoffCount=0;
+
 		for(var i =0; i<tokens.length; i++) {
+
+			//syntax for the TMSIM language:
+			// keywords: action, symbols, states, tape, result, result1, checkoff
+			// action has 5 arguments, state, readSymbol to speicy a transition, 
+			//		and the transition which consists of new_state, write, and move
+			// all of these must be predefined as either a symbol, a state, or a valid move
+			//
+			// symbols defines all the symbols that a user will use, can have many arguments
+			// states defines all the states that a user will use, can have many args
+			// both of these are limited by being any non space character except ", \, and /
+			// unless they are surrounded by "", which can have spaces and escaped characters
+			// 
+			// tape delineates a test tape, has one arg, name, and the second arg is the tape, 
+			// which conforms to have to have valid symbols
 			var token = tokens[i];
 			var type = getType(token);
 
@@ -251,8 +268,8 @@ function TMSIM(){
 					var symbol = args[j];
 					validSymbols.push(symbol);
 				}
-				console.log(validSymbols);
-				console.log('symbols have been initialized');
+				// console.log(validSymbols);
+				// console.log('symbols have been initialized');
 			} else if (stringContains(key, 'states')) {
 				for(var j = 0; j < args.length; j++){
 					var state = args[j];
@@ -264,26 +281,22 @@ function TMSIM(){
 				console.log(validStates)
 				console.log('states has been instantiated');
 			} else if (stringContains(key, 'tape')) {
-				console.log('tape');
-				
+				// console.log('tape');
 				var tapeName = args[0];
 				var tapeContents = args.slice(1);
 				list_of_tapes[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
 				list_of_tapes[tapeName].printLL();
 			} else if (stringContains(key, 'result1')) {
-				console.log('result1 at line ' +lineNumber);
-				console.log(args);
+				// console.log('result1 at line ' +lineNumber);
 				var tapeName = args[0];
 				var tapeResult=  args[1];
-				console.log(args);
 				if (args[2]){
 					console.log('your result1 at '+lineNumber+' can only have one argument');
 					break;
 				}
 				list_of_results1[tapeName]=tapeResult;
 			} else if (stringContains(key, 'result')) {
-				console.log('result');
-				
+				// console.log('result');
 				var tapeName = args[0];
 				var tapeContents = args.slice(1);
 				list_of_results[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
@@ -305,8 +318,7 @@ function TMSIM(){
 			
 			tsm.replaceTape(list);
 			tsm.start();
-			console.log(list.peek());
-			results+='results: '+String(list.toArray())+'\n';
+			results+='results: '+list.toString()+'\n';
 			if (list_of_results[key]){
 				console.log(list_of_results[key]);
 				results+='result: '+String(list.equals(list_of_results[key]))
@@ -316,9 +328,6 @@ function TMSIM(){
 			}
 			results+='\n\n';
 		}
-		console.log(list_of_tapes);
-		console.log(list_of_results);
-		console.log(list_of_results1);
 		return results;
 	}
 
@@ -336,7 +345,7 @@ function TMSIM(){
 			return 'line_comment';
 		else if (token.match(/\/\*/))
 			return 'multi_comment_start';
-		else if(token.match(/(action|symbols|states|tape|result|result1|checkoff)\b/))
+		else if(token.match(keywordRegExp))
 			return 'keyword';
 		else if (token.match(/\*\//))
 			return 'multi_comment_end';

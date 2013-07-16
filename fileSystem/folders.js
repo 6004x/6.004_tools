@@ -35,25 +35,16 @@ var Folders=new function(){
                
                 //TODO: find a way to make this different
                 if(name.indexOf('.')>-1){
-                    var listVar=$('<li></li>').attr('data-path', parentPath+name).append($('<a href=#>'+name+'</a>').attr('data-path', parentPath+name));
-                    var delButton=$('<span>Delete '+name+'</span>').addClass('btn btn-link del_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-trash>');
-                    var delDrop=addDiv('dropdown pull-right');
+                    var listVar=$('<li></li>').addClass('file_name').attr('data-path', parentPath+name).append($('<a href=#>'+name+'</a>').attr('data-path', parentPath+name));
+                    var delButton=$('<span></span>').addClass('btn btn-link file_button delete_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-trash>').attr('title', 'Delete '+ name);
+                    var renButton=$('<span></span>').addClass('btn btn-link file_button rename_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-pencil>').attr('title', 'Rename '+ name);
+                    var downButton=$('<span></span>').addClass('btn btn-link file_button download_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-eject>').attr('title', 'Download '+ name);
+                     /*var delDrop=addDiv('dropdown pull-right');
                     var delDropToggle=($('<button class="btn dropdown-toggle" data-toggle="dropdown" href="#"><span class="caret"></span></button>').css('padding', '0px 5px 0px 3px').css('height', '16px'));
                     var delDropUL=$('<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel"></ul>').css('z-index', 20);
-                    
-
-                    // delButton.attr({
-                    //             'data-toggle':"tooltip", 
-                    //             'title':"delete "+name,
-                    //             'data-trigger':'hover',
-                    //             'data-container':'body',
-                    //             });
-                    delDrop.append(delDropToggle);
-                    delDropUL.append(delButton);
-                    delDrop.append(delDropUL);
-                    listVar.append(delDrop);
+                    */
+                    listVar.append(delButton, downButton, renButton);
                     listVar.on('click', function(e){
-
                         var node=$(e.currentTarget);
                         console.log(node);
                         getFile(node.attr('data-path'));
@@ -68,11 +59,7 @@ var Folders=new function(){
                         deleteFile(current_path);
                     });
 
-                    delDropToggle.on('click', function(e){
-                        e.stopPropagation();
-                        console.log($(e.currentTarget).parent('.dropdown').find('.dropdown-menu').toggle());
-
-                    })
+                    
                     parentNode.append(listVar);
                 }
                 else {
@@ -148,7 +135,16 @@ var Folders=new function(){
 
 
             }
+            $('.file_button').each(function(i, button){
+
+                $(button).attr({
+                    'data-toggle':"tooltip",
+                    'data-trigger':'hover',
+                    'data-container':'body',
+                });
+            });
             $('.btn').tooltip('hide');
+
         }
 
     }
@@ -160,7 +156,6 @@ var Folders=new function(){
     function getFile(fileName){
             console.log('getting '+fileName);
             FileSystem.getFile(fileName, displayFile);
-            
         }
 
     function displayFile(file){

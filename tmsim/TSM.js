@@ -34,7 +34,7 @@ function TSM(){
 		console.log('attaching new tape');
 	}
 	this.start=function(){
-		console.log('beginning turing machine');
+		// console.log('beginning turing machine');
 		var new_state=start_state;
 		var valid = true;
 		while(valid){
@@ -43,7 +43,7 @@ function TSM(){
 				valid=false;
 			
 		}
-		console.log('ended turing machine');
+		// console.log('ended turing machine');
 		return mTape;
 	}
 	this.step=function(new_state){
@@ -70,7 +70,7 @@ function TSM(){
 	}
 	this.compare = function(tape){
 		//compares tape to mTape
-
+		return mTape.equals(tape);
 	}
 	return this;
 }
