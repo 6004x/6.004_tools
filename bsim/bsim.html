@@ -7,22 +7,32 @@
         <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
         <script src="../editor/external/codemirror.js"></script>
+        <script src="../editor/toolbar.js"></script>
         <script src="../editor/editor.js"></script>
+        <script src="../editor/prompt.js"></script>
         <script src="../editor/external/codemirror-extensions.js"></script>
         <script src="../editor/modes/uasm.js"></script>
+        <script src='../fileSystem/fileSystem.js'></script>
+        <script src='folders.js'></script>
         <script src="external/sstream.js"></script>
+        <script src="external/dequeue.js"></script>
         <script src="assemble.js"></script>
         <script src="split_ui.js"></script>
         <script src="bsim.js"></script>
         <script src="simulation/bsim_common.js"></script>
         <script src="simulation/big_table.js"></script>
         <script src="simulation/beta.js"></script>
+        <script src="simulation/memory.js"></script>
         <script src="simulation/beta_instructions.js"></script>
         <script src="simulation/regfile_view.js"></script>
         <script src="simulation/controls.js"></script>
         <script src="simulation/projcheckoff.js"></script>
         <script src="simulation/tty.js"></script>
         <script src="simulation/disassembled_view.js"></script>
+        <script src="simulation/memory_view.js"></script>
+        <script src="simulation/stack_view.js"></script>
+        <script src="simulation/error_handler.js"></script>
+        <script src="verify.js"></script>
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
@@ -40,11 +50,30 @@
             </div>
             <div id="split-container">
                 <div id="editor-pane">
-                    <div id="editor"></div>
+                    <div class="row-fluid">
+                        <div id="filetree"></div>
+                        <div id="editor"></div>
+                    </div>
                 </div>
                 <div id="simulation-pane">
+                    <div class="memory-holder">
+                        Memory
+                        <div class="memory"></div>
+                        <div class="memory-key">
+                            <ul>
+                                <li><span class="read"></span> Last read</li>
+                                <li><span class="write"></span> Last write</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="stack-holder">
+                        Stack
+                        <div class="stack"></div>
+                    </div>
                     <div class="program-controls"></div>
+                    Registers
                     <div class="regfile"></div>
+                    Disassembly
                     <div class="disassembly"></div>
                     <div class="tty"></div>
                 </div>

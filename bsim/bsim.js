@@ -17,8 +17,13 @@ $(function() {
     $('#split_pane').click(activeButton(split.split));
     $('#maximise_simulation').click(activeButton(split.maximiseRight));
 
+
     // Make an editor
     var editor = new Editor('#editor', 'uasm');
+
+    // Filesystem tree thing
+    FileSystem.setup('mattpf', 'http://localhost:8080/');
+    Folders.setup('#filetree', editor, 'uasm');
 
     var do_assemble = function() {
         var filename = editor.currentTab();
@@ -28,23 +33,43 @@ $(function() {
         assembler.assemble(filename, content, function(success, result) {
             if(!success) {
                 _.each(result, function(error) {
-                    editor.markErrorLine(error.file, error.message, error.line - 1, error.column);
+                    if(!_.contains(editor.filenames(), error.file)) {
+                        FileSystem.getFile(error.file, function(result) {
+                            editor.openTab(error.file, result.data, true);
+                            editor.markErrorLine(error.file, error.message, error.line - 1, error.column);
+                        });
+                    } else {
+                        editor.markErrorLine(error.file, error.message, error.line - 1, error.column);
+                    }
                 });
             } else {
                 beta.loadBytes(result.image);
                 beta.setBreakpoints(result.breakpoints);
                 beta.setLabels(result.labels);
+                _.each(result.options, function(value, key) {
+                    beta.setOption(key, value);
+                });
+                beta.getMemory().setProtectedRegions(result.protection);
+                if(result.checkoff) {
+                    if(result.checkoff.kind == 'tty') {
+                        var verifier = new BSim.TextVerifier(beta, result.checkoff.checksum);
+                        beta.setVerifier(verifier);
+                    } else if(result.checkoff.kind == 'memory') {
+                        var verifier = new BSim.MemoryVerifier(beta, result.checkoff.addresses, result.checkoff.checksum, result.checkoff.running_checksum);
+                        beta.setVerifier(verifier);
+                    }
+                } else {
+                    beta.setVerifier(null);
+                }
+                $('#maximise_simulation').click();
             }
         });
     }
 
     // Add some buttons to it
-    editor.addButtonGroup([new ToolbarButton('Assemble', do_assemble, 'Runs your program!'), new ToolbarButton('Export')]);
-    editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
-        editor.clearErrors();
-    })]);
+    editor.addButtonGroup([new ToolbarButton('Assemble', do_assemble, 'Runs your program!')]);
     // And a couple of tabs.
-    editor.openTab('foo.uasm', '// Stuff goes here');
+    editor.openTab(null, '');
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
     }
@@ -70,6 +95,16 @@ $(function() {
     $('.disassembly').each(function() {
         new BSim.DisassembledView(this, beta);
     });
+
+    $('.memory').each(function() {
+        new BSim.MemoryView(this, beta);
+    });
+
+    $('.stack').each(function() {
+        new BSim.StackView(this, beta);
+    });
+
+    new BSim.Beta.ErrorHandler(beta);
 
     // // Convenient way of loading a file for testing and such.
     // var neuter = function(e) {

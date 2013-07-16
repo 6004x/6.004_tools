@@ -2,45 +2,86 @@ BSim.Controls = function(container, beta) {
     var mContainer = $(container);
     var mBeta = beta;
     var mGroup = $('<div class="btn-group">');
-    var mResetButton = $('<button class="btn btn-reset"><i class="icon-fast-backward"></i></button>');
-    var mRunButton = $('<button class="btn btn-run"><i class="icon-play"></i></button>');
-    var mStepButton = $('<button class="btn btn-step"><i class="icon-step-forward"></i></button>');
-    var mQuantumSize = $('<input type="range" min="1" max="50000" step="100" value="1">');
+    var mResetButton = null;
+    var mUndoButton = null;
+    var mRunButton = null;
+    var mFastRunButton = null;
+    var mStepButton = null;
+    var mVerifyButton = null;
+
+    var mToolbar = null;
 
     var toggle_run = function() {
         if(mBeta.isRunning()) {
             mBeta.stop();
         } else {
-            mBeta.run(mQuantumSize.val());
+            mBeta.run(1);
         }
+    };
+
+    var handle_fast_run = function() {
+        mBeta.run(25000); // Subject to tweaking. Very large values may cause UI sluggishness on slow browsers.
     };
 
     var handle_step = function() {
         mBeta.executeCycle();
+        mUndoButton.removeAttr('disabled');
     };
 
     var handle_reset = function() {
         mBeta.reset();
     };
 
+    var handle_checkoff = function() {
+        var verifier = mBeta.verifier();
+        var dialog = new ModalDialog();
+        dialog.setTitle("Checkoff Result").addButton("Dismiss", "dismiss");
+        if(!verifier) {
+            dialog.setText("No verification statements found.");
+            return;
+        }
+        if(!verifier.verify()) {
+            dialog.setContent(verifier.getMessage());
+        } else {
+            dialog.setText("Checkoff complete!");
+            dialog.addButton("Submit", _.identity, 'btn-primary'); // dummy button for now.
+        }
+        dialog.show();
+    };
+
     var beta_run_start = function() {
-        mRunButton.find('i').removeClass('icon-play').addClass('icon-pause');
-        mStepButton.attr("disabled", "disabled");
-        mQuantumSize.attr("disabled", "disabled");
+        mRunButton.setLabel('icon-pause');
+        mStepButton.disable();
+        mFastRunButton.disable();
+        mUndoButton.disable();
     };
 
     var beta_run_stop = function() {
-        mRunButton.find('i').addClass('icon-play').removeClass('icon-pause');
-        mStepButton.removeAttr("disabled");
-        mQuantumSize.removeAttr("disabled");
+        mRunButton.setLabel('icon-play');
+        mStepButton.enable();
+        mFastRunButton.enable();
+        mUndoButton.enable();
+    };
+
+    var handle_undo = function() {
+        mBeta.undoCycle();
+        if(mBeta.undoLength() === 0) {
+            mUndoButton.disable();
+        }
     };
 
     var initialise = function() {
-        mRunButton.click(toggle_run);
-        mStepButton.click(handle_step);
-        mResetButton.click(handle_reset);
-        mGroup.append(mResetButton, mRunButton, mStepButton);
-        mContainer.addClass('btn-toolbar').append(mGroup, mQuantumSize);
+        mResetButton = new ToolbarButton('icon-fast-backward', handle_reset, 'Reset Simulation');
+        mUndoButton = new ToolbarButton('icon-step-backward', handle_undo, 'Step Back');
+        mRunButton = new ToolbarButton('icon-play', toggle_run);
+        mFastRunButton = new ToolbarButton('icon-forward', handle_fast_run, 'Run Fast');
+        mStepButton = new ToolbarButton('icon-step-forward', handle_step, 'Step Forward');
+        mVerifyButton = new ToolbarButton('Checkoff', handle_checkoff);
+
+        mToolbar = new Toolbar(mContainer);
+
+        mToolbar.addButtonGroup([mResetButton, mUndoButton, mStepButton, mRunButton, mFastRunButton]);
+        mToolbar.addButtonGroup([mVerifyButton]);
 
         mBeta.on('run:start', beta_run_start);
         mBeta.on('run:stop', beta_run_stop);

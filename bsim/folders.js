@@ -15,7 +15,7 @@ var Folders=new function(){
         //clears out the old filelist
         var username=FileSystem.getUserName();
         //FileSystem keeps track of the username
-        $('.testDiv').text(username);
+        $('.testDiv').val(FileSystem.getUserName());
 
         //fetch the filelist from server, then add the files to the filesystem.
         FileSystem.getFileList(
@@ -35,31 +35,42 @@ var Folders=new function(){
                
                 //TODO: find a way to make this different
                 if(name.indexOf('.')>-1){
-                    var listVar=$('<li></li>').addClass('file_name').attr('data-path', parentPath+name).append($('<a href=#>'+name+'</a>').attr('data-path', parentPath+name));
-                    var delButton=$('<span></span>').addClass('btn btn-link file_button delete_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-trash>').attr('title', 'Delete '+ name);
-                    var renButton=$('<span></span>').addClass('btn btn-link file_button rename_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-pencil>').attr('title', 'Rename '+ name);
-                    var downButton=$('<span></span>').addClass('btn btn-link file_button download_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-eject>').attr('title', 'Download '+ name);
-                     /*var delDrop=addDiv('dropdown pull-right');
-                    var delDropToggle=($('<button class="btn dropdown-toggle" data-toggle="dropdown" href="#"><span class="caret"></span></button>').css('padding', '0px 5px 0px 3px').css('height', '16px'));
+                    var listVar=$('<li></li>').attr('data-path', parentPath+name).append($('<a href=#>'+name+'</a>').attr('data-path', parentPath+name));
+                    var delButton=$('<span>Delete '+name+'</span>').addClass('btn btn-link del_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-trash>');
+                    var delDrop=addDiv('dropdown pull-right');
+                    delDrop.append($('<a class="btn dropdown-toggle" data-toggle="dropdown" href="#"><span class="caret"></span></a>').css('padding', '0px 5px 0px 3px').css('height', '16px'));
                     var delDropUL=$('<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel"></ul>').css('z-index', 20);
-                    */
-                    listVar.append(delButton, downButton, renButton);
+                    
+
+                    // delButton.attr({
+                    //             'data-toggle':"tooltip", 
+                    //             'title':"delete "+name,
+                    //             'data-trigger':'hover',
+                    //             'data-container':'body',
+                    //             });
+                    delDropUL.append(delButton);
+                    // delDrop.append(delDropUL);
+                    // listVar.append(delDrop)
                     listVar.on('click', function(e){
+
                         var node=$(e.currentTarget);
                         console.log(node);
+                        // console.log(node.attr('data-path'));
+                        // var fileName=unescape(node.text());
+                        // var folderName=unescape(node.attr('data-path'));
+                        // if(folderName!='undefined'){
+                        //     fileName=folderName+fileName;
+                        // }
                         getFile(node.attr('data-path'));
                     });
-
                     delButton.on('click', function(e){
                         e.stopPropagation();
                         console.log('del button');
-                        console.log($(e.currentTarget).parent().parent())
-                        var current_path=$(e.currentTarget).parents('li').attr('data-path');
+                        var current_path=$(e.currentTarget).parent().attr('data-path');
                         console.log(current_path);
                         deleteFile(current_path);
+                            
                     });
-
-                    
                     parentNode.append(listVar);
                 }
                 else {
@@ -135,16 +146,7 @@ var Folders=new function(){
 
 
             }
-            $('.file_button').each(function(i, button){
-
-                $(button).attr({
-                    'data-toggle':"tooltip",
-                    'data-trigger':'hover',
-                    'data-container':'body',
-                });
-            });
             $('.btn').tooltip('hide');
-
         }
 
     }
@@ -156,6 +158,7 @@ var Folders=new function(){
     function getFile(fileName){
             console.log('getting '+fileName);
             FileSystem.getFile(fileName, displayFile);
+            
         }
 
     function displayFile(file){
@@ -351,7 +354,8 @@ var Folders=new function(){
         editor=editorN;
         editMode=mode;
         //editorWrapper=addDiv('span10 folderStruct');
-        var buttonDiv=addDiv('btn-group group1 buttonDiv');
+        var toolbarDiv = addDiv('btn-toolbar')
+        var buttonDiv=addDiv('btn-group group1 buttonDiv').appendTo(toolbarDiv);
         addButtons(buttonDiv);
 
         sideBarNav=addDiv('sidebar-nav');
@@ -362,18 +366,19 @@ var Folders=new function(){
         var tempName=$("<div class='header buttonDiv'><h1 class='testDiv'>testing</h1>"
             +"<button class='btn btn-info' id='user_button'>get filelist</button></div>");
         
-        rootNode.append(tempName);
-        rootNode.append(buttonDiv);
+        // rootNode.append(tempName);
+        rootNode.append(toolbarDiv);
         rootNode.append(sideBarNav);
 
 
 
-        $('#user_button').on('click', function(e){
-                rootNode.find('.filePaths').html('');
-                refreshFileList();
-            });
+        // $('#user_button').on('click', function(e){
+        //         rootNode.find('.filePaths').html('');
+        //         refreshFileList();
+        //     });
+        refreshFileList();
 
-        $('.btn').tooltip({'placement': 'bottom', container:'body'});
+        $('.btn').tooltip({placement: 'top', container: 'body'});
     }
     function addDiv(classes){
         if(!classes)
@@ -383,7 +388,7 @@ var Folders=new function(){
     function addButtons(buttonDiv){   
         var hideButton=$('<button></button>').addClass('btn hideNavBar').attr({
                 'data-toggle':"tooltip", 
-                'title':"Hide Folders",
+                'title':"HIde Folders",
                 'data-trigger':'hover'
                 });
         hideButton.append('<i class=icon-chevron-left></i>');
@@ -431,26 +436,13 @@ var Folders=new function(){
         });
 
         //now adding editor buttons
-        editor.addButtonGroup([new ToolbarButton('Save', saveCurrentFile, 'Saves the current File'),new ToolbarButton('show folders',showNavBar, '')]);
-        editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')])
+        // editor.addButtonGroup([new ToolbarButton('Save', saveCurrentFile, 'Saves the current File')]);
 
+        // editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
 
 
     }
-    function tmsimAssemble(){
-        var file=new Object();
-        file.name=editor.currentTab();
-        file.data=editor.content();
-        var tmsim = new TMSIM();
-        if(file.name){
-            var parsedDict = tmsim.parse(file.data);
-            //editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
 
-            var results = tmsim.developMachine(parsedDict);
-            editor.openTab(file.name+'tsmed', results, true);
-
-        }
-    }
     function hideNavBar(){
         rootNode.css('display', 'none');
     }

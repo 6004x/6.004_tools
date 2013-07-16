@@ -27,6 +27,8 @@ var BigTable = function(container, width, height, row_height, column_count) {
     var mScrollContent = null;
     var mContent = null;
 
+    var mBufferingDraws = false;
+
     // Inserts a row of data at the end
     // data: array of cells for the row. Must have length equal to the table's column count.
     this.insertRow = function(data) {
@@ -45,6 +47,10 @@ var BigTable = function(container, width, height, row_height, column_count) {
 
     // Update's the given column of the given row with the given data, which should be a string.
     this.updateCell = function(row, column, data) {
+        if(!mData[row]) {
+            console.warn("Update to nonexistent row " + row + " column " + column + " = " + data);
+            return;
+        }
         mData[row][column] = data;
         redraw(row);
     };
@@ -57,24 +63,27 @@ var BigTable = function(container, width, height, row_height, column_count) {
     };
 
     // Adds a class the given row. If the optional parameter redraw is true, redraws the row immediately.
-    this.addRowClass = function(row, cls, redraw) {
+    this.addRowClass = function(row, cls, redraw_now) {
         if(!mData[row]) return;
         if(!~mData[row].cls.indexOf(' ' + cls + ' ')) {
             mData[row].cls += ' ' + cls + ' ';
-            if(redraw) redraw(row);
+            if(redraw_now) redraw(row);
         }
     };
 
     // Removes a class from the given row. If the optional parameter redraw is true, redraws the row immediately.
-    this.removeRowClass = function(row, cls, redraw) {
+    this.removeRowClass = function(row, cls, redraw_now) {
         if(!mData[row]) return;
         mData[row].cls = mData[row].cls.replace(' ' + cls + ' ', '');
-        if(redraw) redraw(row);
+        if(redraw_now) redraw(row);
     };
 
     // Attempts to centre the given row in the display.
-    this.scrollTo = function(row) {
-        var height = (row * mRowHeight) - (mHeight / 2) + (mRowHeight);
+    this.scrollTo = function(row, where) {
+        if(!where) where = 'middle';
+        var height = (row * mRowHeight);
+        if(where == 'middle') height -= (mHeight / 2) - (mRowHeight);
+        else if(where == 'bottom') height -= mHeight - mRowHeight;
         mScroller.scrollTop(height);
         // This should handle our scrolling on its callback, so we don't need to call handleScroll().
     };
@@ -84,7 +93,17 @@ var BigTable = function(container, width, height, row_height, column_count) {
         return mData.length;
     };
 
+    this.startBatch = function() {
+        mBufferingDraws = true;
+    };
+
+    this.endBatch = function() {
+        mBufferingDraws = false;
+        redraw();
+    };
+
     var redraw = function(row) {
+        if(mBufferingDraws) return;
         // If we weren't given an argument, redraw everything visible.
         if(row === undefined) {
             for(var i = mVisibleStart; i < mVisibleStart + mDisplayRowCount; ++i) {
@@ -116,7 +135,7 @@ var BigTable = function(container, width, height, row_height, column_count) {
     };
 
     var initialise = function() {
-        mScroller = $('<div>').css({width: mWidth, height: mHeight, position: 'absolute', top: 0, left: 0, overflow: 'scroll'});
+        mScroller = $('<div>').css({width: mWidth, height: mHeight, position: 'absolute', top: 0, left: 0, 'overflow-y': 'scroll'});
         mContent = $('<table>').css({width: mWidth, height: mHeight, position: 'absolute', top: 0, left: 0});
         mScrollContent = $('<div>');
 

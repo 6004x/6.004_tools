@@ -1,7 +1,7 @@
 BSim.DisassembledView = function(container, beta) {
     var mContainer = $(container);
     var mBeta = beta;
-    var mTable = new BigTable(mContainer, 500, 200, 22, 4);
+    var mTable = new BigTable(mContainer, 450, 200, 22, 4);
     var mCurrentPC = 0;
     var mRowHeight = 0;
     var mScrollOffset = 0;
@@ -90,8 +90,6 @@ BSim.DisassembledView = function(container, beta) {
     };
 
     var initialise = function() {
-        var length = 80;
-        build_rows(length);
         mContainer.append(mTable);
 
         mBeta.on('change:word', beta_change_word);

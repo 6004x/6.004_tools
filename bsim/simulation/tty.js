@@ -24,7 +24,19 @@ BSim.TTY = function(container, beta) {
             append_text_slowly();
         };
 
-        mBeta.on('out:text', handle_new_text);
+        var clear_text = function() {
+            mPendingText = '';
+            text_holder.textContent = '';
+        };
+
+        var replace_text = function(text) {
+            mPendingText = '';
+            text_holder.textContent = text;
+        };
+
+        mBeta.on('text:out', handle_new_text);
+        mBeta.on('text:clear', clear_text);
+        mBeta.on('text:replace', replace_text);
 
         mContainer.keypress(function(e) {
             beta.keyboardInterrupt(e.which);

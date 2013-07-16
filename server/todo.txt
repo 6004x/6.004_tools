@@ -4,7 +4,8 @@ delete
 indexedDB?
 algorithm for local storage?
 version control
-
+KEYWORD ~ for version control
+hover on for buttons (delete, rename)
 cygwin apache server for authentication
 ca server certificate
 environment variables pass to node

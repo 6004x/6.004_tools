@@ -5,10 +5,15 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
     
     <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
-    <!-- <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet"> -->
-    <!-- <link href="http://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet"> -->
+    <!-- <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+    <link href="http://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet"> -->
     <script src="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
+    <script src='../fileSystem/fileSystem.js'></script>
+    <script src='../fileSystem/folders.js'></script>
+    <script src='LinkedList.js'></script>
+    <script src='TSM.js'></script>
+    <script src='TMSIM.js'></script>
     <script src="../editor/external/codemirror.js"></script>
         <script src="../editor/editor.js"></script>
         <script src="../editor/external/codemirror-extensions.js"></script>
@@ -17,14 +22,12 @@
         <script src="../editor/modes/jsim.js"></script>
         <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
          <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
-        <script src='fileSystem.js'></script>
-        <script src='folders.js'></script>
-        <script>
-        $(document).ready(function(){
-            //pass in server location to fileSystem
-            FileSystem.setup('dontony', 'http://localhost:8080');
+    </head>
+    <script>
+    $(document).ready(function(){
+        FileSystem.setup('antonio', 'http://localhost:8080');
 
-            var mode='jsim';
+            var mode='tsim';
             editor = new Editor('.span9',mode);
             var set_height = function() {
                 editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
@@ -34,56 +37,33 @@
 
 
             Folders.setup('.span3', editor, mode);
-            $('#user_input').val('');
+
             Folders.refresh();
-        });
-        </script>
-    </head>
+    });
+    </script>
     <style>
-        .tab-pane {
-            border-bottom: 1px solid #ddd;
-            border-left: 1px solid #ddd;
-            border-right: 1px solid #ddd;
+        .file_name .file_button{
+            display:none;
         }
-        .nav-tabs {
-            margin-bottom: 0;
+        .file_name:hover .file_button{
+            display:inline-block;
         }
-        .testDiv{
-            border:solid 1px black;
-        }
-        .span2{
-            min-width: 170px;
-        }
-        .buttonDiv{
-            float:none;
-            text-align: center;
-            width: 100%;
-        }
-        .filePaths{
-            padding:5px;
-        }
-        .folderName {
-            background-color: lightgray;
-            border-top: solid 1px gray;
-            border-radius: 4px;
-            z-index:3;
-        }
-        .folderName:hover{
-            background-color:lightblue;
-        }
-        .folderContents{
-            border-bottom: solid 1px gray;
-            border-left: solid 1px gray;
-            border-right: solid 1px gray;
-            border-radius: 4px;
-            z-index: 2;
-        }
-        .modeButtons{
-            padding-left: 30px;
+        ul
+        {
+            list-style-type: none;
         }
     </style>
     <body>
+
         <div class="container container-fluid">
+            <div class="masthead">
+                <ul class="pull-right nav nav-pills">
+                    <li class="active" id="maximise_editor"><a>Editor</a></li>
+                    <li id="split_pane"><a>Split</a></li>
+                    <li id="maximise_simulation"><a>Simulation</a></li>
+                </ul>
+                <h1>TMSIM</h1>
+            </div>
             <div class='row row-fluid'>
                 <div class="span3"></div>
                 <div class="span9"></div>
