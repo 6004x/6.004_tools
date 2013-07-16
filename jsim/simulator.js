@@ -194,6 +194,15 @@ Graph setup functions
             plotObj.clearSelection();
             plotObj.pan({left:-1*evt.originalEvent.wheelDeltaX});
         });
+        
+//        plotObj.getPlaceholder().on("plotpan",function(evt,args){
+//            args.preventEvent = true;
+//            plotObj.pan(args);
+//        });
+//        plotObj.getPlaceholder().on("plotzoom",function(evt,args){
+//            args.preventEvent = true;
+//            plotObj.zoom(args);
+        });
     }
     
     /***********************
