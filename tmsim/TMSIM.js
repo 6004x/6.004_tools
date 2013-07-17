@@ -1,6 +1,9 @@
+/*
+	TMSIM includes the code neccessary to parse in a String into a 
+	TSM instance, and it's corresponding tests. 
+*/
 function TMSIM(){
-
-	var tsm = new TSM();
+	//declaring regular expressions for the varrious possible syntaxes in TMSIM
 	var quotedRegExp = /\"([^\n\"]|\\\"|\\\/)+\"/;
 	var multiLineRegExp = /\/\*(.|\n)*\*\//;
 	var commentRegExp = /\/\/(.)*\n/;
@@ -9,29 +12,48 @@ function TMSIM(){
 	var commentRegExp = /\/\/|\/\*|\*\/|\n/
 	var keywordRegExp = /^(action|symbols|states|tape|result|result1|checkoff)\b/
 	var regexp = new RegExp('('+multiLineRegExp.source+'|'+keywordRegExp+'|'+commentRegExp.source+'|'+quotedRegExp.source +'|'+ variableRegExp.source+'|'+selectedRegExp.source +')', 'g');
-	var oldRegexp=/(\"[^\n]+\"|\[\w+\]|\w+\b|\*\w+\b\*|^[^\s\/"']+|\n|-|\/\/|\/\*|\*\/)/g
+	// var oldRegexp=/(\"[^\n]+\"|\[\w+\]|\w+\b|\*\w+\b\*|^[^\s\/"']+|\n|-|\/\/|\/\*|\*\/)/g
 	
+	//our TSM instance, we compile it with parse, 
+	// instantiate it with flattenMachine, and run it with getResults 
+	var tsm = new TSM();
 
+	// corresponding lists of test tapes and results, and checkoff requirements
+	var list_of_tapes={};
 	var list_of_results={};
 	var list_of_results1={};
-	var list_of_tapes={};
 	var checkoff = {};
 
+	/*
+	takes in a string in the TMSIM language, and returns a parsed dictionary
+	which flattenMachine will flatten into a TSM instance. 
+	*/
 	function parse(stream){
-		//console.log(stream);
+		var exceptions = [];
 		var tokens=stream.match(regexp);
 		console.log(tokens);
-		var parseDict={};
+		var parseDict={
+			symbols:[],
+			states:[],
+			tape:[],
+			result:[],
+			result1:[],
+			checkoff:[],
+			action:[],
+		};
 		var parseState='none';
 		var oldParseState = 'none';
 		var lineCount=1;
-		var actionCount=0;
-		var symbolsCount=0;
-		var statesCount=0;
-		var tapeCount=0;
-		var resultCount=0;
-		var resultoneCount=0;
-		var checkoffCount=0;
+		var count = {
+			action:0,
+			symbols:0,
+			states:0,
+			tape:0,
+			result:0,
+			result1:0,
+			checkoff:0,
+		};
+
 
 		for(var i =0; i<tokens.length; i++) {
 
@@ -67,9 +89,13 @@ function TMSIM(){
 					parseState = token;
 				}
 				else if (type!='newline'){
-					console.log("expecting a keyword or comment, " + token + ' is not a keyword');
-					console.log('at line '+lineCount);
-					break;
+					var message="expecting a keyword or comment, " + token + " is not a keyword";
+					
+					exceptions.push({
+						message: message,
+						lineNumber : lineCount,
+					})
+					continue;
 				} else if (type == 'newline'){
 					lineCount++;
 				}
@@ -81,28 +107,16 @@ function TMSIM(){
 				// console.log(parseState +' on newline')
 				var currParseState = parseState;
 				if(parseState == 'line_comment')
-					currParseState = oldParseState
+					currParseState = oldParseState;
 				lineCount++;
 				if (getType(currParseState) == 'keyword'){
 					
-					if (currParseState == 'action'){
-						actionCount++;
-					} else if (currParseState == 'symbols'){
-						symbolsCount++;
-					} else if (currParseState == 'states'){
-						statesCount++;
-					} else if (currParseState == 'tape'){
-						tapeCount++;
-					} else if (currParseState == 'result'){
-						resultCount++;
-					} else if (currParseState == 'result1'){
-						resultoneCount++;
-					} else if (currParseState == 'checkoff'){
-						checkoffCount++;
-					} else {
-						console.log(token + ' is not a keyword, no idea how you got here');
-						console.log(' at line '+lineCount);
-					}
+					count[currParseState]++;
+
+					//  else {
+					// 	console.log(token + ' is not a keyword, no idea how you got here');
+					// 	console.log(' at line '+lineCount);
+					// }
 					parseState = 'none';
 					continue;
 				} else if (parseState == 'line_comment') {
@@ -114,96 +128,54 @@ function TMSIM(){
 				}
 			} else if (type == 'multi_comment_end'){
 				if (parseState != 'multi_line_comment'){
-					console.log('you ended a comment that you didn\'t start')
+					var message = ('you ended a comment that you didn\'t start');
 					console.log(' at line '+lineCount);
-					break;
+					exceptions.push({
+						message : message,
+						lineNumber : lineCount,
+					})
+					continue;
 				}
 			} else if (type == 'variable'){
 				//if the token is a variable, it must correspond to an action
-				
-				if (parseState == 'action'){
-					if(!parseDict[parseState+String(actionCount)]){
-						parseDict[parseState+String(actionCount)] = {};	
-						parseDict[parseState+String(actionCount)].args = [];	
-						parseDict[parseState+String(actionCount)].lineNumber = lineCount;
-					}	
-					parseDict[parseState+String(actionCount)].args.push(token);
-				} else if (parseState == 'symbols'){
-					if(!parseDict[parseState+String(symbolsCount)]){
-						parseDict[parseState+String(symbolsCount)] = {};
-						parseDict[parseState+String(symbolsCount)].args = [];
-						parseDict[parseState+String(symbolsCount)].lineNumber = lineCount;
-					}
-					parseDict[parseState+String(symbolsCount)].args.push(token);
-				} else if (parseState == 'states'){
-					if(!parseDict[parseState+String(statesCount)]){
-						parseDict[parseState+String(statesCount)] = {};
-						parseDict[parseState+String(statesCount)].args = [];
-						parseDict[parseState+String(statesCount)].lineNumber = lineCount;
-					}
-					parseDict[parseState+String(statesCount)].args.push(token);
-				} else if (parseState == 'tape'){
-					if(!parseDict[parseState+String(tapeCount)]){
-						parseDict[parseState+String(tapeCount)] = {};
-						parseDict[parseState+String(tapeCount)].args = [];
-						parseDict[parseState+String(tapeCount)].lineNumber = lineCount;
-					}
-					parseDict[parseState+String(tapeCount)].args.push(token);
-				} else if (parseState == 'result'){
-					if(!parseDict[parseState+String(resultCount)]){
-						parseDict[parseState+String(resultCount)] = {};
-						parseDict[parseState+String(resultCount)].args = [];
-						parseDict[parseState+String(resultCount)].lineNumber = lineCount;
-					}
-					parseDict[parseState+String(resultCount)].args.push(token);
-				} else if (parseState == 'result1'){
-					if(!parseDict[parseState+String(resultoneCount)]){
-						parseDict[parseState+String(resultoneCount)] = {};
-						parseDict[parseState+String(resultoneCount)].args = [];
-						parseDict[parseState+String(resultoneCount)].lineNumber = lineCount;
-					}
-					parseDict[parseState+String(resultoneCount)].args.push(token);
-				} else if (parseState == 'checkoff'){
-					if(!parseDict[parseState+String(checkoffCount)]){
-						parseDict[parseState+String(checkoffCount)] = {};
-						parseDict[parseState+String(checkoffCount)].args = [];
-						parseDict[parseState+String(checkoffCount)].lineNumber = lineCount;
-					}
-					parseDict[parseState+String(checkoffCount)].args.push(token);
-				} else if (parseState == 'line_comment' ){
+				if (parseState == 'line_comment' ){
 					//console.log('continuing on line_comment ' + token);
 					continue;
 				} else if (parseState == 'multi_line_comment'){
 					// console.log('continuing multi_line_comment ');
 					continue;
-				}
-				else {
-					console.log(token+' does not go here, we are looking for ' + parseState);
+				} else if (getType(parseState)=='keyword'){
+					if(parseDict[parseState].length == count[parseState]){
+						parseDict[parseState].push({
+							lineNumber:lineCount,
+							args: [],
+						});
+					}
+					parseDict[parseState][count[parseState]].args.push(token)
+					
+				} else {
+					var message = (token + ' does not go here, we are looking for ' + parseState);
 					console.log('at line '+lineCount);
-					break;
+					exceptions.push({
+						message : message,
+						lineNumber : lineCount,
+					})
+					continue;
 				}
 			} else if (type == 'keyword'){
-				//we don't need newline here... but might as well
+				// TODO: we don't need newline here... but might as well
+				// the user started a new command on the same line as another command
+				// how should we handle this, throw an error?
+				// this probably means the user is using a keyword as a state name
+				// which is not allowed. 
 				if (getType(parseState) == 'keyword'){
 					// console.log(parseState + ' on keyword')
-					if (parseState == 'action'){
-						actionCount++;
-					} else if (parseState == 'symbols'){
-						symbolsCount++;
-					} else if (parseState == 'states'){
-						statesCount++;
-					} else if (parseState == 'tape'){
-						tapeCount++;
-					} else if (parseState == 'result'){
-						resultCount++;
-					} else if (parseState == 'result1'){
-						resultoneCount++;	
-					} else if (parseState == 'checkoff'){
-						checkoffCount++;
-					} else {
-						console.log(parseState + ' is not a keyword, no idea how you got here');
-						console.log(' at line '+lineCount);
-					}
+					console.log('two commands on the same line');
+					count[currParseState]++;
+					// else {
+					// 	console.log(parseState + ' is not a keyword, no idea how you got here');
+					// 	console.log(' at line '+lineCount);
+					// }
 					parseState = token;
 					continue;
 				} else if (parseState == 'line_comment') {
@@ -213,29 +185,25 @@ function TMSIM(){
 				}
 			}
 		}
-
+		console.log(parseDict);
+		if(exceptions.length > 0){
+			throw exceptions;
+		}
 		return parseDict;
 		
 	}
-	function developMachine(dict){
+	function flattenMachine(dict){
 		var keys = Object.keys(dict);
 		console.log(keys);
-		var sortedKeys=keys.sort(keyCompare);
-		console.log(sortedKeys);
-
+		var exceptions = [];
 		var validSymbols=['-'];
 		var validStates=['*halt*', '*error*'];
 		var validMoves=['l', 'r', '-'];
 		var actions=[];
 		var tsmDict={};
-
-		for (var i = 0; i < sortedKeys.length; i++){
-			var key = sortedKeys[i];
-			var args  = dict[key].args; //arguments coming after the list
-			var lineNumber = dict[key].lineNumber
-			if(stringContains(key, 'action')){
-				// args must have an array of 5 objects
-				if(args.length==5){
+		var parseFunctions = {
+			action:function(args, lineNumber){
+				if(args.length == 5){
 					var state = args[0];
 					var read_symbol = args[1];
 					var transition = new Object();
@@ -250,66 +218,105 @@ function TMSIM(){
 						//'valid action');
 						tsmDict[state].transition[read_symbol]=transition;
 					} else {
-						console.log(validStates);
-						console.log(validSymbols);
-						console.log(args);
-						console.log(' does not have a valid argument (state or symbol not initialized)');
+						var message = '';
+						if(!_.contains(validStates,state))
+							message = 'your state argument, '+state+', is invalid, you should declare your states with the states command';
+						else if (!_.contains(validStates, transition.new_state))
+							message = 'your new_state argument,'+transition.new_state+', is invalid, you should declare your states with the states command';
+						else if (!_.contains(validSymbols, read_symbol))
+							message = 'your read_symbol, '+read_symbol+', is invalid, declare it with the states command';
+						else if(!_.contains(validSymbols, transition.write))
+							message = 'your write_symbol, '+transition.write+', is invalid, declare it with the states command';
+						else if(!_.contains(validMoves, transition.move))
+							message = 'your move symbol, '+transition.move+', is invalid, declare it with the states command';
 						console.log('at line '+ lineNumber);
-							break;
+						exceptions.push({
+							message:message,
+							lineNumber:lineNumber
+						});
+
+							//break;
 					}
 				} else {
-					console.log(args);
-					console.log('is not 5 characters, not a valid action');
+					var message=args+'is not 5 characters, not a valid action';
 					console.log('at line '+ lineNumber);
-					break;
+					exceptions.push({
+						message:message,
+						lineNumber:lineNumber
+					});
+					// break;
 				}
-			} else if (stringContains(key, 'symbols')) {
-				for(var j = 0; j < args.length; j++){
-					var symbol = args[j];
+			},
+			symbols:function(args, lineNumber){
+				for(var k = 0; k < args.length; k++){
+					var symbol = args[k];
 					validSymbols.push(symbol);
 				}
-				// console.log(validSymbols);
-				// console.log('symbols have been initialized');
-			} else if (stringContains(key, 'states')) {
-				for(var j = 0; j < args.length; j++){
-					var state = args[j];
+			},
+			states:function(args, lineNumber){
+				for(var k = 0; k < args.length; k++){
+					var state = args[k];
 					validStates.push(state);
 					tsmDict[state]={};
 					tsmDict[state].name = state;
 					tsmDict[state].transition = {};
 				}
-				console.log(validStates)
-				console.log('states has been instantiated');
-			} else if (stringContains(key, 'tape')) {
-				// console.log('tape');
+			},
+			tape:function(args, lineNumber){
 				var tapeName = args[0];
 				var tapeContents = args.slice(1);
 				list_of_tapes[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
 				list_of_tapes[tapeName].printLL();
-			} else if (stringContains(key, 'result1')) {
-				// console.log('result1 at line ' +lineNumber);
-				var tapeName = args[0];
-				var tapeResult=  args[1];
-				if (args[2]){
-					console.log('your result1 at '+lineNumber+' can only have one argument');
-					break;
-				}
-				list_of_results1[tapeName]=tapeResult;
-			} else if (stringContains(key, 'result')) {
-				// console.log('result');
+			},
+			result:function(args, lineNumber){
 				var tapeName = args[0];
 				var tapeContents = args.slice(1);
 				list_of_results[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
-				list_of_tapes[tapeName].printLL();
-			} else if (stringContains(key, 'checkoff')) {
+				list_of_results[tapeName].printLL();
+			},
+			result1:function(args, lineNumber){
+				var tapeName = args[0];
+				var tapeResult=  args[1];
+				if (args.length > 2){
+					var message =('your result1 can only have one argument');
+					exceptions.push({
+							message:message,
+							lineNumber:lineNumber
+						});
+					// break;
+				}
+				list_of_results1[tapeName]=tapeResult;
+			},
+			checkoff:function(args, lineNumber){
 				console.log('checkoff');
 				console.log(args);
-			} else {
-				console.log(key+' is not a valid keyword');
-				console.log('at line '+ lineNumber);
+			}
+		};
+		for (var i = 0; i < keys.length; i++){
+			var key = keys[i];
+			var list_of_commands  = dict[key]; //list of commands of that key
+			for(var j = 0; j < list_of_commands.length; j++){
+				var args = list_of_commands[j].args;
+				var lineNumber = list_of_commands[j].lineNumber;
+				if(parseFunctions[key])
+					parseFunctions[key](args, lineNumber);
+				else {
+					var message = (key+' is not a valid keyword');
+					console.log('at line '+ lineNumber);
+					exceptions.push({
+						message:message,
+						lineNumber:lineNumber
+					});
+				}
 			}
 		}
+
 		tsm.setup(tsmDict);
+		if(exceptions.length > 0)
+			throw exceptions;
+		return tsmDict;
+	}
+	function getResults(){
 		var results = '';
 		for(key in list_of_tapes){
 			results +=key+': ';
@@ -320,18 +327,19 @@ function TMSIM(){
 			tsm.start();
 			results+='results: '+list.toString()+'\n';
 			if (list_of_results[key]){
-				console.log(list_of_results[key]);
-				results+='result: '+String(list.equals(list_of_results[key]))
-			} else if (list_of_results1[key]){
-				console.log(list_of_results1[key]);
-				results+='result1: '+String(list.peek()==(list_of_results1[key]))
+				results+='desired: '+(list_of_results[key])+'\t';
+				results+='equal?: '+String(list.equals(list_of_results[key]))+'\n';
+			} 
+			if (list_of_results1[key]){
+				results+='desired current value: '+(list_of_results1[key]);
+				results+=', result1: '+String(list.peek()==(list_of_results1[key]))+'\n';
 			}
 			results+='\n\n';
 		}
 		return results;
 	}
-
 	//HELPER FUNCTIONS
+	
 	function keyCompare(a,b){
 		if(stringContains(b,'action'))
 			return -1;
@@ -368,7 +376,7 @@ function TMSIM(){
 				//this is the one that we want to start the tsm on 
 			
 				if(!selected){
-					//then we haven;t selected one yet, good
+					//then we haven't selected one yet, good
 					selectedIndex=j;
 					tapeContents.push(token.slice(1, token.length-1));
 					selected = true;
@@ -385,7 +393,7 @@ function TMSIM(){
 		return (new LinkedList()).init(tapeContents, selectedIndex);
 	}
 
-	return {parse:parse, developMachine:developMachine}
+	return {parse:parse, flattenMachine:flattenMachine, getResults:getResults}
 };
 
 // var dict = TMSIM.parse('states A B C .  action  A   -      B  1 r\naction  A   1      C  1 l')

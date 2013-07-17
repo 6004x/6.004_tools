@@ -5,8 +5,8 @@ var Folders=new function(){
 
     //attaches file list to the default node
     function refreshFileList(){
-        getFileList(rootNode.find('.filePaths'));
 
+        getFileList(rootNode.find('.filePaths'));
     }
 
     function getFileList(parentNode){
@@ -33,29 +33,28 @@ var Folders=new function(){
                 var collapseName='collapse'+name.replace(' ','_');
                 //collapseName is name without whitespace
                
-                //TODO: find a way to make this different
-                if(name.indexOf('.')>-1){
+                //TODO: find a way to differentiate folders differently
+                if(name.indexOf('.') > -1){
                     var listVar=$('<li></li>').addClass('file_name').attr('data-path', parentPath+name).append($('<a href=#>'+name+'</a>').attr('data-path', parentPath+name));
                     var delButton=$('<span></span>').addClass('btn btn-link file_button delete_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-trash>').attr('title', 'Delete '+ name);
                     var renButton=$('<span></span>').addClass('btn btn-link file_button rename_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-pencil>').attr('title', 'Rename '+ name);
-                    var downButton=$('<span></span>').addClass('btn btn-link file_button download_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-eject>').attr('title', 'Download '+ name);
-                     /*var delDrop=addDiv('dropdown pull-right');
-                    var delDropToggle=($('<button class="btn dropdown-toggle" data-toggle="dropdown" href="#"><span class="caret"></span></button>').css('padding', '0px 5px 0px 3px').css('height', '16px'));
-                    var delDropUL=$('<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel"></ul>').css('z-index', 20);
-                    */
-                    listVar.append(delButton, downButton, renButton);
+                    var downButton=$('<span></span>').addClass('btn btn-link file_button download_file pull-right').css('padding', '0px').css('height', '18px').append('<i class=icon-download-alt>').attr('title', 'Download '+ name);
+                    var buttonDiv = addDiv('file_button_div');
+
+                    buttonDiv.append(delButton, downButton, renButton);
+                    listVar.append(buttonDiv);
                     listVar.on('click', function(e){
                         var node=$(e.currentTarget);
-                        console.log(node);
+                        // console.log(node);
                         getFile(node.attr('data-path'));
                     });
 
                     delButton.on('click', function(e){
                         e.stopPropagation();
-                        console.log('del button');
-                        console.log($(e.currentTarget).parent().parent())
+                        // console.log('del button');
+                        // console.log($(e.currentTarget).parent().parent())
                         var current_path=$(e.currentTarget).parents('li').attr('data-path');
-                        console.log(current_path);
+                        // console.log(current_path);
                         deleteFile(current_path);
                     });
 
@@ -72,18 +71,33 @@ var Folders=new function(){
 
                         collapser.append('<a >'+'<i class="icon-chevron-down pull-left open_indicator"></i>'+folderName+'</a>');
                         collapser.find('i').addClass(collapseName);
-                        var newButton=$('<span class="btn btn-link new_file pull-right" style="padding:0px"><i class=icon-plus></span>');
+                        var newButton=$('<span class="pull-right" style="padding:0px; height:16px"><i class=icon-plus></span>');
+                        var newFileButton=$('<span class="btn btn-link new_file pull-right" style="padding:0px; height:16px"><i class=icon-list></span>');
+                        var newFolderButton=$('<span class="btn btn-link new_folder pull-right" style="padding:0px; height:16px"><i class=icon-folder-open></span>');
+                        collapser.append(newFileButton);
+                        collapser.append(newFolderButton);
                         collapser.append(newButton);
-                        newButton.attr({
+                        newFileButton.attr({
                                 'data-toggle':"tooltip", 
-                                'title':"New File in this folder",
+                                'title':"New File in "+name,
+                                'data-trigger':'hover',
+                                'data-container':'body',  
+                                });
+                        newFolderButton.attr({
+                                'data-toggle':"tooltip", 
+                                'title':"New Folder in " + name,
                                 'data-trigger':'hover',
                                 'data-container':'body',
                                 });
 
-                        newButton.on('click', function(e){
+                        newFileButton.on('click', function(e){
                             var current_path=$(e.currentTarget).parent().attr('data-path');
                             newFile(current_path);
+                            e.stopPropagation();
+                        });
+                        newFolderButton.on('click', function(e){
+                            var current_path=$(e.currentTarget).parent().attr('data-path');
+                            newFolder(current_path);
                             e.stopPropagation();
                         });
 
@@ -282,7 +296,7 @@ var Folders=new function(){
         addModal('newFile', 'New File', innerDiv, 'Create New File',null,function(modal){
             fileName=modal.find('input').val();
             console.log(fileName+ ' obtained from modal')
-
+            //checks to confirm valid file name
             if(fileName==null){
                 console.log('user canceled');
                 isValid=false;
@@ -346,7 +360,7 @@ var Folders=new function(){
     }
     function commit(){
     }
-     function setup(root, editorN, mode){
+    function setup(root, editorN, mode){
         rootNode=$(root);
         editor=editorN;
         editMode=mode;
@@ -355,14 +369,72 @@ var Folders=new function(){
         addButtons(buttonDiv);
 
         sideBarNav=addDiv('sidebar-nav');
-        var filePaths=$('<ul></ul>').addClass('nav nav-list nav-stacked filePaths');
+        var filesWrapper=$('<ul></ul>').addClass('nav nav-list nav-stacked');
         
-        sideBarNav.append(filePaths);
+        sideBarNav.append(filesWrapper);
 
-        var tempName=$("<div class='header buttonDiv'><h1 class='testDiv'>testing</h1>"
-            +"<button class='btn btn-info' id='user_button'>get filelist</button></div>");
+        var tempName=$("<div class='header buttonDiv'><h1 class='testDiv'>testing</h1>");
+        //     +"<button class='btn btn-info' id='user_button'>get filelist</button></div>");
         
-        rootNode.append(tempName);
+        // rootNode.append(tempName);
+
+        var username = FileSystem.getUserName();
+        var username;
+        var collapserDiv=addDiv('');
+        var collapser=$('<li data-toggle=collapse href=#rootFolder></li>').addClass('rootFolderName folderName');//.attr('data-path', parentPath+username+'/');
+        collapserDiv.append(collapser);
+
+        collapser.append('<a >'+'<i class="icon-chevron-down pull-left open_indicator"></i>'+username+'</a>');
+        collapser.find('i').addClass('rootFolder');
+        var newButton=$('<span class="pull-right" style="padding:0px"><i class=icon-plus></span>');
+        var newFolderButton=$('<span class="btn btn-link new_folder pull-right" style="padding:0px; height:16px"><i class=icon-folder-open></span>');
+                        
+        collapser.append(newFolderButton);
+        collapser.append(newButton);
+        newFolderButton.attr({
+                'data-toggle':"tooltip", 
+                'title':"New File in root",
+                'data-trigger':'hover',
+                'data-container':'body',
+                });
+
+        newFolderButton.on('click', function(e){
+            newFolder('/');
+        });
+
+        
+        var subListUL=$('<ul id=rootFolder></ul>').addClass('filePaths collapse in');
+
+        subListUL.on('shown', function(e){
+            if(!$(e.target).hasClass('btn')){
+                var id=$(e.currentTarget).attr('id');
+                var arrow = rootNode.find('.rootFolderName a>i ');
+                arrow=arrow.filter(function(i, e){
+                    return $(e).hasClass(id);
+                });
+                if(arrow.hasClass('icon-chevron-right')){
+                    arrow.addClass('icon-chevron-down')
+                    arrow.removeClass('icon-chevron-right')
+                }                            
+                e.stopPropagation();
+            }
+        });
+        subListUL.on('hidden', function(e){
+            if(!$(e.target).hasClass('btn')){
+                var id=$(e.currentTarget).attr('id');
+                var arrow = rootNode.find('.rootFolderName a>i ');
+                arrow=arrow.filter(function(i, e){
+                    return $(e).hasClass(id);
+                });
+                if(arrow.hasClass('icon-chevron-down')){
+                    arrow.addClass('icon-chevron-right');
+                    arrow.removeClass('icon-chevron-down');
+                }
+                e.stopPropagation();
+            }
+        });
+        collapserDiv.append(subListUL);
+        sideBarNav.append(collapserDiv);
         rootNode.append(buttonDiv);
         rootNode.append(sideBarNav);
 
@@ -431,31 +503,17 @@ var Folders=new function(){
         });
 
         //now adding editor buttons
-        editor.addButtonGroup([new ToolbarButton('Save', saveCurrentFile, 'Saves the current File'),new ToolbarButton('show folders',showNavBar, '')]);
-        editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')])
-
-
-
+        editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
+        
     }
-    function tmsimAssemble(){
-        var file=new Object();
-        file.name=editor.currentTab();
-        file.data=editor.content();
-        var tmsim = new TMSIM();
-        if(file.name){
-            var parsedDict = tmsim.parse(file.data);
-            //editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
-
-            var results = tmsim.developMachine(parsedDict);
-            editor.openTab(file.name+'tsmed', results, true);
-
-        }
-    }
+    
     function hideNavBar(){
         rootNode.css('display', 'none');
+        rootNode.parent().find('.span9').addClass('span12').removeClass('span9');
     }
     function showNavBar(){
         rootNode.css('display', 'block');
+        rootNode.parent().find('.span12').addClass('span9').removeClass('span12');
     }
 
     return {setup:setup, refresh:refreshFileList};

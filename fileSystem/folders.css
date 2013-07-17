@@ -1,0 +1,60 @@
+.file_name .file_button{
+    display:none;
+}
+.file_button_div{
+	text-align:right;
+	clear:left;
+	display:inline-block;
+}
+.file_name:hover .file_button{
+   display:inline-block;
+}
+.file_name:nth-child(even){
+	background-color: #F9F9F9;
+}
+li{
+	list-style-type: none;
+}
+ul{
+    list-style-type: none;
+}
+.tab-pane {
+    border-bottom: 1px solid #ddd;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+.nav-tabs {
+    margin-bottom: 0;
+}
+.span2{
+    min-width: 170px;
+}
+.buttonDiv{
+    float:none;
+    text-align: center;
+    width: 100%;
+    margin-top:10px;
+    margin-bottom:10px;
+}
+.filePaths{
+    padding:0px;
+}	
+.folderName {
+    background-color: lightgray;
+    border-top: solid 1px gray;
+    border-radius: 4px;
+    z-index:3;
+}
+.rootFolderName{
+	border-top:none;
+}
+.folderName:hover{
+    background-color:lightblue;
+}
+.folderContents{
+    border-bottom: solid 1px gray;
+    border-left: solid 1px gray;
+    border-right: solid 1px gray;
+    border-radius: 4px;
+    z-index: 2;
+}
