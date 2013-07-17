@@ -154,7 +154,7 @@ Graph setup functions
     /*******************
     Zoom/pan setup: sets up zooming and panning buttons
     ********************/
-    function zoom_pan_setup(div,plotObj){
+    function general_zoompan(){
         // default options for tooltips
         var tooltipOpts = {delay:100, container:'body', placement:'right'};
         
@@ -187,18 +187,20 @@ Graph setup functions
         // set up a button group, add all the created buttons, append to the results div
         var btnGroup = $('<div class="btn-group btn-group-vertical zoompan"></div>');
         btnGroup.append(zoompan_buttons);
-        div.append(btnGroup);
-        
-        // position the button group
-//        btnGroup.css("top",10/*plotObj.height()/2*/);
-        
+        $('#simulation-pane').append(btnGroup);
+    }
+    
+    function zoom_pan_setup(div,plotObj){
         // mousewheel panning
         plotObj.getPlaceholder().on("mousewheel",function(evt){
 //            evt.preventDefault();
-            $.each(allPlots, function(index,item){
-                item.clearSelection();
-                item.pan({left:-1*evt.originalEvent.wheelDeltaX});
-            });
+            deltaX = evt.originalEvent.wheelDeltaX;
+            if (deltaX !== 0){
+                $.each(allPlots, function(index,item){
+                    item.clearSelection();
+                    item.pan({left:-1*evt.originalEvent.wheelDeltaX});
+                });
+            }
         });
         
         // doubleclick zooming
@@ -360,9 +362,9 @@ Graph setup functions
             var xrange = ranges.xaxis.to - ranges.xaxis.from;
             
             // limit the length of the tooltip to avoid blocking the legend
-            var divWidth = plotObj.width() - 
-                plotObj.getPlaceholder().find('.legend div').width() - 20;
-            rangeTextDiv.css("max-width",divWidth);
+//            var divWidth = plotObj.width() - 
+//                plotObj.getPlaceholder().find('.legend div').width() - 20;
+//            rangeTextDiv.css("max-width",divWidth);
             
             // calculate the range for each series. Each series gets its own div in
             // innerRangeTextDivs
@@ -438,7 +440,7 @@ Graphing functions
     // helper function that returns a new generic placeholder div
     function get_plotdiv(){
         return $('<div class="placeholder" style="width:90%;height:200px;\
-min-height:200px"></div>');
+min-height:130px"></div>');
     }
     
     /*********************
@@ -503,7 +505,7 @@ min-height:200px"></div>');
             // customize options
             var options = $.extend(true,{},default_options);
             options.yaxis.axisLabel = current ? 'Amps (A)' : 'Volts (V)';
-            options.xaxis.axisLabel = 'Time (s)';
+//            options.xaxis.axisLabel = 'Time (s)';
             options.xaxis.zoomRange = [null, (xmax-xmin)];
             options.xaxis.panRange = [xmin, xmax];
             
@@ -646,6 +648,7 @@ min-height:200px"></div>');
         catch (err) {
             throw new Parser.CustomError(err,analysis.line,0);
         }
+        general_zoompan();
     }
 
 /*********************

@@ -32,25 +32,32 @@
 }
 
 .zoompan {
-    display:inline-block;
-    vertical-align:bottom;
-    position:relative;
-    bottom:50px;
+/*    display:inline-block;*/
+    vertical-align:top;
+    position:fixed;
+    top:150px;
+    right:40px;
+/*    bottom:50px;*/
 }
 
 .plot-wrapper {
+/*
     border: solid 1px #ddd;
     border-radius: 5px;
-    margin-bottom:10px;
+*/
+/*    margin-bottom:10px;*/
 /*    margin-top:3px;*/
 /*    margin-bottom:5px;*/
-    padding-top:5px;
+/*    padding-top:5px;*/
     padding-left:10px;
+    margin-bottom:-10px;
     margin-right:20px;
 }
 
 #simulation-pane {
+    position:relative;
     overflow:scroll;
+    border: 1px solid #ddd
 }
 
 
