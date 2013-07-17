@@ -146,7 +146,7 @@ Graph setup functions
             
             // plot height = total height / number of plots - margin space,
             // bounded by min-height
-            var plotHeight = $('#editor-pane').height() / allPlots.length - margin_allowance;
+            var plotHeight = $('#editor-pane').height() / allPlots.length /*- margin_allowance*/;
             placeholder.css("height",plotHeight);
         });
     }
@@ -187,7 +187,38 @@ Graph setup functions
         // set up a button group, add all the created buttons, append to the results div
         var btnGroup = $('<div class="btn-group btn-group-vertical zoompan"></div>');
         btnGroup.append(zoompan_buttons);
-        $('#simulation-pane').append(btnGroup);
+        var simpane = $('#simulation-pane');
+        simpane.append(btnGroup);
+        
+        tooltipOpts.title = "Zoom to Selection";
+        var selZoomButton = $('<button id="z2s" class="btn btn-mini">\
+<i class="icon-resize-full">').tooltip(tooltipOpts);
+        simpane.append(selZoomButton);
+        selZoomButton.hide();
+        
+        var selRanges;
+        simpane.on("plotselected",function(evt,ranges){
+            selZoomButton.show();
+            console.log("selected ranges:",ranges);
+            selRanges = ranges;
+        });
+        
+        selZoomButton.on("click",function(){
+            ranges = selRanges;
+            console.log("ranges:",ranges);
+            if (ranges){
+                $.each(allPlots, function(index,item){
+                    var opts = item.getAxes().xaxis.options;
+                    opts.min = ranges.xaxis.from;
+                    opts.max = ranges.xaxis.to;
+                    item.setupGrid();
+                    item.draw();
+                    item.clearSelection();
+                });
+            }
+        });
+        
+        simpane.on("plotunselected",function(){selZoomButton.hide();});
     }
     
     function zoom_pan_setup(div,plotObj){
@@ -231,7 +262,7 @@ Graph setup functions
         var top = plotObj.getPlotOffset().top;
         var left = plotObj.getPlotOffset().left;
         posTextDiv.css("left",left + 5);
-        posTextDiv.css("top",top + 5);
+        posTextDiv.css("top",top);
         posTextDiv.hide();
         plotObj.getPlaceholder().append(posTextDiv);
         
@@ -305,11 +336,29 @@ Graph setup functions
     Selection setup: shows the range of values covered by a selection
     (similar to hover setup above)
     *************************/
+//    var ztsButton = $('<button id="z2s" class="btn btn-mini">\
+//<i class="icon-resize-full">').tooltip({delay:100, container:'body',
+//                                        placement:'right'})
+//                              .on("click",function(){console.log("clicked")});
+//    $('#simulation-pane').append(ztsButton);
+    function select_zoom(ranges){
+        if (ranges){
+            $.each(allPlots,function(index,item){
+                opts = item.getAxes.xaxis.options;
+                opts.min = ranges.xaxis.from;
+                opts.max = ranges.xaxis.to;
+                
+                item.setupGrid();
+                item.draw();
+            });
+        }
+    }
+    
     function selection_setup(div,plotObj){
         // create and position div to show range values
         var rangeTextDiv = $("<div class='posText'><div class='xrange'></div></div>");
         plotObj.getPlaceholder().append(rangeTextDiv);
-        rangeTextDiv.css("bottom",plotObj.getPlotOffset().bottom + 5);
+        rangeTextDiv.css("bottom",plotObj.getPlotOffset().bottom);
         rangeTextDiv.css("left",plotObj.getPlotOffset().left + 5);
         rangeTextDiv.hide();
         
@@ -317,11 +366,13 @@ Graph setup functions
         // showtooltip method
         var updateSelTimeout;
         var selRanges;
+        
         plotObj.getPlaceholder().on("plotselecting", function(event,ranges){
+//            ztsButton.show()
             $.each(allPlots, function(index, value) {
                 if (value != plotObj){
                     if (ranges){
-                        value.setSelection(ranges);
+                        value.setSelection(ranges,true);
                     }
                 }
                 value.getPlaceholder().trigger("showRangeTooltip",ranges);
@@ -330,6 +381,7 @@ Graph setup functions
         
         // whenever one plot's selection is cleared, clear the others' as well
         plotObj.getPlaceholder().on("plotunselected",function(event,ranges){
+//            ztsButton.hide();
             $.each(allPlots, function(index, value){
                 value.clearSelection();
             });

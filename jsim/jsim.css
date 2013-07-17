@@ -11,7 +11,7 @@
 .posText {
     position:absolute;
 /*    border: 1px solid rgb(54,54,54);*/
-    background: white;
+/*    background: white;*/
     opacity: .85;
     padding: 2px;
 /*    border-radius: 5px;*/
@@ -36,7 +36,7 @@
     vertical-align:top;
     position:fixed;
     top:150px;
-    right:40px;
+    right:60px;
 /*    bottom:50px;*/
 }
 
@@ -52,6 +52,13 @@
     padding-left:10px;
     margin-bottom:-10px;
     margin-right:20px;
+}
+
+#z2s {
+    position:fixed;
+    vertical-align:top;
+    top:260px;
+    right:60px;
 }
 
 #simulation-pane {
