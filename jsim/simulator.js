@@ -126,7 +126,19 @@ Graph setup functions
         div.css("position","relative");
         zoom_pan_setup(div,plotObj);
         hover_setup(div,plotObj);
-        selection_setup(div,plotObj);  
+        selection_setup(div,plotObj);
+        set_plot_heights();
+    }
+    
+    $(window).resize(set_plot_heights);
+        
+    function set_plot_heights(){
+        $.each(allPlots,function(index,item){
+//            console.log("changing height of plot number ",index);
+            var placeholder = item.getPlaceholder();
+            var plotHeight = $('#editor-pane').height() / allPlots.length;
+            placeholder.css("height",plotHeight);
+        });
     }
     
     /*******************
@@ -168,7 +180,7 @@ Graph setup functions
         div.append(btnGroup);
         
         // position the button group
-        btnGroup.css("top",plotObj.height()/2 - 40);
+        btnGroup.css("top",10/*plotObj.height()/2*/);
         
         // mousewheel panning
         plotObj.getPlaceholder().on("mousewheel",function(evt){
@@ -408,6 +420,11 @@ Graphing functions
 *****************************************************
 *****************************************************/
     
+    function get_plotdiv(){
+        return $('<div class="placeholder" style="width:90%;height:200px;\
+min-height:200px"></div>');
+    }
+    
     /*********************
     Tran_plot: plots a transient analysis
         --args: -div: the div into which the plot will be placed
@@ -462,7 +479,7 @@ Graphing functions
             var xmax = results._time_[plot.length-1];
             
             // prepare a div
-            var plotdiv = $('<div class="placeholder" style="width:90%;height:300px"></div>');
+            var plotdiv = get_plotdiv();
             div.append(plotdiv);
             
             // customize options
@@ -539,8 +556,7 @@ Graphing functions
             
             // prepare divs for magnitude graph
             var div1 = $('<div'/* style="display:inline-block"*/+'></div>');
-            var plotDiv = $('<div class="placeholder" style="'/*display: inline-block;'*/+
-                            ' width:90%;height:300px"></div>');
+            var plotDiv = get_plotdiv();
             div.append(div1);
             div1.append(plotDiv);
             
@@ -559,8 +575,7 @@ Graphing functions
             
             // prepare divs for phase graphs
             var div2 = $('<div'/* style="display:inline-block"*/+'></div>');
-            plotDiv = $('<div class="placeholder"style="'/*display: inline-block;'*/+
-                        'width:90%;height:300px"></div>');
+            plotDiv = get_plotdiv();
             div.append(div2);
             div2.append(plotDiv);
             
