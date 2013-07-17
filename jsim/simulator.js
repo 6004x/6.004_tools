@@ -136,12 +136,16 @@ Graph setup functions
     $(window).resize(set_plot_heights);
         
     function set_plot_heights(){
+        // limit the simulation pane's height to that of the editor pane
+        $('#simulation-pane').css("max-height",$('#editor-pane').height());
         $.each(allPlots,function(index,item){
-//            console.log("changing height of plot number ",index);
+            // allow extra space for margins
             var margin_val = $('.plot-wrapper').css("margin-bottom").match(/\d+/)[0];
             var margin_allowance = margin_val * 2;
-//            console.log("margin allowance:",margin_allowance);
             var placeholder = item.getPlaceholder();
+            
+            // plot height = total height / number of plots - margin space,
+            // bounded by min-height
             var plotHeight = $('#editor-pane').height() / allPlots.length - margin_allowance;
             placeholder.css("height",plotHeight);
         });
@@ -190,7 +194,7 @@ Graph setup functions
         
         // mousewheel panning
         plotObj.getPlaceholder().on("mousewheel",function(evt){
-            evt.preventDefault();
+//            evt.preventDefault();
             $.each(allPlots, function(index,item){
                 item.clearSelection();
                 item.pan({left:-1*evt.originalEvent.wheelDeltaX});
@@ -300,15 +304,15 @@ Graph setup functions
     (similar to hover setup above)
     *************************/
     function selection_setup(div,plotObj){
+        // create and position div to show range values
         var rangeTextDiv = $("<div class='posText'><div class='xrange'></div></div>");
-        
-        var innerRangeTextDivs = {};
         plotObj.getPlaceholder().append(rangeTextDiv);
-        
         rangeTextDiv.css("bottom",plotObj.getPlotOffset().bottom + 5);
         rangeTextDiv.css("left",plotObj.getPlotOffset().left + 5);
         rangeTextDiv.hide();
         
+        // when a selection is being made, if it's a valid selection, call each plot's
+        // showtooltip method
         var updateSelTimeout;
         var selRanges;
         plotObj.getPlaceholder().on("plotselecting", function(event,ranges){
@@ -322,6 +326,7 @@ Graph setup functions
             }); 
         });
         
+        // whenever one plot's selection is cleared, clear the others' as well
         plotObj.getPlaceholder().on("plotunselected",function(event,ranges){
             $.each(allPlots, function(index, value){
                 value.clearSelection();
@@ -331,6 +336,8 @@ Graph setup functions
             rangeTextDiv.hide();
         });
         
+        // showtooltip -- show the tooltip after an appropriate timeout to prevent
+        // awful lag
         plotObj.getPlaceholder().on("showRangeTooltip",function(event,ranges){
             if (!updateSelTimeout){
                 selRanges = ranges;
@@ -341,18 +348,24 @@ Graph setup functions
         /*****************
         showSelRange: called when a 'selecting' event is received and updates displayed info
         ******************/
+        var innerRangeTextDivs = {};
+        
         function showSelRange(){
             updateSelTimeout = null;
             ranges = selRanges;
             
+            // if the range is invalid, do nothing
             if (!ranges){ return; }
             
             var xrange = ranges.xaxis.to - ranges.xaxis.from;
             
+            // limit the length of the tooltip to avoid blocking the legend
             var divWidth = plotObj.width() - 
                 plotObj.getPlaceholder().find('.legend div').width() - 20;
             rangeTextDiv.css("max-width",divWidth);
             
+            // calculate the range for each series. Each series gets its own div in
+            // innerRangeTextDivs
             var dataset = plotObj.getData();
             for (i = 0; i < dataset.length; i += 1) {
                 var series = dataset[i];
@@ -399,10 +412,6 @@ Graph setup functions
             axisLabelColor:'rgb(84,84,84)',
             axisLabelPadding:5
         },
-//        zoom:{
-//            interactive:true,
-//            trigger:"dblclick"
-//        },
         series:{
             shadowSize:0
         },
@@ -426,6 +435,7 @@ Graphing functions
 *****************************************************
 *****************************************************/
     
+    // helper function that returns a new generic placeholder div
     function get_plotdiv(){
         return $('<div class="placeholder" style="width:90%;height:200px;\
 min-height:200px"></div>');
@@ -518,7 +528,6 @@ min-height:200px"></div>');
         
         // repeated for each set of nodes
         for (var p = 0; p < plots.length; p += 1) {
-    //        console.log("checkpoint 1");
             var plot_nodes = plots[p];
             var mplots = []; 
             var pplots = [];
@@ -612,8 +621,6 @@ min-height:200px"></div>');
         
         if (netlist.length === 0) return;
         if (analyses.length === 0) return;
-        
-//        console.log("analyses:",analyses)
         
         allPlots = [];
     

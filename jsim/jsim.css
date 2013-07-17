@@ -48,3 +48,9 @@
     padding-left:10px;
     margin-right:20px;
 }
+
+#simulation-pane {
+    overflow:scroll;
+}
+
+
