@@ -1,3 +1,13 @@
+.tab-pane {
+                border-bottom: 1px solid #ddd;
+                border-left: 1px solid #ddd;
+                border-right: 1px solid #ddd;
+            }
+
+.nav-tabs {
+    margin-bottom: 0;
+}
+
 .posText {
     position:absolute;
 /*    border: 1px solid rgb(54,54,54);*/
@@ -23,6 +33,18 @@
 
 .zoompan {
     display:inline-block;
-    vertical-align:top;
+    vertical-align:bottom;
     position:relative;
+    bottom:50px;
+}
+
+.plot-wrapper {
+    border: solid 1px #ddd;
+    border-radius: 5px;
+    margin-bottom:10px;
+/*    margin-top:3px;*/
+/*    margin-bottom:5px;*/
+    padding-top:5px;
+    padding-left:10px;
+    margin-right:20px;
 }

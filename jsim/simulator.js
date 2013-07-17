@@ -130,13 +130,19 @@ Graph setup functions
         set_plot_heights();
     }
     
+    /*********************
+    Resize functions: scale plots nicely when the window is resized
+    **********************/
     $(window).resize(set_plot_heights);
         
     function set_plot_heights(){
         $.each(allPlots,function(index,item){
 //            console.log("changing height of plot number ",index);
+            var margin_val = $('.plot-wrapper').css("margin-bottom").match(/\d+/)[0];
+            var margin_allowance = margin_val * 2;
+//            console.log("margin allowance:",margin_allowance);
             var placeholder = item.getPlaceholder();
-            var plotHeight = $('#editor-pane').height() / allPlots.length;
+            var plotHeight = $('#editor-pane').height() / allPlots.length - margin_allowance;
             placeholder.css("height",plotHeight);
         });
     }
@@ -180,7 +186,7 @@ Graph setup functions
         div.append(btnGroup);
         
         // position the button group
-        btnGroup.css("top",10/*plotObj.height()/2*/);
+//        btnGroup.css("top",10/*plotObj.height()/2*/);
         
         // mousewheel panning
         plotObj.getPlaceholder().on("mousewheel",function(evt){
@@ -479,8 +485,10 @@ min-height:200px"></div>');
             var xmax = results._time_[plot.length-1];
             
             // prepare a div
+            var wdiv = $('<div class="plot-wrapper"></div>');
             var plotdiv = get_plotdiv();
-            div.append(plotdiv);
+            wdiv.append(plotdiv);
+            div.append(wdiv);
             
             // customize options
             var options = $.extend(true,{},default_options);
@@ -494,7 +502,7 @@ min-height:200px"></div>');
         
             // graph the data
             var plotObj = $.plot(plotdiv,dataseries,options);
-            graph_setup(div,plotObj);
+            graph_setup(wdiv,plotObj);
 //            console.log("data:",plotObj.getData());
         }
     }
@@ -555,7 +563,7 @@ min-height:200px"></div>');
             var xmax = mplots[0].data[len-1][0];
             
             // prepare divs for magnitude graph
-            var div1 = $('<div'/* style="display:inline-block"*/+'></div>');
+            var div1 = $('<div class="plot-wrapper"></div>');
             var plotDiv = get_plotdiv();
             div.append(div1);
             div1.append(plotDiv);
@@ -574,7 +582,7 @@ min-height:200px"></div>');
             graph_setup(div1, plotObj);
             
             // prepare divs for phase graphs
-            var div2 = $('<div'/* style="display:inline-block"*/+'></div>');
+            var div2 = $('<div class="plot-wrapper"></div>');
             plotDiv = get_plotdiv();
             div.append(div2);
             div2.append(plotDiv);
