@@ -1,0 +1,28 @@
+.posText {
+    position:absolute;
+/*    border: 1px solid rgb(54,54,54);*/
+    background: white;
+    opacity: .85;
+    padding: 2px;
+/*    border-radius: 5px;*/
+/*    width:100px;*/
+    font-size:10pt;
+/*    width:70%;*/
+}
+
+.posText div {
+    min-width: 90px;
+    display: inline-block;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.placeholder {
+    display:inline-block;
+}
+
+.zoompan {
+    display:inline-block;
+    vertical-align:top;
+    position:relative;
+}

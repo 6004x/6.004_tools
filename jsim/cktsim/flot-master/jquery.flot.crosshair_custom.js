@@ -150,13 +150,61 @@ The plugin also adds four public methods:
                     var drawX = Math.round(crosshair.x) + adj;
                     ctx.moveTo(drawX, 0);
                     ctx.lineTo(drawX, plot.height());
+                    ctx.stroke();
+                    
+                    // added by Stacey Terman to draw curve tracer
+                    function interpolate(series,x){
+                        // find the closest point, x-wise
+                        for (j = 0; j < series.data.length; j += 1) {
+                            if (series.data[j][0] > x) {
+                                break;
+                            }
+                        }
+                        
+                        // now interpolate
+                        var y;
+                        var p1 = series.data[j - 1];
+                        var p2 = series.data[j];
+                    
+                        if (p1 == null) {
+                            y = p2[1];
+                        } else if (p2 == null) {
+                            y = p1[1];
+                        } else {
+                            y = p1[1] + (p2[1] - p1[1]) * (x - p1[0]) / (p2[0] - p1[0]);
+                        }
+                        return y;
+                    }
+                    
+                    var dataseries = plot.getData();
+                    for (var i = 0; i < dataseries.length; i += 1){
+                        var series = dataseries[i];
+//                        console.log("SERIES:",i);
+//                        console.log("canvas x:",drawX);
+                        var x = plot.getAxes().xaxis.c2p(crosshair.x);
+                        var y = interpolate(series,x);
+                        
+//                        console.log("point x:",x);
+                        
+//                        console.log("point y:",y);
+                        
+                        y = plot.getAxes().yaxis.p2c(y);
+//                        console.log("canvas y:",y);
+                        
+                        ctx.beginPath();
+                        ctx.arc(drawX, y, 4, 0, 2*Math.PI);
+                        ctx.stroke();
+                    }
+                    
+                    
                 }
                 if (c.mode.indexOf("y") != -1) {
                     var drawY = Math.round(crosshair.y) + adj;
+                    ctx.beginPath();
                     ctx.moveTo(0, drawY);
                     ctx.lineTo(plot.width(), drawY);
+                    ctx.stroke();
                 }
-                ctx.stroke();
             }
             ctx.restore();
         });

@@ -69,8 +69,11 @@ Number formatting functions
     /*******************
     Suffix formatter: calls engineering_notation on a number with two decimal places specified
     ********************/
-    function suffix_formatter(value) {
-        return engineering_notation(value, 2);
+    function suffix_formatter(value,axis) {
+//        console.log("axis:",axis);
+        var base = engineering_notation(value, 2);
+        if (axis && axis.options.units){ return base+axis.options.units; }
+        else { return base; }
     }
     
 /**************************************************
@@ -116,65 +119,160 @@ Graph setup functions
     /*****************
     Graph setup: calls all the other setup functions. Consolidated for neatness.
     ******************/
+    var allPlots = [];
+    
     function graph_setup(div,plotObj){
+        allPlots.push(plotObj);
+        div.css("position","relative");
         zoom_pan_setup(div,plotObj);
         hover_setup(div,plotObj);
-        selection_setup(div,plotObj);       
+        selection_setup(div,plotObj);  
     }
     
     /*******************
     Zoom/pan setup: sets up zooming and panning buttons
     ********************/
     function zoom_pan_setup(div,plotObj){
-        var zoomInButton = $('<button>+</button>');
-        var zoomResetButton = $('<button>Reset</button>');
-        var zoomOutButton = $('<button>-</button>');
-        var scrollLeftButton = $('<button>\<</button>');
-        var scrollRightButton = $('<button>\></button>');
+        var tooltipOpts = {delay:100, container:'body', placement:'right'}
+        
+        tooltipOpts.title = 'Zoom In';
+        var zoomInButton = $('<button class="btn btn-mini">'+
+                             '<i class="icon-zoom-in"></i></button>').tooltip(tooltipOpts);
+        
+        tooltipOpts.title = 'Reset Zoom';
+        var zoomResetButton = $('<button class="btn btn-mini">'+
+                             '<i class="icon-search"></i></button>').tooltip(tooltipOpts);
+        
+        tooltipOpts.title = 'Zoom Out';
+        var zoomOutButton = $('<button class="btn btn-mini">'+
+                             '<i class="icon-zoom-out"></i></button>').tooltip(tooltipOpts);
+        
+        tooltipOpts.title = 'Pan Left'
+        var scrollLeftButton = $('<button class="btn btn-mini">'+
+                             '<i class="icon-chevron-left"></i></button>').tooltip(tooltipOpts);
+        
+        tooltipOpts.title = 'Pan Right';
+        var scrollRightButton = $('<button class="btn btn-mini">'+
+                             '<i class="icon-chevron-right"></i></button>').tooltip(tooltipOpts);
+        
         zoomInButton.on("click",function(){
-            plotObj.clearSelection();
-            plotObj.zoom();
+//            plotObj.clearSelection();
+//            plotObj.zoom();
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.zoom();
+            });
         });
         zoomResetButton.on("click",function(){
-            plotObj.clearSelection();
-            plotObj.zoom({amount:1e-10});
+//            plotObj.clearSelection();
+//            plotObj.zoom({amount:1e-10});
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.zoom({amount:1e-10});
+            });
         });
         zoomOutButton.on("click",function(){
-            plotObj.clearSelection();
-            plotObj.zoomOut();
+//            plotObj.clearSelection();
+//            plotObj.zoomOut();
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.zoomOut();
+            });
         });
         scrollLeftButton.on("click",function(){
-            plotObj.clearSelection();
-            plotObj.pan({left:-100});
+//            plotObj.clearSelection();
+//            plotObj.pan({left:-100});
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.pan({left:-100});
+            });
         });
         scrollRightButton.on("click",function(){
-            plotObj.clearSelection();
-            plotObj.pan({left:100});
+//            plotObj.clearSelection();
+//            plotObj.pan({left:100});
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.pan({left:100});
+            });
         });
         
-        div.append(zoomInButton,
+        var btnGroup = $('<div class="btn-group btn-group-vertical zoompan"></div>');
+        btnGroup.append(zoomInButton,
                    zoomResetButton,
                    zoomOutButton,
                    scrollLeftButton,
-                   scrollRightButton);
+                   scrollRightButton
+                        );
+        div.append(btnGroup);
+        
+        btnGroup.css("top",plotObj.height()/2 - 40);
+        
+        
+        plotObj.getPlaceholder().on("mousewheel",function(evt){
+            evt.preventDefault();
+//            console.log("delta:",evt.originalEvent);
+//            plotObj.clearSelection();
+//            plotObj.pan({left:-1*evt.originalEvent.wheelDeltaX});
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                item.pan({left:-1*evt.originalEvent.wheelDeltaX});
+            });
+        });
+        
+        plotObj.getPlaceholder().on("dblclick",function(evt){
+            evt.preventDefault();
+            
+            var center = {};
+            center.left = evt.pageX - plotObj.offset().left;
+            center.top = evt.pageY - plotObj.offset().top;
+            
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                if (evt.shiftKey){
+                    item.zoomOut({center:center});
+                    return;
+                }
+                item.zoom({center:center});
+            });
+        });
+        
+        
     }
     
     /***********************
     Hover setup: displays values when the graph is moused over
     **********************/
     function hover_setup(div,plotObj){
-        var posTextDiv = $("<div><span class='xpos'></span></div>");
-        var posTextSpans = {};
-        div.append(posTextDiv);
+        var posTextDiv = $("<div class='posText'><div class='xpos'></div></div>");
+        
+        var top = plotObj.getPlotOffset().top;
+        var left = plotObj.getPlotOffset().left;
+        posTextDiv.css("left",left + 5);
+        posTextDiv.css("top",top + 5);
+        posTextDiv.hide();
+        
+        var innerPosTextDivs = {};
+        plotObj.getPlaceholder().append(posTextDiv);
         
         var updateMouseTimeout;
-            var latestPos;
-            plotObj.getPlaceholder().on("plothover", function(event,pos,item){
-                latestPos = pos;
-                if (!updateMouseTimeout){
-                    updateMouseTimeout = setTimeout(showMousePos, 50);
+        var latestPos;
+        plotObj.getPlaceholder().on("plothover", function(event,pos,item){
+            
+            $.each(allPlots, function(index,value){
+                if (value != plotObj){
+                    value.setCrosshair(pos);
                 }
+                value.getPlaceholder().trigger("showPosTooltip",pos)
             });
+            
+        });
+        
+        plotObj.getPlaceholder().on("showPosTooltip", function(event,pos){
+            latestPos = pos;
+            if (!updateMouseTimeout){
+                updateMouseTimeout = setTimeout(showMousePos, 50);
+            }
+        });
         
         /*******************
         showMousePos: called when a hover event is received and updates displayed values
@@ -182,28 +280,35 @@ Graph setup functions
         function showMousePos(){
             updateMouseTimeout = null;
             pos = latestPos;
+            
+//            console.log("offset:",plotObj.getPlotOffset());
+            var divWidth = plotObj.width() - 
+                plotObj.getPlaceholder().find('.legend div').width() - 20;
+            posTextDiv.css("max-width",divWidth);
+            
             var axes = plotObj.getAxes();
             if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max ||
                 pos.y < axes.yaxis.min || pos.y > axes.yaxis.max) {
                 posTextDiv.hide();
                 return;
-            }
+            }  
     
             var i, j;
             var dataset = plotObj.getData();
             for (i = 0; i < dataset.length; i += 1) {
                 var series = dataset[i];
+                
+                posTextDiv.find('.xpos').text("X = "+suffix_formatter(pos.x)+series.xUnits);
     
                 var y = interpolate(series,pos.x);
                 
-                posTextDiv.find('.xpos').text("X = "+suffix_formatter(pos.x));
-                if (posTextSpans["series"+i]===undefined){
-                    var span = $("<span>"+series.label+" = "+
-                                                 suffix_formatter(y)+"</span>")
-                    posTextSpans["series"+i] = span;
-                    posTextDiv.append("</br>",posTextSpans["series"+i]);
+                var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
+                if (innerPosTextDivs["series"+i]===undefined){
+                    var innerDiv = $("<div>"+divText+"</div>");
+                    innerPosTextDivs["series"+i] = innerDiv;
+                    posTextDiv.append(innerPosTextDivs["series"+i]);
                 } else {
-                    posTextSpans["series"+i].text(series.label+" = "+suffix_formatter(y));
+                    innerPosTextDivs["series"+i].text(divText);
                 }
             }
             posTextDiv.show();
@@ -214,22 +319,42 @@ Graph setup functions
     Selection setup: shows the range of values covered by a selection
     *************************/
     function selection_setup(div,plotObj){
-        var rangeTextDiv = $("<div><span class='xrange'></span></div>");
-        var rangeTextSpans = {};
-        div.append(rangeTextDiv);
+        var rangeTextDiv = $("<div class='posText'><div class='xrange'></div></div>");
+        
+        var innerRangeTextDivs = {};
+        plotObj.getPlaceholder().append(rangeTextDiv);
+        
+        rangeTextDiv.css("bottom",plotObj.getPlotOffset().bottom + 5);
+        rangeTextDiv.css("left",plotObj.getPlotOffset().left + 5);
+        rangeTextDiv.hide();
         
         var updateSelTimeout;
         var selRanges;
         plotObj.getPlaceholder().on("plotselecting", function(event,ranges){
+            $.each(allPlots, function(index, value) {
+                if (value != plotObj){
+                    if (ranges){
+                        value.setSelection(ranges);
+                    }
+                }
+                value.getPlaceholder().trigger("showRangeTooltip",ranges);
+            }); 
+        });
+        
+        plotObj.getPlaceholder().on("plotunselected",function(event,ranges){
+            $.each(allPlots, function(index, value){
+                value.clearSelection();
+            });
+            
+            clearTimeout(updateSelTimeout);
+            rangeTextDiv.hide();
+        });
+        
+        plotObj.getPlaceholder().on("showRangeTooltip",function(event,ranges){
             if (!updateSelTimeout){
                 selRanges = ranges;
                 updateSelTimeout = setTimeout(showSelRange,50);
             }
-        });
-        
-        plotObj.getPlaceholder().on("plotunselected",function(event,ranges){
-            clearTimeout(updateSelTimeout);
-            rangeTextDiv.hide();
         });
         
         /*****************
@@ -239,27 +364,32 @@ Graph setup functions
             updateSelTimeout = null;
             ranges = selRanges;
             
-            if (ranges === null){ return; }
+            if (!ranges){ return; }
             
             var xrange = ranges.xaxis.to - ranges.xaxis.from;
-            rangeTextDiv.find('.xrange').text("X range = "+suffix_formatter(xrange));
+            
+            var divWidth = plotObj.width() - 
+                plotObj.getPlaceholder().find('.legend div').width() - 20;
+            rangeTextDiv.css("max-width",divWidth);
             
             var dataset = plotObj.getData();
             for (i = 0; i < dataset.length; i += 1) {
                 var series = dataset[i];
+                
+                rangeTextDiv.find('.xrange').text("X range = "+suffix_formatter(xrange)+
+                                              series.xUnits);
     
                 var y1 = interpolate(series, ranges.xaxis.from);
                 var y2 = interpolate(series, ranges.xaxis.to);
                 var yrange = y2-y1;
                 
-                if (rangeTextSpans["series"+i]===undefined){
-                    var span = $("<span>"+series.label+" range = "+
-                                                 suffix_formatter(yrange)+"</span>")
-                    rangeTextSpans["series"+i] = span;
-                    rangeTextDiv.append("</br>",rangeTextSpans["series"+i]);
+                var divText = series.label+" range = "+suffix_formatter(yrange)+series.yUnits;
+                if (innerRangeTextDivs["series"+i]===undefined){
+                    var innerDiv = $("<div>"+divText+"</div>");
+                    innerRangeTextDivs["series"+i] = innerDiv;
+                    rangeTextDiv.append(innerRangeTextDivs["series"+i]);
                 } else {
-                    rangeTextSpans["series"+i].text(series.label+" range = "+
-                                                  suffix_formatter(yrange));
+                    innerRangeTextDivs["series"+i].text(divText);
                 }
             }
             rangeTextDiv.show();
@@ -275,26 +405,33 @@ Graph setup functions
             tickColor:"#dddddd",
             tickFormatter:suffix_formatter,
             zoomRange:false,
-            panRange:false
+            panRange:false,
+            autoscaleMargin: 0.05,
+            axisLabelUseCanvas:true,
+            axisLabelColor:'rgb(84,84,84)',
         },
         xaxis:{
             color:"#848484",
             tickColor:"#dddddd",
             tickFormatter:suffix_formatter,
+            axisLabelUseCanvas:true,
+            axisLabelColor:'rgb(84,84,84)',
+            axisLabelPadding:5
         },
-        zoom:{
-            interactive:true,
-            trigger:"dblclick"
-        },
+//        zoom:{
+//            interactive:true,
+//            trigger:"dblclick"
+//        },
         series:{
             shadowSize:0
         },
         crosshair:{
             mode:"x",
-            color:"darkgray"
+            color:"#916e75"
         },
         selection:{
-            mode:"x"
+            mode:"x",
+            color:'#cfbfc2'
         },
         grid:{
             hoverable:true,
@@ -352,7 +489,9 @@ Graphing functions
                 // add a series object to 'dataseries'
                 dataseries.push({
                     label: current ? node : "Node " + node,
-                    data: plot
+                    data: plot,
+                    xUnits: 's',
+                    yUnits: current ? 'A' : 'V'
                 });
             }
 
@@ -360,15 +499,18 @@ Graphing functions
             var xmax = results._time_[plot.length-1];
             
             // prepare a div
-            var plotdiv = $('<div class="placeholder" style="width:600px;height:300px"></div>');
+            var plotdiv = $('<div class="placeholder" style="width:90%;height:300px"></div>');
             div.append(plotdiv);
             
             // customize options
-            var options = $.extend(true,{},default_options)
+            var options = $.extend(true,{},default_options);
             options.yaxis.axisLabel = current ? 'Amps (A)' : 'Volts (V)';
             options.xaxis.axisLabel = 'Time (s)';
             options.xaxis.zoomRange = [null, (xmax-xmin)];
             options.xaxis.panRange = [xmin, xmax];
+            
+            options.xaxis.units = 's';
+            options.yaxis.units = current? 'A' : 'V';
         
             // graph the data
             var plotObj = $.plot(plotdiv,dataseries,options);
@@ -416,11 +558,15 @@ Graphing functions
                 // push both series objects into their respective lists
                 mplots.push({
                     label: "Node " + node,
-                    data: mplot
+                    data: mplot,
+                    xUnits: ' log Hz',
+                    yUnits: ' dB'
                 });
                 pplots.push({
                     label: "Node " + node,
-                    data: pplot
+                    data: pplot,
+                    xUnits: ' log Hz',
+                    yUnits: ' deg'
                 });
             }
             
@@ -431,16 +577,18 @@ Graphing functions
             // prepare divs for magnitude graph
             var div1 = $('<div'/* style="display:inline-block"*/+'></div>');
             var plotDiv = $('<div class="placeholder" style="'/*display: inline-block;'*/+
-                            ' width:400px;height:300px"></div>');
+                            ' width:90%;height:300px"></div>');
             div.append(div1);
             div1.append(plotDiv);
             
             // customize options for magnitude graph
-            var options = $.extend(true, {}, default_options)
+            var options = $.extend(true, {}, default_options);
             options.yaxis.axisLabel = 'Magnitude (dB)';
             options.xaxis.axisLabel = 'Frequency (log Hz)';
             options.xaxis.zoomRange = [null,(xmax-xmin)];
             options.xaxis.panRange = [xmin, xmax];
+            
+            options.yaxis.units = ' dB';
             
             // graph magnitude
             var plotObj = $.plot(plotDiv, mplots, options);
@@ -449,12 +597,13 @@ Graphing functions
             // prepare divs for phase graphs
             var div2 = $('<div'/* style="display:inline-block"*/+'></div>');
             plotDiv = $('<div class="placeholder"style="'/*display: inline-block;'*/+
-                        'width:400px;height:300px"></div>');
+                        'width:90%;height:300px"></div>');
             div.append(div2);
             div2.append(plotDiv);
             
             // customize options for phase graph
-            options.yaxis.axisLabel = "Phase (deg)";
+            options.yaxis.axisLabel = "Phase (degrees)";
+            options.yaxis.units = '\u00B0';
             
             // graph phase
             var plotObj = $.plot(plotDiv, pplots, options);
@@ -477,30 +626,32 @@ Graphing functions
         
         if (netlist.length === 0) return;
         if (analyses.length === 0) return;
+        
+//        console.log("analyses:",analyses)
+        
+        allPlots = [];
     
-        for (var i = 0; i < analyses.length; i += 1){
-            try {
-                var analysis = analyses[i];
-                switch (analysis.type) {
-                case 'tran':
-                    cktsim.transient_analysis(netlist, analysis.parameters.tstop,
-                                              [], function(ignore, results) {
-                        tran_plot(div, results, plots);
-                    });
-                    break;
-                case 'ac':
-                    var results = cktsim.ac_analysis(netlist, analysis.parameters.fstart,
-                                                     analysis.parameters.fstop,
-                                                     analysis.parameters.ac_source_name);
-                    ac_plot(div, results, plots);
-                    break;
-                case 'dc':
-                    break;
-                }
+        try {
+            var analysis = analyses[0];
+            switch (analysis.type) {
+            case 'tran':
+                cktsim.transient_analysis(netlist, analysis.parameters.tstop,
+                                          [], function(ignore, results) {
+                    tran_plot(div, results, plots);
+                });
+                break;
+            case 'ac':
+                var results = cktsim.ac_analysis(netlist, analysis.parameters.fstart,
+                                                 analysis.parameters.fstop,
+                                                 analysis.parameters.ac_source_name);
+                ac_plot(div, results, plots);
+                break;
+            case 'dc':
+                break;
             }
-            catch (err) {
-                throw new Parser.CustomError(err,analysis.line,0);
-            }   
+        }
+        catch (err) {
+            throw new Parser.CustomError(err,analysis.line,0);
         }
     }
 

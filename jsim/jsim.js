@@ -1,6 +1,8 @@
 JSim = {};
 
 $(function() {
+    FileSystem.setup('seterman', 'http://localhost:8080');
+    
     var split = new SplitUI('#split-container', '#editor-pane', '#simulation-pane');
     split.maximiseLeft();
 
@@ -19,14 +21,19 @@ $(function() {
 
 
     // Make an editor
-    var editor = new Editor('#editor', 'jsim');
+    var mode = 'jsim';
+    var editor = new Editor('#editor', mode);
+    
+    Folders.setup('.span3', editor, mode);
+
+    Folders.refresh();
     
     function dls(){
-        split.split();
+        $('#split_pane').click();
         editor.clearErrors();
         var content = editor.content()
         var filename = editor.currentTab();
-        var div = $('#simulation-pane')
+        div = $('#simulation-pane');
         try{
             Simulator.simulate(content,filename,div);
         } catch (err) {
@@ -35,17 +42,30 @@ $(function() {
     }
 
     // Add some buttons to it
-    editor.addButtonGroup([new ToolbarButton('Simulate (device)', dls, 'Device-level simulation'), new ToolbarButton('Export')]);
+    editor.addButtonGroup([new ToolbarButton('Simulate (device)', dls, 'Device-level simulation')]);
     editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
         editor.clearErrors();
     })]);
     // And a couple of tabs.
     editor.openTab('foo.jsim', '// Transient analysis test\n'+
+'.global gnd\n'+
+'.subckt transtest n1 n2\n'+
 'V1 n1 gnd step(1,0,1u)\n'+
 'R1 n1 n2 1k\n'+
 'C1 n2 gnd 1n\n'+
+'.ends\n'+
+'Xtest a b transtest\n'+
 '.tran 5u\n'+
-'.plot n1 n2\n');
+'.plot a b\n\n'+
+'.plot a b');
+    
+    editor.openTab('ac.jsim',''+
+'// AC analysis test\n'+
+'V1 n1 gnd step(1,0,1u)\n'+
+'R1 n1 n2 1k\n'+
+'C1 n2 gnd 1n\n'+
+'.ac V1 1 1G\n'+
+'.plot n2\n');
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
     }

@@ -504,7 +504,7 @@ var Folders=new function(){
 
         //now adding editor buttons
         editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
-        
+
     }
     
     function hideNavBar(){

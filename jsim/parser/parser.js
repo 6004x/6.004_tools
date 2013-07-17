@@ -57,23 +57,7 @@ Splitter: splits a string into an array of tokens
     --returns: an array of tokens
 *******************************/
     function split(input_string,filename){
-//        var pattern = /".*"|0x[0-9a-fA-F]+|-?\d*\.?\d+(([eE]-?\d+)|[a-zA-Z]*)|\.?[A-Za-z][\w:\.,$#\[\]]*|=|\n|\u001e/g; 
         var pattern = /".*"|\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
-        
-        var fn_pattern = /^\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)$/;
-        var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)/;
-        var control_pattern = /^\..+/;
-//        var int_pattern = /\d+/;
-//        var exp_pattern = /-?\d*\.?\d+[eE]-?\d+/;
-//        var float_pattern = /-?\d*\.\d+/;
-//        var scaled_pattern = /-?\d*\.?\d+[A-Za-z]+/;
-//        var hex_pattern = /^0x[0-9a-fA-F]+/;
-//        var octal_pattern = /^0[0-7]+/;
-//        var binary_pattern = /^0b[01]+/;
-        var string_pattern = /".*"/;
-        var num_pattern = /^(([+-]?\d*\.?)|(0x)|(0b))\d+(([eE]-?\d+)|[A-Za-z]*)/;
-//        var num_pattern = /[+-]?\d*\.?\d+([A-Za-z]*|[eE]-?\d+)/;
-        
         // 'pattern' will match, in order:
         //      anything wrapped in quotes
         //      a hex number
@@ -85,7 +69,13 @@ Splitter: splits a string into an array of tokens
         //          periods, commas, dollar signs, number signs, or square brackets
         //      an equals sign
         //      a newline
-        //      a record separater
+        //      a record separater (unicode character \u001e)
+        
+        var fn_pattern = /^\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)$/;
+        var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)/;
+        var control_pattern = /^\..+/;
+        var string_pattern = /".*"/;
+        var num_pattern = /^(([+-]?\d*\.?)|(0x)|(0b))\d+(([eE]-?\d+)|[A-Za-z]*)/;
         
         var matched_array;
         var substrings = [];
@@ -106,20 +96,6 @@ Splitter: splits a string into an array of tokens
                 type = 'number';
             } else if (control_pattern.test(matched_array[0])){
                 type = 'control';
-//            } else if (exp_pattern.test(matched_array[0])){
-//                type = 'exp';
-//            } else if (hex_pattern.test(matched_array[0])){
-//                type = 'hex';
-//            } else if (octal_pattern.test(matched_array[0])){
-//                type = 'octal';
-//            } else if (binary_pattern.test(matched_array[0])){
-//                type= 'binary';
-//            } else if (scaled_pattern.test(matched_array[0])){
-//                type = 'scaled';
-//            } else if (float_pattern.test(matched_array[0])){
-//                type = 'float';
-//            } else if (int_pattern.test(matched_array[0])){
-//                type = 'int';
             } else if (matched_array[0] == "="){
                 type = 'equals'
             } else {
@@ -143,12 +119,16 @@ Splitter: splits a string into an array of tokens
                                  origin_file:filename
                                 });
             }
+            
+            // increment line number and calculate new line offset
             if ((matched_array[0] == "\n")||(matched_array[0] == "\u001e")){
                 lineNumber += 1;
-            }
-            if (matched_array[0] == "\n"){
                 lastLineOffset = matched_array.index + 1;
             }
+//            note to self: here or above?
+//            if (matched_array[0] == "\n"){
+//                lastLineOffset = matched_array.index + 1;
+//            }
         }
         return substrings;
     }
@@ -256,7 +236,7 @@ iterator interpreter: interprets and expands an iterator
         var j = parseInt(param_array[1]);
         var k;
         var reverse = false;
-        if (param_array.length>2){ 
+        if (param_array.length > 2){ 
             k = parseInt(param_array[2]); 
             if (i > j) { k *= -1; }
             if (k === 0){
@@ -1332,7 +1312,7 @@ Flattening
                 // recursive call
                 new_obj.connections = local_connections.slice(0);
                 new_obj.ports = dev_obj.ports.slice(0);
-                console.log("new object:",new_obj);
+//                console.log("new object:",new_obj);
                 netlist_instance(new_obj.properties.name, new_obj,
                                  JSON_netlist);                  
             }
