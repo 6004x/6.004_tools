@@ -129,7 +129,7 @@ function TMSIM(){
 			} else if (type == 'multi_comment_end'){
 				if (parseState != 'multi_line_comment'){
 					var message = ('you ended a comment that you didn\'t start');
-					console.log(' at line '+lineCount);
+					
 					exceptions.push({
 						message : message,
 						lineNumber : lineCount,
@@ -155,7 +155,7 @@ function TMSIM(){
 					
 				} else {
 					var message = (token + ' does not go here, we are looking for ' + parseState);
-					console.log('at line '+lineCount);
+					
 					exceptions.push({
 						message : message,
 						lineNumber : lineCount,
@@ -170,12 +170,12 @@ function TMSIM(){
 				// which is not allowed. 
 				if (getType(parseState) == 'keyword'){
 					// console.log(parseState + ' on keyword')
-					console.log('two commands on the same line');
+					var message = ('two commands on the same line');
 					count[currParseState]++;
-					// else {
-					// 	console.log(parseState + ' is not a keyword, no idea how you got here');
-					// 	console.log(' at line '+lineCount);
-					// }
+					exceptions.push({
+						message : message,
+						lineNumber : lineCount,
+					})
 					parseState = token;
 					continue;
 				} else if (parseState == 'line_comment') {
@@ -185,7 +185,7 @@ function TMSIM(){
 				}
 			}
 		}
-		console.log(parseDict);
+		
 		if(exceptions.length > 0){
 			throw exceptions;
 		}
@@ -194,7 +194,7 @@ function TMSIM(){
 	}
 	function flattenMachine(dict){
 		var keys = Object.keys(dict);
-		console.log(keys);
+		//console.log(keys);
 		var exceptions = [];
 		var validSymbols=['-'];
 		var validStates=['*halt*', '*error*'];
@@ -229,7 +229,7 @@ function TMSIM(){
 							message = 'your write_symbol, '+transition.write+', is invalid, declare it with the states command';
 						else if(!_.contains(validMoves, transition.move))
 							message = 'your move symbol, '+transition.move+', is invalid, declare it with the states command';
-						console.log('at line '+ lineNumber);
+						
 						exceptions.push({
 							message:message,
 							lineNumber:lineNumber
@@ -239,7 +239,7 @@ function TMSIM(){
 					}
 				} else {
 					var message=args+'is not 5 characters, not a valid action';
-					console.log('at line '+ lineNumber);
+					
 					exceptions.push({
 						message:message,
 						lineNumber:lineNumber
@@ -271,8 +271,17 @@ function TMSIM(){
 			result:function(args, lineNumber){
 				var tapeName = args[0];
 				var tapeContents = args.slice(1);
-				list_of_results[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
-				list_of_results[tapeName].printLL();
+				try{
+					list_of_results[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
+				} catch (e){
+					exceptions.push({
+							message:e,
+							lineNumber:lineNumber
+						});
+					list_of_results[tapeName]=[];
+
+				} 
+
 			},
 			result1:function(args, lineNumber){
 				var tapeName = args[0];
@@ -302,7 +311,6 @@ function TMSIM(){
 					parseFunctions[key](args, lineNumber);
 				else {
 					var message = (key+' is not a valid keyword');
-					console.log('at line '+ lineNumber);
 					exceptions.push({
 						message:message,
 						lineNumber:lineNumber
@@ -362,8 +370,11 @@ function TMSIM(){
 		else if (token.match(variableRegExp)||token.match(quotedRegExp))
 			return 'variable';
 		else{
-			console.log(token+' is not a valid keyword');
-			console.log(' at line '+lineCount);
+			var message = token+' is not a valid keyword';
+			exceptions.push({
+				message:message,
+				lineNumber:lineCount,
+			})
 		}
 	}
 	function initiateList(tokens, tapeName, lineNumber){
@@ -381,16 +392,16 @@ function TMSIM(){
 					tapeContents.push(token.slice(1, token.length-1));
 					selected = true;
 				} else {
-					console.log('tape '+tapeName+' at '+lineNumber);
-					console.log('you have 2 selected variables at the tape, you can only have one')
-					break;
+					
+					throw 'you have 2 selected variables at the tape, you can only have one';
+					 
 				}
 
 			} else {
 				tapeContents.push(token)
 			}
 		}
-		return (new LinkedList()).init(tapeContents, selectedIndex);
+		return (new TapeList()).init(tapeContents, selectedIndex);
 	}
 
 	return {parse:parse, flattenMachine:flattenMachine, getResults:getResults}

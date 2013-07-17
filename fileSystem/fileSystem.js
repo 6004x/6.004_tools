@@ -56,6 +56,7 @@ var FileSystem= function(){
 
                         // console.log(allFolders);
                         // console.log(allFiles);
+                        
                         writeTreeToLocalStorage();
                         updated=true;
                         online=true;
@@ -72,6 +73,7 @@ var FileSystem= function(){
         }
     }
     function makeListOfFiles(currTree, path){
+        
         for(key in currTree){
             if(isFile(key, currTree[key]))
                 allFiles.push(path+'/'+key);
@@ -134,6 +136,7 @@ var FileSystem= function(){
     }
     
     function traverseTree(fileName, action){
+        //TODO NEEDS ERROR HANDLING
         var pathArray=fileName.match(/[^<>\:\"\|\/\\\?\*]+/g);
         // console.log(pathArray);
         var followPath=fileTree;
@@ -234,6 +237,7 @@ var FileSystem= function(){
     exports.getUserName=function(){return mUsername;};
     exports.isFile=function(fileName){
         // console.log(fileName+' check if in allfiles');
+        console.log(allFiles)
         return _.contains(allFiles, fileName)
     }
     exports.isFolder=function(folderName){
