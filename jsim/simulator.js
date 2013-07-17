@@ -202,21 +202,19 @@ Graph setup functions
     Hover setup: displays values when the graph is moused over
     **********************/
     function hover_setup(div,plotObj){
+        // create and position div to show hover tooltip
         var posTextDiv = $("<div class='posText'><div class='xpos'></div></div>");
-        
         var top = plotObj.getPlotOffset().top;
         var left = plotObj.getPlotOffset().left;
         posTextDiv.css("left",left + 5);
         posTextDiv.css("top",top + 5);
         posTextDiv.hide();
-        
-        var innerPosTextDivs = {};
         plotObj.getPlaceholder().append(posTextDiv);
         
+        // on hover, set the crosshair position on all plots and call their showtooltip function
         var updateMouseTimeout;
         var latestPos;
         plotObj.getPlaceholder().on("plothover", function(event,pos,item){
-            
             $.each(allPlots, function(index,value){
                 if (value != plotObj){
                     value.setCrosshair(pos);
@@ -226,6 +224,8 @@ Graph setup functions
             
         });
         
+        // showtooltip function: after an appropriate interval to prevent 
+        // awful lag, update the position tooltip
         plotObj.getPlaceholder().on("showPosTooltip", function(event,pos){
             latestPos = pos;
             if (!updateMouseTimeout){
@@ -236,25 +236,28 @@ Graph setup functions
         /*******************
         showMousePos: called when a hover event is received and updates displayed values
         ********************/
+        var innerPosTextDivs = {};
+        
         function showMousePos(){
             updateMouseTimeout = null;
             pos = latestPos;
             
-//            console.log("offset:",plotObj.getPlotOffset());
+            // prevent the tooltip from blocking the legend
             var divWidth = plotObj.width() - 
                 plotObj.getPlaceholder().find('.legend div').width() - 20;
             posTextDiv.css("max-width",divWidth);
             
+            // only show the tooltip if the mouse is within graph boundaries (x only)
             var axes = plotObj.getAxes();
-            if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max ||
-                pos.y < axes.yaxis.min || pos.y > axes.yaxis.max) {
+            if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max/* ||
+                pos.y < axes.yaxis.min || pos.y > axes.yaxis.max*/) {
                 posTextDiv.hide();
                 return;
             }  
     
-            var i, j;
+            // set tooltip text; each series gets its own div in innerPosTextDivs
             var dataset = plotObj.getData();
-            for (i = 0; i < dataset.length; i += 1) {
+            for (var i = 0; i < dataset.length; i += 1) {
                 var series = dataset[i];
                 
                 posTextDiv.find('.xpos').text("X = "+suffix_formatter(pos.x)+series.xUnits);
@@ -276,6 +279,7 @@ Graph setup functions
     
     /************************
     Selection setup: shows the range of values covered by a selection
+    (similar to hover setup above)
     *************************/
     function selection_setup(div,plotObj){
         var rangeTextDiv = $("<div class='posText'><div class='xrange'></div></div>");
