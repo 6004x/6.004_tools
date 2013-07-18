@@ -156,7 +156,7 @@ Graph setup functions
     ********************/
     function general_zoompan(){
         // default options for tooltips
-        var tooltipOpts = {delay:100, container:'body', placement:'right'};
+        var tooltipOpts = {delay:100, container:'body', placement:'left'};
         
         // helper function for creating buttons
         var zoompan_buttons = [];
@@ -221,6 +221,9 @@ Graph setup functions
         simpane.on("plotunselected",function(){selZoomButton.hide();});
     }
     
+    /**********************
+    Zoom/pan setup: sets up mousewheel and doubleclick panning/zooming
+    **********************/
     function zoom_pan_setup(div,plotObj){
         // mousewheel panning
         plotObj.getPlaceholder().on("mousewheel",function(evt){
@@ -444,6 +447,36 @@ Graph setup functions
         }
     }
     
+    /**********************
+    General setup
+    ***********************/
+    function general_setup(){
+        var simpane = $('#simulation-pane');
+        var addPlotButton = $('<button class="btn btn-mini" id="addplot-btn"><i class="icon-plus">\
+</i></button>');
+        simpane.append(addPlotButton);
+        
+        addPlotButton.tooltip({delay:100,title:"Add Plot",placement:'left',
+                               container:'body'}).on("click",function(){
+            console.log("current results:",current_results);
+            var newPlot = prompt("New node(s)?");
+            newPlot = [newPlot.match(/[^,\s]+/g)];
+            console.log(newPlot);
+            
+            switch (current_analysis.type){
+                case 'tran':
+                    tran_plot(bigDiv,current_results,newPlot);
+                    break;
+                case 'ac':
+                    ac_plot(bigDiv,current_results,newPlot);
+                    break;
+                case 'dc':
+                    break;
+            }
+        });
+    }
+    
+    
     /*********************
     Default graph options: each plot will need to specify axis labels and zoom and pan ranges
     **********************/
@@ -480,7 +513,8 @@ Graph setup functions
         grid:{
             hoverable:true,
             autoHighlight:false
-        }
+        },
+//        colors:['lime','red','blue','yellow','cyan','magenta']
     }
     
 /****************************************************
@@ -493,6 +527,12 @@ Graphing functions
     function get_plotdiv(){
         return $('<div class="placeholder" style="width:90%;height:200px;\
 min-height:130px"></div>');
+    }
+    
+    function get_novaldiv(node){
+        var div = $('<div class="novalues">No values to plot for node '+node+' (Click message \
+to dismiss)</div>').on("click",function(){div.hide()});
+        return div;
     }
     
     /*********************
@@ -523,8 +563,9 @@ min-height:130px"></div>');
                 // get the results for the given node
                 var values = results[node];
                 if (values === undefined) {
-                    div.text("No values to plot for node "+node);
-                    return;
+                    var novaldiv = get_novaldiv(node);
+                    div.prepend(novaldiv);
+                    continue;
                 }
                 
                 // 'plot' will be filled with data
@@ -544,7 +585,10 @@ min-height:130px"></div>');
                     yUnits: current ? 'A' : 'V'
                 });
             }
-
+            
+            if (dataseries.length === 0) {
+                continue;
+            }
             var xmin = results._time_[0];
             var xmax = results._time_[plot.length-1];
             
@@ -665,12 +709,18 @@ min-height:130px"></div>');
     
     Modified from a function by Chris Terman
     *******************************/
+    var analyses;
+    var current_analysis;
+    var current_results;
+    var bigDiv;
+    
     function simulate(text,filename,div) {
         div.empty();  // we'll fill this with results
+        bigDiv = div;
         var parse = Parser.parse(text,filename);
         
         var netlist = parse.netlist;
-        var analyses = parse.analyses;
+        analyses = parse.analyses;
         var plots = parse.plots;
         
         if (netlist.length === 0) return;
@@ -679,18 +729,19 @@ min-height:130px"></div>');
         allPlots = [];
     
         try {
-            var analysis = analyses[0];
-            switch (analysis.type) {
+            current_analysis = analyses[0];
+            switch (current_analysis.type) {
             case 'tran':
-                cktsim.transient_analysis(netlist, analysis.parameters.tstop,
+                cktsim.transient_analysis(netlist, current_analysis.parameters.tstop,
                                           [], function(ignore, results) {
+                    current_results = results;
                     tran_plot(div, results, plots);
                 });
                 break;
             case 'ac':
-                var results = cktsim.ac_analysis(netlist, analysis.parameters.fstart,
-                                                 analysis.parameters.fstop,
-                                                 analysis.parameters.ac_source_name);
+                current_results = cktsim.ac_analysis(netlist, current_analysis.parameters.fstart,
+                                                 current_analysis.parameters.fstop,
+                                                 current_analysis.parameters.ac_source_name);
                 ac_plot(div, results, plots);
                 break;
             case 'dc':
@@ -698,9 +749,11 @@ min-height:130px"></div>');
             }
         }
         catch (err) {
-            throw new Parser.CustomError(err,analysis.line,0);
+            throw new Parser.CustomError(err,current_analysis.line,0);
         }
         general_zoompan();
+        general_setup();
+//        console.log("current results:",current_results);
     }
 
 /*********************

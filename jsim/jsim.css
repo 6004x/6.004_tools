@@ -35,31 +35,42 @@
 /*    display:inline-block;*/
     vertical-align:top;
     position:fixed;
-    top:150px;
-    right:60px;
+    top:95px;
+    right:45px;
 /*    bottom:50px;*/
 }
 
-.plot-wrapper {
-/*
-    border: solid 1px #ddd;
-    border-radius: 5px;
-*/
-/*    margin-bottom:10px;*/
-/*    margin-top:3px;*/
-/*    margin-bottom:5px;*/
-/*    padding-top:5px;*/
-    padding-left:10px;
-    margin-bottom:-10px;
-    margin-right:20px;
+#addplot-btn {
+    vertical-align:top;
+    position:fixed;
+    top:70px;
+    right:45px;
 }
 
 #z2s {
     position:fixed;
     vertical-align:top;
-    top:260px;
-    right:60px;
+    top:205px;
+    right:45px;
 }
+
+.novalues {
+    text-align:center;
+    padding:5px;
+    color:#545454;
+    background: #eee;
+    border: 1px solid #ddd;
+    border-radius:5px;
+    margin:5px;
+}
+
+.plot-wrapper {
+    padding-left:10px;
+    margin-bottom:-10px;
+    margin-right:20px;
+}
+
+
 
 #simulation-pane {
     position:relative;
