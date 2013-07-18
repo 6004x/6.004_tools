@@ -12,3 +12,5 @@ check if result tape has valid symbols
 check for duplicate actions
 
 checkoff checks the size of the table
+
+check for repetitions in state symbol pairs

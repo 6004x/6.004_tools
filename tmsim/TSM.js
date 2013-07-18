@@ -28,10 +28,10 @@ function TSM(){
 	}
 	this.replaceTape = function(tape){
 		mTape = tape;
+		console.log('attaching new tape');
 	}
 	this.editTape = function(tape, tapeIndex){
 		mTape.init(tape, tapeIndex);
-		console.log('attaching new tape');
 	}
 	this.start=function(){
 		// console.log('beginning turing machine');

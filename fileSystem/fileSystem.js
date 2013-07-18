@@ -48,15 +48,14 @@ var FileSystem= function(){
             sendAjaxRequest('/',null,'json', 'filelist',
                 function(data, status){
                     if(status=='success'){
-                        
-                        console.log('callback in filesys')
+                        // console.log('callback in filesys')
                         fileTree=data;
                         allFiles=[];
                         allFolders=[];
                         makeListOfFiles(fileTree,'');
 
-                        console.log(allFolders);
-                        console.log(allFiles);
+                        // console.log(allFolders);
+                        // console.log(allFiles);
                         writeTreeToLocalStorage();
                         updated=true;
                         online=true;
@@ -90,7 +89,7 @@ var FileSystem= function(){
         return false;
     }
     function writeTreeToLocalStorage(){
-        console.log('writing tree to local storage');
+        // console.log('writing tree to local storage');
 
         //todo, divide up the data, make it asynchronous
         //indexedDB?
@@ -104,7 +103,7 @@ var FileSystem= function(){
             });
             localStorage.setItem('6004file'+openFiles[i], JSON.stringify(file));
         }
-        localStorage.setItem('6004data', JSON.stringify(fileTree));    
+        localStorage.setItem('6004data', JSON.stringify(fileTree));   
         
     }
     function readTreeFromLocalStorage(){
@@ -136,7 +135,7 @@ var FileSystem= function(){
     
     function traverseTree(fileName, action){
         var pathArray=fileName.match(/[^<>\:\"\|\/\\\?\*]+/g);
-        console.log(pathArray);
+        // console.log(pathArray);
         var followPath=fileTree;
         for(var i in pathArray){
 
@@ -159,7 +158,7 @@ var FileSystem= function(){
     function writeFileToTree(fileName, fileData, onServer){
         var finalTree=traverseTree(fileName, function(i, followPath, currentPath, length){
             if(i==length-1){
-                console.log(fileName+' being written');
+                // console.log(fileName+' being written');
                 followPath[currentPath]={name:fileName, data:fileData, onServer:onServer};
                 
                 return false;
@@ -195,7 +194,7 @@ var FileSystem= function(){
     }
 
     function sendAjaxRequest(filePath, fileData, dataType, query, callbackFunction, failFunction){
-        console.log(failFunction);
+        // console.log(failFunction);
         failFunction=failFunction||failResponse;
 
         if(!fileData)
@@ -217,7 +216,7 @@ var FileSystem= function(){
         });
         req.fail(failFunction);
         req.always(function(request, status){
-                console.log(status);
+                // console.log(status);
         });
     }
     function failResponse(req, status, error){
@@ -234,11 +233,11 @@ var FileSystem= function(){
     exports.getServerName=function(){return mServer;};
     exports.getUserName=function(){return mUsername;};
     exports.isFile=function(fileName){
-        console.log(fileName+' check if in allfiles');
+        // console.log(fileName+' check if in allfiles');
         return _.contains(allFiles, fileName)
     }
     exports.isFolder=function(folderName){
-        console.log(folderName+' check if in allFolders');
+        // console.log(folderName+' check if in allFolders');
         return _.contains(allFolders, folderName)
     }
     function setup(username, server){

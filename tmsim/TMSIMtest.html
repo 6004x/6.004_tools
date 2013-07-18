@@ -1,27 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-    <title>ui test</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
-    
-    <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
-    <!-- <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
-    <link href="http://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet"> -->
-    <script src="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
-    <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
-    <script src='../fileSystem/fileSystem.js'></script>
-    <script src='../fileSystem/folders.js'></script>
-    <script src='LinkedList.js'></script>
-    <script src='TSM.js'></script>
-    <script src='TMSIM.js'></script>
-    <script src="../editor/external/codemirror.js"></script>
-        <script src="../editor/editor.js"></script>
-        <script src="../editor/external/codemirror-extensions.js"></script>
-        <script src="../editor/modes/uasm.js"></script>
-        <script src="../editor/modes/tsim.js"></script>
-        <script src="../editor/modes/jsim.js"></script>
-        <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
-         <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+        <title>ui test</title>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
+        <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+        <script src="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+
+        <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">    
+        <script src='../fileSystem/fileSystem.js'></script>
+        <script src='../fileSystem/folders.js'></script>
+        <script src='LinkedList.js'></script>
+        <script src='TSM.js'></script>
+        <script src='TMSIM.js'></script>
+        <!-- importing editor by mattpf -->
+            <script src="../editor/toolbar.js"></script>
+            <script src="../editor/editor.js"></script>
+            <script src="../editor/prompt.js"></script>
+            <script src="../editor/external/codemirror.js"></script>
+            <script src="../editor/editor.js"></script>
+            <script src="../editor/external/codemirror-extensions.js"></script>
+            <script src="../editor/modes/uasm.js"></script>
+            <script src="../editor/modes/tsim.js"></script>
+            <script src="../editor/modes/jsim.js"></script>
+            <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
+            <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+
     </head>
     <script>
     $(document).ready(function(){
@@ -39,20 +44,30 @@
             Folders.setup('.span3', editor, mode);
 
             Folders.refresh();
+            editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')])
+            
+            function tmsimAssemble(){
+                var file=new Object();
+                file.name=editor.currentTab();
+                file.data=editor.content();
+                var tmsim = new TMSIM();
+                if(file.name){
+                    try{
+                        var parsedDict = tmsim.parse(file.data);
+                        console.log(typeof parsedDict)
+                        // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
+                        tmsim.flattenMachine(parsedDict);
+                        var results = tmsim.getResults();
+                        editor.openTab(file.name+'tsmed', results, true);
+                    } catch(e){
+                        editor.clearErrors();
+                        for (var i = 0; i < e.length; i++)
+                            editor.markErrorLine(file.name, e[i].message, e[i].lineNumber);
+                    }
+                }
+            }
     });
     </script>
-    <style>
-        .file_name .file_button{
-            display:none;
-        }
-        .file_name:hover .file_button{
-            display:inline-block;
-        }
-        ul
-        {
-            list-style-type: none;
-        }
-    </style>
     <body>
 
         <div class="container container-fluid">
