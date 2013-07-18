@@ -33,8 +33,7 @@
     </head>
     <script>
     $(document).ready(function(){
-        var username = window.prompt('enter username')
-        FileSystem.setup(username||'antonio', 'http://18.62.29.122:8080');
+        FileSystem.setup('antonio', 'http://18.62.29.122:8080');
 
             var mode='tsim';
             editor = new Editor('.editor_split',mode);
