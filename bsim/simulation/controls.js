@@ -25,7 +25,7 @@ BSim.Controls = function(container, beta) {
 
     var handle_step = function() {
         mBeta.executeCycle();
-        mUndoButton.removeAttr('disabled');
+        mUndoButton.enable();
     };
 
     var handle_reset = function() {

@@ -105,6 +105,7 @@ $(function() {
     });
 
     new BSim.Beta.ErrorHandler(beta);
+    new BSim.SchematicView($('svg.schematic'), beta);
 
     // // Convenient way of loading a file for testing and such.
     // var neuter = function(e) {
