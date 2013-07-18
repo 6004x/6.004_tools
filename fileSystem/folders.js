@@ -48,7 +48,7 @@ var Folders=new function(){
                     var listVar=$('<li>').addClass('file_name')
                         .attr('data-path', parentPath+name)
                         .append($('<a href=#>'+name+'</a>'));
-                    var deleteButton=$('<span>').addClass('btn btn-link my_button file_button delete_file pull-right')
+                    var deleteButton=$('<span>').addClass('btn btn-link hover_button file_button delete_file pull-right')
                         .css({
                             'padding': '0px',
                             'height': '15px',
@@ -56,7 +56,7 @@ var Folders=new function(){
                         })
                         .append('<i class=icon-trash>')
                         .attr('data-title', 'Delete '+ name);
-                    var renameButton=$('<span>').addClass('btn btn-link my_button file_button rename_file pull-right')
+                    var renameButton=$('<span>').addClass('btn btn-link hover_button file_button rename_file pull-right')
                         .css({
                             'padding': '0px',
                             'height': '15px',
@@ -64,7 +64,7 @@ var Folders=new function(){
                         })                        
                         .append('<i class=icon-pencil>')
                         .attr('data-title', 'Rename '+ name);
-                    var downloadButton=$('<span>').addClass('btn btn-link my_button file_button download_file pull-right')
+                    var downloadButton=$('<span>').addClass('btn btn-link hover_button file_button download_file pull-right')
                         .css({
                             'padding': '0px',
                             'height': '15px',
@@ -72,7 +72,7 @@ var Folders=new function(){
                         })
                         .append('<i class=icon-download-alt>')
                         .attr('data-title', 'Download '+ name);
-                    var fileButtonDiv = addDiv('file_button_div pull-right');
+                    var fileButtonDiv = addDiv('file_button_div');
 
                     fileButtonDiv.append(downloadButton, renameButton, deleteButton);
 
@@ -135,6 +135,8 @@ var Folders=new function(){
                             'href':'#'+collapseName,
                             'data-path': parentPath+name+'/',
                         });
+                    if(level==1)
+                        collapser.addClass('rootFolderName');
                     collapserDiv.append(collapser);
 
                     collapser.append(
@@ -143,25 +145,34 @@ var Folders=new function(){
                         ).append(folderName)
                     );
                     collapser.find('i').addClass(collapseName);
-                    var newFileButton=$('<span>').addClass("btn btn-link my_button folder_button new_file pull-right")
-                        .css({padding:'0px', height:'15px'})
+
+                    var newFileButton=$('<span>').addClass("btn btn-link hover_button folder_button new_file pull-right")
+                        .css({
+                            padding:'0px', 
+                            height:'15px',
+                        })
                         .append($('<i class=icon-list></span>'))
                         .attr('data-title', 'New File in '+name);
-                    var newFolderButton=$('<span>').addClass("btn btn-link my_button folder_button new_folder pull-right")
-                        .css({padding:'0px', height:'15px'})
+                    var newFolderButton=$('<span>').addClass("btn btn-link hover_button folder_button new_folder pull-right")
+                        .css({
+                            padding:'0px', 
+                            height:'15px'
+                        })
                         .append($('<i class=icon-folder-open></span>'))
                         .attr('data-title', 'New Folder in '+name);
-                    var deleteButton=$('<span>').addClass('btn btn-link my_button folder_button delete_folder pull-right')
+                    var deleteButton=$('<span>').addClass('btn btn-link hover_button folder_button delete_folder pull-right')
                         .css({
                             padding: '0px',
                             height: '15px',
                         })
                         .append('<i class=icon-trash>')
                         .attr('data-title', 'Delete '+ name);
-                    var newButtonDiv = addDiv('folder_button_div pull-right');
+                    var newButtonDiv = addDiv('folder_button_div');
                     newButtonDiv.append(newFileButton);
                     newButtonDiv.append(newFolderButton);
-                    newButtonDiv.append(deleteButton);
+                    if(level != 1)
+                        newButtonDiv.append(deleteButton);
+                    //shouldn't be able to delete root folder
                     newButtonDiv.find('.folder_button').css('display', 'none');
                     collapser.append(newButtonDiv);
                    
@@ -254,7 +265,7 @@ var Folders=new function(){
 
 
             }
-            $('.my_button').each(function(i, button){
+            $('.hover_button').each(function(i, button){
                 $(button).attr({
                     'data-toggle':"tooltip",
                     'data-trigger':'hover',
@@ -272,13 +283,14 @@ var Folders=new function(){
    
 
     function getFile(fileName){
-            console.log('getting '+fileName);
-            FileSystem.getFile(fileName, displayFile);
-        }
+        console.log('getting '+fileName);
+        FileSystem.getFile(fileName, displayFile);
+    }
 
     function displayFile(file){
         editor.openTab(file.name, file.data, true);
         openFiles.push({name:file.name, data:file.data});
+        $(window).resize();
     }
     function displaySave(file){
         cornerAlert('Saved', file.name+' has been saved successfully', 'success');
@@ -545,7 +557,7 @@ var Folders=new function(){
         addButtons(buttonDiv);
 
         sideBarNav=addDiv('sidebar-nav');
-        var filesWrapper=$('<ul></ul>').addClass('filePaths nav nav-list nav-stacked');
+        var filesWrapper=$('<ul>').addClass('filePaths nav nav-list nav-stacked');
         
         sideBarNav.append(filesWrapper);
 
@@ -577,13 +589,13 @@ var Folders=new function(){
                 });
         hideButton.append('<i class=icon-chevron-left></i>');
         buttonDiv.append(hideButton);
-        var newFolderButton=$('<button></button>').addClass('btn newFolder').attr({
-                'data-toggle':"tooltip", 
-                'title':"New Folder file",
-                'data-trigger':'hover'
-                });
-        newFolderButton.append('<i class=icon-folder-open></i>');
-        buttonDiv.append(newFolderButton);
+        // var newFolderButton=$('<button></button>').addClass('btn newFolder').attr({
+        //         'data-toggle':"tooltip", 
+        //         'title':"New Folder file",
+        //         'data-trigger':'hover'
+        //         });
+        // newFolderButton.append('<i class=icon-folder-open></i>');
+        // buttonDiv.append(newFolderButton);
         var refreshButton=$('<button></button>').addClass('btn refresh').attr({
                 'data-toggle':"tooltip", 
                 'title':"Refresh",
@@ -614,10 +626,10 @@ var Folders=new function(){
         hideButton.on('click', function(e){
             hideNavBar();
         });
-        newFolderButton.on('click', function(e){
+        // newFolderButton.on('click', function(e){
             
-            newFolder('/');
-        });
+        //     newFolder('/');
+        // });
 
         //now adding editor buttons
         editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
