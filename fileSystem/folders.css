@@ -1,21 +1,53 @@
+.sim_split{
+    background-color: yellow;
+}
+li:hover{
+    text-decoration: underline;
+}
 .file_name .file_button{
     display:none;
 }
 .file_button_div{
 	text-align:right;
-	clear:left;
+    float:none;
+    position:absolute;
+    right:0;
 	display:inline-block;
+    vertical-align: center;
 }
 .file_name:hover .file_button{
-   display:inline-block;
+   display:block;
+   position:absolute;
+   right:0;
+}
+/*.folder_button_div .new_button{
+    display:none;
+}
+.folder_button_div:hover .new_button{
+    display:inline-block;
+}*/
+.folderContents:first-child li.rootFolderName{
+    background-color:rgba(255,192,0, .8);
+    position:relative;
+    right:0;
+}
+.folder_button_div{
+    display:inline-block;
+    float:none;
+    position:absolute;
+    right:0;
 }
 .file_name:nth-child(even){
-	background-color: #F9F9F9;
+	background-color: #F8F8F8;
 }
-li{
+
+.file_name{
+    vertical-align: center;
+}
+.sidebar-nav li{
 	list-style-type: none;
 }
-ul{
+.sidebar-nav ul{
     list-style-type: none;
 }
 .tab-pane {

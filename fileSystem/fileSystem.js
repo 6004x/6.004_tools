@@ -20,8 +20,8 @@ var FileSystem= function(){
     */
     /*
     *   each file will have 2 attributes:
-        file.name (relative path of file
-)       file.data (String representation of file 'utf8')
+        file.name (relative path of file)       
+        file.data (String representation of file 'utf8')
 
         TO IMPLEMENT:
         file.isOpen
