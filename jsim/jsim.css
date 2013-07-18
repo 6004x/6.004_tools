@@ -31,27 +31,8 @@
     display:inline-block;
 }
 
-.zoompan {
-/*    display:inline-block;*/
-    vertical-align:top;
-    position:fixed;
-    top:95px;
-    right:45px;
-/*    bottom:50px;*/
-}
-
-#addplot-btn {
-    vertical-align:top;
-    position:fixed;
-    top:70px;
-    right:45px;
-}
-
-#z2s {
-    position:fixed;
-    vertical-align:top;
-    top:205px;
-    right:45px;
+#graph-toolbar {
+    padding-left:15px;
 }
 
 .novalues {
@@ -70,12 +51,17 @@
     margin-right:20px;
 }
 
-
-
 #simulation-pane {
     position:relative;
+/*    overflow:scroll;*/
+    border: 1px solid #ddd;
+}
+
+#results {
     overflow:scroll;
-    border: 1px solid #ddd
+    position:relative;
+/*    top:40px;*/
+    border-top: 1px solid #ddd;
 }
 
 

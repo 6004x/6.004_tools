@@ -137,7 +137,8 @@ Graph setup functions
         
     function set_plot_heights(){
         // limit the simulation pane's height to that of the editor pane
-        $('#simulation-pane').css("max-height",$('#editor-pane').height());
+        $('#simulation-pane').height($('#editor-pane').height());
+        $('#results').height($('#simulation-pane').height() - $('#graph-toolbar').height() -20);
         $.each(allPlots,function(index,item){
             // allow extra space for margins
             var margin_val = $('.plot-wrapper').css("margin-bottom").match(/\d+/)[0];
@@ -146,7 +147,7 @@ Graph setup functions
             
             // plot height = total height / number of plots - margin space,
             // bounded by min-height
-            var plotHeight = $('#editor-pane').height() / allPlots.length /*- margin_allowance*/;
+            var plotHeight = $('#results').height() / allPlots.length /*- margin_allowance*/;
             placeholder.css("height",plotHeight);
         });
     }
@@ -155,15 +156,17 @@ Graph setup functions
     Zoom/pan setup: sets up zooming and panning buttons
     ********************/
     function general_zoompan(){
+        var tlbar = $('#graph-toolbar');
+        
         // default options for tooltips
-        var tooltipOpts = {delay:100, container:'body', placement:'left'};
+        var tooltipOpts = {delay:100, container:'body', placement:'top'};
         
         // helper function for creating buttons
         var zoompan_buttons = [];
         function create_button(tltp_txt, icon, onclick_fn){
             tooltipOpts.title = tltp_txt;
             zoompan_buttons.push( 
-                $('<button class="btn btn-mini"><i class="icon-'+icon+'"></i></button>')
+                $('<button class="btn btn-small"><i class="icon-'+icon+'"></i></button>')
                 .tooltip(tooltipOpts)
                 .on("click",function(){
                     $.each(allPlots, function(index,item){
@@ -179,25 +182,26 @@ Graph setup functions
         create_button("Reset Zoom","search",
                       function(item){item.zoom({amount:1e-10})});
         create_button("Zoom Out","zoom-out",function(item){item.zoomOut()});
+        var btnGroup1 = $('<div class="btn-group zoompan"></div>');
+        btnGroup1.append(zoompan_buttons);
+        
+        zoompan_buttons = [];
         create_button("Pan Left","chevron-left",
                       function(item){item.pan({left:-100})});
         create_button("Pan Right","chevron-right",
                       function(item){item.pan({left:100})});
-        
-        // set up a button group, add all the created buttons, append to the results div
-        var btnGroup = $('<div class="btn-group btn-group-vertical zoompan"></div>');
-        btnGroup.append(zoompan_buttons);
-        var simpane = $('#simulation-pane');
-        simpane.append(btnGroup);
+        var btnGroup2 = $('<div class="btn-group zoompan"></div>');
+        btnGroup2.append(zoompan_buttons);
+        tlbar.append(btnGroup1,btnGroup2);
         
         tooltipOpts.title = "Zoom to Selection";
-        var selZoomButton = $('<button id="z2s" class="btn btn-mini">\
+        var selZoomButton = $('<button id="z2s" class="btn btn-small">\
 <i class="icon-resize-full">').tooltip(tooltipOpts);
-        simpane.append(selZoomButton);
+        tlbar.append(selZoomButton);
         selZoomButton.hide();
         
         var selRanges;
-        simpane.on("plotselected",function(evt,ranges){
+        $('#results').on("plotselected",function(evt,ranges){
             selZoomButton.show();
             console.log("selected ranges:",ranges);
             selRanges = ranges;
@@ -218,7 +222,7 @@ Graph setup functions
             }
         });
         
-        simpane.on("plotunselected",function(){selZoomButton.hide();});
+        $('#results').on("plotunselected",function(){selZoomButton.hide();});
     }
     
     /**********************
@@ -227,7 +231,7 @@ Graph setup functions
     function zoom_pan_setup(div,plotObj){
         // mousewheel panning
         plotObj.getPlaceholder().on("mousewheel",function(evt){
-//            evt.preventDefault();
+            evt.preventDefault();
             deltaX = evt.originalEvent.wheelDeltaX;
             if (deltaX !== 0){
                 $.each(allPlots, function(index,item){
@@ -339,11 +343,6 @@ Graph setup functions
     Selection setup: shows the range of values covered by a selection
     (similar to hover setup above)
     *************************/
-//    var ztsButton = $('<button id="z2s" class="btn btn-mini">\
-//<i class="icon-resize-full">').tooltip({delay:100, container:'body',
-//                                        placement:'right'})
-//                              .on("click",function(){console.log("clicked")});
-//    $('#simulation-pane').append(ztsButton);
     function select_zoom(ranges){
         if (ranges){
             $.each(allPlots,function(index,item){
@@ -451,12 +450,12 @@ Graph setup functions
     General setup
     ***********************/
     function general_setup(){
-        var simpane = $('#simulation-pane');
-        var addPlotButton = $('<button class="btn btn-mini" id="addplot-btn"><i class="icon-plus">\
-</i></button>');
-        simpane.append(addPlotButton);
+        var tlbar = $('#graph-toolbar');
+        var addPlotButton = $('<button class="btn btn-small" id="addplot-btn">\
+<i class="icon-plus"></i></button>');
+        tlbar.append(addPlotButton);
         
-        addPlotButton.tooltip({delay:100,title:"Add Plot",placement:'left',
+        addPlotButton.tooltip({delay:100,title:"Add Plot",placement:'top',
                                container:'body'}).on("click",function(){
             console.log("current results:",current_results);
             var newPlot = prompt("New node(s)?");
@@ -525,7 +524,7 @@ Graphing functions
     
     // helper function that returns a new generic placeholder div
     function get_plotdiv(){
-        return $('<div class="placeholder" style="width:90%;height:200px;\
+        return $('<div class="placeholder" style="width:100%;height:200px;\
 min-height:130px"></div>');
     }
     
@@ -727,7 +726,10 @@ to dismiss)</div>').on("click",function(){div.hide()});
         if (analyses.length === 0) return;
         
         allPlots = [];
-    
+        $('#graph-toolbar').empty();
+        general_setup();
+        general_zoompan();
+        
         try {
             current_analysis = analyses[0];
             switch (current_analysis.type) {
@@ -751,8 +753,6 @@ to dismiss)</div>').on("click",function(){div.hide()});
         catch (err) {
             throw new Parser.CustomError(err,current_analysis.line,0);
         }
-        general_zoompan();
-        general_setup();
 //        console.log("current results:",current_results);
     }
 
