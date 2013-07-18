@@ -1,4 +1,4 @@
-function TapeList(){
+function LinkedList(){
 	var self=this;
 	var first=null;
 	var current=null;
@@ -27,8 +27,8 @@ function TapeList(){
 				current = last;
 			size++;
 		}
-		// console.log('initiated list');
-		// console.log('current at '+currentIndex+' with data '+current.data);
+		console.log('initiated list');
+		console.log('current at '+currentIndex+' with data '+current.data);
 	}
 	this.traverse =function(write, direction){
 		if(current){
@@ -74,14 +74,14 @@ function TapeList(){
 
 		if(first==null){
 			//list is empty, so we make this node the first and last node
-			first=new tlnode(data);
+			first=new llnode(data);
 			last=first;
 			first.next=last.next=null;
 			first.prev=last.prev=null;
 		}
 		else{
 			//attach temp node to the first node and make it the first node
-			var temp = new tlnode(data);
+			var temp = new llnode(data);
 			temp.next=first;
 			first.prev=temp;
 			temp.prev=null;
@@ -94,14 +94,14 @@ function TapeList(){
 
 		if(first==null){
 		//list is empty, so we make this node the first and last node
-			first=new tlnode(data);
+			first=new llnode(data);
 			last=first;
 			first.next=last.next=null;
 			first.prev=last.prev=null;
 		}
 		else{
 			//attach temp node to be the last node
-			var temp= new tlnode(data);
+			var temp= new llnode(data);
 			last.next=temp;
 			temp.prev=last;
 			last=temp;
@@ -219,7 +219,7 @@ function TapeList(){
 		console.log(mArray===tArray)
 		return false;
 	}
-	function tlnode(newData){
+	function llnode(newData){
 		this.data = newData;
 		this.next = null;
 		this.prev = null;
@@ -230,9 +230,9 @@ function TapeList(){
 
 function lltest(){
 
-	var LL1=new TapeList();
-	var LL2=new TapeList();
-	var LL3=new TapeList();
+	var LL1=new LinkedList();
+	var LL2=new LinkedList();
+	var LL3=new LinkedList();
 
 	LL1.append('s').prepend('r').append('t').prepend('q').prepend('a').prepend('p').remove('a').append('u');
 	LL3.append('s').prepend('r').append('t').prepend('q').prepend('a').prepend('p').remove('a').append('u');

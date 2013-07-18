@@ -36,7 +36,7 @@ function TSM(){
 	this.start=function(tape){
 		// console.log('beginning turing machine');
 		if(tape){
-			replaceTape(tape);
+			self.replaceTape(tape);
 		}
 		var new_state=start_state;
 		var valid = true;

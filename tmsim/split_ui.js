@@ -1,42 +1,48 @@
 (function() {
     var root = this;
 
-    var SplitUI = function(container, left_node, right_node) {
+    var SplitUI = function(container, top_node, bottom_node) {
         var mContainer = $(container);
-        var mLeft = $(left_node);
-        var mRight = $(right_node);
+        var mHeight = mContainer.height();
+        var mTop = $(top_node);
+        var mBottom = $(bottom_node);
 
+        $(window).on('resize',function(){mHeight = mContainer.height();console.log(mHeight)})
         this.split = function() {
-            splitSide(mLeft);
-            splitSide(mRight);
+            splitSide(mTop);
+            splitSide(mBottom);
+            mBottom.css({
+                position:'relative',
+            })
         };
 
-        this.maximiseLeft = function() {
-            maximise(mLeft, mRight);
+        this.maximiseTop = function() {
+            maximise(mTop, mBottom);
         };
 
-        this.maximiseRight = function() {
-            maximise(mRight, mLeft);
+        this.maximiseBottom = function() {
+            maximise(mBottom, mTop);
         };
 
         var maximise = function(maximise, minimise) {
-            maximise.show().addClass('span12 maximised').removeClass('span6');
+            maximise.show().height(mHeight).css('margin-top', 0);
             minimise.hide();
         };
 
         var splitSide = function(pane) {
-            pane.show().addClass('span6').removeClass('span12 maximised');
+            var height = mHeight/2
+            pane.show().height(height);
         };
 
         var initialise = function() {
             // Make sure we have the right classes in place.
             mContainer.addClass('row-fluid');
             // And our panes are both children of the container node.
-            mContainer.append(mLeft, mRight);
+            mContainer.append(mTop, mBottom);
 
             // Split by default.
-            mLeft.show().addClass('span6').removeClass('span12');;
-            mRight.show().addClass('span6');
+            mTop.show();
+            mBottom.show();
         };
         initialise();
     };
