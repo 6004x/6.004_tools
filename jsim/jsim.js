@@ -1,7 +1,7 @@
 JSim = {};
 
 $(function() {
-//    FileSystem.setup('seterman', 'http://localhost:8080');
+    FileSystem.setup('seterman', 'http://localhost:8080');
     
     var split = new SplitUI('#split-container', '#editor-pane', '#simulation-pane');
     split.maximiseLeft();
@@ -24,9 +24,9 @@ $(function() {
     var mode = 'jsim';
     var editor = new Editor('#editor', mode);
     
-//    Folders.setup('.span3', editor, mode);
-//
-//    Folders.refresh();
+    Folders.setup('.span3', editor, mode);
+
+    Folders.refresh();
     
     function dls(){
         $('#split_pane').click();
