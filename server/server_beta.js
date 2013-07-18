@@ -229,7 +229,8 @@ function pathWorks(request, response, data){
 		});
 		}
 		function hideFile(full_path, file_path){
-			fs.rename(full_path, full_path+'~del', function (err) {
+			console.log('hiding '+path.dirname(full_path)+path.sep+path.basename(full_path));
+			fs.rename(full_path, path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function (err) {
 				if (err) 
 					errorResponse(err + ' file could not be renamed');
 				

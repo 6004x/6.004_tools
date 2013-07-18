@@ -11,7 +11,7 @@ function TSM(){
 				[new_state, write, move]
 	**/
 
-	var mTape=new LinkedList();
+	var mTape=new TapeList();
 
 	this.setup=function(states, startState, tape, tapeIndex){
 		console.log(states);
@@ -33,8 +33,11 @@ function TSM(){
 	this.editTape = function(tape, tapeIndex){
 		mTape.init(tape, tapeIndex);
 	}
-	this.start=function(){
+	this.start=function(tape){
 		// console.log('beginning turing machine');
+		if(tape){
+			self.replaceTape(tape);
+		}
 		var new_state=start_state;
 		var valid = true;
 		while(valid){
@@ -73,11 +76,5 @@ function TSM(){
 		return mTape.equals(tape);
 	}
 	return this;
-}
-
-
-
-var Tape=function(){
-	var tapeList=LinkedList().append('-');
 }
 

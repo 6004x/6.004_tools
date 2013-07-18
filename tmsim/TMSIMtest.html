@@ -9,11 +9,14 @@
         <script src="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">    
+        <link rel="stylesheet" type="text/css" href="TMSIM.css">    
         <script src='../fileSystem/fileSystem.js'></script>
         <script src='../fileSystem/folders.js'></script>
-        <script src='LinkedList.js'></script>
+        <script src='TapeList.js'></script>
         <script src='TSM.js'></script>
+        <script src='TSMParser.js'></script>
         <script src='TMSIM.js'></script>
+        <script src='split_ui.js'></script>
         <!-- importing editor by mattpf -->
             <script src="../editor/toolbar.js"></script>
             <script src="../editor/editor.js"></script>
@@ -30,43 +33,68 @@
     </head>
     <script>
     $(document).ready(function(){
-        FileSystem.setup('antonio', 'http://localhost:8080');
+        var username = window.prompt('enter username')
+        FileSystem.setup(username||'antonio', 'http://18.62.29.122:8080');
 
             var mode='tsim';
-            editor = new Editor('.span9',mode);
+            editor = new Editor('.editor_split',mode);
             var set_height = function() {
                 editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
             }
             set_height();
             $(window).resize(set_height);
 
-
+           var activeButton = function(callback) {
+                return function() {
+                    $(this).siblings().removeClass('active');
+                    $(this).addClass('active');
+                    callback();
+                };
+            }
+            // var split = new SplitUI('.span9', '.sim_split', '.editor_split')
+            // // Set up the split buttons.
+            // $('#maximise_editor').click(activeButton(split.maximiseBottom));
+            // $('#split_pane').click(activeButton(split.split));
+            // $('#maximise_simulation').click(activeButton(split.maximiseTop));   
             Folders.setup('.span3', editor, mode);
-
             Folders.refresh();
+
             editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')])
             
             function tmsimAssemble(){
                 var file=new Object();
                 file.name=editor.currentTab();
                 file.data=editor.content();
-                var tmsim = new TMSIM();
+                var tsmparse = new TSMparser();
+                var tmsim;
+                var valid = true;
                 if(file.name){
                     try{
-                        var parsedDict = tmsim.parse(file.data);
+                        var parsedDict = tsmparse.parse(file.data);
                         console.log(typeof parsedDict)
                         // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
-                        tmsim.flattenMachine(parsedDict);
-                        var results = tmsim.getResults();
-                        editor.openTab(file.name+'tsmed', results, true);
+                        tsmparse.flattenMachine(parsedDict);
+                        var results = tsmparse.getResults();
+                        
+                        editor.openTab(file.name+'done', results, true);
                     } catch(e){
                         editor.clearErrors();
+                        console.log(e);
                         for (var i = 0; i < e.length; i++)
                             editor.markErrorLine(file.name, e[i].message, e[i].lineNumber);
+                        valid = false;
                     }
+                    // if(valid){
+                    //     $('#split_pane').click();
+                    //     console.log(tsmparse.getTSM())
+                    //     console.log(tsmparse.getLists());
+                    //     tmsim = new TMSIM('.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
+                        
+                    // }
                 }
             }
-    });
+            
+        });
     </script>
     <body>
 
@@ -81,7 +109,10 @@
             </div>
             <div class='row row-fluid'>
                 <div class="span3"></div>
-                <div class="span9"></div>
+                <div class="span9">
+                    <div class='editor_split'></div>
+                    <div class='sim_split'></div>
+                </div>
             </div>
         </div>
     </body>

@@ -5,7 +5,7 @@ li:hover{
     text-decoration: underline;
 }
 .file_name .file_button{
-    display:none;
+    border: 0px;
 }
 .file_button_div{
 	text-align:right;
@@ -40,7 +40,6 @@ li:hover{
 .file_name:nth-child(even){
 	background-color: #F8F8F8;
 }
-
 .file_name{
     vertical-align: center;
 }
@@ -73,20 +72,15 @@ li:hover{
 }	
 .folderName {
     background-color: lightgray;
-    border-top: solid 1px gray;
+    border: solid white 1px;
     border-radius: 4px;
     z-index:3;
-}
-.rootFolderName{
-	border-top:none;
 }
 .folderName:hover{
     background-color:lightblue;
 }
 .folderContents{
-    border-bottom: solid 1px gray;
-    border-left: solid 1px gray;
-    border-right: solid 1px gray;
+    border:none;
     border-radius: 4px;
     z-index: 2;
 }
