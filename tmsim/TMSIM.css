@@ -1,0 +1,12 @@
+.tape_div{
+	background-color:white;
+}
+.tape_span{
+	border-style: solid;
+	border-color: black;
+	border-width: 2px 1px 2px 1px;
+	margin:0px;
+	padding:0px;
+	top:0;
+	bottom:0;
+}	

@@ -11,7 +11,7 @@ function TSM(){
 				[new_state, write, move]
 	**/
 
-	var mTape=new LinkedList();
+	var mTape=new TapeList();
 
 	this.setup=function(states, startState, tape, tapeIndex){
 		console.log(states);
@@ -33,17 +33,24 @@ function TSM(){
 	this.editTape = function(tape, tapeIndex){
 		mTape.init(tape, tapeIndex);
 	}
-	this.start=function(){
+	this.start=function(tape){
 		// console.log('beginning turing machine');
+		if(tape){
+			self.replaceTape(tape);
+		}
 		var new_state=start_state;
 		var valid = true;
+		var stepCount=0;
 		while(valid){
 			new_state=this.step(new_state);
 			if(!new_state)
 				valid=false;
-			
+			if(stepCount>5000000){
+				throw 'too many steps in the turing machine'
+			}
+			stepCount++;
 		}
-		// console.log('ended turing machine');
+		 console.log('ended turing machine with '+stepCount+' steps');
 		return mTape;
 	}
 	this.step=function(new_state){
@@ -73,11 +80,5 @@ function TSM(){
 		return mTape.equals(tape);
 	}
 	return this;
-}
-
-
-
-var Tape=function(){
-	var tapeList=LinkedList().append('-');
 }
 

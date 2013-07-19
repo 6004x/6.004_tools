@@ -52,7 +52,8 @@ function pathWorks(request, response, data){
 		shared_path=path.join(lib_path, 'shared')
 		full_path=path.join(user_path,file_path);
 	}
-	
+	if(!fs.existsSync(user_path))
+		create_user_path()
 	sys.puts(user + ' wants ' + query);
 
 	if(query==='getFile'||query==='filelist'){
@@ -228,7 +229,8 @@ function pathWorks(request, response, data){
 		});
 		}
 		function hideFile(full_path, file_path){
-			fs.rename(full_path, full_path+'~del', function (err) {
+			console.log('hiding '+path.dirname(full_path)+path.sep+path.basename(full_path));
+			fs.rename(full_path, path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function (err) {
 				if (err) 
 					errorResponse(err + ' file could not be renamed');
 				
@@ -240,13 +242,9 @@ function pathWorks(request, response, data){
 		});
 		}
 		function create_user_path() {
-			fs.exists(user_path,function(exists) {
-			if (!exists)
-				fs.mkdir(user_path,function(err) {
-						if (err) throw(err);
-						// after();
-					});
-			// after();
+			fs.mkdirSync(user_path,function(err) {
+				if (err) throw(err);
+				// after();
 			});
 		}
 }
