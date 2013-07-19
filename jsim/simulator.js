@@ -749,19 +749,29 @@ to dismiss)</div>').on("click",function(){div.hide()});
     function simulate(text,filename,div) {
         div.empty();  // we'll fill this with results
         bigDiv = div;
-        var parse = Parser.parse(text,filename);
+        var parsed = Parser.parse(text,filename);
         
-        var netlist = parse.netlist;
-        analyses = parse.analyses;
-        var plots = parse.plots;
-        
-        if (netlist.length === 0) return;
-        if (analyses.length === 0) return;
+        var netlist = parsed.netlist;
+        analyses = parsed.analyses;
+        var plots = parsed.plots;
         
         allPlots = [];
         $('#graph-toolbar').empty();
         general_zoompan();
         general_setup();
+        
+        if (netlist.length === 0) {
+            div.html("</br>Empty netlist!");
+            return;
+        }
+        if (analyses.length === 0) {
+            div.html("</br>No analyses requested!");
+            return;
+        }
+        if (plots.length === 0) {
+            div.html("</br>No plots requested!");
+            return;
+        }
         
         try {
             current_analysis = analyses[0];

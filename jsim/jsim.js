@@ -45,7 +45,7 @@ $(function() {
     }
 
     // Add some buttons to it
-    editor.addButtonGroup([new ToolbarButton('Simulate (device)', dls, 'Device-level simulation')]);
+    editor.addButtonGroup([new ToolbarButton('<img src="simulate.png">', dls, 'Device-level simulation')]);
     editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
         editor.clearErrors();
     })]);
