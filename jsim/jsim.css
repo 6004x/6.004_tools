@@ -51,6 +51,17 @@
     margin-right:20px;
 }
 
+.plot-wrapper.bg-alt {
+    background-color:#eee;
+}
+/*
+.close-btn {
+    z-index:1;
+    position:relative;
+    top:20px;
+}
+*/
+
 #simulation-pane {
     position:relative;
 /*    overflow:scroll;*/

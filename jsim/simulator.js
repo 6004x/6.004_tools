@@ -166,7 +166,7 @@ Graph setup functions
         function create_button(tltp_txt, icon, onclick_fn){
             tooltipOpts.title = tltp_txt;
             zoompan_buttons.push( 
-                $('<button class="btn btn-small"><i class="icon-'+icon+'"></i></button>')
+                $('<button class="btn"><i class="icon-'+icon+'"></i></button>')
                 .tooltip(tooltipOpts)
                 .on("click",function(){
                     $.each(allPlots, function(index,item){
@@ -181,6 +181,7 @@ Graph setup functions
         create_button("Zoom In","zoom-in",function(item){item.zoom()});
         create_button("Reset Zoom","search",
                       function(item){item.zoom({amount:1e-10})});
+        zoompan_buttons[1].addClass("reset-zoom");
         create_button("Zoom Out","zoom-out",function(item){item.zoomOut()});
         var btnGroup1 = $('<div class="btn-group zoompan"></div>');
         btnGroup1.append(zoompan_buttons);
@@ -195,7 +196,7 @@ Graph setup functions
         tlbar.append(btnGroup1,btnGroup2);
         
         tooltipOpts.title = "Zoom to Selection";
-        var selZoomButton = $('<button id="z2s" class="btn btn-small">\
+        var selZoomButton = $('<button id="z2s" class="btn">\
 <i class="icon-resize-full">').tooltip(tooltipOpts);
         tlbar.append(selZoomButton);
         selZoomButton.hide();
@@ -231,9 +232,9 @@ Graph setup functions
     function zoom_pan_setup(div,plotObj){
         // mousewheel panning
         plotObj.getPlaceholder().on("mousewheel",function(evt){
-            evt.preventDefault();
             deltaX = evt.originalEvent.wheelDeltaX;
             if (deltaX !== 0){
+                evt.preventDefault();
                 $.each(allPlots, function(index,item){
                     item.clearSelection();
                     item.pan({left:-1*evt.originalEvent.wheelDeltaX});
@@ -451,13 +452,45 @@ Graph setup functions
     ***********************/
     function general_setup(){
         var tlbar = $('#graph-toolbar');
-        var addPlotButton = $('<button class="btn btn-small" id="addplot-btn">\
+        var addPlotButton = $('<button class="btn" id="addplot-btn">\
 <i class="icon-plus"></i></button>');
-        tlbar.append(addPlotButton);
+        var closePlotButton = $('<button class="btn" id="closeplot-btn">\
+<i class="icon-minus"></i></button>').tooltip({delay:100,title:"Remove Plot",
+                                                           container:'body'});
+        
+        var btnGroup = $('<div class="btn-group"></div>').append(addPlotButton, closePlotButton);
+//        tlbar.append(closePlotButton);
+        tlbar.prepend(btnGroup/*addPlotButton*/);
+        
+        var toggled = false;
+        closePlotButton.popover({placement:'top',content:"Click on a graph to close it. "+
+"Click this button again to return to normal mode.",
+                                 container:'body'}).on("click",function(){
+            if (!toggled){
+                toggled = true;
+                $('.plot-wrapper').on("click.remove",function(evt){
+                    $(this).hide();
+                    var plotObj = $(this).find('.placeholder').eq(0).data("plot");
+//                    console.log("plotobj:",plotObj);
+                    allPlots.splice(allPlots.indexOf(plotObj),1);
+//                    console.log("all plots:",allPlots);
+                });
+                $('.plot-wrapper').on("mouseenter.remove",function(){
+                    $(this).addClass("bg-alt");
+                }).on("mouseleave.remove",function(){
+                    $(this).removeClass("bg-alt");
+                });
+            } else {
+                $('.plot-wrapper').off(".remove");
+                toggled = false;
+            }
+            console.log("toggled:",toggled);
+        });
         
         addPlotButton.tooltip({delay:100,title:"Add Plot",placement:'top',
                                container:'body'}).on("click",function(){
-            console.log("current results:",current_results);
+//            console.log("current results:",current_results);
+            $('button.reset-zoom').click();
             var newPlot = prompt("New node(s)?");
             newPlot = [newPlot.match(/[^,\s]+/g)];
             console.log(newPlot);
@@ -727,8 +760,8 @@ to dismiss)</div>').on("click",function(){div.hide()});
         
         allPlots = [];
         $('#graph-toolbar').empty();
-        general_setup();
         general_zoompan();
+        general_setup();
         
         try {
             current_analysis = analyses[0];
