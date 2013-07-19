@@ -275,7 +275,9 @@ var Folders=new function(){
             }
 
             //allows all buttons to have tooltips
+
             $('.hover_button').each(function(i, button){
+
                 $(button).attr({
                     'data-toggle':"tooltip",
                     'data-trigger':'hover',
@@ -306,8 +308,8 @@ var Folders=new function(){
         cornerAlert('Saved', file.name+' has been saved successfully', 'success');
     }
 
-//current tab is file name
-//.content get content of current tab
+    //current tab is file name
+    //.content get content of current tab
     function saveCurrentFile(){
         var file=new Object();
         file.name=editor.currentTab();

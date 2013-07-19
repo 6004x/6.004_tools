@@ -50,11 +50,11 @@
                     callback();
                 };
             }
-            var split = new SplitUI('.span9', '.sim_split', '.editor_split')
-            // Set up the split buttons.
-            $('#maximise_editor').click(activeButton(split.maximiseBottom));
-            $('#split_pane').click(activeButton(split.split));
-            $('#maximise_simulation').click(activeButton(split.maximiseTop));   
+            // var split = new SplitUI('.span9', '.sim_split', '.editor_split')
+            // // Set up the split buttons.
+            // $('#maximise_editor').click(activeButton(split.maximiseBottom));
+            // $('#split_pane').click(activeButton(split.split));
+            // $('#maximise_simulation').click(activeButton(split.maximiseTop));   
             Folders.setup('.span3', editor, mode);
             Folders.refresh();
 
@@ -83,14 +83,14 @@
                             editor.markErrorLine(file.name, e[i].message, e[i].lineNumber);
                         valid = false;
                     }
-                    if(valid){
-                        $('.sim_split').html('');
-                        $('#split_pane').click();
-                        console.log(tsmparse.getTSM())
-                        console.log(tsmparse.getLists());
-                        tmsim = new TMSIM('.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
+
+                    // if(valid){
+                    //     $('#split_pane').click();
+                    //     console.log(tsmparse.getTSM())
+                    //     console.log(tsmparse.getLists());
+                    //     tmsim = new TMSIM('.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
                         
-                    }
+                    // }
                 }
             }
             
