@@ -33,7 +33,7 @@
     </head>
     <script>
     $(document).ready(function(){
-        FileSystem.setup('profavr', 'http://18.62.29.122:8080');
+        FileSystem.setup('antonio', 'http://18.62.29.122:8080');
 
             var mode='tsim';
             editor = new Editor('.editor_split',mode);
@@ -84,6 +84,7 @@
                         valid = false;
                     }
                     if(valid){
+                        $('.sim_split').html('');
                         $('#split_pane').click();
                         console.log(tsmparse.getTSM())
                         console.log(tsmparse.getLists());
@@ -106,7 +107,7 @@
                 </ul>
                 <h1>TMSIM</h1>
             </div>
-            <div class='row row-fluid'>
+            <div class='row row-fluid mainWrapper'>
                 <div class="span3"></div>
                 <div class="span9">
                     <div class='editor_split'></div>

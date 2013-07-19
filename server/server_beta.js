@@ -227,25 +227,25 @@ function pathWorks(request, response, data){
 					});
 				}
 		});
-		}
-		function hideFile(full_path, file_path){
-			console.log('hiding '+path.dirname(full_path)+path.sep+path.basename(full_path));
-			fs.rename(full_path, path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function (err) {
-				if (err) 
-					errorResponse(err + ' file could not be renamed');
-				
-				console.log(file_path+'~del');
-				sendJSON({
-					status:'success',
-					name:file_path,
-				});
-		});
-		}
-		function create_user_path() {
-			fs.mkdirSync(user_path,function(err) {
-				if (err) throw(err);
-				// after();
+	}
+	function hideFile(full_path, file_path){
+		console.log('hiding '+path.dirname(full_path)+path.sep+'~'+path.basename(full_path));
+		fs.rename(full_path, path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function (err) {
+			if (err) 
+				errorResponse(err + ' file could not be renamed');
+			
+			console.log(path.sep+'del~'+path.basename(full_path));
+			sendJSON({
+				status:'success',
+				name:file_path,
 			});
-		}
+		});
+	}
+	function create_user_path() {
+		fs.mkdirSync(user_path,function(err) {
+			if (err) throw(err);
+			// after();
+		});
+	}
 }
 sys.puts("Server Running on 8080");

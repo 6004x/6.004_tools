@@ -126,6 +126,7 @@ var FileSystem= function(){
                     callback(data);
                     writeFileToTree(data.name, data.data, true);
                 }
+                console.log(status)
             }, callbackFailed);
         }else if (file){
             getFileFromTree[onServer]=false;
@@ -137,6 +138,7 @@ var FileSystem= function(){
     
     function traverseTree(fileName, action){
         //TODO NEEDS ERROR HANDLING
+        // Whitelist not blacklist of filenames
         var pathArray=fileName.match(/[^<>\:\"\|\/\\\?\*]+/g);
         // console.log(pathArray);
         var followPath=fileTree;
@@ -158,6 +160,7 @@ var FileSystem= function(){
         //else there is a file
         return finalTree[0];
     }
+ 
     function writeFileToTree(fileName, fileData, onServer){
         var finalTree=traverseTree(fileName, function(i, followPath, currentPath, length){
             if(i==length-1){
@@ -191,6 +194,17 @@ var FileSystem= function(){
         sendAjaxRequest(folderName,null,'json', 'newFolder', callback, callbackFailed);
         updated=false;
     }   
+    function renameFile(oldFileName, newFileName, callback, callbackFailed){
+        callbackFailed = callbackFailed||failResponse;
+        getFile(oldFileName, function(oldFile){
+            console.log('renaming '+ oldFileName);
+            newFile(newFileName, oldFile.data, function(newFile){
+                deleteFile(oldFileName, callback);
+            });
+        });
+       // sendAjaxRequest(fileName,newFileName,'json', 'renameFile', callback, callbackFailed);
+        updated=false;
+    }
     function deleteFile(fileName, callback, callbackFailed){
         sendAjaxRequest(fileName,null,'json', 'deleteFile', callback, callbackFailed);
         updated=false;
@@ -215,7 +229,7 @@ var FileSystem= function(){
         req.done(function(data, status){
             //check if status is successful
             updated=true;
-                callbackFunction(data, status);
+            callbackFunction(data, status);
         });
         req.fail(failFunction);
         req.always(function(request, status){
@@ -232,12 +246,12 @@ var FileSystem= function(){
     exports.newFile=newFile;
     exports.newFolder=newFolder;
     exports.deleteFile =deleteFile;
+    exports.renameFile =renameFile;
 
     exports.getServerName=function(){return mServer;};
     exports.getUserName=function(){return mUsername;};
     exports.isFile=function(fileName){
         // console.log(fileName+' check if in allfiles');
-        console.log(allFiles)
         return _.contains(allFiles, fileName)
     }
     exports.isFolder=function(folderName){

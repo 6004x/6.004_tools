@@ -325,14 +325,14 @@ function TSMparser(){
 		return tsm;
 	}
 	function getLists(){
-		return [list_of_tapes, list_of_results, list_of_results1];
+		return {list_of_tapes:list_of_tapes, list_of_results:list_of_results, list_of_results1:list_of_results1};
 	}
 	function getResults(){
 		var results = '';
 		for(key in list_of_tapes){
 			results +=key+': ';
 			var list = list_of_tapes[key];
-			results +=String(list.toArray())+'\n';
+			results += list.toString()+'\n';
 			
 			tsm.start(list);
 			results+='results: '+list.toString()+'\n';

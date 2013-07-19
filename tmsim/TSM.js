@@ -49,13 +49,14 @@ function TSM(){
 		// console.log('ended turing machine');
 		return mTape;
 	}
-	this.step=function(new_state){
+	this.step=function(new_state, tape){
+		var stepTape = tape || mTape;
 		var old_state=new_state;
 		var tapeRead=mTape.peek();
 		var state_transition=old_state.transition[tapeRead];
 		
 		new_state=list_of_states[state_transition.new_state];
-		mTape.traverse(state_transition.write, state_transition.move);
+		stepTape.traverse(state_transition.write, state_transition.move);
 		// console.log(new_state);
 		if(state_transition.new_state === '*halt*'){
 			valid=false;
@@ -70,10 +71,6 @@ function TSM(){
 		}
 
 		return new_state;
-	}
-	this.compare = function(tape){
-		//compares tape to mTape
-		return mTape.equals(tape);
 	}
 	return this;
 }
