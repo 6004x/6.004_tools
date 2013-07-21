@@ -15,7 +15,7 @@ test("Assembles an empty file", function() {
 });
 
 test("Assembles integers", function() {
-    expect(10);
+    expect(15);
     var assembler = new BetaAssembler();
     assembler.assemble("ints.uasm", "42", function(success, result) {
         ok(success, "Decimal integer assembles without error.");
@@ -39,12 +39,27 @@ test("Assembles integers", function() {
 
     assembler.assemble("ints.uasm", "256", function(success, result) {
         ok(!success, "Integer larger than one byte is an error.");
-        // ok(true);
     });
 
     assembler.assemble("ints.uasm", "0xabjs2", function(success, result) {
-        ok(!success, "Invalid integer throws a syntax error");
-        // ok(true);
+        ok(!success, "Invalid hex integer throws a syntax error");
+    });
+
+    assembler.assemble("ints.uasm", "0b22", function(success, result) {
+        ok(!success, "Invalid binary integer throws a syntax error");
+    });
+
+    assembler.assemble("ints.uasm", "088", function(success, result) {
+        ok(!success, "Invalid octal integer throws a syntax error");
+    });
+
+    assembler.assemble("ints.uasm", "2c", function(success, result) {
+        ok(!success, "Invalid decimal integer throws a syntax error");
+    });
+
+    assembler.assemble("ints.uasm", "0", function(success, result) {
+        ok(success, "Decimal zero assembles successfully");
+        deepEqual(result.image, new Uint8Array([0]), "Decimal zero has correct value.");
     });
 });
 
@@ -114,7 +129,7 @@ test("Assembles sequences", function() {
 });
 
 test("Evaluates expressions", function() {
-    expect(23);
+    expect(24);
     var assembler = new BetaAssembler();
     assembler.assemble("expression.uasm", "2 + 2", function(success, result) {
         ok(success, "Expression assembles without error");
@@ -159,6 +174,10 @@ test("Evaluates expressions", function() {
 
     assembler.assemble("expression.uasm", "(2+2))", function(success, result) {
         ok(!success, "Extra closing parenthesis is an error.");
+    });
+
+    assembler.assemble("expression.uasm", "0xFF + 1", function(success, result) {
+        ok(!success, "Assembled expressions that do not fit in one byte are an error.");
     });
 });
 

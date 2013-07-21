@@ -93,20 +93,22 @@
     // If this is not possible, returns NaN.
     // This primarily exists as a helper for readNumber.
     var parseNumber = function(text) {
+        // We have to do strict tests ourselves, otherwise parseInt is too lenient and accepts
+        // invalid numbers.
         // Hex
-        if(/^0x/i.test(text)) {
+        if(/^0x[0-9a-f]+$/i.test(text)) {
             return parseInt(text, 16);
         }
         // Binary
-        else if(/^0b/i.test(text)) {
+        else if(/^0b[10]+$/i.test(text)) {
             return parseInt(text.slice(2), 2);
         }
         // Octal
-        else if(/^0/i.test(text)) {
+        else if(/^0[0-7]+$/.test(text)) {
             return parseInt(text, 8);
         }
-        // Decimal
-        else {
+        // Decimal (explicitly exclude octal)
+        else if(/^[1-9][0-9]*$|^0$/.test(text)) {
             return parseInt(text, 10);
         }
         return NaN;
@@ -354,7 +356,7 @@
             '~': function(a) { return ~a; },
             '+': function(a) { return +a; }
         };
-        if(this.value instanceof Expression) {
+        if(typeof this.value.evaluate == 'function') {
             this.value = this.value.evaluate(context, strict);
         }
         if(!_.has(ops, this.op)) {
@@ -445,7 +447,7 @@
                 return value;
             }
             // Evaluate expressions and unary operations recursively.
-            if(t instanceof Expression || t instanceof UnaryOperation) {
+            if(typeof t.evaluate == 'function') {
                 return t.evaluate(context, strict);
             }
             // We shouldn't be able to get here.
@@ -475,7 +477,17 @@
     };
     Expression.prototype.assemble = function(context, out) {
         var value = this.evaluate(context, !!out);
-        if(out) out[context.dot] = value;
+        if(out) {
+            // Be sure to complain if it's illegal.
+            if(value > 255) {
+                throw new SyntaxError("Expression results must fit within one byte; " + value + " is too large.", this.file, this.line);
+            }
+            if(value < -128) {
+                throw new SyntaxError("Expression results must fit within one byte; interpreted as a signed integer, " + value + " is too negative.", this.file, this.line);
+            }
+            // Set it.
+            out[context.dot] = value;
+        }
         context.dot += 1;
     };
 
@@ -832,6 +844,7 @@
             var errors = [];
             var pending_includes = {};
             var waiting = 0;
+            var completed = false;
 
             var insert_include = function(include) {
                 if(!_.has(pending_includes, include.filename)) pending_includes[include.filename] = [];
@@ -841,7 +854,7 @@
                     parse_file(include_content.name, include_content.data, function(syntax) {
                         --waiting;
                         include.instructions = syntax;
-                        if(errors.length === 0 && waiting === 0) {
+                        if(errors.length === 0 && waiting === 0 && completed) {
                             completion_callback(our_syntax);
                         }
                     }, error_callback);
@@ -865,6 +878,7 @@
             if(errors.length > 0) {
                 error_callback(errors);
             } else {
+                completed = true;
                 if(waiting === 0) {
                     completion_callback(our_syntax);
                 }
@@ -875,6 +889,7 @@
         var parse = function(stream, is_macro, include_callback) {
             var fileContent = [];
             var allow_multiple_lines = !is_macro; // Macros are single-line by default
+            var expecting_brace = false;
             // Helpful bits of state
             var eatingComments = false;
 
@@ -884,6 +899,7 @@
             if(is_macro && stream.peek() == '{') {
                 stream.next();
                 allow_multiple_lines = true;
+                expecting_brace = true;
             }
         parse_loop:
             do {
@@ -905,6 +921,7 @@
 
                     // If we're in a multi-line macro and we find a }, it's time for us to exit.
                     if(is_macro && allow_multiple_lines && stream.peek() == "}") {
+                        expecting_brace = false;
                         stream.next();
                         break parse_loop;
                     }
@@ -1035,6 +1052,9 @@
                     }
                 }
             } while(allow_multiple_lines && stream.next_line());
+            if(expecting_brace) {
+                throw new SyntaxError("Expected closing brace to end block macro declaration.", stream);
+            }
             return fileContent;
         };
 
