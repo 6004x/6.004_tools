@@ -161,7 +161,7 @@ BSim.Beta = function() {
 
         // Implement undo
         if(!_.has(mCurrentStepWords, address))
-            mCurrentStepWords[address] = this.readWord(address);
+            mCurrentStepWords[address] = mMemory.readWord(address);
 
         mMemory.writeWord(address, value);
 
@@ -195,7 +195,7 @@ BSim.Beta = function() {
 
         // Implement undo
         if(!_.has(mCurrentStepRegisters, register))
-            mCurrentStepRegisters[register] = this.readRegister(register);
+            mCurrentStepRegisters[register] = mRegisters[register];
 
         mRegisters[register] = value;
 
@@ -365,6 +365,8 @@ BSim.Beta = function() {
         }
         // Prepare undo
         mCurrentStep = new UndoStep(mPC);
+        mCurrentStepWords = {};
+        mCurrentStepRegisters = {};
 
         mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
         // Continue on with instructions as planned.
