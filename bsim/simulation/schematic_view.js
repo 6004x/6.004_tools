@@ -5,7 +5,7 @@ BSim.SchematicView = function(schematic, beta) {
     var mRules = {};
 
     var setValue = function(signal, value) {
-        console.log(signal + ' = ' + value);
+        // console.log(signal + ' = ' + value);
         if(value === null) {
             value = '_';
         } else {
@@ -66,7 +66,7 @@ BSim.SchematicView = function(schematic, beta) {
 
     var initialise = function() {
         mStylesheet = $('<style>').appendTo('head')[0].sheet;
-        console.log(mStylesheet);
+        // console.log(mStylesheet);
         mBeta.on('change:pc', beta_change_pc);
     };
     initialise();

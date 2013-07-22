@@ -8,6 +8,7 @@ BSim.Controls = function(container, beta) {
     var mFastRunButton = null;
     var mStepButton = null;
     var mVerifyButton = null;
+    var mViewChange = null;
 
     var mToolbar = null;
 
@@ -70,6 +71,10 @@ BSim.Controls = function(container, beta) {
         }
     };
 
+    var change_view = function() {
+        $('#programmer-view, #schematic-view').toggle();
+    }
+
     var initialise = function() {
         mResetButton = new ToolbarButton('icon-fast-backward', handle_reset, 'Reset Simulation');
         mUndoButton = new ToolbarButton('icon-step-backward', handle_undo, 'Step Back');
@@ -77,11 +82,13 @@ BSim.Controls = function(container, beta) {
         mFastRunButton = new ToolbarButton('icon-forward', handle_fast_run, 'Run Fast');
         mStepButton = new ToolbarButton('icon-step-forward', handle_step, 'Step Forward');
         mVerifyButton = new ToolbarButton('Checkoff', handle_checkoff);
+        mViewChange = new ToolbarButton(mContainer.parents('#schematic-view').length ? "Programmer's View" : 'Schematic View', change_view);
 
         mToolbar = new Toolbar(mContainer);
 
         mToolbar.addButtonGroup([mResetButton, mUndoButton, mStepButton, mRunButton, mFastRunButton]);
         mToolbar.addButtonGroup([mVerifyButton]);
+        mToolbar.addButtonGroup([mViewChange]);
 
         mBeta.on('run:start', beta_run_start);
         mBeta.on('run:stop', beta_run_stop);
