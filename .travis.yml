@@ -7,3 +7,6 @@ before_script:
 - sleep 5
 
 script: phantomjs test/run-qunit.js 'http://localhost:8000/bsim/tests/index.html'
+
+notifications:
+    email: false
