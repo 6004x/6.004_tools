@@ -628,6 +628,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
     Preparing of data written by Chris Terman
     *********************/
     function tran_plot(div, results, plots) {
+        compactPlot = true;
         if (results === undefined) {
             div.text("No results!");
             return;
@@ -721,6 +722,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
     AC plot: plot an AC analysis. Arguments same as above.
     *************************/
     function ac_plot(div, results, plots) {
+        compactPlot = false;
         if (results === undefined) {
             div.text("No results!");
             return;
@@ -850,14 +852,14 @@ to dismiss)</div>').on("click",function(){div.hide()});
                 cktsim.transient_analysis(netlist, current_analysis.parameters.tstop,
                                           [], function(ignore, results) {
                     current_results = results;
-                    tran_plot(div, results, plots);
+                    tran_plot(div, current_results, plots);
                 });
                 break;
             case 'ac':
                 current_results = cktsim.ac_analysis(netlist, current_analysis.parameters.fstart,
                                                  current_analysis.parameters.fstop,
                                                  current_analysis.parameters.ac_source_name);
-                ac_plot(div, results, plots);
+                ac_plot(div, current_results, plots);
                 break;
             case 'dc':
                 break;
