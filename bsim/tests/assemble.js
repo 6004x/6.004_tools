@@ -182,7 +182,7 @@ test("Evaluates expressions", function() {
 });
 
 test("Evaluates assignments", function() {
-    expect(8);
+    expect(9);
     var assembler = new BetaAssembler();
     assembler.assemble("assign.uasm", "foo = 42", function(success, result) {
         ok(success, "Assignment assembles without error");
@@ -200,6 +200,9 @@ test("Evaluates assignments", function() {
     });
     assembler.assemble("assign.uasm", "a = b\nb = a", function(success, result) {
         ok(!success, "Unresolvable assignment loops are an error.");
+    });
+    assembler.assemble("assign.uasm", "a = b\nb = c\nc = a", function(success, result) {
+        ok(!success, "Unresolvable multi-step assignment loops are an error.");
     });
     assembler.assemble("assign.uasm", "a = b", function(success, result) {
         ok(!success, "Using undefined symbols is an error.");
