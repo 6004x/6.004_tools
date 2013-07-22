@@ -1,4 +1,4 @@
-BSim.Beta.Memory = function(size) {
+BSim.Beta.Memory = function() {
     var self = this;
     var mMemory = new Uint32Array(0);
     var mMemoryFlags = new Uint8Array(0);
