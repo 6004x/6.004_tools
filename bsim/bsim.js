@@ -61,7 +61,9 @@ $(function() {
                 } else {
                     beta.setVerifier(null);
                 }
-                $('#maximise_simulation').click();
+                if(split.currentState() == 'left') {
+                    $('#maximise_simulation').click();
+                }
             }
         });
     }
