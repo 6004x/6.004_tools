@@ -850,9 +850,12 @@ to dismiss)</div>').on("click",function(){div.hide()});
             switch (current_analysis.type) {
             case 'tran':
                 cktsim.transient_analysis(netlist, current_analysis.parameters.tstop,
-                                          [], function(ignore, results) {
-                    current_results = results;
-                    tran_plot(div, current_results, plots);
+                                          [], function(pct_complete, results) {
+                    console.log("percent complete:",pct_complete);
+                    if (results){
+                        current_results = results;
+                        tran_plot(div, current_results, plots);
+                    }
                 });
                 break;
             case 'ac':
