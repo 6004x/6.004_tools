@@ -210,7 +210,7 @@ Graph setup functions
         var selRanges;
         $('#results').on("plotselected",function(evt,ranges){
             selZoomButton.show();
-            console.log("selected ranges:",ranges);
+//            console.log("selected ranges:",ranges);
             selRanges = ranges;
         });
         
@@ -222,6 +222,7 @@ Graph setup functions
                     var opts = item.getAxes().xaxis.options;
                     opts.min = ranges.xaxis.from;
                     opts.max = ranges.xaxis.to;
+                    
                     item.setupGrid();
                     item.draw();
                     item.clearSelection();
@@ -338,15 +339,18 @@ Graph setup functions
                 
                 posTextDiv.find('.xpos').text("X = "+suffix_formatter(pos.x)+series.xUnits);
     
-                var y = interpolate(series,pos.x);
+                if (!compactPlot){
+                    var y = interpolate(series,pos.x);
+                    
+                    var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
                 
-                var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
-                if (innerPosTextDivs["series"+i]===undefined){
-                    var innerDiv = $("<div>"+divText+"</div>");
-                    innerPosTextDivs["series"+i] = innerDiv;
-                    posTextDiv.append(innerPosTextDivs["series"+i]);
-                } else {
-                    innerPosTextDivs["series"+i].text(divText);
+                    if (innerPosTextDivs["series"+i]===undefined){
+                        var innerDiv = $("<div>"+divText+"</div>");
+                        innerPosTextDivs["series"+i] = innerDiv;
+                        posTextDiv.append(innerPosTextDivs["series"+i]);
+                    } else {
+                        innerPosTextDivs["series"+i].text(divText);
+                    }
                 }
             }
             posTextDiv.show();
@@ -378,10 +382,13 @@ Graph setup functions
         rangeTextDiv.css("left",plotObj.getPlotOffset().left + 5);
         rangeTextDiv.hide();
         
+//        plotObj.getPlaceholder().data("rangeDiv",rangeTextDiv);
+        
         // when a selection is being made, if it's a valid selection, call each plot's
         // showtooltip method
         var updateSelTimeout;
         var selRanges;
+        var hasSel;
         
         plotObj.getPlaceholder().on("plotselecting", function(event,ranges){
 //            ztsButton.show()
@@ -393,6 +400,7 @@ Graph setup functions
                 }
                 value.getPlaceholder().trigger("showRangeTooltip",ranges);
             }); 
+            hasSel = true;
         });
         
         // whenever one plot's selection is cleared, clear the others' as well
@@ -404,6 +412,21 @@ Graph setup functions
             
             clearTimeout(updateSelTimeout);
             rangeTextDiv.hide();
+            hasSel = false;
+        });
+        
+        plotObj.getPlaceholder().on("plothover",function(){
+//            console.log("hovered");
+            if (hasSel && compactPlot){
+//                console.log("selection");
+                rangeTextDiv.show();
+            }
+        });
+        
+        plotObj.getPlaceholder().on("mouseleave",function(){
+            if (compactPlot){
+                rangeTextDiv.hide();
+            }
         });
         
         // showtooltip -- show the tooltip after an appropriate timeout to prevent
@@ -423,9 +446,13 @@ Graph setup functions
         function showSelRange(){
             updateSelTimeout = null;
             ranges = selRanges;
+            hasSel = true;
             
             // if the range is invalid, do nothing
-            if (!ranges){ return; }
+            if (!ranges){ 
+                hasSel = false;
+                return; 
+            }
             
             var xrange = ranges.xaxis.to - ranges.xaxis.from;
             
@@ -443,20 +470,25 @@ Graph setup functions
                 rangeTextDiv.find('.xrange').text("X range = "+suffix_formatter(xrange)+
                                               series.xUnits);
     
-                var y1 = interpolate(series, ranges.xaxis.from);
-                var y2 = interpolate(series, ranges.xaxis.to);
-                var yrange = y2-y1;
-                
-                var divText = series.label+" range = "+suffix_formatter(yrange)+series.yUnits;
-                if (innerRangeTextDivs["series"+i]===undefined){
-                    var innerDiv = $("<div>"+divText+"</div>");
-                    innerRangeTextDivs["series"+i] = innerDiv;
-                    rangeTextDiv.append(innerRangeTextDivs["series"+i]);
-                } else {
-                    innerRangeTextDivs["series"+i].text(divText);
+                if (!compactPlot){
+                    var y1 = interpolate(series, ranges.xaxis.from);
+                    var y2 = interpolate(series, ranges.xaxis.to);
+                    var yrange = y2-y1;
+                    
+                    var divText = series.label+" range = "+
+                        suffix_formatter(yrange)+series.yUnits;
+                    if (innerRangeTextDivs["series"+i]===undefined){
+                        var innerDiv = $("<div>"+divText+"</div>");
+                        innerRangeTextDivs["series"+i] = innerDiv;
+                        rangeTextDiv.append(innerRangeTextDivs["series"+i]);
+                    } else {
+                        innerRangeTextDivs["series"+i].text(divText);
+                    }
                 }
             }
-            rangeTextDiv.show();
+            if (!compactPlot){
+                rangeTextDiv.show();
+            }
         }
     }
     
@@ -645,6 +677,9 @@ to dismiss)</div>').on("click",function(){div.hide()});
             
             // prepare a div
             var wdiv = $('<div class="plot-wrapper"></div>');
+            if (compactPlot){
+                wdiv.css("margin-bottom",'-20px');
+            }
             var ldiv;
 //            if (compactPlot){
 //                ldiv = $('<div class="plot-legend"></div>');
@@ -659,11 +694,11 @@ to dismiss)</div>').on("click",function(){div.hide()});
             if (compactPlot) {
 //                options.xaxis.show = false;
 //                options.yaxis.show = false;
-                console.log("compact");
+//                console.log("compact");
                 options.xaxis.font = {color:'rgba(0,0,0,0)'}
                 options.yaxis.font = {color:'rgba(0,0,0,0)'}
                 options.legend = {show:false/*container:ldiv*/};
-                console.log("options:",options);
+//                console.log("options:",options);
             } else {
                 options.yaxis.axisLabel = current ? 'Amps (A)' : 'Volts (V)';
 //                options.xaxis.axisLabel = 'Time (s)';
