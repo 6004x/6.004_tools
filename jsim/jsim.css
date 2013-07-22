@@ -13,6 +13,7 @@
     opacity: .85;
     padding: 2px;
     font-size:10pt;
+    text-align:left;
     z-index:5;
 }
 
@@ -29,6 +30,14 @@
 
 #graph-toolbar {
     padding-left:15px;
+}
+
+.plot-close {
+    position:relative;
+    top:20px;
+    left:8px;
+    z-index:20;
+    margin-top:-20px;
 }
 
 .novalues {

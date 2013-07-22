@@ -144,16 +144,17 @@ Graph setup functions
             // allow extra space for margins
             var margin_val;
             try{
-                margin_val = $('.plot-wrapper').css("margin-bottom").match(/\d+/)[0];
+                margin_val = $('.plot-wrapper').css("margin-bottom").match(/-?\d+/)[0];
+                margin_val /= 2;
             } catch (err) {
                 margin_val = 0;
             }
-            var margin_allowance = margin_val * 2;
+//            var margin_allowance = margin_val * 2;
             var placeholder = item.getPlaceholder();
             
             // plot height = total height / number of plots - margin space,
-            // bounded by min-height
-            var plotHeight = $('#results').height() / allPlots.length /*- margin_allowance*/;
+            // bounded by min-height; -20 for scrollbar width
+            var plotHeight = ($('#results').height() - 20) / allPlots.length - margin_val;
             placeholder.css("height",plotHeight);
         });
     }
@@ -290,7 +291,9 @@ Graph setup functions
             $.each(allPlots, function(index,value){
                 if (value != plotObj){
                     value.setCrosshair(pos);
-                    value.getPlaceholder().trigger("hidePosTooltip");
+                    if (compactPlot){
+                        value.getPlaceholder().trigger("hidePosTooltip");
+                    }
                 }
                 if (!compactPlot){
                     value.getPlaceholder().trigger("showPosTooltip",pos);
@@ -499,39 +502,39 @@ Graph setup functions
     function general_setup(){
         var tlbar = $('#graph-toolbar');
         var addPlotButton = $('<button class="btn" id="addplot-btn">\
-<i class="icon-plus"></i></button>');
-        var closePlotButton = $('<button class="btn" id="closeplot-btn">\
-<i class="icon-minus"></i></button>').tooltip({delay:100,title:"Remove Plot",
-                                                           container:'body'});
+<i class="icon-plus"></i> Add Plot</button>');
+//        var closePlotButton = $('<button class="btn" id="closeplot-btn">\
+//<i class="icon-minus"></i></button>').tooltip({delay:100,title:"Remove Plot",
+//                                                           container:'body'});
         
-        var btnGroup = $('<div class="btn-group"></div>').append(addPlotButton, closePlotButton);
+        var btnGroup = $('<div class="btn-group"></div>').append(addPlotButton/*, closePlotButton*/);
 //        tlbar.append(closePlotButton);
         tlbar.prepend(btnGroup/*addPlotButton*/);
         
-        var toggled = false;
-        closePlotButton.popover({placement:'top',content:"Click on a graph to close it. "+
-"Click this button again to return to normal mode.",
-                                 container:'body'}).on("click",function(){
-            if (!toggled){
-                toggled = true;
-                $('.plot-wrapper').on("click.remove",function(evt){
-                    $(this).hide();
-                    var plotObj = $(this).find('.placeholder').eq(0).data("plot");
-//                    console.log("plotobj:",plotObj);
-                    allPlots.splice(allPlots.indexOf(plotObj),1);
-//                    console.log("all plots:",allPlots);
-                });
-                $('.plot-wrapper').on("mouseenter.remove",function(){
-                    $(this).addClass("bg-alt");
-                }).on("mouseleave.remove",function(){
-                    $(this).removeClass("bg-alt");
-                });
-            } else {
-                $('.plot-wrapper').off(".remove");
-                toggled = false;
-            }
-            console.log("toggled:",toggled);
-        });
+//        var toggled = false;
+//        closePlotButton.popover({placement:'top',content:"Click on a graph to close it. "+
+//"Click this button again to return to normal mode.",
+//                                 container:'body'}).on("click",function(){
+//            if (!toggled){
+//                toggled = true;
+//                $('.plot-wrapper').on("click.remove",function(evt){
+//                    $(this).hide();
+//                    var plotObj = $(this).find('.placeholder').eq(0).data("plot");
+////                    console.log("plotobj:",plotObj);
+//                    allPlots.splice(allPlots.indexOf(plotObj),1);
+////                    console.log("all plots:",allPlots);
+//                });
+//                $('.plot-wrapper').on("mouseenter.remove",function(){
+//                    $(this).addClass("bg-alt");
+//                }).on("mouseleave.remove",function(){
+//                    $(this).removeClass("bg-alt");
+//                });
+//            } else {
+//                $('.plot-wrapper').off(".remove");
+//                toggled = false;
+//            }
+//            console.log("toggled:",toggled);
+//        });
         
         addPlotButton.tooltip({delay:100,title:"Add Plot",placement:'top',
                                container:'body'}).on("click",function(){
@@ -609,7 +612,7 @@ Graphing functions
         } else {
             minHeight = 130;
         }
-        return $('<div class="placeholder" style="width:100%;height:200px;\
+        return $('<div class="placeholder" style="width:100%;height:90%;\
 min-height:'+minHeight+'px"></div>');
     }
     
@@ -617,6 +620,15 @@ min-height:'+minHeight+'px"></div>');
         var div = $('<div class="novalues">No values to plot for node '+node+' (Click message \
 to dismiss)</div>').on("click",function(){div.hide()});
         return div;
+    }
+    
+    function addCloseBtn(div){
+        var closeBtn = $('<button class="close plot-close">\u00D7</button>');
+        closeBtn.on("click",function(){
+            div.hide();
+            allPlots.splice(allPlots.indexOf(div.find('.placeholder').data("plot")),1);
+        });
+        div.prepend(closeBtn);
     }
     
     /*********************
@@ -679,6 +691,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
             
             // prepare a div
             var wdiv = $('<div class="plot-wrapper"></div>');
+            addCloseBtn(wdiv);
             if (compactPlot){
                 wdiv.css("margin-bottom",'-20px');
             }
@@ -697,8 +710,12 @@ to dismiss)</div>').on("click",function(){div.hide()});
 //                options.xaxis.show = false;
 //                options.yaxis.show = false;
 //                console.log("compact");
-                options.xaxis.font = {color:'rgba(0,0,0,0)'}
-                options.yaxis.font = {color:'rgba(0,0,0,0)'}
+                options.xaxis.font = {color:'rgba(0,0,0,0)',
+                                      size:1
+                                     }
+                options.yaxis.font = {color:'rgba(0,0,0,0)',
+                                      size:1
+                                     }
                 options.legend = {show:false/*container:ldiv*/};
 //                console.log("options:",options);
             } else {
@@ -776,6 +793,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
             
             // prepare divs for magnitude graph
             var div1 = $('<div class="plot-wrapper"></div>');
+            addCloseBtn(div1);
             var plotDiv = get_plotdiv();
             div.append(div1);
             div1.append(plotDiv);
@@ -795,6 +813,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
             
             // prepare divs for phase graphs
             var div2 = $('<div class="plot-wrapper"></div>');
+            addCloseBtn(div2);
             plotDiv = get_plotdiv();
             div.append(div2);
             div2.append(plotDiv);
