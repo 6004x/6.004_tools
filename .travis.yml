@@ -6,7 +6,7 @@ before_script:
 - python -m SimpleHTTPServer &
 - sleep 5
 
-script: phantomjs test/run-qunit.js 'http://localhost:8000/bsim/tests/index.html'
+script: phantomjs test/run-qunit.js 'http://localhost:8000/test/all.html'
 
 notifications:
     email: false
