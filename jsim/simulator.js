@@ -205,11 +205,11 @@ Graph setup functions
         var selZoomButton = $('<button id="z2s" class="btn">\
 <i class="icon-resize-full">').tooltip(tooltipOpts);
         tlbar.append(selZoomButton);
-        selZoomButton.hide();
+        selZoomButton.attr("disabled","disabled");
         
         var selRanges;
         $('#results').on("plotselected",function(evt,ranges){
-            selZoomButton.show();
+            selZoomButton.removeAttr("disabled");
 //            console.log("selected ranges:",ranges);
             selRanges = ranges;
         });
@@ -230,7 +230,8 @@ Graph setup functions
             }
         });
         
-        $('#results').on("plotunselected",function(){selZoomButton.hide();});
+        $('#results').on("plotunselected",function(){
+            selZoomButton.attr("disabled","disabled");});
     }
     
     /**********************
@@ -628,7 +629,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
     Preparing of data written by Chris Terman
     *********************/
     function tran_plot(div, results, plots) {
-        compactPlot = true;
+//        compactPlot = true;
         if (results === undefined) {
             div.text("No results!");
             return;
@@ -722,7 +723,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
     AC plot: plot an AC analysis. Arguments same as above.
     *************************/
     function ac_plot(div, results, plots) {
-        compactPlot = false;
+//        compactPlot = false;
         if (results === undefined) {
             div.text("No results!");
             return;
@@ -843,6 +844,12 @@ to dismiss)</div>').on("click",function(){div.hide()});
         if (plots.length === 0) {
             div.html("</br>No plots requested!");
             return;
+        }
+        
+        if (plots.length > 4){
+            compactPlot = true;
+        } else {
+            compactPlot = false;
         }
         
         try {
