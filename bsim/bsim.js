@@ -22,7 +22,7 @@ $(function() {
     var editor = new Editor('#editor', 'uasm');
 
     // Filesystem tree thing
-    FileSystem.setup('mattpf', 'http://localhost:8080/');
+    FileSystem.setup('mattpf', 'http://6004.mattpf.net:8080/');
     Folders.setup('#filetree', editor, 'uasm');
 
     var do_assemble = function() {
