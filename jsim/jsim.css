@@ -10,14 +10,10 @@
 
 .posText {
     position:absolute;
-/*    border: 1px solid rgb(54,54,54);*/
-/*    background: white;*/
     opacity: .85;
     padding: 2px;
-/*    border-radius: 5px;*/
-/*    width:100px;*/
     font-size:10pt;
-/*    width:70%;*/
+    z-index:5;
 }
 
 .posText div {
@@ -49,6 +45,7 @@
     padding-left:10px;
     margin-bottom:-10px;
     margin-right:20px;
+    z-index:10;
 }
 
 .plot-wrapper.bg-alt {

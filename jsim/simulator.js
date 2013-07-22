@@ -81,6 +81,7 @@ Number formatting functions
 Graph setup functions 
 **************************************************
 **************************************************/
+    var compactPlot = true;
     
     /*********************
     Interpolate: given a data series, infer the y value at a given x value
@@ -141,7 +142,12 @@ Graph setup functions
         $('#results').height($('#simulation-pane').height() - $('#graph-toolbar').height() -20);
         $.each(allPlots,function(index,item){
             // allow extra space for margins
-            var margin_val = $('.plot-wrapper').css("margin-bottom").match(/\d+/)[0];
+            var margin_val;
+            try{
+                margin_val = $('.plot-wrapper').css("margin-bottom").match(/\d+/)[0];
+            } catch (err) {
+                margin_val = 0;
+            }
             var margin_allowance = margin_val * 2;
             var placeholder = item.getPlaceholder();
             
@@ -278,17 +284,22 @@ Graph setup functions
         var updateMouseTimeout;
         var latestPos;
         plotObj.getPlaceholder().on("plothover", function(event,pos,item){
+            $(this).trigger("showPosTooltip",pos);
             $.each(allPlots, function(index,value){
                 if (value != plotObj){
                     value.setCrosshair(pos);
+                    value.getPlaceholder().trigger("hidePosTooltip");
                 }
-                value.getPlaceholder().trigger("showPosTooltip",pos)
+                if (!compactPlot){
+                    value.getPlaceholder().trigger("showPosTooltip",pos);
+                }
             });
             
         });
         
         // showtooltip function: after an appropriate interval to prevent 
         // awful lag, update the position tooltip
+        plotObj.getPlaceholder().on("hidePosTooltip",function(){ posTextDiv.hide(); });
         plotObj.getPlaceholder().on("showPosTooltip", function(event,pos){
             latestPos = pos;
             if (!updateMouseTimeout){
@@ -306,9 +317,11 @@ Graph setup functions
             pos = latestPos;
             
             // prevent the tooltip from blocking the legend
-            var divWidth = plotObj.width() - 
-                plotObj.getPlaceholder().find('.legend div').width() - 20;
-            posTextDiv.css("max-width",divWidth);
+            try{
+                var divWidth = plotObj.width() - 
+                    plotObj.getPlaceholder().find('.legend div').width() - 20;
+                posTextDiv.css("max-width",divWidth);
+            } catch (err) {}
             
             // only show the tooltip if the mouse is within graph boundaries (x only)
             var axes = plotObj.getAxes();
@@ -514,7 +527,7 @@ Graph setup functions
     **********************/
     var default_options = {
         yaxis:{
-            color:"#848484",
+            color:"#545454",
             tickColor:"#dddddd",
             tickFormatter:suffix_formatter,
             zoomRange:false,
@@ -524,7 +537,7 @@ Graph setup functions
             axisLabelColor:'rgb(84,84,84)',
         },
         xaxis:{
-            color:"#848484",
+            color:"#545454",
             tickColor:"#dddddd",
             tickFormatter:suffix_formatter,
             axisLabelUseCanvas:true,
@@ -557,8 +570,14 @@ Graphing functions
     
     // helper function that returns a new generic placeholder div
     function get_plotdiv(){
+        var minHeight;
+        if (compactPlot){
+            minHeight = 80;
+        } else {
+            minHeight = 130;
+        }
         return $('<div class="placeholder" style="width:100%;height:200px;\
-min-height:130px"></div>');
+min-height:'+minHeight+'px"></div>');
     }
     
     function get_novaldiv(node){
@@ -626,19 +645,35 @@ to dismiss)</div>').on("click",function(){div.hide()});
             
             // prepare a div
             var wdiv = $('<div class="plot-wrapper"></div>');
+            var ldiv;
+//            if (compactPlot){
+//                ldiv = $('<div class="plot-legend"></div>');
+//                wdiv.append(ldiv);
+//            }
             var plotdiv = get_plotdiv();
             wdiv.append(plotdiv);
             div.append(wdiv);
             
             // customize options
             var options = $.extend(true,{},default_options);
-            options.yaxis.axisLabel = current ? 'Amps (A)' : 'Volts (V)';
-//            options.xaxis.axisLabel = 'Time (s)';
+            if (compactPlot) {
+//                options.xaxis.show = false;
+//                options.yaxis.show = false;
+                console.log("compact");
+                options.xaxis.font = {color:'rgba(0,0,0,0)'}
+                options.yaxis.font = {color:'rgba(0,0,0,0)'}
+                options.legend = {show:false/*container:ldiv*/};
+                console.log("options:",options);
+            } else {
+                options.yaxis.axisLabel = current ? 'Amps (A)' : 'Volts (V)';
+//                options.xaxis.axisLabel = 'Time (s)';
+            }
             options.xaxis.zoomRange = [null, (xmax-xmin)];
             options.xaxis.panRange = [xmin, xmax];
             
             options.xaxis.units = 's';
             options.yaxis.units = current? 'A' : 'V';
+            
         
             // graph the data
             var plotObj = $.plot(plotdiv,dataseries,options);
