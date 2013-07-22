@@ -5,18 +5,22 @@
         var mContainer = $(container);
         var mLeft = $(left_node);
         var mRight = $(right_node);
+        var mState = 'split';
 
         this.split = function() {
             splitSide(mLeft);
             splitSide(mRight);
+            mState = 'split';
         };
 
         this.maximiseLeft = function() {
             maximise(mLeft, mRight);
+            mState = 'left';
         };
 
         this.maximiseRight = function() {
             maximise(mRight, mLeft);
+            mState = 'right';
         };
 
         var maximise = function(maximise, minimise) {
@@ -28,6 +32,10 @@
             pane.show().addClass('span6').removeClass('span12 maximised');
         };
 
+        this.currentState = function() {
+            return mState;
+        };
+
         var initialise = function() {
             // Make sure we have the right classes in place.
             mContainer.addClass('row-fluid');
@@ -37,6 +45,7 @@
             // Split by default.
             mLeft.show().addClass('span6').removeClass('span12');;
             mRight.show().addClass('span6');
+            mState = 'split';
         };
         initialise();
     };

@@ -1,7 +1,7 @@
-BSim.Beta = function(mem_size) {
+BSim.Beta = function() {
     "use strict";
     var self = this;
-    var mMemory = new BSim.Beta.Memory(mem_size); // TODO: it might make sense to use an Int32Array here.
+    var mMemory = new BSim.Beta.Memory(); // TODO: it might make sense to use an Int32Array here.
     var mRegisters = new Int32Array(32);
     var mRunning = false; // Only true when calling run(); not executeCycle().
     var mPC = 0x80000000;
@@ -74,13 +74,14 @@ BSim.Beta = function(mem_size) {
 
     this.loadBytes = function(bytes) {
         this.stop();
-        this.reset();
+        this.reset(true);
 
         mMemory.loadBytes(bytes);
 
         // Update the UI with our new program.
         this.trigger('resize:memory', bytes.length);
-        this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
+        // This trigger is redundant to the reset performed by this.reset()
+        // this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
         var r = _.range(0, mMemory.size(), 4);
         this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
 
@@ -104,7 +105,7 @@ BSim.Beta = function(mem_size) {
     };
 
     this.clearBreakpoints = function() {
-        this.trigger('delete:bulk:breakpoint', _.keys(mBreakpoints));
+        this.trigger('delete:bulk:breakpoint', _.map(_.keys(mBreakpoints), function(v) { return parseInt(v, 10); }));
         mBreakpoints = {};
     };
 
@@ -116,6 +117,10 @@ BSim.Beta = function(mem_size) {
     this.removeBreakpoint = function(breakpoint) {
         delete mBreakpoints[breakpoint];
         this.trigger('delete:breakpoint', breakpoint);
+    };
+
+    this.getBreakpoints = function() {
+        return _.map(_.keys(mBreakpoints), function(v) { return parseInt(v, 10); });
     };
 
     this.setLabels = function(labels) {
@@ -156,7 +161,7 @@ BSim.Beta = function(mem_size) {
 
         // Implement undo
         if(!_.has(mCurrentStepWords, address))
-            mCurrentStepWords[address] = this.readWord(address);
+            mCurrentStepWords[address] = mMemory.readWord(address);
 
         mMemory.writeWord(address, value);
 
@@ -173,6 +178,9 @@ BSim.Beta = function(mem_size) {
     };
 
     this.readRegister = function(register) {
+        if(register < 0 || register > 31) {
+            throw new BSim.Beta.RuntimeError("Attempted to read invalid register r" + register);
+        }
         if(register == 31) return 0;
         return mRegisters[register];
     };
@@ -181,9 +189,13 @@ BSim.Beta = function(mem_size) {
         value |= 0; // force to int.
         if(register == 31) return;
 
+        if(register < 0 || register > 31) {
+            throw new BSim.Beta.RuntimeError("Attempted to write invalid register r" + register);
+        }
+
         // Implement undo
         if(!_.has(mCurrentStepRegisters, register))
-            mCurrentStepRegisters[register] = this.readRegister(register);
+            mCurrentStepRegisters[register] = mRegisters[register];
 
         mRegisters[register] = value;
 
@@ -227,13 +239,13 @@ BSim.Beta = function(mem_size) {
         };
     };
 
-    this.reset = function() {
+    this.reset = function(no_update_memory) {
         this.setPC(SUPERVISOR_BIT | VEC_RESET, true);
         mRegisters = new Int32Array(32);
         mPendingInterrupts = 0;
         mCycleCount = 0;
         mClockCounter = 0;
-        mMemory.reset();
+        if(!no_update_memory) mMemory.reset();
         this.mMouseCoords = -1;
         this.mKeyboardInput = null;
         mTTYContent = '';
@@ -241,8 +253,10 @@ BSim.Beta = function(mem_size) {
         // Tell the world.
         this.trigger('text:clear');
         this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
-        var r = _.range(0, mMemory.size(), 4);
-        this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
+        if(!no_update_memory) {
+            var r = _.range(0, mMemory.size(), 4);
+            this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
+        }
     };
 
     this.ttyOut = function(text) {
@@ -351,6 +365,8 @@ BSim.Beta = function(mem_size) {
         }
         // Prepare undo
         mCurrentStep = new UndoStep(mPC);
+        mCurrentStepWords = {};
+        mCurrentStepRegisters = {};
 
         mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
         // Continue on with instructions as planned.
@@ -492,4 +508,7 @@ BSim.Beta = function(mem_size) {
 
 BSim.Beta.RuntimeError = function(message) {
     this.message = message;
+};
+BSim.Beta.RuntimeError.prototype.toString = function() {
+    return this.message;
 };

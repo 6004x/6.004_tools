@@ -1,7 +1,7 @@
 BSim.DisassembledView = function(container, beta) {
     var mContainer = $(container);
     var mBeta = beta;
-    var mTable = new BigTable(mContainer, 450, 200, 22, 4);
+    var mTable = new BigTable(mContainer, mContainer.data('width') || 450, mContainer.data('height') || 200, 22, 4);
     var mCurrentPC = 0;
     var mRowHeight = 0;
     var mScrollOffset = 0;

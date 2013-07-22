@@ -61,7 +61,9 @@ $(function() {
                 } else {
                     beta.setVerifier(null);
                 }
-                $('#maximise_simulation').click();
+                if(split.currentState() == 'left') {
+                    $('#maximise_simulation').click();
+                }
             }
         });
     }
@@ -105,6 +107,7 @@ $(function() {
     });
 
     new BSim.Beta.ErrorHandler(beta);
+    new BSim.SchematicView($('svg.schematic'), beta);
 
     // // Convenient way of loading a file for testing and such.
     // var neuter = function(e) {

@@ -43,6 +43,7 @@ var ToolbarButton = function(icon, callback, tooltip) {
 
     self.disable = function() {
         mElement.attr('disabled', 'disabled');
+        mElement.tooltip('hide');
     };
 
     self.enable = function() {
