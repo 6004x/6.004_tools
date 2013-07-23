@@ -139,7 +139,7 @@ Graph setup functions
     function set_plot_heights(){
         // limit the simulation pane's height to that of the editor pane
         $('#simulation-pane').height($('#editor-pane').height());
-        $('#results').height($('#simulation-pane').height() - $('#graph-toolbar').height() -20);
+        $('#results').height($('#simulation-pane').height() - $('#graph-toolbar').height() - 40);
         $.each(allPlots,function(index,item){
             // allow extra space for margins
             var margin_val;
@@ -153,8 +153,8 @@ Graph setup functions
             var placeholder = item.getPlaceholder();
             
             // plot height = total height / number of plots - margin space,
-            // bounded by min-height; -20 for scrollbar width
-            var plotHeight = ($('#results').height() - 40) / allPlots.length 
+            // bounded by min-height; -30 for scrollbar width
+            var plotHeight = ($('#results').height() - 30) / allPlots.length 
             plotHeight -= margin_val;
             placeholder.css("height",plotHeight);
         });
@@ -234,6 +234,43 @@ Graph setup functions
         
         $('#results').on("plotunselected",function(){
             selZoomButton.attr("disabled","disabled");});
+        
+        $('#results').on("plotzoom",function(evt,plot){
+//            console.log("data:",data);
+//            var plot = data[0];
+//            console.log(plot);
+//            console.log(plot.getAxes());
+            var xaxis = plot.getAxes().xaxis;
+            var new_range = xaxis.max - xaxis.min;
+            var max_range = xaxis.datamax - xaxis.datamin;
+            
+            var inv_fraction = max_range/new_range;
+            console.log("fraction:",inv_fraction);
+            $('#graphScrollInner').width($('#graphScrollOuter').width() * inv_fraction);
+            
+            var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
+            var left_amt_px = $('#graphScrollInner').width() * left_fraction;
+            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
+            $('#graphScrollOuter').scrollLeft(left_amt_px);
+            
+        });
+        $('#results').on("plotpan",function(evt,plot,args){
+//            console.log("args:",args);
+            var xaxis = plot.getAxes().xaxis;
+            var max_range = xaxis.datamax - xaxis.datamin;
+            
+            var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
+            
+            var left_amt_px = $('#graphScrollInner').width() * left_fraction;
+//            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
+            
+            $('#graphScrollOuter').scrollLeft(left_amt_px);
+        });
+        $('#graphScrollOuter').on("scroll",function(evt){
+//            console.log("evt:",evt);
+            console.log("'scroll left':",$(this).scrollLeft());
+        });
+        
     }
     
     /**********************
@@ -249,6 +286,8 @@ Graph setup functions
                     item.clearSelection();
                     item.pan({left:-1*evt.originalEvent.wheelDeltaX});
                 });
+                
+//                $('#graphScrollInner').trigger("scroll");
             }
         });
         
@@ -965,6 +1004,11 @@ to dismiss)</div>').on("click",function(){div.hide()});
     function setup(){
         general_setup();
         general_zoompan();
+        
+//        $('#simulation-pane').on("resize",function(){
+//            console.log("width:",$('#graphScrollOuter').width());
+//            $('#graphScrollInner').width($('#graphScrollOuter').width() * 2);
+//        });
     }
 /*********************
 Exports

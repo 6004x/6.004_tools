@@ -20,8 +20,10 @@ $(function() {
     $('#maximise_simulation').click(activeButton(split.maximiseRight));
 
     $('#simulation-pane').append($('<div class="btn-toolbar" id="graph-toolbar"></div>'),
-//                                 $('<div style="height:46px"></div>'),
-                                 $('<div id="results"></div>'));
+                                 $('<div id="results"></div>'),
+                                 $('<div id="graphScrollOuter">\
+<div id="graphScrollInner"></div></div>')
+                                );
 
     // Make an editor
     var mode = 'jsim';
