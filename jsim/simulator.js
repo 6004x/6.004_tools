@@ -341,9 +341,10 @@ Graph setup functions
             for (var i = 0; i < dataset.length; i += 1) {
                 var series = dataset[i];
                 
-                posTextDiv.find('.xpos').text("X = "+suffix_formatter(pos.x)+series.xUnits);
+                posTextDiv.find('.xpos').text(suffix_formatter(pos.x)+series.xUnits);
     
                 if (!compactPlot){
+                    posTextDiv.find('.xpos').prepend("X = ");
                     var y = interpolate(series,pos.x);
                     
                     var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
@@ -624,6 +625,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
     
     function addCloseBtn(div){
         var closeBtn = $('<button class="close plot-close">\u00D7</button>');
+//        closeBtn.tooltip({title:"Close Plot",delay:100,container:'body'})
         closeBtn.on("click",function(){
             div.hide();
             allPlots.splice(allPlots.indexOf(div.find('.placeholder').data("plot")),1);
