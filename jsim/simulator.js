@@ -586,6 +586,8 @@ data-toggle="modal" data-target="#addPlotModal"><i class="icon-plus"></i> Add Pl
                     break;
             }
         });
+        addPlotButton.attr("disabled","disabled");
+        
         var btnGroup = $('<div class="btn-group"></div>').append(addPlotButton/*, closePlotButton*/);
         tlbar.prepend(btnGroup);
     }
@@ -750,8 +752,9 @@ to dismiss)</div>').on("click",function(){div.hide()});
                 options.yaxis.font = {color:'rgba(0,0,0,0)',
                                       size:1
                                      }
-                options.legend = {show:false/*container:ldiv*/};
-//                console.log("options:",options);
+//                if (plot_nodes.length == 1){
+//                    options.legend = {show:false/*container:ldiv*/};
+//                }
             } else {
                 options.yaxis.axisLabel = current ? 'Amps (A)' : 'Volts (V)';
 //                options.xaxis.axisLabel = 'Time (s)';
@@ -882,9 +885,9 @@ to dismiss)</div>').on("click",function(){div.hide()});
         var plots = parsed.plots;
         
         allPlots = [];
-        $('#graph-toolbar').empty();
-        general_zoompan();
-        general_setup();
+//        $('#graph-toolbar').empty();
+//        general_zoompan();
+//        general_setup();
         
         if (netlist.length === 0) {
             div.html("</br>Empty netlist!");
@@ -922,6 +925,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
         
         try {
             current_analysis = analyses[0];
+            $('#addplot-btn').removeAttr("disabled");
             switch (current_analysis.type) {
             case 'tran':
                 tranProgress.show();
@@ -955,9 +959,15 @@ to dismiss)</div>').on("click",function(){div.hide()});
 //        console.log("current results:",current_results);
     }
 
+    
+    function setup(){
+        general_setup();
+        general_zoompan();
+    }
 /*********************
 Exports
 **********************/
-    return {simulate:simulate};
+    return {setup:setup,
+            simulate:simulate};
     
 }());

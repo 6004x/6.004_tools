@@ -50,7 +50,7 @@ $(function() {
         editor.clearErrors();
     })]);
     
-    
+    Simulator.setup();
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
     }
