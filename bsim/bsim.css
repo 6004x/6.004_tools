@@ -32,7 +32,7 @@ button.btn {
 
 .maximised #editor {
     width: -webkit-calc(100% - 250px);
-    width: calc(100% - 260px);
+    width: calc(100% - 250px);
 }
 
 .regfile .register {

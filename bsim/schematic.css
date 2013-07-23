@@ -1,0 +1,81 @@
+text {
+    font-family: Menlo, Monaco, 'Deja Vu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
+    text-anchor: middle;
+    font-size: 10pt;
+    stroke: none;
+    fill: gray;
+}
+rect.border {
+    fill: none;
+    stroke: black;
+}
+
+text {
+    fill: gray;
+    stroke: none;
+}
+
+polyline, rect, polygon {
+    fill: none;
+    stroke: gray;
+}
+
+.permanent polyline, .permanent rect, .permanent polygon {
+    stroke: black;
+}
+
+.permanent text {
+    fill: black;
+}
+
+.mux-selector text {
+    fill: red !important;
+}
+text.path-value {
+    fill: blue;
+    text-anchor: start;
+    visibility: hidden;
+}
+.process text.process-label {
+    font-size: 12pt;
+}
+
+/*.wdsel1 polyline, .wdsel1 rect, .wdsel1 polygon,
+.pcsel0 polyline, .pcsel0 rect, .pcsel0 polygon,
+.werf1 polyline, .werf1 rect, .werf1 polygon,
+.wasel0 polyline, .wasel0 rect, .wasel0 polygon,
+.asel0 polyline, .asel0 rect, .asel0 polygon,
+.bsel1 polyline, .bsel1 rect, .bsel1 polygon,
+.wr_ polyline, .wr_ rect, .wr_ polygon,
+.ra2sel_ polyline, .ra2sel_ rect, .ra2sel_ polygon {
+    stroke: black;
+}
+
+.wdsel1 text,
+.pcsel0 text,
+.werf1 text,
+.wasel0 text,
+.asel0 text,
+.bsel1 text,
+.wr_ text,
+.ra2sel_ text {
+    fill: black;
+}
+
+.wdsel1 text.path-value,
+.pcsel0 text.path-value,
+.werf1 text.path-value,
+.wasel0 text.path-value,
+.asel0 text.path-value,
+.bsel1 text.path-value,
+.wr_ text.path-value,
+.ra2sel_ text.path-value,*/
+.permanent text.path-value {
+    visibility: visible;
+    fill: blue;
+}
+
+#schematic-view .disassembly td:nth-child(3) {
+    width: 60px;
+    max-width: 50px;
+}

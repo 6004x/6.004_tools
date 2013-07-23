@@ -57,7 +57,8 @@ BSim.MemoryView = function(container, beta) {
     };
 
     var initialise = function() {
-        mTable = new BigTable(container, 140, 350, 22, 2);
+        var height = mContainer.data('height') || 350;
+        mTable = new BigTable(mContainer, 140, height, 22, 2);
 
         mBeta.on('change:word', beta_change_word);
         mBeta.on('change:bulk:word', beta_bulk_change_word);
