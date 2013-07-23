@@ -502,15 +502,12 @@ Graph setup functions
     ***********************/
     function general_setup(){
         var tlbar = $('#graph-toolbar');
-        var addPlotButton = $('<button class="btn" id="addplot-btn">\
-<i class="icon-plus"></i> Add Plot</button>');
 //        var closePlotButton = $('<button class="btn" id="closeplot-btn">\
 //<i class="icon-minus"></i></button>').tooltip({delay:100,title:"Remove Plot",
 //                                                           container:'body'});
         
-        var btnGroup = $('<div class="btn-group"></div>').append(addPlotButton/*, closePlotButton*/);
+        
 //        tlbar.append(closePlotButton);
-        tlbar.prepend(btnGroup/*addPlotButton*/);
         
 //        var toggled = false;
 //        closePlotButton.popover({placement:'top',content:"Click on a graph to close it. "+
@@ -537,13 +534,46 @@ Graph setup functions
 //            console.log("toggled:",toggled);
 //        });
         
+        var addPlotModal = $('<div id="addPlotModal" class="modal hide fade" \
+aria-hidden="true">\
+<div class="modal-header">\
+<button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>\
+<h3>Add Plot</h3>\
+</div>\
+<div class="modal-body">\
+<p>Enter one or more node names, separated by commas or spaces, to be plotted on a single \
+graph:</p><input id="addPlotInput" type="text" placeholder="New nodes...">\
+</div>\
+<div class="modal-footer">\
+<button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>\
+<button class="btn btn-primary" data-dismiss="modal" id="addPlotAccept">Add Plot</button>\
+</div>\
+</div>');
+        
+        addPlotModal.modal({show:false});
+        addPlotModal.on("shown",function(){
+            $('#addPlotInput').val("")
+            $('#addPlotInput').focus();
+        });
+        $('#simulation-pane').append(addPlotModal);
+        
+        $('#addPlotInput').keyup(function(evt){
+            if (evt.keyCode == 13){
+                $('#addPlotAccept').click();
+            }
+        });
+        
+        var addPlotButton = $('<button class="btn" type="button" id="addplot-btn" \
+data-toggle="modal" data-target="#addPlotModal"><i class="icon-plus"></i> Add Plot</button>');
         addPlotButton.tooltip({delay:100,title:"Add Plot",placement:'top',
-                               container:'body'}).on("click",function(){
-//            console.log("current results:",current_results);
+                               container:'body'});
+        
+        $('#addPlotAccept').on("click",function(){
             $('button.reset-zoom').click();
-            var newPlot = prompt("New node(s)?");
-            newPlot = [newPlot.match(/[^,\s]+/g)];
-            console.log(newPlot);
+            
+            var newPlotRaw = $('#addPlotInput').val();
+            newPlot = [newPlotRaw.match(/[^,\s]+/g)];
+//            console.log(newPlot);
             
             switch (current_analysis.type){
                 case 'tran':
@@ -556,6 +586,8 @@ Graph setup functions
                     break;
             }
         });
+        var btnGroup = $('<div class="btn-group"></div>').append(addPlotButton/*, closePlotButton*/);
+        tlbar.prepend(btnGroup);
     }
     
     
