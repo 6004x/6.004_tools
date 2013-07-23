@@ -11,7 +11,7 @@
 .posText {
     position:absolute;
     background-color:white;
-    opacity: .65;
+    opacity: .75;
     padding: 2px;
     font-size:10pt;
     text-align:left;
@@ -53,7 +53,7 @@
 
 .plot-wrapper {
     padding-left:10px;
-    margin-bottom:-10px;
+    margin-bottom:7px;
     margin-right:20px;
     z-index:10;
 }
@@ -76,7 +76,7 @@
 }
 
 #results {
-    overflow:scroll;
+    overflow-y:scroll;
     position:relative;
 /*    top:40px;*/
     border-top: 1px solid #ddd;

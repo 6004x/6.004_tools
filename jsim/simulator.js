@@ -145,7 +145,7 @@ Graph setup functions
             var margin_val;
             try{
                 margin_val = $('.plot-wrapper').css("margin-bottom").match(/-?\d+/)[0];
-                margin_val /= 2;
+//                margin_val /= 2;
             } catch (err) {
                 margin_val = 0;
             }
@@ -154,7 +154,8 @@ Graph setup functions
             
             // plot height = total height / number of plots - margin space,
             // bounded by min-height; -20 for scrollbar width
-            var plotHeight = ($('#results').height() - 20) / allPlots.length - margin_val;
+            var plotHeight = ($('#results').height() - 40) / allPlots.length 
+            plotHeight -= margin_val;
             placeholder.css("height",plotHeight);
         });
     }
@@ -611,10 +612,10 @@ data-toggle="modal" data-target="#addPlotModal"><i class="icon-plus"></i> Add Pl
             color:"#545454",
             tickColor:"#dddddd",
             tickFormatter:suffix_formatter,
+            labelHeight:1,
             axisLabelUseCanvas:true,
             axisLabelColor:'rgb(84,84,84)',
-            axisLabelPadding:5,
-            overflow:scroll
+            axisLabelPadding:5
         },
         series:{
             shadowSize:0
@@ -730,7 +731,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
             var wdiv = $('<div class="plot-wrapper"></div>');
             addCloseBtn(wdiv);
             if (compactPlot){
-                wdiv.css("margin-bottom",'-20px');
+                wdiv.css("margin-bottom",'-10px');
             }
             var ldiv;
             if (compactPlot){
@@ -903,7 +904,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
             return;
         }
         
-        if (plots.length > 4){
+        if (plots.length >= 4){
             compactPlot = true;
         } else {
             compactPlot = false;
