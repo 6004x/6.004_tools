@@ -905,17 +905,38 @@ to dismiss)</div>').on("click",function(){div.hide()});
             compactPlot = false;
         }
         
+        
+        var tranProgress = $('<div><span></span></br></div>');
+//                             <span></span><div class="progress"><div class="bar"\
+//style="width:0%"></div></div></div>');
+//        var tranProgressBar = tranProgress.find('.bar');
+        tranProgress.hide();
+        div.append(tranProgress);
+        var tranHalt = false;
+        var haltButton = $('<button class="btn btn-danger">Halt</button>');
+        haltButton.tooltip({title:'Halt Simulation',delay:100,container:'body'});
+        haltButton.on("click",function(){
+            tranHalt = true;
+        });
+        tranProgress.append(haltButton);
+        
         try {
             current_analysis = analyses[0];
             switch (current_analysis.type) {
             case 'tran':
+                tranProgress.show();
+                var progressTxt = tranProgress.find('span');
                 cktsim.transient_analysis(netlist, current_analysis.parameters.tstop,
                                           [], function(pct_complete, results) {
-                    console.log("percent complete:",pct_complete);
+//                    console.log("percent complete:",pct_complete);
+//                    tranProgressBar.css("width",pct_complete+"%");
+                    progressTxt.text("Performing Transient Analysis... "+pct_complete+"%");
                     if (results){
+                        tranProgress.hide();
                         current_results = results;
                         tran_plot(div, current_results, plots);
                     }
+                    return tranHalt;
                 });
                 break;
             case 'ac':
