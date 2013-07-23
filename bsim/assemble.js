@@ -11,10 +11,12 @@
             this.file = stream_or_file.file();
             this.line = stream_or_file.line_number();
             this.column = stream_or_file.column();
-        } else {
+        } else if(stream_or_file !== undefined && line !== undefined) {
             this.file = stream_or_file;
             this.line = line;
             this.column = 0;
+        } else {
+            throw new Error("It is mandatory to provide either a stream or a file/line pair to SyntaxError.");
         }
         this.message = message;
     };
