@@ -613,7 +613,8 @@ data-toggle="modal" data-target="#addPlotModal"><i class="icon-plus"></i> Add Pl
             tickFormatter:suffix_formatter,
             axisLabelUseCanvas:true,
             axisLabelColor:'rgb(84,84,84)',
-            axisLabelPadding:5
+            axisLabelPadding:5,
+            overflow:scroll
         },
         series:{
             shadowSize:0
