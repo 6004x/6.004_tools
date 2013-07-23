@@ -1,6 +1,7 @@
 module("Views");
 
 test("BigTable", function() {
+    expect(20);
     var fixture = $('#qunit-fixture');
     var container = $('<div>').appendTo(fixture);
     var table = new BigTable(container, 300, 180, 20, 3);
@@ -63,5 +64,26 @@ test("BigTable", function() {
             start();
         });
     });
+});
+
+test("Register File", function() {
+    var fixture = $('#qunit-fixture');
+    var container = $('<div>').appendTo(fixture);
+    var beta = new FakeBeta();
+    _.extend(beta, Backbone.Events);
+
+    var regfile = new BSim.RegfileView(container, beta);
+
+    var html = container.find('table');
+    equal(html.find('td.value').length, 32, "Appropriate number of registers displayed.");
+
+    beta.trigger('change:register', 2, 0xDEADBEEF);
+    equal(html.find('tr:nth-child(3) > td.value:first').text(), "deadbeef", "Single-register update works.");
+    beta.trigger('change:register', 0, true);
+    equal(html.find('tr:first > td.value:first').text(), "00000001", "Booleans become integers.");
+
+    beta.trigger('change:bulk:register', {0: 42, 31: 24});
+    equal(html.find('tr:first > td.value:first').text(), "0000002a", "Bulk change works (1)");
+    equal(html.find('tr:last > td.value:last').text(), "00000018", "Bulk change works (2)");
 });
 

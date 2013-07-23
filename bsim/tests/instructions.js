@@ -6,6 +6,8 @@ var FakeBeta = function() {
     var mMemory = new Uint32Array(32);
     var mPC = 0;
     var mOptions = {};
+    var mCycleCount = 0;
+    var mTTYContent = '';
 
     this.writeRegister = function(register, value) {
         mRegisters[register] = value;
@@ -41,6 +43,22 @@ var FakeBeta = function() {
 
     this.handleIllegalInstruction = function(option) {
         return false;
+    };
+
+    this.getCycleCount = function() {
+        return mCycleCount;
+    };
+
+    this.setCycleCount = function(count) {
+        mCycleCount = count;
+    };
+
+    this.setTtyContent = function(value) {
+        mTTYContent = value;
+    };
+
+    this.ttyContent = function() {
+        return mTTYContent;
     };
 };
 

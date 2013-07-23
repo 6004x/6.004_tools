@@ -7,13 +7,17 @@
         <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script src="http://code.jquery.com/qunit/qunit-1.12.0.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/blanket.js/1.1.4/blanket.min.js"></script>
         <script src="../assemble.js"></script>
         <script>BSim = {};</script>
-        <script src="../simulation/beta.js"></script>
-        <script src="../simulation/bsim_common.js"></script>
-        <script src="../simulation/beta_instructions.js"></script>
-        <script src="../simulation/memory.js"></script>
-        <script src="../simulation/big_table.js"></script>
+        <script src="../simulation/beta.js" data-cover></script>
+        <script src="../simulation/bsim_common.js" data-cover></script>
+        <script src="../simulation/beta_instructions.js" data-cover></script>
+        <script src="../simulation/memory.js" data-cover></script>
+        <script src="../simulation/big_table.js" data-cover></script>
+        <script src="../simulation/regfile_view.js" data-cover></script>
+        <script src="../verify.js" data-cover></script>
         <script src="../external/sstream.js"></script>
         <script src="../external/dequeue.js"></script>
         <link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.12.0.css">
@@ -21,12 +25,12 @@
     <body>
         <div id="qunit"></div>
         <div id="qunit-fixture"></div>
-        <script src="http://code.jquery.com/qunit/qunit-1.12.0.js"></script>
         <script src="assemble.js"></script>
         <script src="memory.js"></script>
         <script src="emulation.js"></script>
         <script src="instructions.js"></script>
         <script src="common.js"></script>
         <script src="views.js"></script>
+        <script src="verifier.js"></script>
     </body>
 </html>
