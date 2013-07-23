@@ -10,7 +10,8 @@
 
 .posText {
     position:absolute;
-    opacity: .85;
+    background-color:white;
+    opacity: .65;
     padding: 2px;
     font-size:10pt;
     text-align:left;

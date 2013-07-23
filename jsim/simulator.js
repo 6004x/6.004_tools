@@ -343,20 +343,20 @@ Graph setup functions
                 
                 posTextDiv.find('.xpos').text(suffix_formatter(pos.x)+series.xUnits);
     
-                if (!compactPlot){
-                    posTextDiv.find('.xpos').prepend("X = ");
-                    var y = interpolate(series,pos.x);
-                    
-                    var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
+//                if (!compactPlot){
+                posTextDiv.find('.xpos').prepend("X = ");
+                var y = interpolate(series,pos.x);
                 
-                    if (innerPosTextDivs["series"+i]===undefined){
-                        var innerDiv = $("<div>"+divText+"</div>");
-                        innerPosTextDivs["series"+i] = innerDiv;
-                        posTextDiv.append(innerPosTextDivs["series"+i]);
-                    } else {
-                        innerPosTextDivs["series"+i].text(divText);
-                    }
+                var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
+            
+                if (innerPosTextDivs["series"+i]===undefined){
+                    var innerDiv = $("<div>"+divText+"</div>");
+                    innerPosTextDivs["series"+i] = innerDiv;
+                    posTextDiv.append(innerPosTextDivs["series"+i]);
+                } else {
+                    innerPosTextDivs["series"+i].text(divText);
                 }
+//                }
             }
             posTextDiv.show();
         }
@@ -475,21 +475,21 @@ Graph setup functions
                 rangeTextDiv.find('.xrange').text("X range = "+suffix_formatter(xrange)+
                                               series.xUnits);
     
-                if (!compactPlot){
-                    var y1 = interpolate(series, ranges.xaxis.from);
-                    var y2 = interpolate(series, ranges.xaxis.to);
-                    var yrange = y2-y1;
-                    
-                    var divText = series.label+" range = "+
-                        suffix_formatter(yrange)+series.yUnits;
-                    if (innerRangeTextDivs["series"+i]===undefined){
-                        var innerDiv = $("<div>"+divText+"</div>");
-                        innerRangeTextDivs["series"+i] = innerDiv;
-                        rangeTextDiv.append(innerRangeTextDivs["series"+i]);
-                    } else {
-                        innerRangeTextDivs["series"+i].text(divText);
-                    }
+//                if (!compactPlot){
+                var y1 = interpolate(series, ranges.xaxis.from);
+                var y2 = interpolate(series, ranges.xaxis.to);
+                var yrange = y2-y1;
+                
+                var divText = series.label+" range = "+
+                    suffix_formatter(yrange)+series.yUnits;
+                if (innerRangeTextDivs["series"+i]===undefined){
+                    var innerDiv = $("<div>"+divText+"</div>");
+                    innerRangeTextDivs["series"+i] = innerDiv;
+                    rangeTextDiv.append(innerRangeTextDivs["series"+i]);
+                } else {
+                    innerRangeTextDivs["series"+i].text(divText);
                 }
+//                }
             }
             if (!compactPlot){
                 rangeTextDiv.show();
@@ -732,10 +732,10 @@ to dismiss)</div>').on("click",function(){div.hide()});
                 wdiv.css("margin-bottom",'-20px');
             }
             var ldiv;
-//            if (compactPlot){
-//                ldiv = $('<div class="plot-legend"></div>');
-//                wdiv.append(ldiv);
-//            }
+            if (compactPlot){
+                ldiv = $('<div class="plot-legend"></div>');
+                wdiv.append(ldiv);
+            }
             var plotdiv = get_plotdiv();
             wdiv.append(plotdiv);
             div.append(wdiv);
