@@ -250,6 +250,9 @@ BSim.Beta.Opcodes = {};
         alufn: '/',
         exec: function DIV(a, b, c) {
             if(!this.isOptionSet('div')) return this.handleIllegalInstruction();
+            if(this.readRegister(b) === 0) {
+                throw new BSim.Beta.RuntimeError("Division of " + this.readRegister(a) + " by zero");
+            }
             this.writeRegister(c, (this.readRegister(a) / this.readRegister(b))|0);
         }
     });
@@ -261,6 +264,9 @@ BSim.Beta.Opcodes = {};
         has_literal: true,
         exec: function DIVC(a, literal, c) {
             if(!this.isOptionSet('div')) return this.handleIllegalInstruction();
+            if(literal === 0) {
+                throw new BSim.Beta.RuntimeError("Division of " + this.readRegister(a) + " by zero");
+            }
             this.writeRegister(c, (this.readRegister(a) / literal)|0);
         }
     });
@@ -493,7 +499,7 @@ BSim.Beta.Opcodes = {};
         opcode: 0x3B,
         name: 'XNORC',
         alufn: '~^',
-        exec: function XNORC(a, b, c) {
+        exec: function XNORC(a, literal, c) {
             this.writeRegister(c, ~(this.readRegister(a) ^ literal));
         }
     });
