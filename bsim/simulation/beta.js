@@ -34,7 +34,7 @@ BSim.Beta = function() {
     // variables to hold the frequently accessed members of mCurrentStep, then stuff them
     // in at the end of each cycle.
     var mCurrentStepRegisters = {};
-    var mCurrentStepWords = {};
+    var mCurrentStepWords = [];
 
     // Information not strictly related to running the Beta, but needed in BSim
     var mBreakpoints = {};
@@ -159,8 +159,7 @@ BSim.Beta = function() {
         address &= 0xFFFFFFFC; // Force multiples of four.
 
         // Implement undo
-        if(!_.has(mCurrentStepWords, address))
-            mCurrentStepWords[address] = mMemory.readWord(address);
+         mCurrentStepWords.push([address, mMemory.readWord(address)]);
 
         mMemory.writeWord(address, value);
 
@@ -363,7 +362,7 @@ BSim.Beta = function() {
         }
         // Prepare undo
         mCurrentStep = new UndoStep(mPC);
-        mCurrentStepWords = {};
+        mCurrentStepWords = [];
         mCurrentStepRegisters = {};
 
         mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
@@ -420,7 +419,11 @@ BSim.Beta = function() {
         _.each(step.registers, function(value, register) {
             self.writeRegister(register, value);
         });
-        _.each(step.words, function(value, address) {
+        var done = {};
+        _.each(step.words, function(tuple) {
+            var address = tuple[0], value = tuple[1];
+            if(done[address]) return;
+            done[address] = true;
             self.writeWord(address, value);
         });
         self.setPC(step.pc, true);
