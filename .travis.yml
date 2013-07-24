@@ -23,4 +23,4 @@ notifications:
 
 script: phantomjs test/run-qunit.js 'http://localhost:8000/test/all.html'
 
-after_success: wput . ftp://$FTP_USER:$FTP_PASSWORD@6004.mattpf.net/web/
+after_success: wput -nc -B . ftp://$FTP_USER:$FTP_PASSWORD@6004.mattpf.net/web/
