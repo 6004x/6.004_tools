@@ -33,7 +33,7 @@
     </head>
     <script>
     $(document).ready(function(){
-        FileSystem.setup('antonio', 'http://18.62.29.122:8080');
+        FileSystem.setup('dontony', 'https://18.62.29.122:6004');
 
             var mode='tsim';
             editor = new Editor('.editor_split',mode);
@@ -59,7 +59,7 @@
             Folders.refresh();
 
             editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')])
-            
+            editor.openTab('','')
             function tmsimAssemble(){
                 var file=new Object();
                 file.name=editor.currentTab();
@@ -73,9 +73,7 @@
                         console.log(typeof parsedDict)
                         // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
                         tsmparse.flattenMachine(parsedDict);
-                        var results = tsmparse.getResults();
-                        
-                        editor.openTab(file.name+'done', results, true);
+                        editor.openTab(file.name+'done', tsmparse.getResults(), true);
                     } catch(e){
                         editor.clearErrors();
                         console.log(e);

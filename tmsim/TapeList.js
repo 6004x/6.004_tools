@@ -224,6 +224,9 @@ function TapeList(){
 		console.log(mArray===tArray)
 		return false;
 	}
+	this.cloneList = function(){
+		
+	}
 	function tlnode(newData){
 		this.data = newData;
 		this.next = null;

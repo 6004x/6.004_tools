@@ -13,13 +13,13 @@ var Folders=new function(){
 
         parentNode.html('');
         //clears out the old filelist
-        var username=FileSystem.getUserName();
+        
         //FileSystem keeps track of the username
-        $('.testDiv').text(username);
 
         //fetch the filelist from server, then add the files to the filesystem.
         FileSystem.getFileList(
             function(data){
+                var username=FileSystem.getUserName();
                 fileList=new Object;
                 fileList[username]=data;
                 addFiles(fileList, parentNode, '');
@@ -300,7 +300,7 @@ var Folders=new function(){
     }
 
     function displayFile(file){
-        editor.openTab(file.name, file.data, true);
+        editor.openTab(file.name, file.data, true); 
         openFiles.push(file);
         $(window).resize();
     }
@@ -411,7 +411,6 @@ var Folders=new function(){
             }
             if(fileName!=null)
                 FileSystem.newFile(new_file.name, new_file.data, function(data){
-                    console.log(data.status + 'new file');
                     displayFile(data);
                     refreshFileList();
                     modal.modal('hide');
@@ -426,12 +425,14 @@ var Folders=new function(){
     }
     function deleteFile(path){
         console.log(path);
-        addModal('deleteFile', 'Delete File', 'Are you sure you want to delete ' + path+'?', 'Delete File', 'Cancel', function(){
+        addModal('deleteFile', 'Delete File', 'Are you sure you want to delete ' + path+'?', 'Delete File', 'Cancel', function(modal){
             var confirm = true;
             if(confirm){
                 FileSystem.deleteFile(path, function(data){
                     refreshFileList();
                     showDelete(data);
+                    modal.modal('hide');
+                    modal.detach();
                 });
             }
         })

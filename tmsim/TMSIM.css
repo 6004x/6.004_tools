@@ -1,5 +1,7 @@
 .tape_div{
-	background-color:white;
+	background-color : white;
+	text-align : center ;
+	vertical-align: center;
 }
 .tape_segment{
 	border-style: solid;

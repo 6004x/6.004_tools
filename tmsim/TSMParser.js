@@ -263,7 +263,7 @@ function TSMparser(){
 				var tapeName = args[0];
 				var tapeContents = args.slice(1);
 				list_of_tapes[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
-				list_of_tapes[tapeName].printLL();
+				// list_of_tapes[tapeName].printLL();
 			},
 			result:function(args, lineNumber){
 				var tapeName = args[0];

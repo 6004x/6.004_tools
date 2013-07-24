@@ -44,12 +44,14 @@ var FileSystem= function(){
         //  writeLocalStorageToServer();
         //  return fileTree;
         // }
-        if(mUsername){
-            sendAjaxRequest('/',null,'json', 'filelist',
+        if(mServer){
+            sendAjaxRequest('/',null,'json', 'getFileList',
                 function(data, status){
                     if(status=='success'){
                         // console.log('callback in filesys')
-                        fileTree=data;
+                        console.log(data.data)
+                        mUsername = data.user;
+                        fileTree=data.data;
                         allFiles=[];
                         allFolders=[];
                         makeListOfFiles(fileTree,'');
@@ -60,7 +62,8 @@ var FileSystem= function(){
                         writeTreeToLocalStorage();
                         updated=true;
                         online=true;
-                        callback(data);
+                        callback(data.data);
+
                     }
                 }
             ,   function(req, status, error){
@@ -116,25 +119,6 @@ var FileSystem= function(){
     function writeLocalStorageToServer(){
         //tobe implemented;
     }
-    function getFile(fileName, callback, callbackFailed){
-        //username or some sort of authentication
-        var file= getFileFromTree(fileName);
-        
-        if(online){
-            sendAjaxRequest(fileName,null, 'json', 'getFile', function(data, status){
-                if(status=='success'){
-                    callback(data);
-                    writeFileToTree(data.name, data.data, true);
-                }
-                console.log(status)
-            }, callbackFailed);
-        }else if (file){
-            getFileFromTree[onServer]=false;
-            return callback(file, 'success');
-        } else {
-            alert('file could not be retrieved')
-        }
-    }
     
     function traverseTree(fileName, action){
         //TODO NEEDS ERROR HANDLING
@@ -177,9 +161,30 @@ var FileSystem= function(){
     }
 
 
+    //SERVER FUNCTIONS
+    function getFile(fileName, callback, callbackFailed){
+        //username or some sort of authentication
+        var file= getFileFromTree(fileName);
+        
+        if(online){
+            sendAjaxRequest(fileName,null, 'json', 'getFile', function(data, status){
+                if(status=='success'){
+                    callback(data);
+                    writeFileToTree(data.name, data.data, true);
+                }
+                console.log(status)
+            }, callbackFailed);
+        }else if (file){
+            getFileFromTree[onServer]=false;
+            return callback(file, 'success');
+        } else {
+            alert('file could not be retrieved')
+        }
+    }
     function saveFile(fileName, fileData, callback, callbackFailed){
         sendAjaxRequest(fileName, fileData,'json', 'saveFile', function(data, status){
-            callback(data, status);
+            
+                    callback(data);
             writeFileToTree(fileName, fileData);
             updated=false;
         }, callbackFailed);
@@ -187,7 +192,7 @@ var FileSystem= function(){
     }
 
     function newFile(fileName, fileData, callback, callbackFailed){
-        sendAjaxRequest(fileName, fileData,'json', 'newFile', callback, callbackFailed);
+        sendAjaxRequest(fileName, fileData,'json', 'saveFile', callback, callbackFailed);
         updated=false;
     }   
     function newFolder(folderName, callback, callbackFailed){
@@ -219,7 +224,7 @@ var FileSystem= function(){
 
 
         url=mServer+filePath;
-        var data={dummy:'dummy', username:mUsername, query:query, fname:filePath, fdata:fileData}
+        var data={query:query, fname:filePath, fdata:fileData}
         var req=$.ajax({
                 type:"POST",
                 url:url, 
@@ -249,7 +254,17 @@ var FileSystem= function(){
     exports.renameFile =renameFile;
 
     exports.getServerName=function(){return mServer;};
-    exports.getUserName=function(){return mUsername;};
+    exports.getUserName=function(){
+        if(!mUsername)
+            sendAjaxRequest('/', null, "json", "getUser", function(data){
+                mUsername = data.user;
+                console.log(data);
+                return mUsername;
+            })
+        else
+            return mUsername;
+        
+    };
     exports.isFile=function(fileName){
         // console.log(fileName+' check if in allfiles');
         return _.contains(allFiles, fileName)
@@ -261,7 +276,6 @@ var FileSystem= function(){
     function setup(username, server){
 
         mServer=server||DEFAULT_SERVER;
-        mUsername=username;
     }
 
     exports.setup=setup;
