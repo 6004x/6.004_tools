@@ -217,6 +217,7 @@ Graph setup functions
         });
         
         selZoomButton.on("click",function(){
+            selZoomButton.tooltip('hide');
             ranges = selRanges;
             console.log("ranges:",ranges);
             if (ranges){
@@ -229,6 +230,7 @@ Graph setup functions
                     item.draw();
                     item.clearSelection();
                 });
+                $('#results').triggerHandler("plotzoom",allPlots[0]);
             }
         });
         
@@ -282,7 +284,7 @@ Graph setup functions
 //            console.log("hit1; timeout:",updateScrollTimeout);
             if (!updateScrollTimeout){
 //                console.log('hit2');
-                setTimeout(function(){syncScroll(evt);},50)
+                setTimeout(function(){syncScroll(evt);},1)
             }
         });
         
@@ -1054,11 +1056,11 @@ to dismiss)</div>').on("click",function(){div.hide()});
         general_setup();
         general_zoompan();
         
-        $('#simulation-pane').on("resize",function(){
-//            console.log("width:",$('#graphScrollOuter').width());
-//            $('#graphScrollInner').width($('#graphScrollOuter').width());
-            $('.reset-zoom').click();
-        });
+//        $('#simulation-pane').on("resize",function(){
+////            console.log("width:",$('#graphScrollOuter').width());
+////            $('#graphScrollInner').width($('#graphScrollOuter').width());
+//            $('#results').triggerHandler("plotzoom",allPlots[0]);
+//        });
     }
 /*********************
 Exports
