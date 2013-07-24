@@ -11,10 +11,12 @@
             this.file = stream_or_file.file();
             this.line = stream_or_file.line_number();
             this.column = stream_or_file.column();
-        } else {
+        } else if(stream_or_file !== undefined && line !== undefined) {
             this.file = stream_or_file;
             this.line = line;
             this.column = 0;
+        } else {
+            throw new Error("It is mandatory to provide either a stream or a file/line pair to SyntaxError.");
         }
         this.message = message;
     };
@@ -706,7 +708,6 @@
         if(checksum === null) {
             throw new SyntaxError("Expected checkoff checksum.", stream);
         }
-        console.log(this.prototype.constructor);
         return new this.prototype.constructor(url, name, checksum, stream.file(), stream.line_number());
     };
     Checkoff.prototype.assemble = function(context, out) {
@@ -720,7 +721,6 @@
                 name: this.name,
                 checksum: this.checksum.evaluate(context, true)
             };
-            console.log(context);
         }
     };
 
@@ -741,7 +741,6 @@
     PCheckoff.prototype.assemble = function(context, out) {
         Checkoff.prototype.assemble.call(this, context, out);
         if(out) {
-            console.log(context);
             context.checkoff.running_checksum = 36038;
             context.checkoff.addresses = {};
         }
@@ -779,7 +778,6 @@
             i32[0] += (address + i*4);
             i32[0] *= i+1;
             i32[0] += checksum;
-            console.log(i32[0]);
             checksum = i32[0];
         }
         return new Verify(address, list, checksum, stream.file(), stream.line_number());
@@ -842,13 +840,10 @@
         var parse_file = function(file, content, completion_callback, error_callback) {
             var stream = new StringStream(new FileStream(content, file));
             var errors = [];
-            var pending_includes = {};
             var waiting = 0;
             var completed = false;
 
             var insert_include = function(include) {
-                if(!_.has(pending_includes, include.filename)) pending_includes[include.filename] = [];
-                pending_includes[include.filename].push(include);
                 ++waiting;
                 FileSystem.getFile(include.filename, function(include_content) {
                     parse_file(include_content.name, include_content.data, function(syntax) {

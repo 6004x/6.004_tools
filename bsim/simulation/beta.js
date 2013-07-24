@@ -34,7 +34,7 @@ BSim.Beta = function() {
     // variables to hold the frequently accessed members of mCurrentStep, then stuff them
     // in at the end of each cycle.
     var mCurrentStepRegisters = {};
-    var mCurrentStepWords = {};
+    var mCurrentStepWords = [];
 
     // Information not strictly related to running the Beta, but needed in BSim
     var mBreakpoints = {};
@@ -100,7 +100,6 @@ BSim.Beta = function() {
     // Takes a list of breakpoint addresses and replaces all current breakpoints with them.
     this.setBreakpoints = function(breakpoints) {
         mBreakpoints = _.object(_.map(breakpoints, function(b) { return [b, true]; }));
-        console.log(mBreakpoints);
         this.trigger('add:bulk:breakpoint', breakpoints);
     };
 
@@ -160,8 +159,7 @@ BSim.Beta = function() {
         address &= 0xFFFFFFFC; // Force multiples of four.
 
         // Implement undo
-        if(!_.has(mCurrentStepWords, address))
-            mCurrentStepWords[address] = mMemory.readWord(address);
+         mCurrentStepWords.push([address, mMemory.readWord(address)]);
 
         mMemory.writeWord(address, value);
 
@@ -306,7 +304,6 @@ BSim.Beta = function() {
         if(this.isOptionSet('tty')) {
             this.mKeyboardInput = character; // TODO: buffering?
             mPendingInterrupts |= INTERRUPT_KEYBOARD;
-            console.log(character);
         }
     };
 
@@ -365,7 +362,7 @@ BSim.Beta = function() {
         }
         // Prepare undo
         mCurrentStep = new UndoStep(mPC);
-        mCurrentStepWords = {};
+        mCurrentStepWords = [];
         mCurrentStepRegisters = {};
 
         mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
@@ -396,7 +393,6 @@ BSim.Beta = function() {
                 ret = op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
             }
             if(ret === false) {
-                console.log("call failed");
                 this.setPC(old_pc, true);
             }
             mCurrentStep.registers = mCurrentStepRegisters;
@@ -423,7 +419,11 @@ BSim.Beta = function() {
         _.each(step.registers, function(value, register) {
             self.writeRegister(register, value);
         });
-        _.each(step.words, function(value, address) {
+        var done = {};
+        _.each(step.words, function(tuple) {
+            var address = tuple[0], value = tuple[1];
+            if(done[address]) return;
+            done[address] = true;
             self.writeWord(address, value);
         });
         self.setPC(step.pc, true);

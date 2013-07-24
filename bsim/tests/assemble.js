@@ -270,10 +270,8 @@ test("Macros work", function() {
         ok(success, "Defining a macro using block syntax on a single line assembles.");
     });
     assembler.assemble("macro.uasm", ".macro FOO() {", function(success, result) {
-        console.log(result);
         ok(!success, "Omitting the trailing brace in macro block syntax is illegal.");
     });
-// ok(true);
     assembler.assemble("macro.uasm", ".macro FOO() }", function(success, result) {
         ok(!success, "Omitting the leading brace in macro block syntax is illegal.");
     });
@@ -412,7 +410,6 @@ test(".ascii works", function() {
     });
 
     assembler.assemble("ascii.uasm", '.ascii "\\402"', function(success, result) {
-        console.log(result);
         ok(!success, "Octal numbers larger than 8-bits are illegal.");
     });
 

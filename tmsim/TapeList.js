@@ -153,11 +153,16 @@ function TapeList(){
 	this.toArray = function(){
 		var tempNode=first;
 		var arrayLL=[];
+		var index = 0; var currentIndex = 0;
 		while(tempNode!=null){
 			arrayLL.push(tempNode.data);
+			if(tempNode == current)
+				currentIndex = index;
 			tempNode=tempNode.next;
+			index++;
 		}
-		return arrayLL;
+
+		return {array:arrayLL, currentIndex:currentIndex};
 	}
 	this.printLL=function(){
 		console.log(self.toArray());
@@ -218,6 +223,9 @@ function TapeList(){
 		}
 		console.log(mArray===tArray)
 		return false;
+	}
+	this.cloneList = function(){
+		
 	}
 	function tlnode(newData){
 		this.data = newData;

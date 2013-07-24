@@ -2,6 +2,7 @@
 function TSM(){
 	var self=this;
 	var start_state;
+	var current_state;
 	var list_of_states;
 	//state has two characteristics:
 	/** 
@@ -24,6 +25,7 @@ function TSM(){
 			start_state=list_of_states[Object.keys(list_of_states)[0]];
 			console.log(Object.keys(list_of_states)[0]);
 		}
+		current_state = start_state;
 		return self;
 	}
 	this.replaceTape = function(tape){
@@ -53,13 +55,13 @@ function TSM(){
 		 console.log('ended turing machine with '+stepCount+' steps');
 		return mTape;
 	}
-	this.step=function(new_state){
-		var old_state=new_state;
+	this.step=function(new_state, tape){
+		var stepTape = tape || mTape;
 		var tapeRead=mTape.peek();
-		var state_transition=old_state.transition[tapeRead];
-		
+		var state_transition=new_state.transition[tapeRead];
+		current_state = new_state;
 		new_state=list_of_states[state_transition.new_state];
-		mTape.traverse(state_transition.write, state_transition.move);
+		stepTape.traverse(state_transition.write, state_transition.move);
 		// console.log(new_state);
 		if(state_transition.new_state === '*halt*'){
 			valid=false;
@@ -75,9 +77,8 @@ function TSM(){
 
 		return new_state;
 	}
-	this.compare = function(tape){
-		//compares tape to mTape
-		return mTape.equals(tape);
+	this.getCurrentState = function(){
+		return current_state;
 	}
 	return this;
 }

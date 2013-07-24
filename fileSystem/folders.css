@@ -1,5 +1,9 @@
 .sim_split{
-    background-color: yellow;
+    background-color: lightgray;
+    height:250px;
+}
+.open_indicator{
+    margin: 4px 10px 4px 4px ;
 }
 li:hover{
     text-decoration: underline;
