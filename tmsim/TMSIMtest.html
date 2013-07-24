@@ -33,7 +33,7 @@
     </head>
     <script>
     $(document).ready(function(){
-        FileSystem.setup('antonio', 'http://18.62.29.122:8080');
+        FileSystem.setup('dontony', 'https://18.62.29.122:6004');
 
             var mode='tsim';
             editor = new Editor('.editor_split',mode);
@@ -50,16 +50,16 @@
                     callback();
                 };
             }
-            // var split = new SplitUI('.span9', '.sim_split', '.editor_split')
-            // // Set up the split buttons.
-            // $('#maximise_editor').click(activeButton(split.maximiseBottom));
-            // $('#split_pane').click(activeButton(split.split));
-            // $('#maximise_simulation').click(activeButton(split.maximiseTop));   
+            var split = new SplitUI('.span9', '.sim_split', '.editor_split')
+            // Set up the split buttons.
+            $('#maximise_editor').click(activeButton(split.maximiseBottom));
+            $('#split_pane').click(activeButton(split.split));
+            $('#maximise_simulation').click(activeButton(split.maximiseTop));   
             Folders.setup('.span3', editor, mode);
             Folders.refresh();
 
             editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')])
-            
+            editor.openTab('','')
             function tmsimAssemble(){
                 var file=new Object();
                 file.name=editor.currentTab();
@@ -73,9 +73,7 @@
                         console.log(typeof parsedDict)
                         // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
                         tsmparse.flattenMachine(parsedDict);
-                        var results = tsmparse.getResults();
-                        
-                        editor.openTab(file.name+'done', results, true);
+                        editor.openTab(file.name+'done', tsmparse.getResults(), true);
                     } catch(e){
                         editor.clearErrors();
                         console.log(e);
@@ -83,13 +81,13 @@
                             editor.markErrorLine(file.name, e[i].message, e[i].lineNumber);
                         valid = false;
                     }
-                    // if(valid){
-                    //     $('#split_pane').click();
-                    //     console.log(tsmparse.getTSM())
-                    //     console.log(tsmparse.getLists());
-                    //     tmsim = new TMSIM('.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
-                        
-                    // }
+                    if(valid){
+                        $('.sim_split').html('');
+                        $('#split_pane').click();
+                        console.log(tsmparse.getTSM())
+                        console.log(tsmparse.getLists());
+                        tmsim = new TMSIM('.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
+                    }
                 }
             }
             
@@ -106,7 +104,7 @@
                 </ul>
                 <h1>TMSIM</h1>
             </div>
-            <div class='row row-fluid'>
+            <div class='row row-fluid mainWrapper'>
                 <div class="span3"></div>
                 <div class="span9">
                     <div class='editor_split'></div>

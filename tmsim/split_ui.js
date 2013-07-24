@@ -3,7 +3,7 @@
 
     var SplitUI = function(container, top_node, bottom_node) {
         var mContainer = $(container);
-        var mHeight = mContainer.height();
+        var mHeight = window.innerHeight;
         var mTop = $(top_node);
         var mBottom = $(bottom_node);
 
@@ -25,13 +25,13 @@
         };
 
         var maximise = function(maximise, minimise) {
-            maximise.show().height(mHeight).css('margin-top', 0);
+            maximise.show().css('margin-top', 0);
             minimise.hide();
         };
 
         var splitSide = function(pane) {
-            var height = mHeight/2
-            pane.show().height(height);
+            
+            pane.show();
         };
 
         var initialise = function() {
@@ -41,10 +41,10 @@
             mContainer.append(mTop, mBottom);
 
             // Split by default.
-            mTop.show();
-            mBottom.show();
+            maximise(mBottom, mTop)
         };
         initialise();
+
     };
 
     root.SplitUI = SplitUI;
