@@ -254,6 +254,8 @@ Graph setup functions
             $('#graphScrollOuter').scrollLeft(left_amt_px);
             
         });
+        
+        var preventScroll = false;
         $('#results').on("plotpan",function(evt,plot,args){
 //            console.log("args:",args);
             var xaxis = plot.getAxes().xaxis;
@@ -264,13 +266,58 @@ Graph setup functions
             var left_amt_px = $('#graphScrollInner').width() * left_fraction;
 //            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
             
+            preventScroll = true;
             $('#graphScrollOuter').scrollLeft(left_amt_px);
         });
+        
+        
+        
+        /////////////////////////////////////// should set a timeout here
+        ////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!~
+        
+        var updateScrollTimeout = null;
         $('#graphScrollOuter').on("scroll",function(evt){
 //            console.log("evt:",evt);
-            console.log("'scroll left':",$(this).scrollLeft());
+//            console.log("'scroll left':",$(this).scrollLeft());
+//            console.log("hit1; timeout:",updateScrollTimeout);
+            if (!updateScrollTimeout){
+//                console.log('hit2');
+                setTimeout(function(){syncScroll(evt);},50)
+            }
         });
         
+        function syncScroll(evt){
+//            console.log('evt:',evt)
+            updateScrollTimeout = null;
+//            console.log('hit3');
+            if (preventScroll){ 
+                preventScroll = false;
+                return; 
+            } else {
+//                console.log("handler hit");
+                var left_amt_px = $('#graphScrollOuter').scrollLeft();
+//                console.log("left amt px:",left_amt_px);
+                var left_frac = left_amt_px / $('#graphScrollInner').width();
+//                console.log("left frac:",left_frac);
+                
+                var xaxis_sample = allPlots[0].getAxes().xaxis;
+                var xrange = xaxis_sample.max - xaxis_sample.min;
+                var max_range = xaxis_sample.datamax - xaxis_sample.datamin;
+                var left_amt_graph = max_range * left_frac;
+//                console.log("left amt graph:",left_amt_graph);
+                
+                $.each(allPlots,function(index,item){
+                    var xaxis = item.getAxes().xaxis;
+                    xaxis.options.min = left_amt_graph;
+                    xaxis.options.max = left_amt_graph + xrange;
+                    
+//                    console.log("new xaxis min:",xaxis.min);
+                    
+                    item.setupGrid();
+                    item.draw();
+                });
+            }
+        }
     }
     
     /**********************
@@ -919,6 +966,8 @@ to dismiss)</div>').on("click",function(){div.hide()});
     function simulate(text,filename,div) {
         div.empty();  // we'll fill this with results
         bigDiv = div;
+        $('#graphScrollInner').width($('#graphScrollOuter').width());
+        
         var parsed = Parser.parse(text,filename);
         
         var netlist = parsed.netlist;
@@ -1005,10 +1054,11 @@ to dismiss)</div>').on("click",function(){div.hide()});
         general_setup();
         general_zoompan();
         
-//        $('#simulation-pane').on("resize",function(){
+        $('#simulation-pane').on("resize",function(){
 //            console.log("width:",$('#graphScrollOuter').width());
-//            $('#graphScrollInner').width($('#graphScrollOuter').width() * 2);
-//        });
+//            $('#graphScrollInner').width($('#graphScrollOuter').width());
+            $('.reset-zoom').click();
+        });
     }
 /*********************
 Exports
