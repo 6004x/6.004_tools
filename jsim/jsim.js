@@ -42,7 +42,11 @@ $(function() {
         try{
             Simulator.simulate(content,filename,div);
         } catch (err) {
-            editor.markErrorLine(filename, err.message, err.line-1, err.column);
+            if (err instanceof Parser.CustomError){
+                editor.markErrorLine(filename, err.message, err.line-1, err.column);
+            } else {
+                throw err;
+            }
         }
     }
 

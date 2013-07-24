@@ -965,12 +965,17 @@ to dismiss)</div>').on("click",function(){div.hide()});
     var current_results;
     var bigDiv;
     
-    function simulate(text,filename,div) {
+    function simulate(text,filename,div){
+        // input string, filename, callback
+        Parser.parse(text, filename, function(data){run_simulation(data,div)});
+    }
+    
+    function run_simulation(parsed,div) {
         div.empty();  // we'll fill this with results
         bigDiv = div;
         $('#graphScrollInner').width($('#graphScrollOuter').width());
         
-        var parsed = Parser.parse(text,filename);
+//        var parsed = Parser.parse(text,filename);
         
         var netlist = parsed.netlist;
         analyses = parsed.analyses;
