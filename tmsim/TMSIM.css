@@ -1,4 +1,4 @@
-.tape_div{
+.tape_wrapper{
 	background-color : white;
 	text-align : center ;
 	vertical-align: center;
@@ -6,6 +6,7 @@
 .tape_segment{
 	border-style: solid;
 	border-color: black;
+	background-color: white;
 	border-width: 2px 1px 2px 1px;
 	margin:0px;
 	padding:0px;
@@ -14,6 +15,9 @@
 	text-align: center;
 	vertical-align: center;
 }	
+.current_segment{
+	background-color: lightgreen;
+}
 .sim_split{
 	text-align: center;
 }

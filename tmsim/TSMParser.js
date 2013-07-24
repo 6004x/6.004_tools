@@ -331,7 +331,7 @@ function TSMparser(){
 		var results = '';
 		for(key in list_of_tapes){
 			results +=key+': ';
-			var list = list_of_tapes[key];
+			var list = list_of_tapes[key].cloneTape();
 			results += list.toString()+'\n';
 			
 			tsm.start(list);
