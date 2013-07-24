@@ -5,7 +5,7 @@ BSim.Beta.Memory = function() {
     var mOriginalMemory = new Uint32Array(0);
 
     this.loadBytes = function(bytes) {
-        var words = bytes.length / 4;
+        var words = Math.ceil(bytes.length / 4);
         mMemory = new Uint32Array(words);
         mOriginalMemory = new Uint32Array(words);
         mMemoryFlags = new Uint8Array(words);
