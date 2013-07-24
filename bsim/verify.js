@@ -58,6 +58,7 @@ BSim.MemoryVerifier = function(beta, addresses, checksum, expected_checksum) {
                 return false;
             }
         };
+        mMessage = null;
         return true;
     };
 
