@@ -14,9 +14,17 @@
 	bottom:0;
 	text-align: center;
 	vertical-align: center;
-}	
+	display : inline-block;
+	position : absolute
+}
+.left_segment{
+	background-color: lightyellow;
+}
+.right_segment{
+	background-color: lightyellow;
+}		
 .current_segment{
-	background-color: lightgreen;
+	background-color: lightyellow;
 }
 .sim_split{
 	text-align: center;

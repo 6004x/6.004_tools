@@ -12,7 +12,6 @@
 		var mTapeList = testLists.list_of_tapes;
 		var mResultList = testLists.list_of_results;
 		var mResult1List = testLists.list_of_results1;
-		
 		var self = this;
 
 		//TODO:change magic numbers
@@ -56,7 +55,6 @@
 				top : 0,
 				left : 0,
 				height : DIV_HEIGHT,
-				overflow : 'hidden',
 			});
 			tapeWrapper.append(tapeDiv);
 			
@@ -111,7 +109,7 @@
             });
 
 			stepButton.on('click', function(){
-				// self.move(tapeDiv, 'r');
+				 //self.move('r');
 				self.step();
 			});
 			prevStepButton.on('click', function(){
@@ -121,7 +119,7 @@
 			mContainer.append(radioWrapper, tapeWrapper, machineDiv, actionButtonDiv);
 		}
 		this.step = function(){
-			var stepObject = mTSM.step(null, mCurrentTape);
+			var stepObject = mTSM.step(mCurrentTape);
 			// console.log(stepObject);
 			// console.log(mCurrentTape.toString());
 			mContainer.find('.machine_label').text(stepObject.transition.new_state);
@@ -143,6 +141,18 @@
 			tapeDiv.html('');
 			tapeDiv.css('left', 0)
 			console.log(currentIndex);
+			var end = 0;
+			for (var i = -10; i < 0; i++){
+				var leftPos = (mContainer.width() - TAPE_WIDTH) / 2 + (i - currentIndex) * TAPE_WIDTH;
+				tapeDiv.append($('<div>').addClass('tape_segment')
+					.css({
+						'left' : leftPos,
+						'width' : TAPE_WIDTH - 2,
+						'height' : TAPE_HEIGHT - 4
+					})
+					.text('-')
+				);
+			}
 			for (var i = 0; i < array.length; i++){
 				//absolute positioning of the segment, off center to keep the currentIndex in the center
 
@@ -151,20 +161,32 @@
 				
 				var tape_segment = $('<div>').addClass('tape_segment')
 					.css({
-						'margin' : 0,
-						'display' : 'inline-block',
-						'position' : 'absolute',
 						'left' : leftPos,
 						'width' : TAPE_WIDTH - 2,
 						'height' : TAPE_HEIGHT - 4
 					})
 					.text(tapeData);
 				if(i == currentIndex)
-					tape_segment.addClass('current_segment')
+					tape_segment.addClass('current_segment');
+				if(i - 1 == currentIndex )
+					tape_segment.addClass('right_segment');
+				if(i + 1 == currentIndex )
+					tape_segment.addClass('left_segment');
+				
 				tapeDiv.append(tape_segment);
-
+				end = i
 			}
-
+			for (var i = end+1; i < end+10; i++){
+				var leftPos = (mContainer.width() - TAPE_WIDTH) / 2 + (i - currentIndex) * TAPE_WIDTH;
+				tapeDiv.append($('<div>').addClass('tape_segment')
+					.css({
+						'left' : leftPos,
+						'width' : TAPE_WIDTH - 2,
+						'height' : TAPE_HEIGHT - 4
+					})
+					.text('-')
+				);
+			}
 		}
 		this.move = function(dir){
 			var tapeDiv = mContainer.find('.tape_div');
@@ -176,10 +198,42 @@
 				moveDir = -TAPE_WIDTH
 			else
 				moveDir = 0;
+			var prev, prev_2;
+			var penultimate = false, ultimate = false;
 			tapeDiv.animate({
 			    left: parseInt(currentPos)+moveDir,
 			 	 }, 50,  function(){
-			 	 	
+			 	 	if(moveDir != '-'){
+				 	 	$('.tape_segment').each(function(i, e){
+				 	 		if($(this).hasClass('current_segment')){
+				 	 			console.log('current_segment')
+				 	 			penultimate = true;
+				 	 			if(dir === 'r'){
+				 	 				$(this).removeClass('current_segment').addClass('right_segment');
+				 	 				prev.addClass('current_segment').removeClass('left_segment');
+				 	 				prev_2.addClass('left_segment');
+				 	 			} else if (dir === 'l'){
+				 	 				prev.removeClass('left_segment');
+				 	 				$(this).removeClass('current_segment').addClass('left_segment');
+				 	 			}
+				 	 		} else if (penultimate){
+				 	 			if(dir === 'r'){
+				 	 				$(this).removeClass('right_segment');
+				 	 				return false;
+				 	 			} else if (dir === 'l'){
+				 	 				$(this).addClass('current_segment').removeClass('right_segment');
+				 	 				penultimate = false;
+				 	 				ultimate  = true;
+				 	 			}
+				 	 		} else if (ultimate){
+				 	 			$(this).addClass('right_segment');
+				 	 			return false;
+				 	 		}
+				 	 		prev_2 = prev;
+				 	 		prev = $(this);
+				 	 		
+				 	 	});
+				 	 }
 			 	 });
 		}
 
