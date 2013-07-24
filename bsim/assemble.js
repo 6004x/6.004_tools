@@ -708,7 +708,6 @@
         if(checksum === null) {
             throw new SyntaxError("Expected checkoff checksum.", stream);
         }
-        console.log(this.prototype.constructor);
         return new this.prototype.constructor(url, name, checksum, stream.file(), stream.line_number());
     };
     Checkoff.prototype.assemble = function(context, out) {
@@ -722,7 +721,6 @@
                 name: this.name,
                 checksum: this.checksum.evaluate(context, true)
             };
-            console.log(context);
         }
     };
 
@@ -743,7 +741,6 @@
     PCheckoff.prototype.assemble = function(context, out) {
         Checkoff.prototype.assemble.call(this, context, out);
         if(out) {
-            console.log(context);
             context.checkoff.running_checksum = 36038;
             context.checkoff.addresses = {};
         }
@@ -781,7 +778,6 @@
             i32[0] += (address + i*4);
             i32[0] *= i+1;
             i32[0] += checksum;
-            console.log(i32[0]);
             checksum = i32[0];
         }
         return new Verify(address, list, checksum, stream.file(), stream.line_number());

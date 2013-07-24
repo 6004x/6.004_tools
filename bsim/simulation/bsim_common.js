@@ -15,8 +15,6 @@ BSim.Common = {
         // Default to a full representation of the 32-bit value
         if(!length) length = 8;
         var s = value.toString(16);
-        console.log(s);
-        console.log(s.length - length);
         // Truncate, if necessary
         s = s.substr(Math.max(0, s.length - length), length);
         // Zero pad, if necessary

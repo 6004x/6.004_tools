@@ -100,7 +100,6 @@ BSim.Beta = function() {
     // Takes a list of breakpoint addresses and replaces all current breakpoints with them.
     this.setBreakpoints = function(breakpoints) {
         mBreakpoints = _.object(_.map(breakpoints, function(b) { return [b, true]; }));
-        console.log(mBreakpoints);
         this.trigger('add:bulk:breakpoint', breakpoints);
     };
 
@@ -306,7 +305,6 @@ BSim.Beta = function() {
         if(this.isOptionSet('tty')) {
             this.mKeyboardInput = character; // TODO: buffering?
             mPendingInterrupts |= INTERRUPT_KEYBOARD;
-            console.log(character);
         }
     };
 
@@ -396,7 +394,6 @@ BSim.Beta = function() {
                 ret = op.exec.call(this, decoded.ra, decoded.rb, decoded.rc);
             }
             if(ret === false) {
-                console.log("call failed");
                 this.setPC(old_pc, true);
             }
             mCurrentStep.registers = mCurrentStepRegisters;

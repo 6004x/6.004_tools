@@ -118,7 +118,6 @@ test("TTY", function() {
     beta.mouseInterrupt = function(x, y) {
         deepEqual([x, y], [0, 0], "Negative mouse coordinates reported correctly.");
     };
-    console.log(container.offset());
     container.trigger(mouse);
 
     // Keyboard tests
