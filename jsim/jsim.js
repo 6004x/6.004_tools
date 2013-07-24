@@ -1,7 +1,7 @@
 JSim = {};
 
 $(function() {
-    FileSystem.setup('seterman', 'http://localhost:8080');
+    FileSystem.setup('seterman', 'https://localhost:6004');
     
     var split = new SplitUI('#split-container', '#editor-pane', '#simulation-pane');
     split.maximiseLeft();
