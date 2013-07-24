@@ -111,7 +111,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x28,
         name: 'AND',
-        alufn: 'AND',
+        alufn: '&',
         exec: function AND(a, b, c) {
             this.writeRegister(c, this.readRegister(a) & this.readRegister(b));
         }
@@ -120,7 +120,7 @@ BSim.Beta.Opcodes = {};
     betaop({
         opcode: 0x38,
         name: 'ANDC',
-        alufn: 'AND',
+        alufn: '&',
         has_literal: true,
         exec: function ANDC(a, literal, c) {
             this.writeRegister(c, this.readRegister(a) & literal);
