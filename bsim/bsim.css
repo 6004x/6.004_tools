@@ -44,9 +44,13 @@ table.regfile {
     border: 1px solid gray;
 }
 
-.regfile, .disassembly, .tty, .memory, .stack {
+.regfile, .disassembly, .tty, .memory, .stack, .pc-value, .pc-label {
     font-family: Menlo, Monaco, monospace;
     font-size: small;
+}
+
+.pc-label {
+    color: gray;
 }
 
 pre.tty-output {

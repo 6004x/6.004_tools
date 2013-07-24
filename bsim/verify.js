@@ -19,7 +19,7 @@ BSim.TextVerifier = function(beta, checksum) {
         }
         var content = mBeta.ttyContent();
         var hash = checkoffHashCode(content);
-        console.log(hash,'==',mChecksum);
+
         if(hash !== mChecksum) {
             mMessage = "The test program did not print out the expected result. Please check the lab writeup to see what result is expected.";
             return false;
@@ -43,14 +43,12 @@ BSim.MemoryVerifier = function(beta, addresses, checksum, expected_checksum) {
     this.verify = function() {
         if(!mValid) {
             mMessage = "<strong>Checkoff failed</strong>: invalid checksum";
-            console.log(checksum, expected_checksum);
             return false;
         }
         for(var address in mAddresses) {
             // if(!_.has(mAddresses, address)) continue;
             var value = mAddresses[address];
             if(mBeta.readWord(address) != value) {
-                console.log(mAddresses);
                 mMessage = "<p><strong>Checkoff failed.</strong></p><table><tr><td>Memory location:</td><td><code>0x" + BSim.Common.FormatWord(parseInt(address,10)) 
                 + "</code></td></tr><tr><td>Expected value:</td><td><code>0x" + BSim.Common.FormatWord(value) 
                 + "</code></td></tr><tr><td>Actual value:</td><td><code>0x" + BSim.Common.FormatWord(mBeta.readWord(address))
@@ -58,6 +56,7 @@ BSim.MemoryVerifier = function(beta, addresses, checksum, expected_checksum) {
                 return false;
             }
         };
+        mMessage = null;
         return true;
     };
 

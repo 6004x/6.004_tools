@@ -31,6 +31,13 @@ test("Loading words of bytes", function() {
     );
 });
 
+test("Loading non-words of bytes", function() {
+    var memory = new BSim.Beta.Memory();
+    memory.loadBytes([42]);
+    equal(memory.size(), 4, "One byte creates one word of memory");
+    equal(memory.readWord(0), 42, "Spare byte is written and read back correctly.");
+});
+
 test("Writing to memory", function() {
     var memory = new BSim.Beta.Memory();
     memory.loadBytes([1, 2, 3, 4]);
