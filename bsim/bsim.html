@@ -126,11 +126,11 @@
                                 <g class="pc permanent" transform="translate(90, 40)">
                                     <polyline points="45,0 45,15" />
                                     <polyline points="41,8 45,15 49,8" />
-                                    <foreignObject x="0" y="15" width="90" height="20">
-                                        <p style="text-align: center;">PC view</p>
+                                    <foreignObject x="-5" y="15" width="100" height="20">
+                                        <p style="text-align: center;"><span class="pc-label">PC:</span><span class="pc-value"></span></p>
                                     </foreignObject>
-                                    <rect x="0" y="15" width="90" height="20" class="border" />
-                                    <text x="50" y="12" class="path-value">80000010</text>
+                                    <rect x="-5" y="15" width="100" height="20" class="border" />
+                                    <text x="50" y="12" class="path-value pcsel-out-value">80000010</text>
                                 </g>
                                 <g class="instructions permanent" transform="translate(135,55)">
                                     <!-- HTML is absolutely positioned over this. -->
@@ -138,11 +138,11 @@
                                     <polyline points="108,29 115,33 108,37" />
                                     <rect x="115" y="0" height="66" width="320" class="border" />
                                     <polyline points="235,66 235,86" />
-                                    <text x="238" y="80" class="path-value">73FF0003</text>
+                                    <text x="238" y="80" class="path-value instruction-value">73FF0003</text>
                                     <polyline points="235,86 435,86 445,96 445,133" />
                                     <polyline points="441,126 445,133 449,126" />
                                     <text x="435" y="100" style="text-anchor: end;">RA:[20:16]</text>
-                                    <text x="450" y="133" style="text-anchor: start;" class="path-value">1F</text>
+                                    <text x="450" y="133" style="text-anchor: start;" class="path-value raa-value">1F</text>
                                 </g>
                                 <g class="path asel1 pcsel1 bsel1 wasel0" transform="translate(135,55)">
                                     <polyline points="235,86 235,140" />
@@ -155,6 +155,7 @@
                                     <polyline points="448,352 570,352 570,374" />
                                     <polyline points="566,367 570,374 574,367" />
                                     <text x="570" y="387">1</text>
+                                    <text x="565" y="347" class="path-value bsel1-value" style="text-anchor: end;">hello</text>
                                     <text x="240" y="348" style="text-anchor: start;">C:[15:0]</text>
                                 </g>
                                 <g class="mux ra2sel1 ra2sel0 ra2sel" transform="translate(710, 160)">
@@ -166,7 +167,7 @@
                                     <polygon points="10,0 70,0 65,15 15,15" />
                                     <polyline points="40,15 40,30" />
                                     <polyline points="36,23 40,30 44,23" />
-                                    <text x="45" y="28" class="path-value" style="text-anchor: start;">1F</text>
+                                    <text x="45" y="28" class="path-value rab-value" style="text-anchor: start;">1F</text>
                                 </g>
                                 <g class="path ra2sel0" transform="translate(570,141)">
                                     <text x="150" y="12" style="text-anchor: end;">RB:[15:11]</text>
@@ -204,7 +205,7 @@
                                     </g>
                                     <polyline points="20,30 45,30" />
                                     <polyline points="37,26 45,30 37,34" />
-                                    <text x="21" y="28" class="path-value">1F</text>
+                                    <text x="21" y="28" class="path-value raw-value">1F</text>
                                 </g>
                                 <g class="address-adder asel1 pcsel1 process" transform="translate(250, 150)">
                                     <polyline points="-35,0 55,0 55,37 36,37" />
@@ -215,13 +216,14 @@
                                     <text x="80" y="50">[15:0]*4</text>
                                     <rect x="0" y="30" width="36" height="30" />
                                     <text x="18" y="51" class="process-label">+</text>
+                                    <text class="path-value address-adder-value" x="-25" y="48" style="text-anchor: end;">hello</text>
                                 </g>
                                 <g class="plus4 process permanent" transform="translate(117, 75)">
                                     <polyline class="permanent" points="18,0 18,30" />
                                     <polyline class="permanent" points="14,23 18,30 22,23" />
                                     <rect x="0" y="30" width="36" height="30" />
                                     <text x="18" y="51" class="process-label">+4</text>
-                                    <text x="23" y="73" class="path-value">80000004</text>
+                                    <text x="23" y="73" class="path-value pc-plus4-value">80000004</text>
                                 </g>
                                 <g class="path pcsel0 pcsel1 asel1 wdsel0" transform="translate(135,150)">
                                     <polyline points="0,-14 0,0" />
@@ -232,7 +234,7 @@
                                 <g class="wdsel0 path" transform="translate(135,235)">
                                     <polyline points="0,-86 0,310 470,310 470,325" />
                                     <polyline points="466,318 470,325 474,318" />
-                                    <text x="468" y="306" class="path-value" style="text-anchor: end;">80000004</text>
+                                    <text x="468" y="306" class="path-value pc-plus4-value" style="text-anchor: end;">80000004</text>
                                     <text x="470" y="338" class="path-target">0</text>
                                 </g>
                                 <g class="mux wdsel werf1" transform="translate(585,561)">
@@ -258,6 +260,7 @@
                                 <!-- Regfile output B -->
                                 <g class="path bsel0 wr1" transform="translate(745, 369)">
                                     <polyline points="0,0 0,38" />
+                                    <text class="path-value rdb-value" x="2" y="12" style="text-anchor: start;">hello</text>
                                 </g>
                                 <g class="path bsel0" transform="translate(745, 369)">
                                     <polyline points="0,38 0,60" />
@@ -272,6 +275,7 @@
                                 <!-- Regfile output A -->
                                 <g class="path pcsel2 z asel0" transform="translate(580, 369)">
                                     <polyline points="0,0 0,8" />
+                                    <text class="path-value rda-value" x="2" y="12" style="text-anchor: start;">hello</text>
                                 </g>
                                 <g class="path pcsel2" transform="translate(580, 369)">
                                     <polyline points="0,7 -45,7" />
@@ -310,6 +314,7 @@
                                     <polygon points="10,0 70,0 65,15 15,15" />
                                     <polyline points="40,15 40,30 65,30 65,50" />
                                     <polyline points="61,43 65,50 69,43" />
+                                    <text x="60" y="47" class="path-value alua-value" style="text-anchor: end;">hello</text>
                                     <text x="65" y="62">A</text>
                                 </g>
                                 <g class="mux wdsel1 wdsel2 wr1 asel" transform="translate(685, 430)">
@@ -321,12 +326,17 @@
                                     <polygon points="10,0 70,0 65,15 15,15" />
                                     <polyline points="40,15 40,30 0,30 0,50" />
                                     <polyline points="-4,43 0,50 4,43" />
+                                    <text x="5" y="47" class="path-value alub-value" style="text-anchor: start;">hello</text>
                                     <text x="0" y="62">B</text>
                                 </g>
                                 <g class="alu wdsel1 wdsel2 wr1" transform="translate(545,480)">
                                     <polygon points="0,0 80,0 90,10 100,0 180,0 160,30 20,30" />
                                     <text x="90" y="25">ALU</text>
+                                    <text x="85" y="42" class="path-value alu-out-value" style="text-anchor: end;">hello</text>
                                     <polyline points="90,30 90,40" />
+                                    <g class="mux-selector">
+                                        <text x="7" y="20" style="text-anchor: end;">alufn="<tspan id="alufn-value"></tspan>"</text>
+                                    </g>
                                 </g>
                                 <g class="alu wdsel1" transform="translate(545,480)">
                                     <polyline points="90,40 90,80" />
@@ -357,7 +367,7 @@
                                 <g class="path werf1" transform="translate(585,561)">
                                     <polyline points="50,15 50,30 350,30 350,-300 254,-300" />
                                     <polyline points="261,-304 254,-300 261,-296" />
-                                    <text x="255" y="-305" class="path-value">80000CF4</text>
+                                    <text x="255" y="-305" class="path-value rdw-value">80000CF4</text>
                                 </g>
                             </svg>
                         <!-- These had to be moved out here because SVG <foreignObject> is very broken in WebKit -->

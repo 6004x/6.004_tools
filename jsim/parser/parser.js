@@ -382,12 +382,37 @@ content
     --args: -filename: a string representing the unique name of a file
     --returns: a string representing the contents of the file
 *******************************/
-    function filename_to_contents(filename){
-        if (pseudo_files[filename] === undefined){
-            throw "File does not exist";
-        } else {
-            return pseudo_files[filename];
-        }
+    var numPendingFiles = 0;
+    var included_contents = [];
+    var includeCompleted = false;
+    var included_token_array;
+    function filename_to_contents(filename, callback){
+//        if (pseudo_files[filename] === undefined){
+//            throw "File does not exist";
+//        } else {
+//            return pseudo_files[filename];
+//        }
+        console.log("filename:",filename);
+        numPendingFiles += 1;
+        FileSystem.getFile(filename, function(obj){
+            // success function
+            numPendingFiles -= 1;
+            console.log("contents:",obj.data);
+            try {
+                var stuff = iter_expand(split(analyze(obj.data),filename));
+            } catch (err) {}
+            included_contents.push(stuff)
+            console.log("included contents:",included_contents);
+            
+            if (numPendingFiles === 0 && includeCompleted) {
+                /*************** completed callback****************/
+                return parse(included_token_array, callback);
+            }
+            
+        }, function(){
+            throw "Could not get file "+filename.token;
+        });
+//        return contents;
     }
     
 /**************************
@@ -396,16 +421,17 @@ Include: takes a parsed array of tokens and includes all the files
     --returns: a new array of tokens consisting of all the tokens from all files
 ***************************/
     
-    function include(token_array){
+    function include(token_array, callback){
         var included_files = [token_array[0].origin_file];
         // list of filenames that have already been included 
         var new_token_array = [];
+        includeCompleted = false;
         
         while (token_array.length > 0){
             var current = token_array[0];
             if (current.token.toLowerCase() == ".include"){
                 var file = token_array[1];
-                console.log("file:",file);
+//                console.log("file:",file);
                 if (!(file.type == "string")){
                     throw new CustomError("Filename expected",
                                           current.line,current.column);
@@ -414,25 +440,27 @@ Include: takes a parsed array of tokens and includes all the files
                     if (included_files.indexOf(filename) == -1) {
                         included_files.push(filename);
                         
-                        var contents;
                         try{
-                            contents = filename_to_contents(filename);
+                            filename_to_contents(filename,callback);
                         } catch(err) {
                             throw new CustomError(err,current.line,current.column);
                         }
-                        contents = tokenize(contents,filename);
+//                        contents = tokenize(contents,filename);
                         token_array.shift();
-                        token_array.shift();
-                        if (contents !== undefined){
-                            token_array = contents.concat(token_array);
-                        }
-                        
+                        token_array.shift();  
                     }
                 }
-            }
+            } else {
             new_token_array.push(token_array.shift());
+            }
         }
-        return new_token_array;
+        includeCompleted = true;
+//        console.log("new token array from includer:",new_token_array);
+        included_token_array = new_token_array.slice(0);
+        if (numPendingFiles === 0){
+            return parse(included_token_array, callback);
+        }
+//        return new_token_array;
     }
     
 /*********************************
@@ -442,8 +470,9 @@ iterators and duplicators, and includes files
             -filename: a string representing the unique name of the file
     --returns: an array of strings (tokens)
 *********************************/
-    function tokenize(input_string,filename){
-         return include(iter_expand(split(analyze(input_string),filename)));
+    function tokenize(input_string,filename,callback){
+        included_contents = [];
+         return include(iter_expand(split(analyze(input_string),filename)),callback);
     }
     
 /******************************************************************************
@@ -456,40 +485,22 @@ Parse
     var plots;
     var options;
     var analyses;
-    var subcircuits /**** testing only **** = {buffer:{name:"buffer",
-                                ports:["a","z"],
-                                properties:{},
-                                devices:[
-                                    {type:"instance",
-                                     ports:["a","z"],
-                                     connections:["a","n1"],
-                                     properties:{name:"X1",instanceOf:"inv"}},
-                                    {type:"instance",
-                                     ports:["a","z"],
-                                     connections:["n1","z"],
-                                     properties:{name:"X2",instanceOf:"inv"}}
-                                ]
-                               },
-                       inv:{name:"inv",
-                            ports:["a","z"],
-                            properties:{drive:2},
-                            devices:[
-                                {type:"pfet",
-                                 ports:["D","G","S"],
-                                 connections:["vdd","a","z"],
-                                 properties:{name:"PU",W:8,L:1}},
-                                {type:"nfet",
-                                 ports:["D","G","S"],
-                                 connections:["z","a","gnd"],
-                                 properties:{name:"ND",W:8,L:1}}
-                            ]
-                           }}/** end test **/;
+    var subcircuits;
     var current_subckt;
     var used_names;
 //    var netlist;
     
-    function parse(input_string,filename){
-        var token_array = tokenize(input_string,filename);
+    function parse(token_array, callback){
+//        console.log("token array:",token_array);
+        for (var i = 0; i < included_contents.length; i += 1){
+            token_array = token_array.concat(included_contents[i]);
+        }
+        callback(interpret(token_array));
+    }
+    
+    function interpret(token_array){
+//        console.log("token array:",token_array);
+//        var token_array = tokenize(input_string,filename);
         globals = [];
         plots = [];
         options = {};
@@ -1333,7 +1344,8 @@ Flattening
 /***************************
 Exports
 ****************************/
-    return {parse:parse,
+    return {parse:tokenize,
+            CustomError:CustomError
 //            analyze:analyze,
 //            split:split,
 //            tokenize:tokenize,

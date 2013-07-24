@@ -1,7 +1,7 @@
 JSim = {};
 
 $(function() {
-    FileSystem.setup('seterman', 'http://localhost:8080');
+    FileSystem.setup('seterman', 'https://localhost:6004');
     
     var split = new SplitUI('#split-container', '#editor-pane', '#simulation-pane');
     split.maximiseLeft();
@@ -42,7 +42,11 @@ $(function() {
         try{
             Simulator.simulate(content,filename,div);
         } catch (err) {
-            editor.markErrorLine(filename, err.message, err.line-1, err.column);
+            if (err instanceof Parser.CustomError){
+                editor.markErrorLine(filename, err.message, err.line-1, err.column);
+            } else {
+                throw err;
+            }
         }
     }
 

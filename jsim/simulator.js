@@ -217,6 +217,7 @@ Graph setup functions
         });
         
         selZoomButton.on("click",function(){
+            selZoomButton.tooltip('hide');
             ranges = selRanges;
             console.log("ranges:",ranges);
             if (ranges){
@@ -229,6 +230,7 @@ Graph setup functions
                     item.draw();
                     item.clearSelection();
                 });
+                $('#results').triggerHandler("plotzoom",allPlots[0]);
             }
         });
         
@@ -282,7 +284,7 @@ Graph setup functions
 //            console.log("hit1; timeout:",updateScrollTimeout);
             if (!updateScrollTimeout){
 //                console.log('hit2');
-                setTimeout(function(){syncScroll(evt);},50)
+                setTimeout(function(){syncScroll(evt);},1)
             }
         });
         
@@ -963,12 +965,17 @@ to dismiss)</div>').on("click",function(){div.hide()});
     var current_results;
     var bigDiv;
     
-    function simulate(text,filename,div) {
+    function simulate(text,filename,div){
+        // input string, filename, callback
+        Parser.parse(text, filename, function(data){run_simulation(data,div)});
+    }
+    
+    function run_simulation(parsed,div) {
         div.empty();  // we'll fill this with results
         bigDiv = div;
         $('#graphScrollInner').width($('#graphScrollOuter').width());
         
-        var parsed = Parser.parse(text,filename);
+//        var parsed = Parser.parse(text,filename);
         
         var netlist = parsed.netlist;
         analyses = parsed.analyses;
@@ -1054,11 +1061,11 @@ to dismiss)</div>').on("click",function(){div.hide()});
         general_setup();
         general_zoompan();
         
-        $('#simulation-pane').on("resize",function(){
-//            console.log("width:",$('#graphScrollOuter').width());
-//            $('#graphScrollInner').width($('#graphScrollOuter').width());
-            $('.reset-zoom').click();
-        });
+//        $('#simulation-pane').on("resize",function(){
+////            console.log("width:",$('#graphScrollOuter').width());
+////            $('#graphScrollInner').width($('#graphScrollOuter').width());
+//            $('#results').triggerHandler("plotzoom",allPlots[0]);
+//        });
     }
 /*********************
 Exports

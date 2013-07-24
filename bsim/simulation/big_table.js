@@ -41,6 +41,10 @@ var BigTable = function(container, width, height, row_height, column_count) {
     // Updates the given row with the given data. The row must exist.
     // data's length must be equal to the table's column count.
     this.updateRow = function(row, data) {
+        if(!mData[row]) {
+            console.warn("Update to nonexistent row " + data);
+            return;
+        }
         mData[row] = data;
         redraw(row);
     };
@@ -63,19 +67,19 @@ var BigTable = function(container, width, height, row_height, column_count) {
     };
 
     // Adds a class the given row. If the optional parameter redraw is true, redraws the row immediately.
-    this.addRowClass = function(row, cls, redraw_now) {
+    this.addRowClass = function(row, cls) {
         if(!mData[row]) return;
         if(!~mData[row].cls.indexOf(' ' + cls + ' ')) {
             mData[row].cls += ' ' + cls + ' ';
-            if(redraw_now) redraw(row);
+            redraw(row);
         }
     };
 
     // Removes a class from the given row. If the optional parameter redraw is true, redraws the row immediately.
-    this.removeRowClass = function(row, cls, redraw_now) {
+    this.removeRowClass = function(row, cls) {
         if(!mData[row]) return;
         mData[row].cls = mData[row].cls.replace(' ' + cls + ' ', '');
-        if(redraw_now) redraw(row);
+        redraw(row);
     };
 
     // Attempts to centre the given row in the display.

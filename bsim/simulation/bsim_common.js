@@ -11,12 +11,12 @@ BSim.Common = {
     },
     FormatWord: function(value, length) {
         // Fix up negative numbers
-        value = BSim.Common.FixUint(value);
+        value = BSim.Common.FixUint(value|0);
         // Default to a full representation of the 32-bit value
         if(!length) length = 8;
         var s = value.toString(16);
         // Truncate, if necessary
-        s = s.substring(Math.max(0, s.length - length), length);
+        s = s.substr(Math.max(0, s.length - length), length);
         // Zero pad, if necessary
         while(s.length < length) s = "0" + s;
         return s;
