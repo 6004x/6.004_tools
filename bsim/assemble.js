@@ -840,13 +840,10 @@
         var parse_file = function(file, content, completion_callback, error_callback) {
             var stream = new StringStream(new FileStream(content, file));
             var errors = [];
-            var pending_includes = {};
             var waiting = 0;
             var completed = false;
 
             var insert_include = function(include) {
-                if(!_.has(pending_includes, include.filename)) pending_includes[include.filename] = [];
-                pending_includes[include.filename].push(include);
                 ++waiting;
                 FileSystem.getFile(include.filename, function(include_content) {
                     parse_file(include_content.name, include_content.data, function(syntax) {
