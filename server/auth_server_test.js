@@ -1,14 +1,15 @@
+//DEPENDENCIES: connect, fs, https, querystring
+
 var fs = require("fs");
 var https = require("https");
-var connect = require("connect");
-
+var connect = require("connect"); 
 var qs = require('querystring');
 var libraryHandler = require('./libraryHandler.js')
 
 function authenticate_user(req,res,next) {
 	console.log('authenticate?')
     var user = req.connection.getPeerCertificate().subject.emailAddress;
-    req.user = user;
+    req.user = user.split('@')[0];
     next();
 }
 
