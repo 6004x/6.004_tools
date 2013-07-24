@@ -139,21 +139,23 @@ Graph setup functions
     function set_plot_heights(){
         // limit the simulation pane's height to that of the editor pane
         $('#simulation-pane').height($('#editor-pane').height());
-        $('#results').height($('#simulation-pane').height() - $('#graph-toolbar').height() -20);
+        $('#results').height($('#simulation-pane').height() - $('#graph-toolbar').height() - 40);
         $.each(allPlots,function(index,item){
             // allow extra space for margins
             var margin_val;
             try{
-                margin_val = $('.plot-wrapper').css("margin-bottom").match(/\d+/)[0];
+                margin_val = $('.plot-wrapper').css("margin-bottom").match(/-?\d+/)[0];
+//                margin_val /= 2;
             } catch (err) {
                 margin_val = 0;
             }
-            var margin_allowance = margin_val * 2;
+//            var margin_allowance = margin_val * 2;
             var placeholder = item.getPlaceholder();
             
             // plot height = total height / number of plots - margin space,
-            // bounded by min-height
-            var plotHeight = $('#results').height() / allPlots.length /*- margin_allowance*/;
+            // bounded by min-height; -30 for scrollbar width
+            var plotHeight = ($('#results').height() - 30) / allPlots.length 
+            plotHeight -= margin_val;
             placeholder.css("height",plotHeight);
         });
     }
@@ -205,11 +207,11 @@ Graph setup functions
         var selZoomButton = $('<button id="z2s" class="btn">\
 <i class="icon-resize-full">').tooltip(tooltipOpts);
         tlbar.append(selZoomButton);
-        selZoomButton.hide();
+        selZoomButton.attr("disabled","disabled");
         
         var selRanges;
         $('#results').on("plotselected",function(evt,ranges){
-            selZoomButton.show();
+            selZoomButton.removeAttr("disabled");
 //            console.log("selected ranges:",ranges);
             selRanges = ranges;
         });
@@ -230,7 +232,92 @@ Graph setup functions
             }
         });
         
-        $('#results').on("plotunselected",function(){selZoomButton.hide();});
+        $('#results').on("plotunselected",function(){
+            selZoomButton.attr("disabled","disabled");});
+        
+        $('#results').on("plotzoom",function(evt,plot){
+//            console.log("data:",data);
+//            var plot = data[0];
+//            console.log(plot);
+//            console.log(plot.getAxes());
+            var xaxis = plot.getAxes().xaxis;
+            var new_range = xaxis.max - xaxis.min;
+            var max_range = xaxis.datamax - xaxis.datamin;
+            
+            var inv_fraction = max_range/new_range;
+            console.log("fraction:",inv_fraction);
+            $('#graphScrollInner').width($('#graphScrollOuter').width() * inv_fraction);
+            
+            var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
+            var left_amt_px = $('#graphScrollInner').width() * left_fraction;
+            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
+            $('#graphScrollOuter').scrollLeft(left_amt_px);
+            
+        });
+        
+        var preventScroll = false;
+        $('#results').on("plotpan",function(evt,plot,args){
+//            console.log("args:",args);
+            var xaxis = plot.getAxes().xaxis;
+            var max_range = xaxis.datamax - xaxis.datamin;
+            
+            var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
+            
+            var left_amt_px = $('#graphScrollInner').width() * left_fraction;
+//            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
+            
+            preventScroll = true;
+            $('#graphScrollOuter').scrollLeft(left_amt_px);
+        });
+        
+        
+        
+        /////////////////////////////////////// should set a timeout here
+        ////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!~
+        
+        var updateScrollTimeout = null;
+        $('#graphScrollOuter').on("scroll",function(evt){
+//            console.log("evt:",evt);
+//            console.log("'scroll left':",$(this).scrollLeft());
+//            console.log("hit1; timeout:",updateScrollTimeout);
+            if (!updateScrollTimeout){
+//                console.log('hit2');
+                setTimeout(function(){syncScroll(evt);},50)
+            }
+        });
+        
+        function syncScroll(evt){
+//            console.log('evt:',evt)
+            updateScrollTimeout = null;
+//            console.log('hit3');
+            if (preventScroll){ 
+                preventScroll = false;
+                return; 
+            } else {
+//                console.log("handler hit");
+                var left_amt_px = $('#graphScrollOuter').scrollLeft();
+//                console.log("left amt px:",left_amt_px);
+                var left_frac = left_amt_px / $('#graphScrollInner').width();
+//                console.log("left frac:",left_frac);
+                
+                var xaxis_sample = allPlots[0].getAxes().xaxis;
+                var xrange = xaxis_sample.max - xaxis_sample.min;
+                var max_range = xaxis_sample.datamax - xaxis_sample.datamin;
+                var left_amt_graph = max_range * left_frac;
+//                console.log("left amt graph:",left_amt_graph);
+                
+                $.each(allPlots,function(index,item){
+                    var xaxis = item.getAxes().xaxis;
+                    xaxis.options.min = left_amt_graph;
+                    xaxis.options.max = left_amt_graph + xrange;
+                    
+//                    console.log("new xaxis min:",xaxis.min);
+                    
+                    item.setupGrid();
+                    item.draw();
+                });
+            }
+        }
     }
     
     /**********************
@@ -246,6 +333,8 @@ Graph setup functions
                     item.clearSelection();
                     item.pan({left:-1*evt.originalEvent.wheelDeltaX});
                 });
+                
+//                $('#graphScrollInner').trigger("scroll");
             }
         });
         
@@ -289,7 +378,9 @@ Graph setup functions
             $.each(allPlots, function(index,value){
                 if (value != plotObj){
                     value.setCrosshair(pos);
-                    value.getPlaceholder().trigger("hidePosTooltip");
+                    if (compactPlot){
+                        value.getPlaceholder().trigger("hidePosTooltip");
+                    }
                 }
                 if (!compactPlot){
                     value.getPlaceholder().trigger("showPosTooltip",pos);
@@ -337,21 +428,22 @@ Graph setup functions
             for (var i = 0; i < dataset.length; i += 1) {
                 var series = dataset[i];
                 
-                posTextDiv.find('.xpos').text("X = "+suffix_formatter(pos.x)+series.xUnits);
+                posTextDiv.find('.xpos').text(suffix_formatter(pos.x)+series.xUnits);
     
-                if (!compactPlot){
-                    var y = interpolate(series,pos.x);
-                    
-                    var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
+//                if (!compactPlot){
+                posTextDiv.find('.xpos').prepend("X = ");
+                var y = interpolate(series,pos.x);
                 
-                    if (innerPosTextDivs["series"+i]===undefined){
-                        var innerDiv = $("<div>"+divText+"</div>");
-                        innerPosTextDivs["series"+i] = innerDiv;
-                        posTextDiv.append(innerPosTextDivs["series"+i]);
-                    } else {
-                        innerPosTextDivs["series"+i].text(divText);
-                    }
+                var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
+            
+                if (innerPosTextDivs["series"+i]===undefined){
+                    var innerDiv = $("<div>"+divText+"</div>");
+                    innerPosTextDivs["series"+i] = innerDiv;
+                    posTextDiv.append(innerPosTextDivs["series"+i]);
+                } else {
+                    innerPosTextDivs["series"+i].text(divText);
                 }
+//                }
             }
             posTextDiv.show();
         }
@@ -470,21 +562,21 @@ Graph setup functions
                 rangeTextDiv.find('.xrange').text("X range = "+suffix_formatter(xrange)+
                                               series.xUnits);
     
-                if (!compactPlot){
-                    var y1 = interpolate(series, ranges.xaxis.from);
-                    var y2 = interpolate(series, ranges.xaxis.to);
-                    var yrange = y2-y1;
-                    
-                    var divText = series.label+" range = "+
-                        suffix_formatter(yrange)+series.yUnits;
-                    if (innerRangeTextDivs["series"+i]===undefined){
-                        var innerDiv = $("<div>"+divText+"</div>");
-                        innerRangeTextDivs["series"+i] = innerDiv;
-                        rangeTextDiv.append(innerRangeTextDivs["series"+i]);
-                    } else {
-                        innerRangeTextDivs["series"+i].text(divText);
-                    }
+//                if (!compactPlot){
+                var y1 = interpolate(series, ranges.xaxis.from);
+                var y2 = interpolate(series, ranges.xaxis.to);
+                var yrange = y2-y1;
+                
+                var divText = series.label+" range = "+
+                    suffix_formatter(yrange)+series.yUnits;
+                if (innerRangeTextDivs["series"+i]===undefined){
+                    var innerDiv = $("<div>"+divText+"</div>");
+                    innerRangeTextDivs["series"+i] = innerDiv;
+                    rangeTextDiv.append(innerRangeTextDivs["series"+i]);
+                } else {
+                    innerRangeTextDivs["series"+i].text(divText);
                 }
+//                }
             }
             if (!compactPlot){
                 rangeTextDiv.show();
@@ -497,48 +589,78 @@ Graph setup functions
     ***********************/
     function general_setup(){
         var tlbar = $('#graph-toolbar');
-        var addPlotButton = $('<button class="btn" id="addplot-btn">\
-<i class="icon-plus"></i></button>');
-        var closePlotButton = $('<button class="btn" id="closeplot-btn">\
-<i class="icon-minus"></i></button>').tooltip({delay:100,title:"Remove Plot",
-                                                           container:'body'});
+//        var closePlotButton = $('<button class="btn" id="closeplot-btn">\
+//<i class="icon-minus"></i></button>').tooltip({delay:100,title:"Remove Plot",
+//                                                           container:'body'});
         
-        var btnGroup = $('<div class="btn-group"></div>').append(addPlotButton, closePlotButton);
+        
 //        tlbar.append(closePlotButton);
-        tlbar.prepend(btnGroup/*addPlotButton*/);
         
-        var toggled = false;
-        closePlotButton.popover({placement:'top',content:"Click on a graph to close it. "+
-"Click this button again to return to normal mode.",
-                                 container:'body'}).on("click",function(){
-            if (!toggled){
-                toggled = true;
-                $('.plot-wrapper').on("click.remove",function(evt){
-                    $(this).hide();
-                    var plotObj = $(this).find('.placeholder').eq(0).data("plot");
-//                    console.log("plotobj:",plotObj);
-                    allPlots.splice(allPlots.indexOf(plotObj),1);
-//                    console.log("all plots:",allPlots);
-                });
-                $('.plot-wrapper').on("mouseenter.remove",function(){
-                    $(this).addClass("bg-alt");
-                }).on("mouseleave.remove",function(){
-                    $(this).removeClass("bg-alt");
-                });
-            } else {
-                $('.plot-wrapper').off(".remove");
-                toggled = false;
+//        var toggled = false;
+//        closePlotButton.popover({placement:'top',content:"Click on a graph to close it. "+
+//"Click this button again to return to normal mode.",
+//                                 container:'body'}).on("click",function(){
+//            if (!toggled){
+//                toggled = true;
+//                $('.plot-wrapper').on("click.remove",function(evt){
+//                    $(this).hide();
+//                    var plotObj = $(this).find('.placeholder').eq(0).data("plot");
+////                    console.log("plotobj:",plotObj);
+//                    allPlots.splice(allPlots.indexOf(plotObj),1);
+////                    console.log("all plots:",allPlots);
+//                });
+//                $('.plot-wrapper').on("mouseenter.remove",function(){
+//                    $(this).addClass("bg-alt");
+//                }).on("mouseleave.remove",function(){
+//                    $(this).removeClass("bg-alt");
+//                });
+//            } else {
+//                $('.plot-wrapper').off(".remove");
+//                toggled = false;
+//            }
+//            console.log("toggled:",toggled);
+//        });
+        
+        var addPlotModal = $('<div id="addPlotModal" class="modal hide fade" \
+aria-hidden="true">\
+<div class="modal-header">\
+<button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>\
+<h3>Add Plot</h3>\
+</div>\
+<div class="modal-body">\
+<p>Enter one or more node names, separated by commas or spaces, to be plotted on a single \
+graph:</p><input id="addPlotInput" type="text" placeholder="New nodes...">\
+</div>\
+<div class="modal-footer">\
+<button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>\
+<button class="btn btn-primary" data-dismiss="modal" id="addPlotAccept">Add Plot</button>\
+</div>\
+</div>');
+        
+        addPlotModal.modal({show:false});
+        addPlotModal.on("shown",function(){
+            $('#addPlotInput').val("")
+            $('#addPlotInput').focus();
+        });
+        $('#simulation-pane').append(addPlotModal);
+        
+        $('#addPlotInput').keyup(function(evt){
+            if (evt.keyCode == 13){
+                $('#addPlotAccept').click();
             }
-            console.log("toggled:",toggled);
         });
         
+        var addPlotButton = $('<button class="btn" type="button" id="addplot-btn" \
+data-toggle="modal" data-target="#addPlotModal"><i class="icon-plus"></i> Add Plot</button>');
         addPlotButton.tooltip({delay:100,title:"Add Plot",placement:'top',
-                               container:'body'}).on("click",function(){
-//            console.log("current results:",current_results);
+                               container:'body'});
+        
+        $('#addPlotAccept').on("click",function(){
             $('button.reset-zoom').click();
-            var newPlot = prompt("New node(s)?");
-            newPlot = [newPlot.match(/[^,\s]+/g)];
-            console.log(newPlot);
+            
+            var newPlotRaw = $('#addPlotInput').val();
+            newPlot = [newPlotRaw.match(/[^,\s]+/g)];
+//            console.log(newPlot);
             
             switch (current_analysis.type){
                 case 'tran':
@@ -551,6 +673,10 @@ Graph setup functions
                     break;
             }
         });
+        addPlotButton.attr("disabled","disabled");
+        
+        var btnGroup = $('<div class="btn-group"></div>').append(addPlotButton/*, closePlotButton*/);
+        tlbar.prepend(btnGroup);
     }
     
     
@@ -572,6 +698,7 @@ Graph setup functions
             color:"#545454",
             tickColor:"#dddddd",
             tickFormatter:suffix_formatter,
+            labelHeight:1,
             axisLabelUseCanvas:true,
             axisLabelColor:'rgb(84,84,84)',
             axisLabelPadding:5
@@ -608,7 +735,7 @@ Graphing functions
         } else {
             minHeight = 130;
         }
-        return $('<div class="placeholder" style="width:100%;height:200px;\
+        return $('<div class="placeholder" style="width:100%;height:90%;\
 min-height:'+minHeight+'px"></div>');
     }
     
@@ -616,6 +743,16 @@ min-height:'+minHeight+'px"></div>');
         var div = $('<div class="novalues">No values to plot for node '+node+' (Click message \
 to dismiss)</div>').on("click",function(){div.hide()});
         return div;
+    }
+    
+    function addCloseBtn(div){
+        var closeBtn = $('<button class="close plot-close">\u00D7</button>');
+//        closeBtn.tooltip({title:"Close Plot",delay:100,container:'body'})
+        closeBtn.on("click",function(){
+            div.hide();
+            allPlots.splice(allPlots.indexOf(div.find('.placeholder').data("plot")),1);
+        });
+        div.prepend(closeBtn);
     }
     
     /*********************
@@ -628,7 +765,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
     Preparing of data written by Chris Terman
     *********************/
     function tran_plot(div, results, plots) {
-        compactPlot = true;
+//        compactPlot = true;
         if (results === undefined) {
             div.text("No results!");
             return;
@@ -678,14 +815,15 @@ to dismiss)</div>').on("click",function(){div.hide()});
             
             // prepare a div
             var wdiv = $('<div class="plot-wrapper"></div>');
+            addCloseBtn(wdiv);
             if (compactPlot){
-                wdiv.css("margin-bottom",'-20px');
+                wdiv.css("margin-bottom",'-10px');
             }
             var ldiv;
-//            if (compactPlot){
-//                ldiv = $('<div class="plot-legend"></div>');
-//                wdiv.append(ldiv);
-//            }
+            if (compactPlot){
+                ldiv = $('<div class="plot-legend"></div>');
+                wdiv.append(ldiv);
+            }
             var plotdiv = get_plotdiv();
             wdiv.append(plotdiv);
             div.append(wdiv);
@@ -696,10 +834,15 @@ to dismiss)</div>').on("click",function(){div.hide()});
 //                options.xaxis.show = false;
 //                options.yaxis.show = false;
 //                console.log("compact");
-                options.xaxis.font = {color:'rgba(0,0,0,0)'}
-                options.yaxis.font = {color:'rgba(0,0,0,0)'}
-                options.legend = {show:false/*container:ldiv*/};
-//                console.log("options:",options);
+                options.xaxis.font = {color:'rgba(0,0,0,0)',
+                                      size:1
+                                     }
+                options.yaxis.font = {color:'rgba(0,0,0,0)',
+                                      size:1
+                                     }
+//                if (plot_nodes.length == 1){
+//                    options.legend = {show:false/*container:ldiv*/};
+//                }
             } else {
                 options.yaxis.axisLabel = current ? 'Amps (A)' : 'Volts (V)';
 //                options.xaxis.axisLabel = 'Time (s)';
@@ -722,7 +865,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
     AC plot: plot an AC analysis. Arguments same as above.
     *************************/
     function ac_plot(div, results, plots) {
-        compactPlot = false;
+//        compactPlot = false;
         if (results === undefined) {
             div.text("No results!");
             return;
@@ -775,6 +918,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
             
             // prepare divs for magnitude graph
             var div1 = $('<div class="plot-wrapper"></div>');
+            addCloseBtn(div1);
             var plotDiv = get_plotdiv();
             div.append(div1);
             div1.append(plotDiv);
@@ -794,6 +938,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
             
             // prepare divs for phase graphs
             var div2 = $('<div class="plot-wrapper"></div>');
+            addCloseBtn(div2);
             plotDiv = get_plotdiv();
             div.append(div2);
             div2.append(plotDiv);
@@ -821,6 +966,8 @@ to dismiss)</div>').on("click",function(){div.hide()});
     function simulate(text,filename,div) {
         div.empty();  // we'll fill this with results
         bigDiv = div;
+        $('#graphScrollInner').width($('#graphScrollOuter').width());
+        
         var parsed = Parser.parse(text,filename);
         
         var netlist = parsed.netlist;
@@ -828,9 +975,9 @@ to dismiss)</div>').on("click",function(){div.hide()});
         var plots = parsed.plots;
         
         allPlots = [];
-        $('#graph-toolbar').empty();
-        general_zoompan();
-        general_setup();
+//        $('#graph-toolbar').empty();
+//        general_zoompan();
+//        general_setup();
         
         if (netlist.length === 0) {
             div.html("</br>Empty netlist!");
@@ -845,17 +992,45 @@ to dismiss)</div>').on("click",function(){div.hide()});
             return;
         }
         
+        if (plots.length >= 4){
+            compactPlot = true;
+        } else {
+            compactPlot = false;
+        }
+        
+        
+        var tranProgress = $('<div><span></span></br></div>');
+//                             <span></span><div class="progress"><div class="bar"\
+//style="width:0%"></div></div></div>');
+//        var tranProgressBar = tranProgress.find('.bar');
+        tranProgress.hide();
+        div.append(tranProgress);
+        var tranHalt = false;
+        var haltButton = $('<button class="btn btn-danger">Halt</button>');
+        haltButton.tooltip({title:'Halt Simulation',delay:100,container:'body'});
+        haltButton.on("click",function(){
+            tranHalt = true;
+        });
+        tranProgress.append(haltButton);
+        
         try {
             current_analysis = analyses[0];
+            $('#addplot-btn').removeAttr("disabled");
             switch (current_analysis.type) {
             case 'tran':
+                tranProgress.show();
+                var progressTxt = tranProgress.find('span');
                 cktsim.transient_analysis(netlist, current_analysis.parameters.tstop,
                                           [], function(pct_complete, results) {
-                    console.log("percent complete:",pct_complete);
+//                    console.log("percent complete:",pct_complete);
+//                    tranProgressBar.css("width",pct_complete+"%");
+                    progressTxt.text("Performing Transient Analysis... "+pct_complete+"%");
                     if (results){
+                        tranProgress.hide();
                         current_results = results;
                         tran_plot(div, current_results, plots);
                     }
+                    return tranHalt;
                 });
                 break;
             case 'ac':
@@ -874,9 +1049,21 @@ to dismiss)</div>').on("click",function(){div.hide()});
 //        console.log("current results:",current_results);
     }
 
+    
+    function setup(){
+        general_setup();
+        general_zoompan();
+        
+        $('#simulation-pane').on("resize",function(){
+//            console.log("width:",$('#graphScrollOuter').width());
+//            $('#graphScrollInner').width($('#graphScrollOuter').width());
+            $('.reset-zoom').click();
+        });
+    }
 /*********************
 Exports
 **********************/
-    return {simulate:simulate};
+    return {setup:setup,
+            simulate:simulate};
     
 }());

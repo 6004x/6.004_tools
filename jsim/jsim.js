@@ -20,8 +20,10 @@ $(function() {
     $('#maximise_simulation').click(activeButton(split.maximiseRight));
 
     $('#simulation-pane').append($('<div class="btn-toolbar" id="graph-toolbar"></div>'),
-//                                 $('<div style="height:46px"></div>'),
-                                 $('<div id="results"></div>'));
+                                 $('<div id="results"></div>'),
+                                 $('<div id="graphScrollOuter">\
+<div id="graphScrollInner"></div></div>')
+                                );
 
     // Make an editor
     var mode = 'jsim';
@@ -45,12 +47,12 @@ $(function() {
     }
 
     // Add some buttons to it
-    editor.addButtonGroup([new ToolbarButton('<img src="simulate.png">', dls, 'Device-level simulation')]);
+    editor.addButtonGroup([new ToolbarButton('<img src="simulate.png"> Simulate', dls, 'Device-level simulation')]);
     editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
         editor.clearErrors();
     })]);
     
-    
+    Simulator.setup();
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
     }
