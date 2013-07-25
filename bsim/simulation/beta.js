@@ -253,7 +253,7 @@ BSim.Beta = function() {
         this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
         if(!no_update_memory) {
             var r = _.range(0, mMemory.size(), 4);
-            this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
+            this.trigger('change:bulk:word', _.object(r, _.map(r, function(v) { return self.readWord(v, false); })));
         }
     };
 
