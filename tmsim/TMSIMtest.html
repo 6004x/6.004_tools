@@ -10,8 +10,10 @@
 
         <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">    
         <link rel="stylesheet" type="text/css" href="TMSIM.css">    
+        <link rel="stylesheet" type="text/css" href="../slider/css/slider.css">    
         <script src='../fileSystem/fileSystem.js'></script>
         <script src='../fileSystem/folders.js'></script>
+        <script src='../slider/js/bootstrap-slider.js'></script>
         <script src='TapeList.js'></script>
         <script src='TSM.js'></script>
         <script src='TSMParser.js'></script>
@@ -78,7 +80,7 @@
                         editor.clearErrors();
                         console.log(e.stack );
                         for (var i = 0; i < e.length; i++)
-                            editor.markErrorLine(file.name, e[i].message, e[i].lineNumber);
+                            editor.markErrorLine(file.name, e[i].message, e[i].lineNumber - 1);
                         valid = false;
                     }
                     if(valid){

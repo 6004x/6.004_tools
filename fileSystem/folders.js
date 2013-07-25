@@ -4,7 +4,7 @@ var Folders=new function(){
     var editMode
     var fileRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~)/g;
     //attaches file list to the default node
-    function refreshFileList(){
+    function refresh(){
 
         getFileList(rootNode.find('.filePaths'));
     }
@@ -42,8 +42,9 @@ var Folders=new function(){
             }
             span.click(function(e) {
                 e.stopPropagation();
+                var current_path=$(e.currentTarget).parents('li').attr('data-path'); 
                 if(callback) {
-                    callback(path);
+                    callback(current_path);
                 }
             });
             return span;
@@ -163,12 +164,14 @@ var Folders=new function(){
         $(window).resize();
     }
 
+
     function newFolder(file_path){
         var handleCreate = function() {
             var folderName = modal.inputContent();
 
             if(!isValidName(fileRegexp, folderName)){
                 modal.showError('Names cannot contain \\, \/, :, ", <, >, |, ?, or *');
+
                 return;
             }
             var folderPath = file_path + folderName;
@@ -180,7 +183,7 @@ var Folders=new function(){
             }
 
             FileSystem.newFolder(folderPath, function(){
-                refreshFileList();
+                refresh();
                 modal.dismiss();
             });
         }
@@ -189,7 +192,7 @@ var Folders=new function(){
         modal.setTitle("New Folder");
         modal.setText("Enter a name for your folder:");
         modal.inputBox({
-            prefix: file_path,
+            prefix: '/' + FileSystem.getUserName() + file_path,
             callback: handleCreate
         });
         modal.addButton('Cancel', 'dismiss');
@@ -207,6 +210,7 @@ var Folders=new function(){
             
             if(!isValidName(fileRegexp, fileName)){
                 modal.showError('File names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~');
+
                 return;
             }
 
@@ -218,6 +222,7 @@ var Folders=new function(){
 
             if (FileSystem.isFile(newFileName)){
                 modal.showError(fileName+'.'+editMode+' is already a file, please choose another name');
+
                 return;
             }
 
@@ -228,7 +233,7 @@ var Folders=new function(){
 
             FileSystem.newFile(new_file.name, new_file.data, function(data){
                 displayFile(data);
-                refreshFileList();
+                refresh();
                 modal.dismiss();
             });
         }
@@ -237,7 +242,7 @@ var Folders=new function(){
         modal.setTitle("New File");
         modal.setText("Enter a name for your file:");
         modal.inputBox({
-            prefix: file_path,
+            prefix: '/' + FileSystem.getUserName() + file_path,
             callback: handleCreate
         });
         modal.addButton('Cancel', 'dismiss');
@@ -252,7 +257,7 @@ var Folders=new function(){
         modal.addButton('Cancel', 'dismiss');
         modal.addButton('Delete', function() {
             FileSystem.deleteFile(path, function() {
-                refreshFileList();
+                refresh();
                 modal.dismiss();
             });
         }, 'btn-danger');
@@ -276,8 +281,6 @@ var Folders=new function(){
                 newFileName=file_path+'/'+fileName+'.'+editMode;
             else
                 newFileName=file_path+'/'+fileName;
-            
-
             if(FileSystem.isFile(newFileName)) {
                 modal.showError(fileName + '.' + editMode + ' is already a file, please choose another name');
                 return;
@@ -292,10 +295,11 @@ var Folders=new function(){
             FileSystem.renameFile(path, newFileName , function(data){
                 console.log(data.status + ' new file');
                 displayFile(data);
-                refreshFileList();
+                refresh();
                 modal.dismiss();
             });
         }
+
 
         var modal = new ModalDialog();
         modal.setTitle("Rename");
@@ -303,7 +307,7 @@ var Folders=new function(){
         modal.addButton('Rename', handleRename, 'btn-primary');
         modal.setContent("<p>Enter a new name for <strong>" + path + "</strong></p>");
         modal.inputBox({
-            prefix: file_path+'/',
+            prefix: '/' + FileSystem.getUserName() + file_path+'/',
             callback: handleRename
         });
         modal.show();
@@ -331,7 +335,7 @@ var Folders=new function(){
         rootNode.append(buttonDiv);
         rootNode.append(sideBarNav);
 
-        refreshFileList();
+        refresh();
     }
 
     function addDiv(classes){
@@ -344,7 +348,7 @@ var Folders=new function(){
         var toolbar = new Toolbar(buttonDiv);
         toolbar.addButtonGroup([
             new ToolbarButton('icon-chevron-left', hideNavBar, 'Hide Folders'),
-            new ToolbarButton('icon-refresh', refreshFileList, 'Refresh'),
+            new ToolbarButton('icon-refresh', refresh, 'Refresh'),
             new ToolbarButton('icon-off', _.identity, 'Commit and Close')
         ]);
 
@@ -390,5 +394,5 @@ var Folders=new function(){
             });
         }
     }
-    return {setup:setup, refresh:refreshFileList};
+    return {setup:setup, refresh:refresh};
 }();

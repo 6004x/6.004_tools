@@ -29,7 +29,11 @@ var path=require('path');
 		console.log(user + ' wants ' + query);
 
 		fs.exists(full_path, function(exists){
-			functions[query](exists);
+			try{
+				functions[query](exists);
+			} catch(e) {
+				errorResponse(e);
+			}
 		});
 
 		var functions  = {
@@ -152,6 +156,7 @@ var path=require('path');
 		}
 
 		function errorResponse(string){
+			console.log(string)
 			response.writeHeader(404, 
 				{
 					"Content-Type": "text/plain",
@@ -207,17 +212,33 @@ var path=require('path');
 			});
 		}
 		function hideFile(full_path, file_path){
-			console.log('hiding '+path.dirname(full_path)+path.sep+'~'+path.basename(full_path));
-			fs.rename(full_path, path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function (err) {
-				if (err) 
+			console.log('hiding '+path.dirname(full_path)+path.sep+'del~'+path.basename(full_path));
+			fs.exists(path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function(exists){
+				if (err) {
 					errorResponse(err + ' file could not be renamed');
-				
-				console.log(path.sep+'del~'+path.basename(full_path));
-				sendJSON({
-					status:'success',
-					name:file_path,
-				});
-			});
+					return;
+				}
+				if(exists){
+					//TODO: what should we do in case we delete a file/folder twice
+				}
+				else{
+					fs.rename(full_path, path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function (err) {
+						if (err) {
+							errorResponse(err + ' file could not be renamed');
+							return;
+						}
+						else{
+							console.log(path.sep+'del~'+path.basename(full_path));
+							sendJSON({
+								status:'success',
+								name:file_path,
+							});
+						}
+					});
+				}
+
+			})
+			
 		}
 		function create_user_path() {
 			fs.mkdirSync(user_path,function(err) {
