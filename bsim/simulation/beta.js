@@ -39,14 +39,7 @@ BSim.Beta = function() {
     // Information not strictly related to running the Beta, but needed in BSim
     var mBreakpoints = {};
     var mLabels = {};
-    var mOptions = {
-        clock: false,
-        div: true,
-        mul: true,
-        kalways: false,
-        tty: false,
-        annotate: false
-    };
+    var mOptions = {};
     var mVerifier = null;
     var mTTYContent = '';
 
@@ -72,11 +65,24 @@ BSim.Beta = function() {
 
     _.extend(this, Backbone.Events);
 
+    var set_defaults = function() {
+        mOptions = {
+            clock: false,
+            div: true,
+            mul: true,
+            kalways: false,
+            tty: false,
+            annotate: false
+        };
+    };
+    set_defaults();
+
     this.loadBytes = function(bytes) {
         this.stop();
         this.reset(true);
 
         mMemory.loadBytes(bytes);
+        set_defaults();
 
         // Update the UI with our new program.
         this.trigger('resize:memory', bytes.length);
@@ -87,6 +93,7 @@ BSim.Beta = function() {
 
         this.clearBreakpoints();
         this.setLabels({});
+        this.setPC(SUPERVISOR_BIT);
     };
 
     this.setOption = function(option, enabled) {
