@@ -237,8 +237,12 @@
         // Dot is a special case.
         if(this.name === '.') {
             var dot = this.value.evaluate(context, true);
-            if(dot < context.dot) {
-                throw new SyntaxError("It is illegal to set . to a value lower than its current value (current value: " + context.dot + "; new value: " + dot + ")", this.file, this.line);
+            // This is bound to fail eventually, but to get the error messages in the right order, we
+            // ensure that we only complain about this on the second iteration.
+            if(out) {
+                if(dot < context.dot) {
+                    throw new SyntaxError("It is illegal to set . to a value lower than its current value (current value: " + context.dot + "; new value: " + dot + ")", this.file, this.line);
+                }
             }
             context.dot = dot;
         } else {
