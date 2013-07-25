@@ -39,14 +39,14 @@ $(function() {
         var content = editor.content()
         var filename = editor.currentTab();
         div = $('#results');
-        try{
-            Simulator.simulate(content,filename,div);
-        } catch (err) {
-            if (err instanceof Parser.CustomError){
-                editor.markErrorLine(filename, err.message, err.line-1, err.column);
-            } else {
-                throw err;
-            }
+        Simulator.simulate(content,filename,div,error_catcher);
+    }
+    
+    function error_catcher(err){
+        if (err instanceof Parser.CustomError){
+            editor.markErrorLine(err.filename, err.message, err.line-1, err.column);
+        } else {
+            throw err;
         }
     }
 

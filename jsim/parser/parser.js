@@ -3,10 +3,11 @@ var Parser = (function(){
 /********************************
 Error object:
 *********************************/
-    function CustomError(message,line,column){
+    function CustomError(message,token){
         this.message = message;
-        this.line = line;
-        this.column = column;
+        this.line = token.line;
+        this.column = token.column;
+        this.filename = token.origin_file;
     }
     
 /**********************************
@@ -104,7 +105,8 @@ Splitter: splits a string into an array of tokens
             
             // check for unclosed comments
             if (matched_array[0] == "/*"){
-                throw new CustomError("Unclosed comment",lineNumber);
+                throw new CustomError("Unclosed comment",
+                                      {line:lineNumber,column:0,origin_file:filename});
             }
             
             // find column offset
@@ -199,7 +201,7 @@ into the proper sequences
                     try{
                         new_iter_strings = iter_interpret(iter_string);
                     } catch(err) {
-                        throw new CustomError(err,current.line,current.column);
+                        throw new CustomError(err,current);
                     }
                     for (var i = 0; i < new_iter_strings.length; i += 1){
                         var new_token_obj = {token:front_string+new_iter_strings[i]+
@@ -386,27 +388,29 @@ content
     var included_contents = [];
     var includeCompleted = false;
     var included_token_array;
-    function filename_to_contents(filename, callback){
+    function filename_to_contents(filename, callback, error_cb){
 //        if (pseudo_files[filename] === undefined){
 //            throw "File does not exist";
 //        } else {
 //            return pseudo_files[filename];
 //        }
-        console.log("filename:",filename);
+//        console.log("filename:",filename);
         numPendingFiles += 1;
         FileSystem.getFile(filename, function(obj){
             // success function
             numPendingFiles -= 1;
-            console.log("contents:",obj.data);
-            try {
-                var stuff = iter_expand(split(analyze(obj.data),filename));
-            } catch (err) {}
-            included_contents.push(stuff)
-            console.log("included contents:",included_contents);
+//            console.log("contents:",obj.data);
+//            try {
+//                var stuff = iter_expand(split(analyze(obj.data),filename));
+//            } catch (err) {
+//                error_cb(err);
+//            }
+//            included_contents.push(stuff)
+//            console.log("included contents:",included_contents);
             
             if (numPendingFiles === 0 && includeCompleted) {
                 /*************** completed callback****************/
-                return parse(included_token_array, callback);
+                return parse(included_token_array, callback, error_cb);
             }
             
         }, function(){
@@ -421,7 +425,7 @@ Include: takes a parsed array of tokens and includes all the files
     --returns: a new array of tokens consisting of all the tokens from all files
 ***************************/
     
-    function include(token_array, callback){
+    function include(token_array, callback, error_cb){
         var included_files = [token_array[0].origin_file];
         // list of filenames that have already been included 
         var new_token_array = [];
@@ -433,18 +437,18 @@ Include: takes a parsed array of tokens and includes all the files
                 var file = token_array[1];
 //                console.log("file:",file);
                 if (!(file.type == "string")){
-                    throw new CustomError("Filename expected",
-                                          current.line,current.column);
+                    throw new CustomError("Filename expected", current);
                 } else {
                     var filename = file.token;
                     if (included_files.indexOf(filename) == -1) {
                         included_files.push(filename);
                         
-                        try{
-                            filename_to_contents(filename,callback);
-                        } catch(err) {
-                            throw new CustomError(err,current.line,current.column);
-                        }
+//                        try{
+                        filename_to_contents(filename, callback, error_cb);
+//                        } catch(err) {
+//                            throw new CustomError(err,current.line,current.column,
+//                                                  current.origin_file);
+//                        }
 //                        contents = tokenize(contents,filename);
                         token_array.shift();
                         token_array.shift();  
@@ -458,7 +462,7 @@ Include: takes a parsed array of tokens and includes all the files
 //        console.log("new token array from includer:",new_token_array);
         included_token_array = new_token_array.slice(0);
         if (numPendingFiles === 0){
-            return parse(included_token_array, callback);
+            parse(included_token_array, callback, error_cb);
         }
 //        return new_token_array;
     }
@@ -470,9 +474,9 @@ iterators and duplicators, and includes files
             -filename: a string representing the unique name of the file
     --returns: an array of strings (tokens)
 *********************************/
-    function tokenize(input_string,filename,callback){
+    function tokenize(input_string,filename,callback,error_cb){
         included_contents = [];
-         return include(iter_expand(split(analyze(input_string),filename)),callback);
+         return include(iter_expand(split(analyze(input_string),filename)),callback,error_cb);
     }
     
 /******************************************************************************
@@ -490,12 +494,21 @@ Parse
     var used_names;
 //    var netlist;
     
-    function parse(token_array, callback){
+    function parse(token_array, callback, error_cb){
 //        console.log("token array:",token_array);
         for (var i = 0; i < included_contents.length; i += 1){
             token_array = token_array.concat(included_contents[i]);
         }
-        callback(interpret(token_array));
+        try {
+//            console.log("token array, pre-parse:",token_array);
+            callback(interpret(token_array));
+        } catch(err){
+//            console.log('error caught');
+            error_cb(err);
+            return;
+        }
+        
+//        callback(interpret(token_array));
     }
     
     function interpret(token_array){
@@ -558,8 +571,7 @@ Parse Control
     function parse_control(line){
         switch (line[0].token.toLowerCase()){
             case ".connect":
-                throw new CustomError("Connect not implemented yet",
-                                line[0].row,line[0].column);
+                throw new CustomError("Connect not implemented yet",line[0]);
                 break;
             case ".global":
                 read_global(line);
@@ -573,44 +585,38 @@ Parse Control
             case ".tran":
                 if (current_subckt.name != "_top_level_"){
                     throw new CustomError("Analyses not allowed inside "+
-                                    "subcircuit definitons",
-                                    line[0].line,line[0].column);
+                                    "subcircuit definitons", line[0]);
                 }
                 read_tran(line);
                 break;
             case ".dc":
                 if (current_subckt.name != "_top_level_"){
                     throw new CustomError("Analyses not allowed inside "+
-                                    "subcircuit definitons",
-                                    line[0].line,line[0].column);
+                                    "subcircuit definitons", line[0]);
                 }
                 read_dc(line);
                 break;
             case ".ac":
                 if (current_subckt.name != "_top_level_"){
                     throw new CustomError("Analyses not allowed inside "+
-                                    "subcircuit definitons",
-                                    line[0].line,line[0].column);
+                                    "subcircuit definitons", line[0]);
                 }
                 read_ac(line);
                 break;
             case ".subckt":
                 if (current_subckt.name != "_top_level_"){
-                    throw new CustomError("Nested subcircuits not allowed",
-                                    line[0].line,line[0].column);
+                    throw new CustomError("Nested subcircuits not allowed",line[0]);
                 }
                 current_subckt = read_subcircuit(line);
                 break;
             case ".ends":
                 if (current_subckt.name == "_top_level_"){
-                    throw new CustomError(".ends statement without matching .subckt",
-                                    line[0].line,line[0].column);
+                    throw new CustomError(".ends statement without matching .subckt",line[0]);
                 }
                 current_subckt = subcircuits["_top_level_"];
                 break;
             default:
-                throw new CustomError("Invalid control statement",
-                                line[0].line,line[0].column);
+                throw new CustomError("Invalid control statement",line[0]);
                 break;
         }
     }
@@ -625,13 +631,11 @@ Control statement readers
     function read_global(line){
         line.shift();
         if (line.length === 0){
-            throw new CustomError("No global nodes specified",
-                            line[0].line,line[0].column);
+            throw new CustomError("No global nodes specified",line[0]);
         }
         for (var i = 0; i < line.length; i += 1){
             if (line[i].type != "name"){
-                throw new CustomError("Node name expected",
-                                      line[i].line,line[i].column);
+                throw new CustomError("Node name expected",line[i]);
             } else {
                 globals.push(line[i].token);
             }
@@ -650,12 +654,10 @@ Control statement readers
                 // get the node name in the parentheses
                 var node = /\((.+)\)/.exec(line[i].token)[1];
                 if (!(/(^[A-Za-z][\w$:\[\]\.]*)/.test(node))){
-                    throw new CustomError("Node name expected",
-                                      line[i].line,line[i].column);
+                    throw new CustomError("Node name expected",line[i]);
                 }
             } else if (line[i].type != "name"){
-                throw new CustomError("Node name expected",
-                                      line[i].line,line[i].column);
+                throw new CustomError("Node name expected",line[i]);
             }
             plot_list.push(line[i].token);
             
@@ -663,8 +665,7 @@ Control statement readers
         if (plot_list.length > 0){
             plots.push(plot_list);
         } else {
-            throw new CustomError("Node name expected",
-                            line[0].line,line[0].column);
+            throw new CustomError("Node name expected",line[0]);
         }
     }
     
@@ -675,12 +676,10 @@ Control statement readers
         line.shift();
         while (line.length > 0){
             if (line.length < 3){
-                throw new CustomError("Assignment expected",
-                                line[0].line,line[0].column);
+                throw new CustomError("Assignment expected", line[0]);
             }
             if (line[1].token != "="){
-                throw new CustomError("Assignment expected",
-                                line[0].line,line[0].column);
+                throw new CustomError("Assignment expected", line[0]);
             }
 //            if (line[2].type != "number"){
 //                throw new CustomError("Number expected",line[2].line,line[2].column);
@@ -688,7 +687,7 @@ Control statement readers
             try{
                 options[line[0].token] = parse_number(line[2].token);
             } catch (err) {
-                throw new CustomError("Number expected",line[2].line,line[2].column);
+                throw new CustomError("Number expected",line[2]);
             }
             line = line.slice(3);
         }
@@ -700,8 +699,7 @@ Control statement readers
     function read_tran(line){
         var tran_obj = {type:'tran',parameters:{},line:line[0].line};
         if (line.length != 2){
-            throw new CustomError("One argument expected: .tran tstop",
-                           line[1].line,line[1].column);
+            throw new CustomError("One argument expected: .tran tstop", line[1]);
         }
 //        if (line[1].type != "number"){
 //            throw new CustomError("Number expected",line[1].line,line[1].column)
@@ -712,7 +710,7 @@ Control statement readers
         try{
             tran_obj.parameters.tstop = parse_number(line[1].token);
         } catch(err){
-            throw new CustomError("Number expected",line[1].line,line[1].column);
+            throw new CustomError("Number expected",line[1]);
         }
         analyses.push(tran_obj);
     }
@@ -756,15 +754,13 @@ Control statement readers
         if (line.length != 2 && line.length != 4 && line.length != 8){
             throw new CustomError("Two, four or eight parameters expected: "+
                                   "src1, [start1, stop1, step1], [src2, start2, "+
-                                  "stop2, step2]",
-                           line[0].line,line[0].column);
+                                  "stop2, step2]", line[0]);
         }
         
         for (var i = 0; i < line.length; i += 1){
             if (i == 0 || i == 4){
                 if (line[i].type != "name"){
-                    throw new CustomError("Node name expected",
-                                    line[i].line, line[i].column);
+                    throw new CustomError("Node name expected", line[i]);
                 } else {
                     dc_obj.parameters[param_names[i]] = line[i].token;
                 }
@@ -772,8 +768,7 @@ Control statement readers
                 try{
                     line[i].token = parse_number(line[i].token);
                 } catch (err) {
-                    throw new CustomError("Number expected",
-                                          line[i].line,line[i].column);
+                    throw new CustomError("Number expected", line[i]);
                 }
             }
         }
@@ -796,13 +791,11 @@ Control statement readers
         for (var i=1; i<=2; i+=1){
             if (temp_ps["start"+i] >= temp_ps["stop"+i]){
                 throw new CustomError("Stop time must be greater than start time",
-                                dc_obj.parameters["start"+i].line,
-                                dc_obj.parameters["start"+i].column);
+                                dc_obj.parameters["start"+i]);
             }
             if (temp_ps["step"+i] <= 0) {
                 throw new CustomError("Step interval must be a non-zero, positive number",
-                                dc_obj.parameters["step"+i].line,
-                                dc_obj.parameters["step"+i].line);
+                                dc_obj.parameters["step"+i]);
             }
         }
         dc_obj.parameters = temp_ps;
@@ -817,12 +810,11 @@ Control statement readers
         
         if (line.length != 4){
             throw new CustomError("Three arguments expected: "+
-                                  ".ac ac_source_name fstart fstop",
-                                  line[0].line,line[0].column);
+                                  ".ac ac_source_name fstart fstop", line[0]);
         }
         
         if (line[1].type != "name"){
-            throw new CustomError("Node name expected",line[1].line,line[1].column);
+            throw new CustomError("Node name expected",line[1]);
         }
         ac_obj.parameters.ac_source_name = line[1].token;
         
@@ -831,7 +823,7 @@ Control statement readers
             try {
                 ac_obj.parameters[param_names[i]] = parse_number(line[i].token);
             } catch (err) {
-                throw new CustomError("Number expected",line[i].line,line[i].column);
+                throw new CustomError("Number expected",line[i]);
             }
         }
         analyses.push(ac_obj);
@@ -851,7 +843,7 @@ Read subcircuit: creates an entry in the subcircuit dictionary
                    devices:[]
                   }
         if (line[0].token == "_top_level_"){
-            throw new CustomError("Reserved name",line[0].line,line[0].column);
+            throw new CustomError("Reserved name",line[0]);
         }
         line.shift();
         
@@ -859,15 +851,13 @@ Read subcircuit: creates an entry in the subcircuit dictionary
             if (line.length > 1){
                 if (line[1].token == "="){
                     if (line.length < 3){
-                        throw new CustomError("Assignment expected",
-                                        line[1].line,line[1].column);
+                        throw new CustomError("Assignment expected", line[1]);
                     } else {
                         try{
                             obj.properties[line[0].token] = 
                                 parse_number(line[2].token);
                         } catch (err) {
-                            throw new CustomError("Number expected",
-                                                  line[2].line,line[2].token);
+                            throw new CustomError("Number expected", line[2]);
                         }
                         line = line.slice(3);
                         continue;
@@ -914,10 +904,10 @@ Read Device: takes a line representing a device and creates a device object
                 device_obj = read_instance(line);
                 break;
             default:
-                throw new CustomError("Invalid device type",
-                                      line[0].line,line[0].column);
+                throw new CustomError("Invalid device type", line[0]);
         }
         device_obj.line = line[0].line;
+        device_obj.file = line[0].origin_file;
         return device_obj;
     }
     
@@ -978,8 +968,7 @@ Device readers: each takes a line of tokens and returns a device object,
         line.shift();
         for (var i = 0; i < line.length-1; i += 1){
             if (line[i].type != "name"){
-                throw new CustomError("Node name expected",
-                                      line[i].line,line[i].column);
+                throw new CustomError("Node name expected", line[i]);
             }
             obj.connections.push(line[i].token);
         }
@@ -988,8 +977,7 @@ Device readers: each takes a line of tokens and returns a device object,
         try{
             obj.properties.value = parse_number(line[end-1].token);
         } catch (err) {
-            throw new CustomError("Number expected",
-                                  line[end-1].line,line[end-1].column);
+            throw new CustomError("Number expected", line[end-1]);
         }
 //        if (line[end-1].type != "number"){
 //            throw new CustomError("Number expected",line[end-1].line,line[end-1].column);
@@ -1049,8 +1037,7 @@ Device readers: each takes a line of tokens and returns a device object,
         
         // the last argument should be an assignment (W or L)
         if (line[end-2].token != "="){
-            throw new CustomError("Assignment expected",
-                            line[end-2].line,line[end-2].column);
+            throw new CustomError("Assignment expected", line[end-2]);
         }
 //        if (line[end-1].type != "number"){
 //            throw new CustomError("Number expected",
@@ -1059,16 +1046,14 @@ Device readers: each takes a line of tokens and returns a device object,
         if (line[end-3].token.toUpperCase() != "L" &&
             line[end-3].token.toUpperCase() != "W"){
             throw new CustomError("Mosfet has no property "+
-                                  line[end-3].token,line[end-3].line,
-                                  line[end-3].column);
+                                  line[end-3].token,line[end-3]);
         }
         
         try{
             obj.properties[line[end-3].token.toUpperCase()] = 
                 parse_number(line[end-1].token);
         } catch (err) {
-            throw new CustomError("Number expected",
-                                  line[end-1].line,line[end-1].column);
+            throw new CustomError("Number expected", line[end-1]);
         }
         
         if (line[end-5] !== undefined){
@@ -1080,29 +1065,25 @@ Device readers: each takes a line of tokens and returns a device object,
                 if (line[end-6].token.toUpperCase() != "L" &&
                     line[end-6].token.toUpperCase() != "W"){
                     throw new CustomError("Mosfet has no property "+
-                                          line[end-6].token,line[end-6].line,
-                                          line[end-6].column);
+                                          line[end-6].token,line[end-6]);
                 }
                 try{
                     obj.properties[line[end-6].token.toUpperCase()] = 
                         parse_number(line[end-4].token);
                 } catch (err) {
-                    throw new CustomError("Number expected", line[end-4].line,
-                                          line[end-4].column);
+                    throw new CustomError("Number expected", line[end-4]);
                 }
                 knex_end -= 3;
             }
         }
         
         if (obj.properties.W === undefined){
-            throw new CustomError("Mosfet width must be specified",
-                            line[0].line,line[0].column);
+            throw new CustomError("Mosfet width must be specified", line[0]);
         }
         
         for (var i = 0; i < knex_end; i += 1){
             if (line[i].type != "name"){
-                throw new CustomError("Node name expected",
-                                      line[i].line,line[i].column);
+                throw new CustomError("Node name expected", line[i]);
             }
             obj.connections.push(line[i].token);
         }
@@ -1142,8 +1123,7 @@ Device readers: each takes a line of tokens and returns a device object,
                   }
         for (var i = 1; i <= 2; i += 1){
             if (line[i].type != "name"){
-                throw new CustomError("Node name expected",
-                                line[i].line,line[i].column);
+                throw new CustomError("Node name expected", line[i]);
             }
         }
         
@@ -1164,8 +1144,7 @@ Device readers: each takes a line of tokens and returns a device object,
             }
         } else*/ if (line[3].type != "function" /* test */ &&
                      line[3].type != "number"){
-            throw new CustomError("Number or function expected",
-                                  line[3].line,line[3].column);
+            throw new CustomError("Number or function expected", line[3]);
         } else {
             obj.properties.value = line[3].token;   
         }
@@ -1189,8 +1168,7 @@ Device readers: each takes a line of tokens and returns a device object,
 
         var inst = line[line.length-1];
         if (!(inst.token in subcircuits)){
-            throw new CustomError("Can't find definition for subcircuit "+inst.token,
-                            inst.line,inst.column);
+            throw new CustomError("Can't find definition for subcircuit "+inst.token, inst);
         }
         
         var obj = {type:"instance",
@@ -1210,8 +1188,7 @@ Device readers: each takes a line of tokens and returns a device object,
         
         for (var i = 0; i < line.length-1; i += 1){
             if (line[i].type != "name"){
-                throw new CustomError("Node name expected",
-                                line[i].line,line[i].column);
+                throw new CustomError("Node name expected", line[i]);
             }
             obj.connections.push(line[i].token);
         }
@@ -1222,14 +1199,12 @@ Device readers: each takes a line of tokens and returns a device object,
 //            }
             if (!(props[i][0].token in obj.properties)){
                 throw new CustomError("Subcircuit "+inst.token+" has no property "+
-                                      props[i][0].token,props[i][0].line,
-                                      props[i][0].column);
+                                      props[i][0].token, props[i][0]);
             }
             try{
                 obj.properties[props[i][0].token] = parse_number(props[i][2].token);
             } catch (err) {
-                throw new CustomError("Number expected",
-                                      props[i][2].line, props[i][2].column);
+                throw new CustomError("Number expected", props[i][2]);
             }
         }
         
@@ -1248,7 +1223,7 @@ Flattening
         var nknex = dev_obj.connections.length;
         if (nknex % nports !== 0){
             throw new CustomError("Expected a multiple of "+nports+" connections",
-                                  dev_obj.line,0);
+                                  {line:dev_obj.line,column:0,origin_file:dev_obj.file});
         }
         var ndevices = nknex/nports;
         var local_props = {};
@@ -1307,7 +1282,7 @@ Flattening
             // check for duplicate device names
             if (used_names.indexOf(new_obj.properties.name) != -1){
                 throw new CustomError("Duplicate device name: "+new_obj.properties.name,
-                                      dev_obj.line,0);
+                                      {line:dev_obj.line,column:0,origin_file:dev_obj.file});
             } 
             
             used_names.push(new_obj.properties.name);
