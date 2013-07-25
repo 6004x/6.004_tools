@@ -9,10 +9,12 @@ BSim.MemoryView = function(container, beta) {
         var zero_word = BSim.Common.FormatWord(0);
         var word_length = Math.ceil(length / 4);
 
+        mTable.startBatch();
         mTable.empty();
         for(var i = 0; i < length; i += 4) {
             mTable.insertRow([BSim.Common.FormatWord(i, 4), zero_word]);
         }
+        mTable.endBatch();
     };
 
     var beta_change_word = function(address, value) {
@@ -20,9 +22,11 @@ BSim.MemoryView = function(container, beta) {
     };
 
     var beta_bulk_change_word = function(words) {
+        mTable.startBatch();
         for(var word in words) {
             beta_change_word(word, words[word]);
         }
+        mTable.endBatch();
     };
 
     var beta_write_word = function(address) {
@@ -34,26 +38,32 @@ BSim.MemoryView = function(container, beta) {
     };
 
     var handle_beta_thing = function(address, cls, cls_prefix, list) {
+        mTable.startBatch();
         var row = address / 4;
         mTable.scrollTo(row);
         for (var i = list.length - 1; i >= 0; i--) {
             mTable.removeRowClass(list[i], cls_prefix + (i));
-            if(i <= 3) mTable.addRowClass(list[i], cls_prefix + (i+1), true);
-            else mTable.removeRowClass(list[i], cls, true);
+            if(i <= 3) mTable.addRowClass(list[i], cls_prefix + (i+1));
+            else mTable.removeRowClass(list[i], cls);
         };
         if(list.length > 5) list.pop();
 
         list.unshift(row);
         mTable.addRowClass(row, cls);
-        mTable.addRowClass(row, cls_prefix + '0', true);
+        mTable.addRowClass(row, cls_prefix + '0');
+        mTable.endBatch();
     };
 
     var beta_bulk_read_word = function(addresses) {
+        mTable.startBatch();
         _.each(addresses, beta_read_word);
+        mTable.endBatch();
     };
 
     var beta_bulk_write_word = function(addresses) {
+        mTable.startBatch();
         _.each(addresses, beta_write_word);
+        mTable.endBatch();
     };
 
     var initialise = function() {

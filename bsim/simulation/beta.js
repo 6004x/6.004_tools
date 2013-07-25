@@ -39,14 +39,7 @@ BSim.Beta = function() {
     // Information not strictly related to running the Beta, but needed in BSim
     var mBreakpoints = {};
     var mLabels = {};
-    var mOptions = {
-        clock: false,
-        div: true,
-        mul: true,
-        kalways: false,
-        tty: false,
-        annotate: false
-    };
+    var mOptions = {};
     var mVerifier = null;
     var mTTYContent = '';
 
@@ -72,11 +65,24 @@ BSim.Beta = function() {
 
     _.extend(this, Backbone.Events);
 
+    var set_defaults = function() {
+        mOptions = {
+            clock: false,
+            div: true,
+            mul: true,
+            kalways: false,
+            tty: false,
+            annotate: false
+        };
+    };
+    set_defaults();
+
     this.loadBytes = function(bytes) {
         this.stop();
         this.reset(true);
 
         mMemory.loadBytes(bytes);
+        set_defaults();
 
         // Update the UI with our new program.
         this.trigger('resize:memory', bytes.length);
@@ -87,6 +93,7 @@ BSim.Beta = function() {
 
         this.clearBreakpoints();
         this.setLabels({});
+        this.setPC(SUPERVISOR_BIT);
     };
 
     this.setOption = function(option, enabled) {
@@ -253,7 +260,7 @@ BSim.Beta = function() {
         this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
         if(!no_update_memory) {
             var r = _.range(0, mMemory.size(), 4);
-            this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
+            this.trigger('change:bulk:word', _.object(r, _.map(r, function(v) { return self.readWord(v, false); })));
         }
     };
 
