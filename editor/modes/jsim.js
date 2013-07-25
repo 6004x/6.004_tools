@@ -53,7 +53,8 @@ CodeMirror.defineMode('jsim', function() {
                 in_multi_line_comment: false,
                 last_state: null,
                 sol: false,
-                in_args: false
+                in_args: false,
+                subckt_name: false
             };
         },
 
@@ -87,13 +88,22 @@ CodeMirror.defineMode('jsim', function() {
                 stream.skipToEnd();
                 return 'comment';
             }
+            if(state.subckt_name) {
+                stream.match(/^[a-zA-Z_][a-zA-Z0-9_]*/);
+                state.subckt_name = false;
+                state.in_args = true;
+                return 'variable';
+            }
             if(!state.in_args) {
                 if(stream.match(/^.(checkoff|connect|dc|ac|end|global|include|model|mverify|op|options|plot|plotdef|subckt|ends|temp|tempdir|tran|verify|gsubckt)\b/i)) {
                     state.in_args = true;
                     return 'keyword';
                 }
-                if(stream.match(/^[WRNPCLXVI][a-z0-9_:\$\[\]\.]+/i)) {
+                if(stream.match(/^[WRNPCLVI][a-z0-9_:\$\[\]\.]+/i)) {
                     state.in_args = true;
+                    return 'variable-3';
+                } else if(stream.match(/^X[a-z0-9_:\$\[\]\.]+/i)) {
+                    state.subckt_name = true;
                     return 'variable-3';
                 }
             } else {
