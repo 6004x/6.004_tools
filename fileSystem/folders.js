@@ -22,6 +22,7 @@ var Folders=new function(){
                 var username=FileSystem.getUserName();
                 fileList=new Object;
                 fileList[username]=data;
+                clearToolTips();
                 addFiles(fileList, parentNode, '');
             }, noServer
         );
@@ -302,7 +303,11 @@ var Folders=new function(){
     function displayFile(file){
         editor.openTab(file.name, file.data, true); 
         openFiles.push(file);
+        clearToolTips();
         $(window).resize();
+    }
+    function clearToolTips(){
+        $('div.tooltip').tooltip('hide');
     }
     function displaySave(file){
         cornerAlert('Saved', file.name+' has been saved successfully', 'success');
@@ -339,7 +344,7 @@ var Folders=new function(){
             }
             if(!isValidName(fileRegexp, folderName)){
                 prompt2='\n'+folderName+' is invalid'+'\n Names cannot contain \\,\/,:,",<,>,,|,?,*';
-                modal.find('p').append('<br/>'+prompt2);
+                modal.find('p').html('<br/>'+prompt2);
                 isValid=false;
                 return;
             }
@@ -389,7 +394,7 @@ var Folders=new function(){
             if(!isValidName(fileRegexp, fileName)){
                 prompt2='Invalid Name.<br/> Names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~';
                 isValid=false;
-                modal.find('p').append('<br/>'+prompt2);
+                modal.find('.optional').html(prompt2);
                 return;
             }
 
@@ -401,7 +406,7 @@ var Folders=new function(){
 
             if (FileSystem.isFile(newFileName)){
                 prompt2='\n'+fileName+'.'+editMode+' is already a file, please choose another name';
-                modal.find('p').append('<br/>'+prompt2);
+                modal.find('.optional').html(prompt2);
                 return;
             }
 
@@ -482,7 +487,8 @@ var Folders=new function(){
         var isValid=false;
         var prompt2=' ';
         var innerDiv=addDiv('inner-modal');
-        innerDiv.append($('<p>').addClass('firstP').append(prompt));
+        innerDiv.append($('<p>').addClass('prompt').append(prompt));
+        innerDiv.append($('<p>').addClass('optional'));
         var inputDiv = addDiv("input-prepend").append($('<span>').addClass("add-on").append(input_prepend));
         innerDiv.append(inputDiv);
         var input =$('<input>').addClass("span12")
@@ -517,7 +523,7 @@ var Folders=new function(){
             if(!isValidName(fileRegexp, fileName)){
                 prompt2='Invalid Name.<br/> Names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~';
                 isValid=false;
-                modal.find('p').append('<br/>'+prompt2);
+                modal.find('.optional').html(prompt2);
                 return;
             }
 
@@ -529,7 +535,7 @@ var Folders=new function(){
 
             if (FileSystem.isFile(newFileName)){
                 prompt2='\n'+fileName+'.'+editMode+' is already a file, please choose another name';
-                modal.find('p').append('<br/>'+prompt2);
+                modal.find('.optional').html(prompt2);
                 return;
             }
 
@@ -540,8 +546,12 @@ var Folders=new function(){
             if(fileName!=null){
                 console.log('rename file to ' + newFileName)
                 FileSystem.renameFile(path, newFileName , function(data){
-                    console.log(data.status + ' new file');
-                    displayFile(data);
+                    //TODOcheck contents of data
+                    try{
+                        displayFile(data);    
+                    } catch(e) {
+                        console.log(e.stack);
+                    }
                     refreshFileList();
                     modal.modal('hide');
                     modal.detach();
@@ -549,7 +559,6 @@ var Folders=new function(){
             }
             else{
                 console.log('null filename, abort');
-
             }
         })
     }

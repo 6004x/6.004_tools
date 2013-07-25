@@ -231,10 +231,13 @@
 				 	 		}
 				 	 		prev_2 = prev;
 				 	 		prev = $(this);
+
+
 				 	 		
 				 	 	});
 				 	 }
 			 	 });
+			
 		}
 
 		self.initialise();

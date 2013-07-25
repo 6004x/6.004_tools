@@ -8,6 +8,9 @@
 li:hover{
     text-decoration: underline;
 }
+li.file_name:hover{
+    background-color: lightyellow;
+}
 .file_name .file_button{
     border: 0px;
 }

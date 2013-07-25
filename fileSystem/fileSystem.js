@@ -49,7 +49,7 @@ var FileSystem= function(){
                 function(data, status){
                     if(status=='success'){
                         // console.log('callback in filesys')
-                        console.log(data.data)
+                        // console.log(data.data)
                         mUsername = data.user;
                         fileTree=data.data;
                         allFiles=[];
@@ -204,10 +204,11 @@ var FileSystem= function(){
         getFile(oldFileName, function(oldFile){
             console.log('renaming '+ oldFileName);
             newFile(newFileName, oldFile.data, function(newFile){
-                deleteFile(oldFileName, callback);
+                deleteFile(oldFileName, function(){
+                    callback(newFile);
+                });
             });
         });
-       // sendAjaxRequest(fileName,newFileName,'json', 'renameFile', callback, callbackFailed);
         updated=false;
     }
     function deleteFile(fileName, callback, callbackFailed){

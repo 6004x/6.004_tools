@@ -1,9 +1,11 @@
 function TapeList(){
-	var self=this;
-	var first=null;
-	var current=null;
-	var last=null;
-	var size=0;
+	var self = this;
+	var first = null;
+	var current = null;
+	var last = null;
+	var leftSize = 0;
+	var rightSize = 0;
+	var size = 0;
 
 	//attaches a node with data as the last pointer of the LL
 	
@@ -88,6 +90,7 @@ function TapeList(){
 			first=temp;
 		}
 		size++;
+		leftSize++;
 		return self;
 	}
 	this.append=function(data){
@@ -108,6 +111,7 @@ function TapeList(){
 			last.next=null;
 		}
 		size++;
+		rightSize++;
 		return self;
 	}
 	//finds first instance of this data and removes it
@@ -233,6 +237,15 @@ function TapeList(){
 		else
 			console.log('clone not equal');
 	}
+
+	this.getSizes = function(){
+		return{
+			totalSize : size,
+			rightSize : rightSize,
+			leftSize : leftSize,
+		}
+	}
+
 	function tlnode(newData){
 		this.data = newData;
 		this.next = null;

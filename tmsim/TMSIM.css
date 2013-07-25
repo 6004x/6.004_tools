@@ -18,10 +18,10 @@
 	position : absolute
 }
 .left_segment{
-	background-color: lightyellow;
+	/*background-color: lightyellow;*/
 }
 .right_segment{
-	background-color: lightyellow;
+	/*background-color: lightyellow;*/
 }		
 .current_segment{
 	background-color: lightyellow;
