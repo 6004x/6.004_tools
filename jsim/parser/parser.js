@@ -387,14 +387,9 @@ content
     var numPendingFiles = 0;
     var included_contents = [];
     var includeCompleted = false;
-    var included_token_array;
-    function filename_to_contents(filename, callback, error_cb){
-//        if (pseudo_files[filename] === undefined){
-//            throw "File does not exist";
-//        } else {
-//            return pseudo_files[filename];
-//        }
-//        console.log("filename:",filename);
+//    var included_token_array;
+    function filename_to_contents(file_token, callback, error_cb){
+        var filename = file_token.token;
         numPendingFiles += 1;
         FileSystem.getFile(filename, function(obj){
             // success function
@@ -406,15 +401,15 @@ content
 //                error_cb(err);
 //            }
 //            included_contents.push(stuff)
-//            console.log("included contents:",included_contents);
+            tokenize(obj.data,filename,callback,error_cb,false)
             
             if (numPendingFiles === 0 && includeCompleted) {
                 /*************** completed callback****************/
-                return parse(included_token_array, callback, error_cb);
+                return parse(callback, error_cb);
             }
             
         }, function(){
-            throw "Could not get file "+filename.token;
+            error_cb(new CustomError("Could not get file "+filename,file_token));
         });
 //        return contents;
     }
@@ -444,7 +439,7 @@ Include: takes a parsed array of tokens and includes all the files
                         included_files.push(filename);
                         
 //                        try{
-                        filename_to_contents(filename, callback, error_cb);
+                        filename_to_contents(file, callback, error_cb);
 //                        } catch(err) {
 //                            throw new CustomError(err,current.line,current.column,
 //                                                  current.origin_file);
@@ -460,11 +455,13 @@ Include: takes a parsed array of tokens and includes all the files
         }
         includeCompleted = true;
 //        console.log("new token array from includer:",new_token_array);
-        included_token_array = new_token_array.slice(0);
+//        included_token_array = new_token_array.slice(0);
+        included_contents.push(new_token_array.slice(0));
         if (numPendingFiles === 0){
-            parse(included_token_array, callback, error_cb);
-        }
-//        return new_token_array;
+            parse(callback, error_cb);
+        } /*else {
+            return new_token_array;
+        }*/
     }
     
 /*********************************
@@ -474,9 +471,11 @@ iterators and duplicators, and includes files
             -filename: a string representing the unique name of the file
     --returns: an array of strings (tokens)
 *********************************/
-    function tokenize(input_string,filename,callback,error_cb){
-        included_contents = [];
-         return include(iter_expand(split(analyze(input_string),filename)),callback,error_cb);
+    function tokenize(input_string,filename,callback,error_cb,reset){
+        if (reset){
+            included_contents = [];
+        }
+        return include(iter_expand(split(analyze(input_string),filename)),callback,error_cb);
     }
     
 /******************************************************************************
@@ -494,9 +493,12 @@ Parse
     var used_names;
 //    var netlist;
     
-    function parse(token_array, callback, error_cb){
-//        console.log("token array:",token_array);
+    function parse(callback, error_cb){
+//        console.log("included contents:",included_contents);
+        
+        var token_array = [];
         for (var i = 0; i < included_contents.length; i += 1){
+//            console.log("token array:",token_array);
             token_array = token_array.concat(included_contents[i]);
         }
         try {
@@ -878,7 +880,7 @@ Read Device: takes a line representing a device and creates a device object
     function read_device(line){
         var device_obj;
         // type of device based on first letter of first token
-        switch (line[0].token[0]){
+        switch (line[0].token[0].toUpperCase()){
             case "R":
                 device_obj = read_resistor(line);
                 break;

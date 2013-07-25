@@ -967,7 +967,8 @@ to dismiss)</div>').on("click",function(){div.hide()});
     
     function simulate(text, filename, div, error_callback){
         // input string, filename, callback
-        Parser.parse(text, filename, function(data){run_simulation(data,div);},error_callback);
+        Parser.parse(text, filename, function(data){run_simulation(data,div);},
+                     error_callback,true);
     }
     
     function run_simulation(parsed,div) {
