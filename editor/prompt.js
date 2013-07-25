@@ -18,7 +18,8 @@ var ModalDialog = function() {
     };
 
     this.setText = function(text) {
-        mBodyHolder.text(text);
+        var p = $('<p>').text(text);
+        mBodyHolder.empty().append(p);
         return this;
     };
 
@@ -121,6 +122,10 @@ var ModalDialog = function() {
         mInputHolder = mDialog.find('.modal-input');
         mFooter = mDialog.find('.modal-footer');
         mErrorHolder = mDialog.find('.modal-error');
+
+        mDialog.on('shown', function() {
+            mInputHolder.find('input').focus();
+        });
     };
     initialise();
 };
