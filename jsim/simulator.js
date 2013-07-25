@@ -247,12 +247,12 @@ Graph setup functions
             var max_range = xaxis.datamax - xaxis.datamin;
             
             var inv_fraction = max_range/new_range;
-            console.log("fraction:",inv_fraction);
+//            console.log("fraction:",inv_fraction);
             $('#graphScrollInner').width($('#graphScrollOuter').width() * inv_fraction);
             
             var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
             var left_amt_px = $('#graphScrollInner').width() * left_fraction;
-            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
+//            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
             $('#graphScrollOuter').scrollLeft(left_amt_px);
             
         });

@@ -10,6 +10,7 @@ BSim.StackView = function(container, beta) {
     var BP = 27;
 
     var beta_resize_memory = function(length) {
+        mTable.startBatch();
         var zero_word = BSim.Common.FormatWord(0);
         var word_length = Math.ceil(length / 4);
 
@@ -17,6 +18,7 @@ BSim.StackView = function(container, beta) {
         for(var i = 0; i < length; i += 4) {
             mTable.insertRow(['', BSim.Common.FormatWord(i, 4), zero_word]);
         }
+        mTable.endBatch();
     };
 
     var beta_change_word = function(address, value) {
@@ -24,9 +26,11 @@ BSim.StackView = function(container, beta) {
     };
 
     var beta_bulk_change_word = function(words) {
+        mTable.startBatch();
         for(var word in words) {
             beta_change_word(word, words[word]);
         }
+        mTable.endBatch();
     };
 
     var beta_change_register = function(register, value) {
@@ -55,9 +59,11 @@ BSim.StackView = function(container, beta) {
     };
 
     var clear_annotations = function() {
+        mTable.startBatch();
         _.each(mCurrentAnnotations, function(value) {
             mTable.updateCell(value, 0, value == mLastSP ? 'SP' : '');
         });
+        mTable.endBatch();
     };
 
     var annotate_stack = function(bp, top_frame) {
@@ -89,9 +95,11 @@ BSim.StackView = function(container, beta) {
     };
 
     var beta_bulk_change_register = function(registers) {
+        mTable.startBatch();
         for(var register in registers) {
             beta_change_register(register, registers[register]);
         }
+        mTable.endBatch();
     }
 
     var initialise = function() {

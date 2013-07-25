@@ -1,9 +1,3 @@
-.gitignore
-bootstrap/*
-server/dontony/*
-server/libraries/*
-
-node_modules/
-ssl-ca.pem
-ssl-certificate.pem
-ssl-private-key.pem
+server/libraries/
+server/node_modules/
+server/ssl*

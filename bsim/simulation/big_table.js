@@ -27,7 +27,7 @@ var BigTable = function(container, width, height, row_height, column_count) {
     var mScrollContent = null;
     var mContent = null;
 
-    var mBufferingDraws = false;
+    var mBufferingDraws = 0;
 
     // Inserts a row of data at the end
     // data: array of cells for the row. Must have length equal to the table's column count.
@@ -89,6 +89,7 @@ var BigTable = function(container, width, height, row_height, column_count) {
         if(where == 'middle') height -= (mHeight / 2) - (mRowHeight);
         else if(where == 'bottom') height -= mHeight - mRowHeight;
         mScroller.scrollTop(height);
+        handleScroll(height);
         // This should handle our scrolling on its callback, so we don't need to call handleScroll().
     };
 
@@ -98,12 +99,13 @@ var BigTable = function(container, width, height, row_height, column_count) {
     };
 
     this.startBatch = function() {
-        mBufferingDraws = true;
+        mBufferingDraws++;
     };
 
     this.endBatch = function() {
-        mBufferingDraws = false;
-        redraw();
+        mBufferingDraws--;
+        if(!mBufferingDraws)
+            redraw();
     };
 
     var redraw = function(row) {
@@ -127,8 +129,8 @@ var BigTable = function(container, width, height, row_height, column_count) {
         }
     };
 
-    var handleScroll = function() {
-        var top = mScroller.scrollTop();
+    var handleScroll = function(height) {
+        var top = (height === undefined) ? height : mScroller.scrollTop();
         if(top < 0) top = 0; // This can probably actually happen.
         var top_row = (top / mRowHeight)|0;
         // Don't do anything if we haven't actually moved.

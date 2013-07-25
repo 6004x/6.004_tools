@@ -10,6 +10,8 @@ cygwin apache server for authentication
 ca server certificate
 environment variables pass to node
 
+when new file renaming after old file?
+
 
 	filesystem object
 
@@ -27,15 +29,10 @@ environment variables pass to node
 	filecontents:..
 	}
 
-	normalizing ../
-	other path names
-	.include functionality
-
-
+normalizing ../
+other path names
+.include functionality
 newfile with me
-
-
-
 
 roboant
 tsim

@@ -1,7 +1,10 @@
 var ModalDialog = function() {
+    var self = this;
     var mDialog = null;
     var mTitleHolder = null;
     var mBodyHolder = null;
+    var mInputHolder = null;
+    var mErrorHolder = null;
     var mFooter = null;
 
     this.setTitle = function(text) {
@@ -25,7 +28,7 @@ var ModalDialog = function() {
             button.attr('data-dismiss', 'modal');
         } else if(_.isFunction(callback)) {
             button.click(function() {
-                callback(this);
+                callback(self);
             });
         } else {
             throw new Error("Button added with illegal callback!");
@@ -35,6 +38,52 @@ var ModalDialog = function() {
         }
         mFooter.append(button);
         return this;
+    };
+
+    this.inputBox = function(settings) {
+        mInputHolder.empty();
+        var holder = $('<div>').appendTo(mInputHolder);
+        var input = $('<input type="text">').appendTo(holder);
+        if(settings.placeholder) {
+            input.attr('placeholder', settings.placeholder);
+        }
+        if(settings.prefix) {
+            holder.addClass('input-prepend');
+            $('<span class="add-on">').text(settings.prefix).prependTo(holder);
+        }
+        if(settings.suffix) {
+            holder.addClass('input-append');
+            $('<span class="add-on">').text(settings.suffix).appendTo(holder);
+        }
+        if(settings.callback) {
+            input.keypress(function(e) {
+                var key = e.which || e.keyCode;
+                if (key == 13) { // 13 is enter
+                    settings.callback(self);
+                    e.preventDefault();
+                }
+            });
+        }
+    };
+
+    this.inputContent = function() {
+        if(mInputHolder.find('input')) {
+            return mInputHolder.find('input').val();
+        } else {
+            return null;
+        }
+    };
+
+    this.showError = function(message, is_html, cls) {
+        if(!cls) cls = 'alert-error';
+        mErrorHolder.empty();
+        var div = $('<div class="alert">').addClass(cls);
+        if(is_html) {
+            div.html(message);
+        } else {
+            div.text(message);
+        }
+        div.appendTo(mErrorHolder);
     };
 
     this.show = function() {
@@ -58,14 +107,20 @@ var ModalDialog = function() {
                     <h3>Title</h3>\
                 </div>\
                 <div class="modal-body">\
+                    <div class="modal-error">\
+                    </div>\
                     <div class="body-holder"></div>\
+                    <div class="modal-input">\
+                    </div>\
                 </div>\
                 <div class="modal-footer">\
                 </div>\
             </div>');
         mTitleHolder = mDialog.find('h3');
         mBodyHolder = mDialog.find('.body-holder');
+        mInputHolder = mDialog.find('.modal-input');
         mFooter = mDialog.find('.modal-footer');
+        mErrorHolder = mDialog.find('.modal-error');
     };
     initialise();
 };

@@ -21,12 +21,15 @@ BSim.DisassembledView = function(container, beta) {
     };
 
     var beta_bulk_change_word = function(words) {
+        mTable.startBatch();
         for(var word in words) {
             beta_change_word(word, words[word]);
         }
+        mTable.endBatch();
     };
 
     var beta_bulk_change_labels = function(labels) {
+        mTable.startBatch();
         var length = mTable.rowCount();
         for(var i = 0; i < length; ++i) {
             var address = i*4;
@@ -35,9 +38,11 @@ BSim.DisassembledView = function(container, beta) {
             }
             mTable.updateCell(i, 3, disassemble_value(address, mBeta.readWord(address)));
         }
+        mTable.endBatch();
     };
 
     var beta_change_pc = function(new_pc) {
+        mTable.startBatch();
         var word = (new_pc & ~0x80000000) / 4;
         mTable.removeRowClass(mCurrentPC/4, 'current-instruction');
         mTable.addRowClass(word, 'current-instruction');
@@ -54,6 +59,7 @@ BSim.DisassembledView = function(container, beta) {
         }
         mTable.scrollTo(word);
         mCurrentPC = new_pc & ~0x80000000;
+        mTable.endBatch();
     };
 
     var beta_resize_memory = function(new_length) {
@@ -79,6 +85,7 @@ BSim.DisassembledView = function(container, beta) {
     };
 
     var build_rows = function(length) {
+        mTable.startBatch();
         var zero_word = BSim.Common.FormatWord(0);
         var zero_instruction = disassemble_value(0, 0);
         var word_length = Math.ceil(length / 4);
@@ -87,6 +94,7 @@ BSim.DisassembledView = function(container, beta) {
         for(var i = 0; i < length; i += 4) {
             mTable.insertRow([BSim.Common.FormatWord(i, 4), zero_word, '', zero_instruction]);
         }
+        mTable.endBatch();
     };
 
     var initialise = function() {
