@@ -9,9 +9,11 @@ var Folders=new function(){
         getFileList(rootNode.find('.filePaths'));
     }
 
+    var isLoadingFileList = false;
     function getFileList(parentNode){
+        if(isLoadingFileList) return;
+        isLoadingFileList = true;
 
-        parentNode.empty();
         //clears out the old filelist
         
         //FileSystem keeps track of the username
@@ -19,10 +21,12 @@ var Folders=new function(){
         //fetch the filelist from server, then add the files to the filesystem.
         FileSystem.getFileList(
             function(data){
+                parentNode.empty();
                 var username=FileSystem.getUserName();
                 fileList={};
                 fileList[username]=data;
                 addFiles(fileList, parentNode, '');
+                isLoadingFileList = false;
             }, noServer
         );
         var level = 0;
