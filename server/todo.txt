@@ -45,5 +45,8 @@ animate arrows before the collapsing
 x cursor hover
 highlight row on hover
 
+TMSIM bugs:
+check syntax
+
 
 
