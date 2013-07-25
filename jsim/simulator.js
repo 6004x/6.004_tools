@@ -160,168 +160,6 @@ Graph setup functions
         });
     }
     
-    /*******************
-    Zoom/pan setup: sets up zooming and panning buttons
-    ********************/
-    function general_zoompan(){
-        var tlbar = $('#graph-toolbar');
-        
-        // default options for tooltips
-        var tooltipOpts = {delay:100, container:'body', placement:'top'};
-        
-        // helper function for creating buttons
-        var zoompan_buttons = [];
-        function create_button(tltp_txt, icon, onclick_fn){
-            tooltipOpts.title = tltp_txt;
-            zoompan_buttons.push( 
-                $('<button class="btn"><i class="icon-'+icon+'"></i></button>')
-                .tooltip(tooltipOpts)
-                .on("click",function(){
-                    $.each(allPlots, function(index,item){
-                        item.clearSelection();
-                        onclick_fn(item);
-                    });
-                })
-            );
-        }
-        
-        // create all the proper buttons
-        create_button("Zoom In","zoom-in",function(item){item.zoom()});
-        create_button("Reset Zoom","search",
-                      function(item){item.zoom({amount:1e-10})});
-        zoompan_buttons[1].addClass("reset-zoom");
-        create_button("Zoom Out","zoom-out",function(item){item.zoomOut()});
-        var btnGroup1 = $('<div class="btn-group zoompan"></div>');
-        btnGroup1.append(zoompan_buttons);
-        
-        zoompan_buttons = [];
-        create_button("Pan Left","chevron-left",
-                      function(item){item.pan({left:-100})});
-        create_button("Pan Right","chevron-right",
-                      function(item){item.pan({left:100})});
-        var btnGroup2 = $('<div class="btn-group zoompan"></div>');
-        btnGroup2.append(zoompan_buttons);
-        tlbar.append(btnGroup1,btnGroup2);
-        
-        tooltipOpts.title = "Zoom to Selection";
-        var selZoomButton = $('<button id="z2s" class="btn">\
-<i class="icon-resize-full">').tooltip(tooltipOpts);
-        tlbar.append(selZoomButton);
-        selZoomButton.attr("disabled","disabled");
-        
-        var selRanges;
-        $('#results').on("plotselected",function(evt,ranges){
-            selZoomButton.removeAttr("disabled");
-//            console.log("selected ranges:",ranges);
-            selRanges = ranges;
-        });
-        
-        selZoomButton.on("click",function(){
-            selZoomButton.tooltip('hide');
-            ranges = selRanges;
-            console.log("ranges:",ranges);
-            if (ranges){
-                $.each(allPlots, function(index,item){
-                    var opts = item.getAxes().xaxis.options;
-                    opts.min = ranges.xaxis.from;
-                    opts.max = ranges.xaxis.to;
-                    
-                    item.setupGrid();
-                    item.draw();
-                    item.clearSelection();
-                });
-                $('#results').triggerHandler("plotzoom",allPlots[0]);
-            }
-        });
-        
-        $('#results').on("plotunselected",function(){
-            selZoomButton.attr("disabled","disabled");});
-        
-        $('#results').on("plotzoom",function(evt,plot){
-//            console.log("data:",data);
-//            var plot = data[0];
-//            console.log(plot);
-//            console.log(plot.getAxes());
-            var xaxis = plot.getAxes().xaxis;
-            var new_range = xaxis.max - xaxis.min;
-            var max_range = xaxis.datamax - xaxis.datamin;
-            
-            var inv_fraction = max_range/new_range;
-//            console.log("fraction:",inv_fraction);
-            $('#graphScrollInner').width($('#graphScrollOuter').width() * inv_fraction);
-            
-            var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
-            var left_amt_px = $('#graphScrollInner').width() * left_fraction;
-//            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
-            $('#graphScrollOuter').scrollLeft(left_amt_px);
-            
-        });
-        
-        var preventScroll = false;
-        $('#results').on("plotpan",function(evt,plot,args){
-//            console.log("args:",args);
-            var xaxis = plot.getAxes().xaxis;
-            var max_range = xaxis.datamax - xaxis.datamin;
-            
-            var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
-            
-            var left_amt_px = $('#graphScrollInner').width() * left_fraction;
-//            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
-            
-            preventScroll = true;
-            $('#graphScrollOuter').scrollLeft(left_amt_px);
-        });
-        
-        
-        
-        /////////////////////////////////////// should set a timeout here
-        ////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!~
-        
-        var updateScrollTimeout = null;
-        $('#graphScrollOuter').on("scroll",function(evt){
-//            console.log("evt:",evt);
-//            console.log("'scroll left':",$(this).scrollLeft());
-//            console.log("hit1; timeout:",updateScrollTimeout);
-            if (!updateScrollTimeout){
-//                console.log('hit2');
-                setTimeout(function(){syncScroll(evt);},1)
-            }
-        });
-        
-        function syncScroll(evt){
-//            console.log('evt:',evt)
-            updateScrollTimeout = null;
-//            console.log('hit3');
-            if (preventScroll){ 
-                preventScroll = false;
-                return; 
-            } else {
-//                console.log("handler hit");
-                var left_amt_px = $('#graphScrollOuter').scrollLeft();
-//                console.log("left amt px:",left_amt_px);
-                var left_frac = left_amt_px / $('#graphScrollInner').width();
-//                console.log("left frac:",left_frac);
-                
-                var xaxis_sample = allPlots[0].getAxes().xaxis;
-                var xrange = xaxis_sample.max - xaxis_sample.min;
-                var max_range = xaxis_sample.datamax - xaxis_sample.datamin;
-                var left_amt_graph = max_range * left_frac;
-//                console.log("left amt graph:",left_amt_graph);
-                
-                $.each(allPlots,function(index,item){
-                    var xaxis = item.getAxes().xaxis;
-                    xaxis.options.min = left_amt_graph;
-                    xaxis.options.max = left_amt_graph + xrange;
-                    
-//                    console.log("new xaxis min:",xaxis.min);
-                    
-                    item.setupGrid();
-                    item.draw();
-                });
-            }
-        }
-    }
-    
     /**********************
     Zoom/pan setup: sets up mousewheel and doubleclick panning/zooming
     **********************/
@@ -590,7 +428,7 @@ Graph setup functions
     General setup
     ***********************/
     function general_setup(){
-        var tlbar = $('#graph-toolbar');
+        var tlbar = new Toolbar($('#graph-toolbar'));
 //        var closePlotButton = $('<button class="btn" id="closeplot-btn">\
 //<i class="icon-minus"></i></button>').tooltip({delay:100,title:"Remove Plot",
 //                                                           container:'body'});
@@ -652,13 +490,21 @@ graph:</p><input id="addPlotInput" type="text" placeholder="New nodes...">\
             }
         });
         
-        var addPlotButton = $('<button class="btn" type="button" id="addplot-btn" \
-data-toggle="modal" data-target="#addPlotModal"><i class="icon-plus"></i> Add Plot</button>');
-        addPlotButton.tooltip({delay:100,title:"Add Plot",placement:'top',
-                               container:'body'});
+//        var addPlotButton = $('<button class="btn" type="button" id="addplot-btn" \
+//data-toggle="modal" data-target="#addPlotModal"><i class="icon-plus"></i> Add Plot</button>');
+//        addPlotButton.tooltip({delay:100,title:"Add Plot",placement:'top',
+//                               container:'body'});
         
-        $('#addPlotAccept').on("click",function(){
-            $('button.reset-zoom').click();
+        
+        var addPlotButton = new ToolbarButton('<i class="icon-plus"></i> Add Plot',addPlot,
+                                              "Add Plot");
+        
+//        $('#addPlotAccept').on("click",
+                               
+        function addPlot(){
+            gbf(function(item){
+                item.zoom({amount:1e-10});
+            })
             
             var newPlotRaw = $('#addPlotInput').val();
             newPlot = [newPlotRaw.match(/[^,\s]+/g)];
@@ -674,14 +520,211 @@ data-toggle="modal" data-target="#addPlotModal"><i class="icon-plus"></i> Add Pl
                 case 'dc':
                     break;
             }
-        });
-        addPlotButton.attr("disabled","disabled");
+        }
         
-        var btnGroup = $('<div class="btn-group"></div>').append(addPlotButton/*, closePlotButton*/);
-        tlbar.prepend(btnGroup);
+//        var btnGroup = $('<div class="btn-group"></div>').append(addPlotButton/*, closePlotButton*/);
+        tlbar.addButtonGroup([addPlotButton]);
+//        addPlotButton.attr("disabled","disabled");
+        addPlotButton.disable();
+//    }
+//    
+//    /*******************
+//    Zoom/pan setup: sets up zooming and panning buttons
+//    ********************/
+//    function general_zoompan(){
+//        var tlbar = $('#graph-toolbar');
+        
+        // default options for tooltips
+//        var tooltipOpts = {delay:100, container:'body', placement:'top'};
+        
+        // helper function for creating buttons
+//        var zoompan_buttons = [];
+//        function create_button(tltp_txt, icon, onclick_fn){
+//            tooltipOpts.title = tltp_txt;
+//            zoompan_buttons.push( 
+//                $('<button class="btn"><i class="icon-'+icon+'"></i></button>')
+//                .tooltip(tooltipOpts)
+//                .on("click",function(){
+//                    $.each(allPlots, function(index,item){
+//                        item.clearSelection();
+//                        onclick_fn(item);
+//                    });
+//                })
+//            );
+//        }
+        
+        // create all the proper buttons
+//        create_button("Zoom In","zoom-in",function(item){item.zoom()});
+//        create_button("Reset Zoom","search",
+//                      function(item){item.zoom({amount:1e-10})});
+//        zoompan_buttons[1].addClass("reset-zoom");
+//        create_button("Zoom Out","zoom-out",function(item){item.zoomOut()});
+//        var btnGroup1 = $('<div class="btn-group zoompan"></div>');
+//        btnGroup1.append(zoompan_buttons);
+        
+//        zoompan_buttons = [];
+//        create_button("Pan Left","chevron-left",
+//                      function(item){item.pan({left:-100})});
+//        create_button("Pan Right","chevron-right",
+//                      function(item){item.pan({left:100})});
+//        var btnGroup2 = $('<div class="btn-group zoompan"></div>');
+//        btnGroup2.append(zoompan_buttons);
+//        tlbar.append(btnGroup1,btnGroup2);
+        
+        // generic button function
+        function gbf(onclick_fn){
+            $.each(allPlots, function(index,item){
+                item.clearSelection();
+                onclick_fn(item);
+            });
+        }
+        
+        var resetZoomBtn = new ToolbarButton('icon-search',function(){
+            gbf(function(item){
+                item.zoom({amount:1e-10});
+            });
+        });
+//        resetZoomBtn.addClass("reset-zoom");
+        
+        tlbar.addButtonGroup([
+            new ToolbarButton('icon-zoom-in',function(){
+                gbf(function(item){
+                    item.zoom();
+                });
+            },"Zoom In"),
+            resetZoomBtn,
+            new ToolbarButton('icon-zoom-out',function(){
+                gbf(function(item){
+                    item.zoomOut();
+                });
+            })
+        ]);
+        
+//        tooltipOpts.title = "Zoom to Selection";
+//        var selZoomButton = $('<button id="z2s" class="btn">\
+//<i class="icon-resize-full">').tooltip(tooltipOpts);
+//        tlbar.append(selZoomButton);
+//        selZoomButton.attr("disabled","disabled");
+//        
+        
+        var selZoomButton = new ToolbarButton(
+            '<i class="icon-resize-full"></i> Zoom to Selection',zoomToSel,
+                                                "Zoom to Selection");
+//        selZoomButton.attr('id','z2s');
+        tlbar.addButtonGroup([selZoomButton]);
+        selZoomButton.disable();
+        
+        var selRanges;
+//        selZoomButton.on("click",
+        function zoomToSel(){
+//            selZoomButton.tooltip('hide');
+            ranges = selRanges;
+//            console.log("ranges:",ranges);
+            if (ranges){
+                $.each(allPlots, function(index,item){
+                    var opts = item.getAxes().xaxis.options;
+                    opts.min = ranges.xaxis.from;
+                    opts.max = ranges.xaxis.to;
+                    
+                    item.setupGrid();
+                    item.draw();
+                    item.clearSelection();
+                });
+                $('#results').triggerHandler("plotzoom",allPlots[0]);
+            }
+        }//);
+        
+        $('#results').on("plotunselected",function(){
+            selZoomButton.disable();
+        });
+        
+        $('#results').on("plotselected",function(evt,ranges){
+            selZoomButton.enable();
+            selRanges = ranges;
+        });
     }
     
     
+    
+    /*********************************
+    Scrollbar setup: sets up the scrollbar for panning
+    *********************************/
+    function scrollbar_setup(){
+        $('#results').on("plotzoom",function(evt,plot){
+            var xaxis = plot.getAxes().xaxis;
+            var new_range = xaxis.max - xaxis.min;
+            var max_range = xaxis.datamax - xaxis.datamin;
+            
+            var inv_fraction = max_range/new_range;
+//            console.log("fraction:",inv_fraction);
+            $('#graphScrollInner').width($('#graphScrollOuter').width() * inv_fraction);
+            
+            var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
+            var left_amt_px = $('#graphScrollInner').width() * left_fraction;
+//            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
+            $('#graphScrollOuter').scrollLeft(left_amt_px);
+            
+        });
+        
+        var preventScroll = false;
+        $('#results').on("plotpan",function(evt,plot,args){
+//            console.log("args:",args);
+            var xaxis = plot.getAxes().xaxis;
+            var max_range = xaxis.datamax - xaxis.datamin;
+            
+            var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
+            
+            var left_amt_px = $('#graphScrollInner').width() * left_fraction;
+//            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
+            
+            preventScroll = true;
+            $('#graphScrollOuter').scrollLeft(left_amt_px);
+        });
+        
+        var updateScrollTimeout = null;
+        $('#graphScrollOuter').on("scroll",function(evt){
+//            console.log("evt:",evt);
+//            console.log("'scroll left':",$(this).scrollLeft());
+//            console.log("hit1; timeout:",updateScrollTimeout);
+            if (!updateScrollTimeout){
+//                console.log('hit2');
+                setTimeout(function(){syncScroll(evt);},1)
+            }
+        });
+        
+        function syncScroll(evt){
+//            console.log('evt:',evt)
+            updateScrollTimeout = null;
+//            console.log('hit3');
+            if (preventScroll){ 
+                preventScroll = false;
+                return; 
+            } else {
+//                console.log("handler hit");
+                var left_amt_px = $('#graphScrollOuter').scrollLeft();
+//                console.log("left amt px:",left_amt_px);
+                var left_frac = left_amt_px / $('#graphScrollInner').width();
+//                console.log("left frac:",left_frac);
+                
+                var xaxis_sample = allPlots[0].getAxes().xaxis;
+                var xrange = xaxis_sample.max - xaxis_sample.min;
+                var max_range = xaxis_sample.datamax - xaxis_sample.datamin;
+                var left_amt_graph = max_range * left_frac;
+//                console.log("left amt graph:",left_amt_graph);
+                
+                $.each(allPlots,function(index,item){
+                    var xaxis = item.getAxes().xaxis;
+                    xaxis.options.min = left_amt_graph;
+                    xaxis.options.max = left_amt_graph + xrange;
+                    
+//                    console.log("new xaxis min:",xaxis.min);
+                    
+                    item.setupGrid();
+                    item.draw();
+                });
+            }
+        }
+    }
     /*********************
     Default graph options: each plot will need to specify axis labels and zoom and pan ranges
     **********************/
@@ -1023,7 +1066,8 @@ to dismiss)</div>').on("click",function(){div.hide()});
         
         try {
             current_analysis = analyses[0];
-            $('#addplot-btn').removeAttr("disabled");
+            /////////////////////////////////////////////////////////////////////////////
+//            $('#addplot-btn').enable();
             switch (current_analysis.type) {
             case 'tran':
                 tranProgress.show();
@@ -1060,7 +1104,8 @@ to dismiss)</div>').on("click",function(){div.hide()});
     
     function setup(){
         general_setup();
-        general_zoompan();
+//        general_zoompan();
+        scrollbar_setup();
         
 //        $('#simulation-pane').on("resize",function(){
 ////            console.log("width:",$('#graphScrollOuter').width());
