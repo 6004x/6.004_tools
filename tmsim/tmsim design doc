@@ -14,3 +14,5 @@ check for duplicate actions
 checkoff checks the size of the table
 
 check for repetitions in state symbol pairs
+check for many states at once
+check sizes again

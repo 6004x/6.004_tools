@@ -164,12 +164,14 @@ var Folders=new function(){
         $(window).resize();
     }
 
+
     function newFolder(file_path){
         var handleCreate = function() {
             var folderName = modal.inputContent();
 
             if(!isValidName(fileRegexp, folderName)){
                 modal.showError('Names cannot contain \\, \/, :, ", <, >, |, ?, or *');
+
                 return;
             }
             var folderPath = file_path + folderName;
@@ -208,6 +210,7 @@ var Folders=new function(){
             
             if(!isValidName(fileRegexp, fileName)){
                 modal.showError('File names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~');
+
                 return;
             }
 
@@ -219,6 +222,7 @@ var Folders=new function(){
 
             if (FileSystem.isFile(newFileName)){
                 modal.showError(fileName+'.'+editMode+' is already a file, please choose another name');
+
                 return;
             }
 
@@ -277,8 +281,6 @@ var Folders=new function(){
                 newFileName=file_path+'/'+fileName+'.'+editMode;
             else
                 newFileName=file_path+'/'+fileName;
-            
-
             if(FileSystem.isFile(newFileName)) {
                 modal.showError(fileName + '.' + editMode + ' is already a file, please choose another name');
                 return;
@@ -297,6 +299,7 @@ var Folders=new function(){
                 modal.dismiss();
             });
         }
+
 
         var modal = new ModalDialog();
         modal.setTitle("Rename");
