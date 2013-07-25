@@ -1165,7 +1165,7 @@ Device readers: each takes a line of tokens and returns a device object,
         }
 //        console.log("props:",props);
 
-        var inst = line[line.length-1];
+        var inst = line[1];
         if (!(inst.token in subcircuits)){
             throw new CustomError("Can't find definition for subcircuit "+inst.token, inst);
         }
@@ -1185,7 +1185,7 @@ Device readers: each takes a line of tokens and returns a device object,
         }
         
         
-        for (var i = 0; i < line.length-1; i += 1){
+        for (var i = 1; i < line.length; i += 1){
             if (line[i].type != "name"){
                 throw new CustomError("Node name expected", line[i]);
             }
