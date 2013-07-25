@@ -5,9 +5,6 @@
 .open_indicator{
     margin: 4px 10px 4px 4px ;
 }
-li:hover{
-    text-decoration: underline;
-}
 .file_name .file_button{
     border: 0px;
 }
@@ -19,11 +16,30 @@ li:hover{
 	display:inline-block;
     vertical-align: center;
 }
-.file_name:hover .file_button{
+.file_name:hover .file_button_div{
    display:block;
    position:absolute;
-   right:0;
+   /*right:0;*/
 }
+.file_button {
+    padding: 0px;
+    width: 15px;
+    display: none;
+}
+.file_name:hover .file_button,
+.folderName:hover .file_button {
+    display: inline;
+}
+.file_name,
+.folderName {
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    color: #08c;
+}
+
 /*.folder_button_div .new_button{
     display:none;
 }
@@ -47,6 +63,9 @@ li:hover{
 .file_name{
     vertical-align: center;
 }
+.file_name:hover {
+    background-color: lightblue;
+}
 .sidebar-nav li{
 	list-style-type: none;
 }
@@ -68,8 +87,6 @@ li:hover{
     float:none;
     text-align: center;
     width: 100%;
-    margin-top:10px;
-    margin-bottom:10px;
 }
 .filePaths{
     padding:0px;
