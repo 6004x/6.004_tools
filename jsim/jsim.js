@@ -30,8 +30,6 @@ $(function() {
     var editor = new Editor('#editor', mode);
     
     Folders.setup('.span3', editor, mode);
-
-    Folders.refresh();
     
     function dls(){
         $('#split_pane').click();
@@ -44,7 +42,14 @@ $(function() {
     
     function error_catcher(err){
         if (err instanceof Parser.CustomError){
-            editor.markErrorLine(err.filename, err.message, err.line-1, err.column);
+            if (editor.filenames().indexOf(err.filename) == -1){
+                FileSystem.getFile(err.filename,function(obj){
+                    editor.openTab(err.filename,obj.data,true);
+                    editor.markErrorLine(err.filename, err.message, err.line-1, err.column);
+                })
+            } else {
+                editor.markErrorLine(err.filename, err.message, err.line-1, err.column);
+            }
         } else {
             throw err;
         }

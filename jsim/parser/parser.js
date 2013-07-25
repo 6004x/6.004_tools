@@ -387,6 +387,7 @@ content
     var numPendingFiles = 0;
     var included_contents = [];
     var includeCompleted = false;
+    var parseCalled = false;
 //    var included_token_array;
     function filename_to_contents(file_token, callback, error_cb){
         var filename = file_token.token;
@@ -403,7 +404,7 @@ content
 //            included_contents.push(stuff)
             tokenize(obj.data,filename,callback,error_cb,false)
             
-            if (numPendingFiles === 0 && includeCompleted) {
+            if (numPendingFiles === 0 && includeCompleted && !parseCalled) {
                 /*************** completed callback****************/
                 return parse(callback, error_cb);
             }
@@ -438,13 +439,7 @@ Include: takes a parsed array of tokens and includes all the files
                     if (included_files.indexOf(filename) == -1) {
                         included_files.push(filename);
                         
-//                        try{
                         filename_to_contents(file, callback, error_cb);
-//                        } catch(err) {
-//                            throw new CustomError(err,current.line,current.column,
-//                                                  current.origin_file);
-//                        }
-//                        contents = tokenize(contents,filename);
                         token_array.shift();
                         token_array.shift();  
                     }
@@ -471,9 +466,10 @@ iterators and duplicators, and includes files
             -filename: a string representing the unique name of the file
     --returns: an array of strings (tokens)
 *********************************/
-    function tokenize(input_string,filename,callback,error_cb,reset){
+    function tokenize(input_string, filename, callback, error_cb, reset){
         if (reset){
             included_contents = [];
+            parseCalled = false;
         }
         return include(iter_expand(split(analyze(input_string),filename)),callback,error_cb);
     }
@@ -494,6 +490,7 @@ Parse
 //    var netlist;
     
     function parse(callback, error_cb){
+        parseCalled = true;
 //        console.log("included contents:",included_contents);
         
         var token_array = [];
