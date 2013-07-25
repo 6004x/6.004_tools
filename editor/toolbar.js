@@ -26,6 +26,7 @@ var ToolbarButton = function(icon, callback, tooltip) {
     self.render = function(container) {
         if(mElement) {
             mElement.remove();
+            mElement.data('button', null);
             mElement = null;
         }
         // Special case: if 'icon' is a string starting with 'icon-', assume they wanted a Bootstrap icon.
@@ -38,6 +39,7 @@ var ToolbarButton = function(icon, callback, tooltip) {
         if(mCallback) {
             mElement.click(mCallback);
         }
+        mElement.data('button', self);
         container.append(mElement);
     };
 
@@ -56,5 +58,10 @@ var ToolbarButton = function(icon, callback, tooltip) {
             label = $('<i>').addClass(label);
         }
         mElement.empty().append(label);
+    };
+
+    // You shouldn't use this.
+    self.setID = function(id) {
+        mElement.attr('id', id);
     };
 };
