@@ -76,7 +76,7 @@
                         editor.openTab(file.name+'done', tsmparse.getResults(), true);
                     } catch(e){
                         editor.clearErrors();
-                        console.log(e);
+                        console.log(e.stack );
                         for (var i = 0; i < e.length; i++)
                             editor.markErrorLine(file.name, e[i].message, e[i].lineNumber);
                         valid = false;
@@ -102,7 +102,7 @@
                     <li id="split_pane"><a>Split</a></li>
                     <li id="maximise_simulation"><a>Simulation</a></li>
                 </ul>
-                <h1>TMSIM</h1>
+                <h1>TMSim</h1>
             </div>
             <div class='row row-fluid mainWrapper'>
                 <div class="span3"></div>

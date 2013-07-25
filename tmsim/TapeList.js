@@ -224,8 +224,14 @@ function TapeList(){
 		console.log(mArray===tArray)
 		return false;
 	}
-	this.cloneList = function(){
-		
+	this.cloneTape = function(){
+		var clone = new TapeList();
+		var toClone = self.toArray();
+		clone.init(toClone.array, toClone.currentIndex);
+		if(clone.equals(self))
+			return clone;
+		else
+			console.log('clone not equal');
 	}
 	function tlnode(newData){
 		this.data = newData;
