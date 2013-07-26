@@ -27,7 +27,6 @@ function TapeList(){
 			self.append(list[i]);
 			if(i==currentIndex)
 				current = last;
-			size++;
 		}
 		// console.log('initiated list');
 		// console.log('current at '+currentIndex+' with data '+current.data);
@@ -270,34 +269,4 @@ function TapeList(){
 		this.prev = null;
 	}
 	return self;
-}
-
-
-function lltest(){
-
-	var LL1=new TapeList();
-	var LL2=new TapeList();
-	var LL3=new TapeList();
-
-	LL1.append('s').prepend('r').append('t').prepend('q').prepend('a').prepend('p').remove('a').append('u');
-	LL3.append('s').prepend('r').append('t').prepend('q').prepend('a').prepend('p').remove('a').append('u');
-	console.log(LL1.equals(LL3));
-	console.log(LL3.equals(LL1));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('r'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('r'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-
-	LL1.printLL();
-	LL3.printLL();
-
-	LL2.append('1').remove('2').remove('1').remove('1').append('3');
-	LL2.printLL();
 }

@@ -48,5 +48,5 @@ highlight row on hover
 TMSIM bugs:
 check syntax
 
-
+hide folder button
 

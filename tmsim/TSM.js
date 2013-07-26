@@ -14,14 +14,13 @@ function TSM(){
 
 
 	this.setup=function(states, startState){
-		console.log(states);
+		// console.log(states);
 		list_of_states=states;
 		if(startState)
 			start_state=list_of_states[startState];
 		else {
 		//if no start state is defined, then we take the first state that was instantiated
 			start_state=list_of_states[Object.keys(list_of_states)[0]];
-			console.log(Object.keys(list_of_states)[0]);
 		}
 		current_state = start_state;
 		return self;

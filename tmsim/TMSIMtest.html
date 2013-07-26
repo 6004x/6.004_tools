@@ -3,17 +3,18 @@
     <head>
         <title>ui test</title>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
         <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
         <script src="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">    
-        <link rel="stylesheet" type="text/css" href="TMSIM.css">    
-        <link rel="stylesheet" type="text/css" href="../slider/css/slider.css">    
+        <link rel="stylesheet" type="text/css" href="TMSIM.css">   <link href='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css' rel='stylesheet' type='text/css'>
+
+       
         <script src='../fileSystem/fileSystem.js'></script>
         <script src='../fileSystem/folders.js'></script>
-        <script src='../slider/js/bootstrap-slider.js'></script>
         <script src='TapeList.js'></script>
         <script src='TSM.js'></script>
         <script src='TSMParser.js'></script>
@@ -72,7 +73,7 @@
                 if(file.name){
                     try{
                         var parsedDict = tsmparse.parse(file.data);
-                        console.log(typeof parsedDict)
+                        
                         // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
                         tsmparse.flattenMachine(parsedDict);
                         editor.openTab(file.name+'done', tsmparse.getResults(), true);
@@ -85,10 +86,15 @@
                     }
                     if(valid){
                         $('.sim_split').html('');
+                        console.log(tmsim);
+                        if(tmsim)
+                            tmsim.stop()
+                        console.log(tmsim);
                         $('#split_pane').click();
                         console.log(tsmparse.getTSM())
                         console.log(tsmparse.getLists());
                         tmsim = new TMSIM('.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
+                        console.log(tmsim);
                     }
                 }
             }

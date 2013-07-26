@@ -27,7 +27,10 @@
 	background-color: lightyellow;
 }
 .sim_split{
-	text-align: center;
+	text-align : center;
+	width : 869.984375px;
+	height : 300px;
+
 }
 .test_radio{
 
