@@ -178,6 +178,10 @@
                     }
                     return 'keyword';
                 }
+                // Or an illegal one... (the autocomplete needs these)
+                if(stream.match(/^\.[a-z]+/i)) {
+                    return 'error';
+                }
                 // Maybe just a dot
                 if(stream.match(/^\.\b/)) {
                     return 'keyword';
@@ -210,6 +214,17 @@
 
     var op = ['reg a', 'reg b', 'reg destination'];
     var opc = ['literal a', 'reg b', 'reg destination'];
+    var fnSettings = {
+        paramListStart: '(',
+        paramListEnd: ')',
+        paramSpacer: ', '
+    };
+    var keywordSettings = {
+        paramListStart: ' ',
+        paramListEnd: '',
+        paramSpacer: ' '
+    };
+
     Editor.Completions.uasm = {
         Settings: {
             paramListStart: '(',
@@ -267,7 +282,18 @@
             ['LONG', ['literal value']],
             ['STORAGE', ['literal nwords']],
             ['GETFRAME', ['literal frame', 'reg target']],
-            ['PUTFRAME', ['reg value', 'literal frame']]
+            ['PUTFRAME', ['reg value', 'literal frame']],
+            {settings: keywordSettings, term: ['.include', ['filename']]},
+            {settings: keywordSettings, term: ['.align', ['alignment']]},
+            {settings: keywordSettings, term: ['.ascii', ['string']]},
+            {settings: keywordSettings, term: ['.text', ['string']]},
+            {settings: keywordSettings, term: ['.breakpoint', []]},
+            {settings: keywordSettings, term: ['.protect', []]},
+            {settings: keywordSettings, term: ['.unprotect', []]},
+            {settings: keywordSettings, term: ['.options', ['options...']]},
+            {settings: keywordSettings, term: ['.tcheckoff', ['url', 'name', 'checksum']]},
+            {settings: keywordSettings, term: ['.pcheckoff', ['url', 'name', 'checksum']]},
+            {settings: keywordSettings, term: ['.verify', ['address', 'words', 'word...']]}
         ]
     };
 
