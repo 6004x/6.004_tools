@@ -219,6 +219,7 @@
             {settings: primitiveSettings, term: ['V', ['id', 'n+', 'n-', 'voltage']]},
             {settings: primitiveSettings, term: ['W', ['id', 'nodes...', 'fn', 'data...']]},
             {settings: primitiveSettings, term: ['P', ['id', 'drain', 'gate', 'source', 'W=width', 'L=length']]},
+            {settings: primitiveSettings, term: ['N', ['id', 'drain', 'gate', 'source', 'W=width', 'L=length']]},
             {settings: keywordSettings, term: ['.connect', ['nodes...']]},
             {settings: keywordSettings, term: ['.dc', ['source1', 'start1', 'step2', 'source2', 'start2', 'stop2', 'step2']]},
             {settings: keywordSettings, term: ['.global', ['nodes...']]},
