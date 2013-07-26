@@ -71,7 +71,7 @@
 			//make the state machine indicator, could be more elegant...
 			var machineDiv = $('<div>').addClass('pull-center machine_div').css({
 					'position':'relative',
-					top:0,
+					top:-10,
 					height:DIV_HEIGHT,
 			});
 			machineDiv.append($('<div>').addClass('arrow-up pull-center'));
@@ -82,7 +82,7 @@
 					width:2*TAPE_WIDTH,
 					border:'solid 1px black',
 					background:'lightblue', 
-			});//.append($('<div>').addClass(''));
+			});
 			labelDiv.text(tsm.getCurrentState().name);
 			machineDiv.append(labelDiv);
 			listToTape(firstTape, tapeDiv);
@@ -122,7 +122,8 @@
 				 //self.move('r');
 				console.log('step forward')
 				self.step(function(arg){
-					console.log('callback ' + arg)
+					console.log('callback')
+					console.log(arg);
 				});
 			});
 			prevStepButton.on('click', function(){
@@ -147,6 +148,7 @@
 					'orientation' : 'horizontal',
 				});
 			slider_speed = ANIMATION_SPEED * (25-25*Math.sqrt(slider.slider('value')/25));
+			$('.speedSpan').text(slider_speed);
 			slider.slider('enable');
 			slider.on('slide', function(){
 				slider_speed = ANIMATION_SPEED * (25-25*Math.sqrt(slider.slider('value')/25));
@@ -158,6 +160,7 @@
 
 		}
 		this.step = function(callback){
+			var callback = callback || _.identity;
 			var stepObject = mTSM.step(mCurrentTape);
 			steps++;
 			mContainer.find('.machine_label').text(stepObject.transition.new_state);
@@ -165,6 +168,7 @@
 
 			mContainer.find('.current_segment').text(stepObject.transition.write);
 			self.move(stepObject.transition.move, function(){
+				listToTape()
 				callback(stepObject.new_state);
 				$('.stepsSpan').text(steps)
 			});			
@@ -204,62 +208,43 @@
 			buttonDiv.toggleClass('active');
 		}
 		function listToTape(tape, tapeDiv){
-			var sizes = tape.getSizes();
-			if(tape.endSize){
-				console.log(tape.endSize);
-				sizes = tape.endSize;
-			}	
+			var tapeDiv = tapeDiv || $('.tape_div');
+			var tape = tape || mCurrentTape;
+
+			tapeDiv.html('');
+			tapeDiv.css('left', 0);
+			
 			var listToArray = tape.toArray(); 
 			var currentIndex = listToArray.currentIndex;
 			var array = listToArray.array;
-			tapeDiv.html('');
-			tapeDiv.css('left', 0)
-			console.log(currentIndex);
-			var end = 0;
-			for (var i = -sizes.leftSize-15; i < 0; i++){
-				var leftPos = (mContainer.width() - TAPE_WIDTH) / 2 + (i - currentIndex) * TAPE_WIDTH;
-				tapeDiv.append($('<div>').addClass('tape_segment')
-					.css({
-						'left' : leftPos,
-						'width' : TAPE_WIDTH - 2,
-						'height' : TAPE_HEIGHT - 4
-					})
-					.text('-')
-				);
-			}
-			for (var i = 0; i < array.length; i++){
-				//absolute positioning of the segment, off center to keep the currentIndex in the center
 
+			var numberOfSegments = Math.floor(mContainer.width() / TAPE_WIDTH) + 6; //3 thingy backup
+			
+			var startIndex = currentIndex - Math.floor((numberOfSegments / 2));
+			var endIndex = currentIndex + Math.floor((numberOfSegments / 2));
+
+			for (var i = startIndex, k = 0; i < endIndex; i++, k++){
 				var leftPos = (mContainer.width() - TAPE_WIDTH) / 2 + (i - currentIndex) * TAPE_WIDTH;
-				var tapeData = array[i];
-				
 				var tape_segment = $('<div>').addClass('tape_segment')
 					.css({
 						'left' : leftPos,
 						'width' : TAPE_WIDTH - 2,
 						'height' : TAPE_HEIGHT - 4
 					})
-					.text(tapeData);
-				if(i == currentIndex)
+				if(i < 0 || i >= array.length){
+					tape_segment.text('-')
+				} else if(i < array.length) {
+					//in tape, so we can add the tape_segment data
+					tape_segment.text(array[i]);
+					if(i == currentIndex)
 					tape_segment.addClass('current_segment');
-				if(i - 1 == currentIndex )
-					tape_segment.addClass('right_segment');
-				if(i + 1 == currentIndex )
-					tape_segment.addClass('left_segment');
-				
+					if(i - 1 == currentIndex )
+						tape_segment.addClass('right_segment');
+					if(i + 1 == currentIndex )
+						tape_segment.addClass('left_segment');
+					
+				}
 				tapeDiv.append(tape_segment);
-				end = i
-			}
-			for (var i = end+1; i < sizes.rightSize+15; i++){
-				var leftPos = (mContainer.width() - TAPE_WIDTH) / 2 + (i - currentIndex) * TAPE_WIDTH;
-				tapeDiv.append($('<div>').addClass('tape_segment')
-					.css({
-						'left' : leftPos,
-						'width' : TAPE_WIDTH - 2,
-						'height' : TAPE_HEIGHT - 4
-					})
-					.text('-')
-				);
 			}
 		}
 		this.move = function(dir, callback){
@@ -280,71 +265,13 @@
 				    left: parseInt(currentPos)+moveDir,
 				}, slider_speed,  function(){
 				 	callback();
-			 	 	if(moveDir != '-'){
-				 	 	$('.tape_segment').each(function(i, e){
-				 	 		if($(this).hasClass('current_segment')){
-				 	 			penultimate = true;
-				 	 			if(dir === 'r'){
-				 	 				$(this).removeClass('current_segment').addClass('right_segment');
-				 	 				prev.addClass('current_segment').removeClass('left_segment');
-				 	 				prev_2.addClass('left_segment');
-				 	 			} else if (dir === 'l'){
-				 	 				prev.removeClass('left_segment');
-				 	 				$(this).removeClass('current_segment').addClass('left_segment');
-				 	 			}
-				 	 		} else if (penultimate){
-				 	 			if(dir === 'r'){
-				 	 				$(this).removeClass('right_segment');
-				 	 				return false;
-				 	 			} else if (dir === 'l'){
-				 	 				$(this).addClass('current_segment').removeClass('right_segment');
-				 	 				penultimate = false;
-				 	 				ultimate  = true;
-				 	 			}
-				 	 		} else if (ultimate){
-				 	 			$(this).addClass('right_segment');
-				 	 			return false;
-				 	 		}
-				 	 		prev_2 = prev;
-				 	 		prev = $(this);
-				 	 	});
-				 	 }
 			 	 });
 			}
-		else {
-			console.log('speed');
-			tapeDiv.css('left', parseInt(currentPos)+moveDir)
-			callback();
-			 	 	if(moveDir != '-'){
-				 	 	$('.tape_segment').each(function(i, e){
-				 	 		if($(this).hasClass('current_segment')){
-				 	 			penultimate = true;
-				 	 			if(dir === 'r'){
-				 	 				$(this).removeClass('current_segment').addClass('right_segment');
-				 	 				prev.addClass('current_segment').removeClass('left_segment');
-				 	 				prev_2.addClass('left_segment');
-				 	 			} else if (dir === 'l'){
-				 	 				prev.removeClass('left_segment');
-				 	 				$(this).removeClass('current_segment').addClass('left_segment');
-				 	 			}
-				 	 		} else if (penultimate){
-				 	 			if(dir === 'r'){
-				 	 				$(this).removeClass('right_segment');
-				 	 				return false;
-				 	 			} else if (dir === 'l'){
-				 	 				$(this).addClass('current_segment').removeClass('right_segment');
-				 	 				penultimate = false;
-				 	 				ultimate  = true;
-				 	 			}
-				 	 		} else if (ultimate){
-				 	 			$(this).addClass('right_segment');
-				 	 			return false;
-				 	 		}
-				 	 		prev_2 = prev;
-				 	 		prev = $(this);
-				 	 	});
-				 	 }
-		}
+			else {
+				console.log('speed');
+				tapeDiv.css('left', parseInt(currentPos)+moveDir)
+				callback();
+				}
 		}
 
 		self.initialise();

@@ -28,7 +28,8 @@
 }
 .sim_split{
 	text-align : center;
-	width : 869.984375px;
+	max-width : 900px;
+	min-width : 690px;
 	height : 300px;
 
 }
