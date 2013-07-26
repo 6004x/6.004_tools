@@ -267,7 +267,7 @@ var cktsim = (function() {
         }
 
         if (!found_ground) { // No ground connection from some device
-            throw 'Please make at least one connection to ground (node 0)';
+            throw 'Please make at least one connection to ground (node gnd)';
         }
 
         // report circuit stats

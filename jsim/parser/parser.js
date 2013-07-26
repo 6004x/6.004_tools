@@ -58,7 +58,7 @@ Splitter: splits a string into an array of tokens
     --returns: an array of tokens
 *******************************/
     function split(input_string,filename){
-        var pattern = /".*"|\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
+        var pattern = /".*?"|\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
         // 'pattern' will match, in order:
         //      anything wrapped in quotes
         //      a hex number
@@ -75,7 +75,7 @@ Splitter: splits a string into an array of tokens
         var fn_pattern = /^\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)$/;
         var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)/;
         var control_pattern = /^\..+/;
-        var string_pattern = /".*"/;
+        var string_pattern = /".*?"/;
         var num_pattern = /^(([+-]?\d*\.?)|(0x)|(0b))\d+(([eE]-?\d+)|[A-Za-z]*)/;
         
         var matched_array;
@@ -89,6 +89,7 @@ Splitter: splits a string into an array of tokens
             if (fn_pattern.test(matched_array[0])){
                 type = 'function';
             } else if (string_pattern.test(matched_array[0])){
+//                console.log("matched_array?", matched_array[0])
                 matched_array[0] = matched_array[0].replace(/"/g,'');
                 type = 'string';
             } else if (names_pattern.test(matched_array[0])){
@@ -614,6 +615,12 @@ Parse Control
                 }
                 current_subckt = subcircuits["_top_level_"];
                 break;
+            case ".checkoff":
+                read_checkoff(line);
+                break;
+            case ".verify":
+                read_verify(line);
+                break;
             default:
                 throw new CustomError("Invalid control statement",line[0]);
                 break;
@@ -908,6 +915,37 @@ Read Device: takes a line representing a device and creates a device object
         device_obj.line = line[0].line;
         device_obj.file = line[0].origin_file;
         return device_obj;
+    }
+    
+    /************************
+    Read checkoff: process .checkoff statements
+    *************************/
+    function read_checkoff(line){
+        // .checkoff <server> <assignment> <checksum>
+        console.log("line:",line);
+        if (line[1].type != 'string'){
+            throw new CustomError("Server name expected.",line[1]);
+        }
+        if (line[2].type != 'string'){
+            throw new CustomError("Assignment name expected.",line[2]);
+        }
+        console.log('server and assignment are both names');
+    }
+    
+    /**************************
+    Read verify: process .verify statements
+    ****************************/
+    function read_verify(line){
+        // verify type one a: .verify Z periodic(99.9n, 100) 0 0 0 1 1 1 1 1
+        // ==> check values for node Z at times 99.9ns, 199.9ns, 299.9ns, 399.9ns, ...
+        // ==>                                  Z = 0,  Z = 0,   Z = 0,   Z = 1,   ...
+        
+        // verify type one b: .verify s4 s3 s2 s1 periodic(9.9n, 10n) 0x00 0x01 0x02 ...
+        // check multiple values at once
+        
+        // verify type three: .verify z tvpairs() 9.9ns 0x0 19.9ns 0x1 29.9ns 0x0 ...
+        //                or: .verify y[3:0] tvpairs() 99.9ns 0x00 199.9ns 0x10 ...
+    
     }
     
 /******************************************************************

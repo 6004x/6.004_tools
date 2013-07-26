@@ -24,12 +24,15 @@ $(function() {
                                  $('<div id="graphScrollOuter">\
 <div id="graphScrollInner"></div></div>')
                                 );
+    
+    $('#results').data("current",null);
 
     // Make an editor
     var mode = 'jsim';
     var editor = new Editor('#editor', mode);
     
     Folders.setup('.span3', editor, mode);
+    
     
     function dls(){
         $('#split_pane').click();
@@ -57,9 +60,11 @@ $(function() {
 
     // Add some buttons to it
     editor.addButtonGroup([new ToolbarButton('<img src="simulate.png"> Simulate', dls, 'Device-level simulation')]);
-    editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
-        editor.clearErrors();
-    })]);
+//    editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
+//        editor.clearErrors();
+//    })]);
+    
+    editor.addButtonGroup([new ToolbarButton('Checkoff',Checkoff.getResults,"Checkoff")])
     
     Simulator.setup();
     var set_height = function() {

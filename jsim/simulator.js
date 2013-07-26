@@ -461,53 +461,61 @@ Graph setup functions
 //            console.log("toggled:",toggled);
 //        });
         
-        var addPlotModal = $('<div id="addPlotModal" class="modal hide fade" \
-aria-hidden="true">\
-<div class="modal-header">\
-<button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>\
-<h3>Add Plot</h3>\
-</div>\
-<div class="modal-body">\
-<p>Enter one or more node names, separated by commas or spaces, to be plotted on a single \
-graph:</p><input id="addPlotInput" type="text" placeholder="New nodes...">\
-</div>\
-<div class="modal-footer">\
-<button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>\
-<button class="btn btn-primary" data-dismiss="modal" id="addPlotAccept">Add Plot</button>\
-</div>\
-</div>');
-        
-        addPlotModal.modal({show:false});
-        addPlotModal.on("shown",function(){
-            $('#addPlotInput').val("")
-            $('#addPlotInput').focus();
-        });
-        $('#simulation-pane').append(addPlotModal);
-        
-        $('#addPlotInput').keyup(function(evt){
-            if (evt.keyCode == 13){
-                $('#addPlotAccept').click();
-            }
-        });
+//        var addPlotModal = $('<div id="addPlotModal" class="modal hide fade" \
+//aria-hidden="true">\
+//<div class="modal-header">\
+//<button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>\
+//<h3>Add Plot</h3>\
+//</div>\
+//<div class="modal-body">\
+//<p>Enter one or more node names, separated by commas or spaces, to be plotted on a single \
+//graph:</p><input id="addPlotInput" type="text" placeholder="New nodes...">\
+//</div>\
+//<div class="modal-footer">\
+//<button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>\
+//<button class="btn btn-primary" data-dismiss="modal" id="addPlotAccept">Add Plot</button>\
+//</div>\
+//</div>');
+//        
+//        addPlotModal.modal({show:false});
+//        addPlotModal.on("shown",function(){
+//            $('#addPlotInput').val("")
+//            $('#addPlotInput').focus();
+//        });
+//        $('#simulation-pane').append(addPlotModal);
+//        
+//        $('#addPlotInput').keyup(function(evt){
+//            if (evt.keyCode == 13){
+//                $('#addPlotAccept').click();
+//            }
+//        });
         
 //        var addPlotButton = $('<button class="btn" type="button" id="addplot-btn" \
 //data-toggle="modal" data-target="#addPlotModal"><i class="icon-plus"></i> Add Plot</button>');
 //        addPlotButton.tooltip({delay:100,title:"Add Plot",placement:'top',
 //                               container:'body'});
         
+        var addPlotModal;
+        var addPlotButton = new ToolbarButton('<i class="icon-plus"></i> Add Plot',function(){
+            addPlotModal = new ModalDialog();
+            addPlotModal.setTitle("Add a New Plot");
+            addPlotModal.setText("Enter one or more node names, separated by spaces or commas,\
+    to plot on a single pair of axes.");
+            addPlotModal.addButton("Cancel",'dismiss');
+            addPlotModal.addButton("Add Plot",addPlot,'btn-primary');
+            addPlotModal.inputBox({placeholder:'New nodes...',callback:addPlot});
+            addPlotModal.show();
+        },"Add Plot");
         
-        var addPlotButton = new ToolbarButton('<i class="icon-plus"></i> Add Plot',addPlot,
-                                              "Add Plot");
-        
-//        $('#addPlotAccept').on("click",
-                               
+//        $('#addPlotAccept').on("click",addPlot);                       
         function addPlot(){
             gbf(function(item){
                 item.zoom({amount:1e-10});
             })
             
-            var newPlotRaw = $('#addPlotInput').val();
+            var newPlotRaw = addPlotModal.inputContent();
             newPlot = [newPlotRaw.match(/[^,\s]+/g)];
+            addPlotModal.dismiss();
 //            console.log(newPlot);
             
             switch (current_analysis.type){
@@ -526,6 +534,7 @@ graph:</p><input id="addPlotInput" type="text" placeholder="New nodes...">\
         tlbar.addButtonGroup([addPlotButton]);
 //        addPlotButton.attr("disabled","disabled");
         addPlotButton.disable();
+        addPlotButton.setID("addPlotButton");
 //    }
 //    
 //    /*******************
@@ -583,7 +592,7 @@ graph:</p><input id="addPlotInput" type="text" placeholder="New nodes...">\
             gbf(function(item){
                 item.zoom({amount:1e-10});
             });
-        });
+        },"Reset Zoom");
 //        resetZoomBtn.addClass("reset-zoom");
         
         tlbar.addButtonGroup([
@@ -597,7 +606,7 @@ graph:</p><input id="addPlotInput" type="text" placeholder="New nodes...">\
                 gbf(function(item){
                     item.zoomOut();
                 });
-            })
+            }, "Zoom Out")
         ]);
         
 //        tooltipOpts.title = "Zoom to Selection";
@@ -1066,8 +1075,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
         
         try {
             current_analysis = analyses[0];
-            /////////////////////////////////////////////////////////////////////////////
-//            $('#addplot-btn').enable();
+            $('#addPlotButton').data('button').enable();
             switch (current_analysis.type) {
             case 'tran':
                 tranProgress.show();
@@ -1080,6 +1088,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
                     if (results){
                         tranProgress.hide();
                         current_results = results;
+                        $('#results').data("current",results);
                         tran_plot(div, current_results, plots);
                     }
                     return tranHalt;
@@ -1089,6 +1098,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
                 current_results = cktsim.ac_analysis(netlist, current_analysis.parameters.fstart,
                                                  current_analysis.parameters.fstop,
                                                  current_analysis.parameters.ac_source_name);
+                $('#results').data("current",current_results);
                 ac_plot(div, current_results, plots);
                 break;
             case 'dc':
