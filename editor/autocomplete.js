@@ -17,6 +17,8 @@ Editor.Autocomplete = function(editor, language) {
             var key;
             if(_.isString(value)) {
                 key = value.toLowerCase();
+            } else if(value.term) {
+                key = value.term[0].toLowerCase();
             } else {
                 key = value[0].toLowerCase();
             }
@@ -41,7 +43,7 @@ Editor.Autocomplete = function(editor, language) {
     var expand_completion = function(cm, data, completion) {
         cm.replaceRange(completion.text, data.from, data.to);
         console.log(data);
-        var start = data.from.ch + completion.name.length + mLanguageSettings.paramListStart.length;
+        var start = data.from.ch + completion.name.length + completion.settings.paramListStart.length;
         console.log(start);
         var orig_start = start;
         var first_pos = null;
@@ -71,7 +73,7 @@ Editor.Autocomplete = function(editor, language) {
                 // 50ms because that seems to let us override cursor input, too.
                 setTimeout(function() { selectPlaceholder(cm, pos); }, 50);
             });
-            start += value.length + mLanguageSettings.paramSpacer.length;
+            start += value.length + completion.settings.paramSpacer.length;
         });
         if(first_pos === null) {
             cm.setSelection({ch: orig_start, line: data.from.line});
@@ -85,7 +87,7 @@ Editor.Autocomplete = function(editor, language) {
         var elem = $('<span>');
         elem.append(document.createTextNode(completion.name));
         elem.append($('<span class="muted">')
-            .append(mLanguageSettings.paramListStart + completion.params.join(mLanguageSettings.paramSpacer) + mLanguageSettings.paramListEnd));
+            .append(completion.settings.paramListStart + completion.params.join(completion.settings.paramSpacer) + completion.settings.paramListEnd));
         elt.appendChild(elem[0]);
     };
 
@@ -94,12 +96,14 @@ Editor.Autocomplete = function(editor, language) {
         var completions = [];
         for (var i = results.length - 1; i >= 0; i--) {
             var result = results[i];
-            if(mLanguageSettings.filter) {
-                result = mLanguageSettings.filter(result, token);
+            var settings = result.settings ? result.settings : mLanguageSettings;
+            if(settings.filter) {
+                result = settings.filter(result, token);
                 if(result === false) {
                     continue;
                 }
-            } 
+            }
+            if(result.term) result = result.term;
             if(_.isString(results[i])) {
                 completions.push({text: results[i]});
                 continue;
@@ -108,11 +112,12 @@ Editor.Autocomplete = function(editor, language) {
             for (var j = result.length - 1; j >= 1; j--) {
                 var params = result[j];
                 completions.push({
-                    text: name + mLanguageSettings.paramListStart + params.join(mLanguageSettings.paramSpacer) + mLanguageSettings.paramListEnd,
+                    text: name + settings.paramListStart + params.join(settings.paramSpacer) + settings.paramListEnd,
                     params: params,
                     name: name,
                     hint: expand_completion,
-                    render: render_completion
+                    render: render_completion,
+                    settings: settings
                 });
             };
         };

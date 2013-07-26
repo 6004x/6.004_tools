@@ -112,7 +112,7 @@
 
 span.cm-autofilled {
     background-color: #e9effa;
-    color: black;
+    color: black !important;
 }
 
 span.cm-autofilled-start  {

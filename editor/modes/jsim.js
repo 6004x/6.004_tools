@@ -139,20 +139,44 @@
         };
     });
 
+    var primitiveSettings = {
+        paramListStart: '',
+        paramSpacer: ' ',
+        paramListEnd: '',
+        filter: function(completion, token) {
+            return !(token.state.in_args || token.state.subckt_name || token.state.in_multi_line_comment) ? completion: false;
+        }
+    };
+    var subcktSettings = {
+        paramListStart: ' ',
+        paramSpacer: ' ',
+        paramListEnd: '',
+        filter: function(completion, token) {
+            return token.state.subckt_name ? completion : false;
+        }
+    };
+    var keywordSettings = {
+        paramListStart: ' ',
+        paramSpacer: ' ',
+        paramListEnd: '',
+        filter: function(completion, token) {
+            return !(
+                (token.state.in_args && token.string != completion.term[0])
+                || token.state.subckt_name
+                || token.state.in_multi_line_comment
+                ) ? completion : false;
+        }
+    };
+    var fnSettings = {
+        paramListStart: '(',
+        paramSpacer: ', ',
+        paramListEnd: ')',
+        filter: function(completion, token) {
+            return (token.state.in_args && !token.state.subckt_name) ? completion : false;
+        }
+    };
     Editor.Completions.jsim = {
-        Settings: {
-            paramListStart: ' ',
-            paramSpacer: ' ',
-            paramListEnd: '',
-            filter: function(completion, token) {
-                console.log(token.state);
-                if(token.state.subckt_name) {
-                    return completion;
-                } else {
-                    return false;
-                }
-            }
-        },
+        Settings: subcktSettings,
         Terms: [
             ['constant0', ['nodes...']],
             ['constant1', ['nodes...']],
@@ -186,7 +210,28 @@
             ['oai21', ['a1', 'a2', 'b', 'out']],
             ['mux2', ['s', 'd0', 'd1', 'out']],
             ['mux4', ['s0', 's1', 'd00', 'd10', 'd01', 'd11', 'out']],
-            ['dreg', ['in', 'clk', 'out']]
+            ['dreg', ['in', 'clk', 'out']],
+            ['$memory', ['width=w', 'nlocations=nloc', 'options...']],
+            {settings: primitiveSettings, term: ['C', ['id', 'n+', 'n-', 'capacitance']]},
+            {settings: primitiveSettings, term: ['L', ['id', 'n+', 'n-', 'inductance']]},
+            {settings: primitiveSettings, term: ['R', ['id', 'n+', 'n-', 'resistance']]},
+            {settings: primitiveSettings, term: ['I', ['id', 'n+', 'n-', 'current']]},
+            {settings: primitiveSettings, term: ['V', ['id', 'n+', 'n-', 'voltage']]},
+            {settings: primitiveSettings, term: ['W', ['id', 'nodes...', 'fn', 'data...']]},
+            {settings: primitiveSettings, term: ['P', ['id', 'drain', 'gate', 'source', 'W=width', 'L=length']]},
+            {settings: keywordSettings, term: ['.connect', ['nodes...']]},
+            {settings: keywordSettings, term: ['.dc', ['source1', 'start1', 'step2', 'source2', 'start2', 'stop2', 'step2']]},
+            {settings: keywordSettings, term: ['.global', ['nodes...']]},
+            {settings: keywordSettings, term: ['.include', ['filename']]},
+            {settings: keywordSettings, term: ['.option', ['option']]},
+            {settings: keywordSettings, term: ['.plot', ['things...']]},
+            {settings: keywordSettings, term: ['.plotdef', ['name', 'labels...']]},
+            {settings: keywordSettings, term: ['.subckt', ['name', 'nodes...']]},
+            {settings: keywordSettings, term: ['.temp', ['temperature']]},
+            {settings: keywordSettings, term: ['.tran', ['time']]},
+            {settings: fnSettings, term: ['nrz', ['vlow', 'vhigh', 'tperiod', 'tdelay', 'trise', 'tfall']]},
+            {settings: fnSettings, term: ['pulse', ['vA', 'vB', 'tdelay', 'tAtoB', 'tstable']]},
+            {settings: fnSettings, term: ['pwl', ['t1', 'v1', 't2', 'v2...']]}
         ]
     };
 })();
