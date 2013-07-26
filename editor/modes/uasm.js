@@ -27,6 +27,10 @@
                     state.is_include = false;
                     return 'string';
                 }
+                // Spaces are never anything.
+                if(stream.eatSpace()) {
+                    return;
+                }
                 if(state.is_macro_def) {
                     stream.eatSpace();
                     var token = stream.match(/^([^\s()]+)/);
@@ -203,5 +207,68 @@
     };
 
     CodeMirror.defineMode('uasm', EditorModeBSim);
+
+    var op = ['reg a', 'reg b', 'reg destination'];
+    var opc = ['literal a', 'reg b', 'reg destination'];
+    Editor.Completions.uasm = {
+        Settings: {
+            paramListStart: '(',
+            paramListEnd: ')',
+            paramSpacer: ', '
+        },
+        Terms: [
+            ['ADD', op],
+            ['SUB', op],
+            ['MUL', op],
+            ['DIV', op],
+            ['AND', op],
+            ['OR', op],
+            ['XOR', op],
+            ['XNOR', op],
+            ['CMPEQ', op],
+            ['CMPLT', op],
+            ['CMPLE', op],
+            ['SHL', op],
+            ['SHR', op],
+            ['SRA', op],
+            ['ADDC', opc],
+            ['SUBC', opc],
+            ['MULC', opc],
+            ['DIVC', opc],
+            ['ANDC', opc],
+            ['ORC', opc],
+            ['XORC', opc],
+            ['XNORC', opc],
+            ['CMPEQC', opc],
+            ['CMPLTC', opc],
+            ['CMPLEC', opc],
+            ['SHLC', opc],
+            ['SHRC', opc],
+            ['SRAC', opc],
+            ['LD', ['reg address', 'literal offset', 'reg destination'], ['literal address', 'reg destination']],
+            ['ST', ['reg value', 'literal address', 'reg offset'], ['reg value', 'literal address']],
+            ['JMP', ['reg target', 'reg old_pc_destination']],
+            ['BEQ', ['reg test', 'literal branch_target', 'reg old_pc_destination']],
+            ['BF', ['reg test', 'literal branch_target', 'reg old_pc_destination']],
+            ['BNE', ['reg test', 'literal branch_target', 'reg old_pc_destination']],
+            ['BT', ['reg test', 'literal branch_target', 'reg old_pc_destination']],
+            ['LDR', ['label address', 'reg destination']],
+            ['MOVE', ['reg from', 'reg to']],
+            ['CMOVE', ['literal value', 'reg to']],
+            ['HALT', []],
+            ['PUSH', ['reg value']],
+            ['POP', ['reg destination']],
+            ['ALLOCATE', ['literal words']],
+            ['DEALLOCATE', ['literal words']],
+            ['CALL', ['label'], ['label', 'literal arg_count']],
+            ['RTN', []],
+            ['XRTN', []],
+            ['WORD', ['literal value']],
+            ['LONG', ['literal value']],
+            ['STORAGE', ['literal nwords']],
+            ['GETFRAME', ['literal frame', 'reg target']],
+            ['PUTFRAME', ['reg value', 'literal frame']]
+        ]
+    };
 
 })();
