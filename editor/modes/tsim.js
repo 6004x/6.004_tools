@@ -244,4 +244,21 @@
         };
     };
     CodeMirror.defineMode('tsim', tsim);
+
+    Editor.Completions.tsim = {
+        Settings: {
+            paramListStart: ' ',
+            paramListEnd: '',
+            paramSpacer: ' '
+        },
+        Terms: [
+            ['symbols', ['symbol...']],
+            ['states', ['state...']],
+            ['action', ['state', 'symbol', 'newstate', 'writesymbol', 'motion']],
+            ['tape', ['name', 'symbol...']],
+            ['result', ['name', 'symbol...']],
+            ['result1', ['name', 'symbol']],
+            ['checkoff', ['server', 'assignment', 'checksum']]
+        ]
+    };
 })();
