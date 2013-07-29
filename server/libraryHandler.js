@@ -4,7 +4,7 @@ var fs = require('fs');
 var path=require('path');
 
 (function() {
-    var libraryHandler = function(request, response, data){
+    var libraryHandler = function(request, response, postData){
     	var root_path=process.cwd();//__dirname
 		//current directory will hold all user files in /libraries
 		var lib_path=path.join(root_path, 'libraries'); 
@@ -13,7 +13,7 @@ var path=require('path');
 		var file_path = unescape(url.parse(request.url).pathname);
 
 		var user=request.user;
-		var query=String(data['query']);
+		var query=String(postData['query']);
 		// console.log(data);
 		// console.log(root_path);
 		// console.log(request.url);
@@ -78,7 +78,7 @@ var path=require('path');
 			}, 
 
 			saveFile : function(exists){
-				var fdata=data['fdata'];
+				var fdata=postData.data;
 				fs.exists(path.dirname(full_path), function(parent_exists){
 					if(parent_exists){
 						if(!exists){
@@ -107,9 +107,6 @@ var path=require('path');
 					}
 				});
 			},
-			newFile : function(exists){
-
-			}, 
 			newFolder : function(exists){
 				if(exists){
 					errorResponse('path already exists at '+ file_path);
@@ -127,11 +124,18 @@ var path=require('path');
 			},
 			deleteFile : function(exists){
 				if(exists){
-					hideFile(full_path, file_path);
+					hide(full_path, file_path);
 				} else { //doesn't exists
 					errorResponse(file_path +' does not exist');
 				}
 			},
+			renameFile : function(exists){
+				if(exists){
+					rename(full_path, file_path, String(postData.data));
+				} else {
+					errorResponse(file_path + ' does not exist')
+				}
+			}
 		}
 
 		function recurseThroughFolders(curr_path){
@@ -177,8 +181,8 @@ var path=require('path');
 			console.log('data sent');
 		}
 		function sendFile(file_path, full_path) {
-			data.user = user;
-			fs.readFile(full_path,'utf8',function(err,data) {
+			postData.user = user;
+			fs.readFile(full_path,'utf8', function(err,data) {
 				if (err){
 					console.log(err);
 					errorResponse(err+' file could not be read');
@@ -211,13 +215,10 @@ var path=require('path');
 					}
 			});
 		}
-		function hideFile(full_path, file_path){
+		function hide(full_path, file_path){
 			console.log('hiding '+path.dirname(full_path)+path.sep+'del~'+path.basename(full_path));
 			fs.exists(path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function(exists){
-				if (err) {
-					errorResponse(err + ' file could not be renamed');
-					return;
-				}
+				
 				if(exists){
 					//TODO: what should we do in case we delete a file/folder twice
 				}
@@ -238,7 +239,31 @@ var path=require('path');
 				}
 
 			})
-			
+		}
+		function rename(full_path, file_path, new_path){
+			console.log('renaming to ' + path.join(path.dirname(full_path), path.basename(new_path)));
+			fs.exists(path.join(path.dirname(full_path), path.basename(new_path)), function(exists){
+				if(exists){
+					//TODO: what should we do in case we overwrite a file
+					//shouldn't happen
+				}
+				else{
+					fs.rename(full_path, path.join(path.dirname(full_path), path.basename(new_path)), function (err) {
+						if (err) {
+							errorResponse(err + ' file could not be renamed');
+							return;
+						}
+						else{
+							console.log(path.join(path.dirname(full_path), path.basename(new_path)));
+							sendJSON({
+								status:'success',
+								name:new_path,
+							});
+						}
+					});
+				}
+
+			})
 		}
 		function create_user_path() {
 			fs.mkdirSync(user_path,function(err) {

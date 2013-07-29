@@ -168,7 +168,7 @@ var Folders=new function(){
     function newFolder(file_path){
         var handleCreate = function() {
             var folderName = modal.inputContent();
-
+            //checks against regexp
             if(!isValidName(fileRegexp, folderName)){
                 modal.showError('Names cannot contain \\, \/, :, ", <, >, |, ?, or *');
 
@@ -176,11 +176,12 @@ var Folders=new function(){
             }
             var folderPath = file_path + folderName;
             
-
+            //check hopefully there is not another folder already with that name. 
             if(FileSystem.isFolder(folderPath)) {
                 modal.showError(folderPath+' is already a folder; please choose another name.');
                 return;
             }
+
 
             FileSystem.newFolder(folderPath, function(){
                 refresh();
@@ -219,10 +220,9 @@ var Folders=new function(){
                 newFileName=file_path+fileName+'.'+editMode;
             else
                 newFileName=file_path+fileName;
-
+            //checks that there is not already another file with that name.
             if (FileSystem.isFile(newFileName)){
                 modal.showError(fileName+'.'+editMode+' is already a file, please choose another name');
-
                 return;
             }
 
@@ -230,7 +230,7 @@ var Folders=new function(){
                 name: newFileName,
                 data: '',
             };
-
+            
             FileSystem.newFile(new_file.name, new_file.data, function(data){
                 displayFile(data);
                 refresh();

@@ -201,18 +201,23 @@ var FileSystem= function(){
     }   
     function renameFile(oldFileName, newFileName, callback, callbackFailed){
         callbackFailed = callbackFailed||failResponse;
-        getFile(oldFileName, function(oldFile){
-            console.log('renaming '+ oldFileName);
-            newFile(newFileName, oldFile.data, function(newFile){
-                deleteFile(oldFileName, function(){
-                    callback(newFile);
-                });
-            });
-        });
-        updated=false;
+        // getFile(oldFileName, function(oldFile){
+        //     console.log('renaming '+ oldFileName);
+        //     newFile(newFileName, oldFile.data, function(newFile){
+        //         deleteFile(oldFileName, function(){
+        //             callback(newFile);
+        //         });
+        //     });
+        // });
+        // updated=false;
+        sendAjaxRequest(oldFileName, newFileName, 'json', 'renameFile', function(data, status){
+            console.log(status)
+            if(status === 'success')
+                callback(data);
+        }, callbackFailed);
     }
     function deleteFile(fileName, callback, callbackFailed){
-        sendAjaxRequest(fileName,null,'json', 'deleteFile', callback, callbackFailed);
+        sendAjaxRequest(fileName, null, 'json', 'deleteFile', callback, callbackFailed);
         updated=false;
     }
 
@@ -225,7 +230,7 @@ var FileSystem= function(){
 
 
         url=mServer+filePath;
-        var data={query:query, fname:filePath, fdata:fileData}
+        var data={query:query, name:filePath, data:fileData}
         var req=$.ajax({
                 type:"POST",
                 url:url, 

@@ -5,7 +5,7 @@
 	var DIV_HEIGHT = 50;
 	var TAPE_WIDTH = 30;
 	var TOTAL_HEIGHT = 	250; 
-	var ANIMATION_SPEED = 5;
+	var ANIMATION_SPEED = 10;
 
 	var TMSIM = function(container, tsm, testLists){
 		var mContainer = $(container);
@@ -18,6 +18,7 @@
 		var slider_speed = 5;
 		var halt = false;
 		var steps = 0;
+		var speeds = [0.5, 0.5, 0.75, 1, 2, 3, 10, 100, 1000, 10000, 100000, 500000, 1000000]
 		//TODO:change magic numbers
 		this.initialise=function(){
 			console.log('initalise TMSIM');
@@ -111,7 +112,7 @@
 				.append('<i class=icon-fast-backward>');
 
 			$('.tape_button').each(function(i, button){
-                this.attr({
+                $(this).attr({
                     'data-toggle':"tooltip",
                     'data-trigger':'hover',
                     'data-container':'body',
@@ -121,38 +122,68 @@
 			stepButton.on('click', function(){
 				 //self.move('r');
 				console.log('step forward')
-				self.step(function(arg){
-					console.log('callback')
-					console.log(arg);
-				});
+				if(!$(this).hasClass('disabled')){
+					self.step(function(arg){
+						console.log('callback')
+						console.log(arg);
+					});
+				}
 			});
 			prevStepButton.on('click', function(){
-				self.move('l');
+				if(!$(this).hasClass('disabled'))
+					self.move('l');
 			});
 			playButton.on('click', function(){
-				self.play();
+				if(!$(this).hasClass('disabled')){
+					halt = false;
+					playButton.addClass('disabled');
+					stepButton.addClass('disabled');
+					prevStepButton.addClass('disabled');
+					self.play();
+				}
 			})
 			resetButton.on('click', function(){
-				toggleTape();
-			})
+				if(!$(this).hasClass('disabled')){
+					self.stop();
+					playButton.removeClass('disabled');
+					stepButton.removeClass('disabled');
+					prevStepButton.removeClass('disabled');
+					toggleTape();
+				}
+			});
 			stopButton.on('click', function(){
-				self.stop();
-			})
+				if(!$(this).hasClass('disabled')){
+					self.stop();
+					playButton.removeClass('disabled');
+					stepButton.removeClass('disabled');
+					prevStepButton.removeClass('disabled');
+				}
+			});
 
 			var slider = $('<div>').addClass('slider').css('margin', '8px')
 			slider.slider({
 					'min' : 0,
-					'max' : 25,
+					'max' : speeds.length,
 					'step' : 1,
-					'value' : 5,
+					'value' : 3,
 					'orientation' : 'horizontal',
 				});
-			slider_speed = ANIMATION_SPEED * (25-25*Math.sqrt(slider.slider('value')/25));
-			$('.speedSpan').text(slider_speed);
+			slider_speed = 1/speeds[slider.slider('value')]*100;
+			$('.speedSpan').text(slider_speed.toFixed(2) + ' Hz');
 			slider.slider('enable');
+
 			slider.on('slide', function(){
-				slider_speed = ANIMATION_SPEED * (25-25*Math.sqrt(slider.slider('value')/25));
-				$('.speedSpan').text(slider_speed);
+				// var val = 40 - slider.slider('value');
+				// console.log(val);
+				// if(val > 0)
+				// 	slider_speed = ANIMATION_SPEED * Math.sqrt(val);
+				// else
+				// 	slider_speed = val;
+				// $('.speedSpan').text(slider_speed.toFixed(2));
+				var val = speeds[slider.slider('value')];
+				slider_speed = 1/val*100;
+				console.log(val);
+				$('.speedSpan').text(slider_speed.toFixed(2) );
 			})
 			actionButtonDiv.append(prevStepButton, playButton, stopButton, stepButton, resetButton);
 			actionDiv.append(slider, actionButtonDiv);
@@ -162,16 +193,17 @@
 		this.step = function(callback){
 			var callback = callback || _.identity;
 			var stepObject = mTSM.step(mCurrentTape);
+
 			steps++;
 			mContainer.find('.machine_label').text(stepObject.transition.new_state);
 			mContainer.find('.machine_label').append('<br/>'+stepObject.transition.move);
 
 			mContainer.find('.current_segment').text(stepObject.transition.write);
 			self.move(stepObject.transition.move, function(){
-				listToTape()
+				listToTape();
 				callback(stepObject.new_state);
 				$('.stepsSpan').text(steps)
-			});			
+			});
 		}
 		this.stop = function(){
 			console.log('stop');
@@ -186,11 +218,26 @@
 					console.log('halted');
 				}
 				else if(new_state_name!='*halt*'&&new_state_name!='*error*'){
-					
+					if(slider_speed <= 1000){
 						setTimeout(function(){
 							self.step(nextStep);
 						}, slider_speed*5);
-					//
+					} else {
+						var i = speeds[$('.slider').slider('value')];
+						while( i > 0){
+							var stepObject = mTSM.step(mCurrentTape);
+							steps++;
+							if(stepObject.transition.new_state == '*halt*' || stepObject.transition.new_state == '*error*'){
+								console.log('return '+ stepObject.transition.new_state)
+								break;
+							}
+							i--;
+						}
+
+						setTimeout(function(){
+							self.step(nextStep);
+						}, ANIMATION_SPEED*5);
+					}
 				}
 				else 
 					console.log('return '+new_state_name)
@@ -201,11 +248,12 @@
 			var name = buttonDiv.data('tape-name');
 			mCurrentTape = mTapeList[name].cloneTape();
 			mTSM.restart();
-			halt = false;
+			halt = true	;
 			steps = 0;
 			listToTape( mCurrentTape, mContainer.find('.tape_div'));
 			mContainer.find('.test_radio_buttons .active').toggleClass('active')
 			buttonDiv.toggleClass('active');
+			$('.tape_button').removeClass('disabled');
 		}
 		function listToTape(tape, tapeDiv){
 			var tapeDiv = tapeDiv || $('.tape_div');
@@ -257,10 +305,7 @@
 				moveDir = -TAPE_WIDTH
 			else
 				moveDir = 0;
-			var prev, prev_2;
-			var penultimate = false, ultimate = false;
-			var new_slider_speed = slider_speed;
-			if(slider_speed != 0){
+			if(slider_speed <= 1000){
 				tapeDiv.animate({
 				    left: parseInt(currentPos)+moveDir,
 				}, slider_speed,  function(){
@@ -268,10 +313,8 @@
 			 	 });
 			}
 			else {
-				console.log('speed');
-				tapeDiv.css('left', parseInt(currentPos)+moveDir)
 				callback();
-				}
+			}
 		}
 
 		self.initialise();
