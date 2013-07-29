@@ -87,16 +87,16 @@
                     return ret;
                 }
                 var is_start = stream.sol();
-                // It could be a label:
                 if(is_start) {
                     if(state.macro_ends_at_end_of_line) {
                         state.is_macro_value = false;
                     }
-                    var label = stream.match(/^\s*([a-zA-Z0-9_]+):/);
-                    if(label) {
-                        state.labels[label[1]] = true;
-                        return 'def';
-                    }
+                }
+                // It could be a label:
+                var label = stream.match(/^\s*([a-zA-Z0-9_]+):/);
+                if(label) {
+                    state.labels[label[1]] = true;
+                    return 'def';
                 }
                 // Get rid of any unwanted whitespace.
                 stream.eatSpace();
