@@ -37,9 +37,15 @@ $(function() {
     function dls(){
         $('#split_pane').click();
         editor.clearErrors();
-        var content = editor.content()
-        var filename = editor.currentTab();
+        Checkoff.reset();
+        var content = editor.content();
         div = $('#results');
+        
+        if (!content){
+            return;
+        }
+        
+        var filename = editor.currentTab();
         Simulator.simulate(content,filename,div,error_catcher);
     }
     
@@ -64,7 +70,13 @@ $(function() {
 //        editor.clearErrors();
 //    })]);
     
-    editor.addButtonGroup([new ToolbarButton('Checkoff',Checkoff.getResults,"Checkoff")])
+    editor.addButtonGroup([new ToolbarButton('Checkoff',function(){
+        try{
+            Checkoff.testResults();
+        } catch (err) {
+            error_catcher(err);
+        }
+    },"Checkoff")])
     
     Simulator.setup();
     var set_height = function() {

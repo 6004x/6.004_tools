@@ -58,7 +58,8 @@ Splitter: splits a string into an array of tokens
     --returns: an array of tokens
 *******************************/
     function split(input_string,filename){
-        var pattern = /".*?"|\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
+        var pattern = /".*?"|\w+\s*\([^\)]*\)|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
+        // [^,\)]+(,\s*[^,\)]+)*
         // 'pattern' will match, in order:
         //      anything wrapped in quotes
         //      a hex number
@@ -72,7 +73,8 @@ Splitter: splits a string into an array of tokens
         //      a newline
         //      a record separater (unicode character \u001e)
         
-        var fn_pattern = /^\w+\s*\([^,\)]+(,\s*[^,\)]+)*\)$/;
+        var fn_pattern = /^\w+\s*\([^\)]*\)$/;
+        // [^,\)]+(,\s*[^,\)]+)*
         var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)/;
         var control_pattern = /^\..+/;
         var string_pattern = /".*?"/;
@@ -378,6 +380,31 @@ Parse Number: taken from cktsim.js by Chris Terman, with permission. Slightly
 
         throw "Number expected";
     }
+    
+/*************************
+Turn into a logic value: 
+V_il = 0.6
+V_ih = 2.7
+**************************/
+    var vil = 0.6;
+    var vih = 2.7;
+    function logic(number){
+        if (number < vil) return 0;
+        else if (number > vih) return 1;
+        else return null;
+    }
+    
+    function multi_logic(numbers){
+        for (var i = 0; i < numbers.length; i += 1){
+            console.log('logic numbers[i]:',logic(numbers[i]));
+            numbers[i] = logic(numbers[i]);
+        }
+        var joined = numbers.join("");
+        return parse_number("0b"+joined)
+//        console.log("numbers:",joined);
+//        console.log("parsed:",parseInt(joined,2));
+    }
+
     
 /******************************
 filename_to_contents: takes a file path and returns the string representing its 
@@ -922,14 +949,22 @@ Read Device: takes a line representing a device and creates a device object
     *************************/
     function read_checkoff(line){
         // .checkoff <server> <assignment> <checksum>
-        console.log("line:",line);
+//        console.log("line:",line);
         if (line[1].type != 'string'){
             throw new CustomError("Server name expected.",line[1]);
         }
         if (line[2].type != 'string'){
             throw new CustomError("Assignment name expected.",line[2]);
         }
-        console.log('server and assignment are both names');
+//        console.log('server and assignment are both names');
+        var obj = {server:{name:line[1].token,
+                           token:line[1]},
+                   assignment:{name:line[2].token,
+                               token:line[2]},
+                   checksum:{value:line[3].token,
+                             token:line[3]}
+                  }
+        Checkoff.setCheckoffStatement(obj);
     }
     
     /**************************
@@ -939,12 +974,78 @@ Read Device: takes a line representing a device and creates a device object
         // verify type one a: .verify Z periodic(99.9n, 100) 0 0 0 1 1 1 1 1
         // ==> check values for node Z at times 99.9ns, 199.9ns, 299.9ns, 399.9ns, ...
         // ==>                                  Z = 0,  Z = 0,   Z = 0,   Z = 1,   ...
-        
         // verify type one b: .verify s4 s3 s2 s1 periodic(9.9n, 10n) 0x00 0x01 0x02 ...
-        // check multiple values at once
-        
+        // ==> check multiple values at once
         // verify type three: .verify z tvpairs() 9.9ns 0x0 19.9ns 0x1 29.9ns 0x0 ...
         //                or: .verify y[3:0] tvpairs() 99.9ns 0x00 199.9ns 0x10 ...
+        
+        // a list of nodes whose values will be checked
+        var nodes = [];
+        
+        var i = 1;
+        var fn_index;
+        var nodes = [];
+        var values;
+        
+        // the token representing the function
+        var fn;
+        while (true) {
+            if (i >= line.length){
+                throw new CustomError("No verify function specified: 'periodic' or 'tvpairs' expected.",
+                                      line[0]);
+            }
+            if (line[i].type != "name"){
+                if (line[i].type == "function"){
+                    if (i == 1){
+                        throw new CustomError("No specified nodes to verify.",line[1]);
+                    }
+                    fn = line[i];
+                    values = line.slice(i+1);
+                    break;
+                } else {
+                    throw new CustomError("Node name expected.",line[i]);
+                }
+            } else {
+                nodes.push(line[i].token);
+            }
+            i += 1;
+        }
+//        console.log("nodes:",nodes,"fn:",fn);
+        
+        // picks out the name of the function and its args, if any
+        // fn_array[1] is the name
+        // fn_array[2] is the entire contents of the parentheses
+        // fn_array[3] is the first arg
+        // fn_array[4] is the second arg
+        var fn_pattern = /(\w+)\((([^,]+),\s*([^,]+))?\)/
+        var fn_array = fn.token.match(fn_pattern);
+//        console.log("matched:",fn_array);
+        
+        if (!fn_array){
+            throw new CustomError("Ill-formed .verify function statement",fn);
+        }
+        
+        var fn_name = fn_array[1];
+        if (fn_name != 'periodic' && fn_name != 'tvpairs'){
+            throw new CustomError("Invalid verify function: 'periodic' or 'tvpairs' expected",fn);
+        }
+        
+        if (fn_name == "periodic"){
+            try{
+                var tstart = parse_number(fn_array[3]);
+                var tstep = parse_number(fn_array[4]);
+            } catch (err){
+                throw new CustomError("Number expected",fn);
+            }
+        }
+        
+        var fn_obj = {type:fn_name,
+                      tstart:tstart,
+                      tstep:tstep,
+                      token:fn, // for throwing errors later
+                      values:values
+                     };
+        Checkoff.addVerify(fn_obj);
     
     }
     
@@ -1357,7 +1458,7 @@ Flattening
 Exports
 ****************************/
     return {parse:tokenize,
-            CustomError:CustomError
+            CustomError:CustomError,
 //            analyze:analyze,
 //            split:split,
 //            tokenize:tokenize,
@@ -1368,8 +1469,10 @@ Exports
 //            read_device:read_device,
 //            netlist_device:netlist_device,
 //            netlist_instance:netlist_instance,
-//            subcircuits:subcircuits
-              }
+//            subcircuits:subcircuits,
+            logic:logic,
+            multi_logic:multi_logic
+           }
 }());
 
 /**************************
