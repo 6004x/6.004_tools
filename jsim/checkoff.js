@@ -98,11 +98,33 @@ simulation?');
         for (var v = 0; v < mVerify_statements.length; v += 1){
             var vobj = mVerify_statements[v];
             console.log("vobj: ",vobj);
+            
             var times = mResults._time_;
             var time_indices = [];
+            var nodes = vobj.nodes.slice(0);
+            var results = {};
+            
+            for (var i = 0; i < nodes.length; i += 1){
+                results[nodes[i]] = [];
+            }
+            console.log("empty results obj:",results);
+            
+            var index;
             if (vobj.type == "periodic"){
-                time_indices.push(findTimeIndex(vobj.tstart,0))
+                index = findTimeIndex(vobj.tstart,0)
+                time_indices.push(index);
+                for (node in results){
+                    results[node].push(Parser.logic(mResults[node][index]));
+                }
+                for (var i = 1; i < vobj.values.length; i += 1){
+                    index = findTimeIndex(vobj.tstart + vobj.tstep * i, time_indices[i-1])
+                    time_indices.push(index);
+                    for (node in results){
+                        results[node].push(Parser.logic(mResults[node][index]));
+                    }
+                }
                 console.log("time indices: ",time_indices);
+                console.log("filled results obj:",results);
             }
         }
     }

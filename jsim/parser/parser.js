@@ -396,7 +396,7 @@ V_ih = 2.7
     
     function multi_logic(numbers){
         for (var i = 0; i < numbers.length; i += 1){
-            console.log('logic numbers[i]:',logic(numbers[i]));
+//            console.log('logic numbers[i]:',logic(numbers[i]));
             numbers[i] = logic(numbers[i]);
         }
         var joined = numbers.join("");
@@ -1037,9 +1037,20 @@ Read Device: takes a line representing a device and creates a device object
             } catch (err){
                 throw new CustomError("Number expected",fn);
             }
+            
+            // parse values
+            for (var i = 0; i < values.length; i += 1){
+                try{
+                    var newval = parse_number(values[i].token);
+                } catch (err) {
+                    throw new CustomError("Number expected.",values[i]);
+                }
+                values[i] = newval;
+            }
         }
         
         var fn_obj = {type:fn_name,
+                      nodes:nodes,
                       tstart:tstart,
                       tstep:tstep,
                       token:fn, // for throwing errors later
