@@ -292,8 +292,8 @@ Graph setup functions
                     innerPosTextDivs["series"+i].hide();
                 }
                 
-                console.log("series number:",i,"series label:",series.label);
-                console.log(/*"toggle box:",toggleBox,*/"checked:",toggleBox.prop("checked"));
+//                console.log("series number:",i,"series label:",series.label);
+//                console.log(/*"toggle box:",toggleBox,*/"checked:",toggleBox.prop("checked"));
 //                }
             }
             posTextDiv.show();
@@ -413,13 +413,14 @@ Graph setup functions
                 rangeTextDiv.find('.xrange').text("X range = "+suffix_formatter(xrange)+
                                               series.xUnits);
     
-//                if (!compactPlot){
                 var y1 = interpolate(series, ranges.xaxis.from);
                 var y2 = interpolate(series, ranges.xaxis.to);
                 var yrange = y2-y1;
                 
                 var divText = series.label+" range = "+
                     suffix_formatter(yrange)+series.yUnits;
+                var legendBoxes = plotObj.getPlaceholder().find('.legendCheckbox');
+                var toggleBox = legendBoxes.eq(i);
                 if (innerRangeTextDivs["series"+i]===undefined){
                     var innerDiv = $("<div>"+divText+"</div>");
                     innerRangeTextDivs["series"+i] = innerDiv;
@@ -427,7 +428,12 @@ Graph setup functions
                 } else {
                     innerRangeTextDivs["series"+i].text(divText);
                 }
-//                }
+                
+                if (toggleBox.prop("checked")){
+                    innerRangeTextDivs["series"+i].show();
+                } else {
+                    innerRangeTextDivs["series"+i].hide();
+                }
             }
             if (!compactPlot){
                 rangeTextDiv.show();

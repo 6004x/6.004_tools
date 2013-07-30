@@ -58,6 +58,11 @@
     text-align:left
 }
 
+.legendCheckbox {
+    position:relative;
+    top: -4px;
+}
+
 .novalues {
     text-align:center;
     padding:5px;
