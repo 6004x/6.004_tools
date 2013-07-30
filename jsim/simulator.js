@@ -600,13 +600,13 @@ Graph setup functions
                 gbf(function(item){
                     item.zoom();
                 });
-            },"Zoom In"),
+            },"Zoom In (Shortcut: double click)"),
             resetZoomBtn,
             new ToolbarButton('icon-zoom-out',function(){
                 gbf(function(item){
                     item.zoomOut();
                 });
-            }, "Zoom Out")
+            }, "Zoom Out (Shortcut: shift + double click)")
         ]);
         
 //        tooltipOpts.title = "Zoom to Selection";

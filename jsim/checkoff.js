@@ -80,8 +80,14 @@ simulation?');
     /*************************
     
     *************************/
-    function findIndex(time){
-        
+    function findTimeIndex(time, start_index){
+        var times = mResults._time_;
+        for (var i = start_index; i < times.length; i += 1){
+            if (times[i] > time){
+                if (i == start_index) return start_index;
+                else return i-1;
+            }
+        }
     }
     
     /**************************
@@ -95,13 +101,7 @@ simulation?');
             var times = mResults._time_;
             var time_indices = [];
             if (vobj.type == "periodic"){
-                var start_time_index = times.indexOf(vobj.tstart)
-                if (start_time_index == -1){
-                    throw new Parser.CustomError("Start time was not one of the values tested.",vobj.token)
-                } else {
-                    time_indices.push(start_time_index);
-                }
-                
+                time_indices.push(findTimeIndex(vobj.tstart,0))
                 console.log("time indices: ",time_indices);
             }
         }
