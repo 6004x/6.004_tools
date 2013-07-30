@@ -213,7 +213,7 @@
     CodeMirror.defineMode('uasm', EditorModeBSim);
 
     var op = ['reg a', 'reg b', 'reg destination'];
-    var opc = ['literal a', 'reg b', 'reg destination'];
+    var opc = ['reg a', 'literal b', 'reg destination'];
     var fnSettings = {
         paramListStart: '(',
         paramListEnd: ')',
