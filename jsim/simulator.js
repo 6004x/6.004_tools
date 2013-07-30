@@ -265,6 +265,7 @@ Graph setup functions
     
             // set tooltip text; each series gets its own div in innerPosTextDivs
             var dataset = plotObj.getData();
+            var legendBoxes = plotObj.getPlaceholder().find('.legendCheckbox');
             for (var i = 0; i < dataset.length; i += 1) {
                 var series = dataset[i];
                 
@@ -275,6 +276,7 @@ Graph setup functions
                 var y = interpolate(series,pos.x);
                 
                 var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
+                var toggleBox = legendBoxes.eq(i);
             
                 if (innerPosTextDivs["series"+i]===undefined){
                     var innerDiv = $("<div>"+divText+"</div>");
@@ -283,6 +285,15 @@ Graph setup functions
                 } else {
                     innerPosTextDivs["series"+i].text(divText);
                 }
+                
+                if (toggleBox.prop("checked")){
+                    innerPosTextDivs["series"+i].show();
+                } else {
+                    innerPosTextDivs["series"+i].hide();
+                }
+                
+                console.log("series number:",i,"series label:",series.label);
+                console.log(/*"toggle box:",toggleBox,*/"checked:",toggleBox.prop("checked"));
 //                }
             }
             posTextDiv.show();
@@ -734,6 +745,16 @@ Graph setup functions
             }
         }
     }
+    
+    
+    /**********************
+    Label formatter: puts a checkbox next to the legend labels
+    ***********************/
+    function legendFormatter(label,series){
+        return label+'</td><td><input class="legendCheckbox" \
+type="checkbox" value="'+series.label+'"></input></td>'
+    }
+    
     /*********************
     Default graph options: each plot will need to specify axis labels and zoom and pan ranges
     **********************/
@@ -772,7 +793,10 @@ Graph setup functions
             hoverable:true,
             autoHighlight:false
         },
-//        colors:['lime','red','blue','yellow','cyan','magenta']
+        legend:{
+            labelFormatter:legendFormatter,
+        },
+        colors:['#b58900','#268bd2','#dc322f','#859900','#6c71c4','#d33682','#2aa198','#cb4b16']
     }
     
 /****************************************************
@@ -854,7 +878,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
                 
                 // add a series object to 'dataseries'
                 dataseries.push({
-                    label: current ? node : "Node " + node,
+                    label: node,
                     data: plot,
                     xUnits: 's',
                     yUnits: current ? 'A' : 'V'

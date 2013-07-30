@@ -12,10 +12,10 @@
     position:absolute;
     background-color:white;
     opacity: .75;
-    padding: 2px;
+    padding: 0px;
     font-size:10pt;
     text-align:left;
-    z-index:5;
+/*    z-index:5;*/
 }
 
 .posText div {
@@ -52,6 +52,10 @@
     left:8px;
     z-index:20;
     margin-top:-20px;
+}
+
+.legend {
+    text-align:left
 }
 
 .novalues {
