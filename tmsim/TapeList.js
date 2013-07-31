@@ -1,9 +1,11 @@
 function TapeList(){
-	var self=this;
-	var first=null;
-	var current=null;
-	var last=null;
-	var size=0;
+	var self = this;
+	var first = null;
+	var current = null;
+	var last = null;
+	var leftSize = 0;
+	var rightSize = 0;
+	var size = 0;
 
 	//attaches a node with data as the last pointer of the LL
 	
@@ -25,7 +27,6 @@ function TapeList(){
 			self.append(list[i]);
 			if(i==currentIndex)
 				current = last;
-			size++;
 		}
 		// console.log('initiated list');
 		// console.log('current at '+currentIndex+' with data '+current.data);
@@ -88,6 +89,7 @@ function TapeList(){
 			first=temp;
 		}
 		size++;
+		leftSize++;
 		return self;
 	}
 	this.append=function(data){
@@ -108,6 +110,7 @@ function TapeList(){
 			last.next=null;
 		}
 		size++;
+		rightSize++;
 		return self;
 	}
 	//finds first instance of this data and removes it
@@ -183,15 +186,21 @@ function TapeList(){
 	this.getCurrentNode = function(){
 		return self.current;
 	}
-	this.equals=function(otherLL){
+	this.equals=function(otherTape){
 		//dependent on access to the other current node... might scrap that for array representation
 
 		mArray = self.toArray();
-		tArray = otherLL.toArray();
+		tArray = otherTape.toArray();
+		if(!self.getSizes() === otherTape.getSizes()){
+			console.log(otherTape.getSizes())
+			return false;
+		}
+
 		if(mArray.length!=tArray.length){
 			console.log('tapes are different size');
 			return false;
 		}
+
 		var equalArray = true;
 		for (var i =0; i < mArray.length; i++){
 			if(equalArray)
@@ -201,7 +210,7 @@ function TapeList(){
 			console.log('tapes are the same');
 			//now we must traverse and see if current is the same in both.
 			var tempMCurr = self.getCurrentNode();
-			var tempTCurr = otherLL.getCurrentNode();
+			var tempTCurr = otherTape.getCurrentNode();
 			
 			if(tempMCurr!=tempTCurr){
 				console.log('current node is not the same');
@@ -228,45 +237,36 @@ function TapeList(){
 		var clone = new TapeList();
 		var toClone = self.toArray();
 		clone.init(toClone.array, toClone.currentIndex);
+		clone.setSizes(self.getSizes());
 		if(clone.equals(self))
 			return clone;
 		else
 			console.log('clone not equal');
 	}
+
+	this.getSizes = function(){
+		return{
+			totalSize : size,
+			rightSize : rightSize,
+			leftSize : leftSize,
+		}
+	}
+	this.setSizes = function(sizes){
+		if(leftSize == 0){
+			//copying the sizes of the cloning tape, 
+			leftSize = sizes.leftSize;
+			rightSize = sizes.rightSize;
+			size = sizes.totalSize;
+			return true;
+		}
+		return false;
+		
+	}
+
 	function tlnode(newData){
 		this.data = newData;
 		this.next = null;
 		this.prev = null;
 	}
 	return self;
-}
-
-
-function lltest(){
-
-	var LL1=new TapeList();
-	var LL2=new TapeList();
-	var LL3=new TapeList();
-
-	LL1.append('s').prepend('r').append('t').prepend('q').prepend('a').prepend('p').remove('a').append('u');
-	LL3.append('s').prepend('r').append('t').prepend('q').prepend('a').prepend('p').remove('a').append('u');
-	console.log(LL1.equals(LL3));
-	console.log(LL3.equals(LL1));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('r'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('r'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-	// console.log(LL1.traverse('l'));
-
-	LL1.printLL();
-	LL3.printLL();
-
-	LL2.append('1').remove('2').remove('1').remove('1').append('3');
-	LL2.printLL();
 }

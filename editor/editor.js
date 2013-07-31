@@ -11,6 +11,7 @@ var Editor = function(container, mode) {
     var mSyntaxMode = mode; // The syntax mode for the editors
     var mExpectedHeight = null; // The height the entire editor view (including toolbars and tabs) should maintain
     var mUntitledDocumentCount = 0; // The number of untitled documents (used to name the next one)
+    var mAutocompleter = new Editor.Autocomplete(this, mode);
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
@@ -244,8 +245,40 @@ var Editor = function(container, mode) {
             indentWithTabs: true,
             styleActiveLine: true,
             value: content,
-            mode: mSyntaxMode
+            mode: mSyntaxMode,
+            extraKeys: {
+                Tab: function() {
+                    console.log('hi');
+                    var marks = cm.getAllMarks();
+                    var cursor = cm.getCursor();
+                    var closest = null;
+                    var closest_mark = null;
+                    var distance = Infinity;
+                    for (var i = marks.length - 1; i >= 0; i--) {
+                        var mark = marks[i];
+                        var pos = mark.find();
+                        if(pos === undefined) continue;
+                        if(cursor.line >= pos.from.line - 5) {
+                            if(cursor.line < pos.from.line || cursor.ch <= pos.from.ch) {
+                                var new_distance = 10000 * (pos.from.line - cursor.line) + (pos.from.ch - cursor.ch);
+                                if(new_distance < distance) {
+                                    closest = pos;
+                                    closest_mark = mark;
+                                    distance = new_distance;
+                                }
+                            }
+                        }
+                    }
+                    if(closest !== null) {
+                        closest_mark.clear();
+                        mAutocompleter.selectPlaceholder(cm, closest);
+                    } else {
+                        return CodeMirror.Pass;
+                    }
+                }
+            }
         });
+        cm.on('change', _.debounce(CodeMirror.commands.autocomplete, 800, false));
         return cm;
     };
 
@@ -293,10 +326,16 @@ var Editor = function(container, mode) {
         // Do some one-time setup.
         if(!Editor.IsSetUp) {
             CodeMirror.commands.save = do_save;
+            CodeMirror.commands.autocomplete = function(cm) {
+                CodeMirror.showHint(cm, mAutocompleter.complete, {completeSingle: false});
+            };
 
             // Add our keyboard shortcuts for the command to comment your code.
             CodeMirror.keyMap.macDefault['Cmd-/'] = 'toggleComment';
             CodeMirror.keyMap.pcDefault['Ctrl-/'] = 'toggleComment';
+
+            CodeMirror.keyMap.macDefault['Ctrl-Space'] = 'autocomplete';
+            CodeMirror.keyMap.pcDefault['Ctrl-Space'] = 'autocomplete';
 
             Editor.IsSetUp = true;
         }
@@ -308,7 +347,7 @@ var Editor = function(container, mode) {
         FileSystem.saveFile(current_document.name, current_document.cm.getValue(), function() {
             // Mark the file as clean.
             current_document.generation = current_document.cm.changeGeneration();
-            handle_change_tab_icon(current_document)
+            handle_change_tab_icon(current_document);
         });
     };
 
@@ -324,4 +363,5 @@ var Editor = function(container, mode) {
 
     initialise();
 };
+Editor.Completions = {};
 Editor.IsSetUp = false;

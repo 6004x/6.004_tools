@@ -5,6 +5,9 @@
 .open_indicator{
     margin: 4px 10px 4px 4px ;
 }
+li.file_name:hover{
+    background-color: lightyellow;
+}
 .file_name .file_button{
     border: 0px;
 }
@@ -40,12 +43,6 @@
     color: #08c;
 }
 
-/*.folder_button_div .new_button{
-    display:none;
-}
-.folder_button_div:hover .new_button{
-    display:inline-block;
-}*/
 .folderContents:first-child li.rootFolderName{
     background-color:rgba(255,192,0, .8);
     position:relative;

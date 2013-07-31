@@ -3,13 +3,16 @@
     <head>
         <title>ui test</title>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
         <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
         <script src="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">    
-        <link rel="stylesheet" type="text/css" href="TMSIM.css">    
+        <link rel="stylesheet" type="text/css" href="TMSIM.css">   <link href='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css' rel='stylesheet' type='text/css'>
+
+       
         <script src='../fileSystem/fileSystem.js'></script>
         <script src='../fileSystem/folders.js'></script>
         <script src='TapeList.js'></script>
@@ -20,13 +23,12 @@
         <!-- importing editor by mattpf -->
             <script src="../editor/toolbar.js"></script>
             <script src="../editor/editor.js"></script>
+            <script src="../editor/autocomplete.js"></script>
             <script src="../editor/prompt.js"></script>
             <script src="../editor/external/codemirror.js"></script>
-            <script src="../editor/editor.js"></script>
             <script src="../editor/external/codemirror-extensions.js"></script>
-            <script src="../editor/modes/uasm.js"></script>
+            <script src="../editor/external/radix.js"></script>
             <script src="../editor/modes/tsim.js"></script>
-            <script src="../editor/modes/jsim.js"></script>
             <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
             <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
 
@@ -70,7 +72,7 @@
                 if(file.name){
                     try{
                         var parsedDict = tsmparse.parse(file.data);
-                        console.log(typeof parsedDict)
+                        
                         // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
                         tsmparse.flattenMachine(parsedDict);
                         editor.openTab(file.name+'done', tsmparse.getResults(), true);
@@ -78,15 +80,20 @@
                         editor.clearErrors();
                         console.log(e.stack );
                         for (var i = 0; i < e.length; i++)
-                            editor.markErrorLine(file.name, e[i].message, e[i].lineNumber);
+                            editor.markErrorLine(file.name, e[i].message, e[i].lineNumber - 1);
                         valid = false;
                     }
                     if(valid){
                         $('.sim_split').html('');
+                        console.log(tmsim);
+                        if(tmsim)
+                            tmsim.stop()
+                        console.log(tmsim);
                         $('#split_pane').click();
                         console.log(tsmparse.getTSM())
                         console.log(tsmparse.getLists());
                         tmsim = new TMSIM('.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
+                        console.log(tmsim);
                     }
                 }
             }

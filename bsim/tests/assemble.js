@@ -210,7 +210,7 @@ test("Evaluates assignments", function() {
 });
 
 test("Special dot variable works", function() {
-    expect(10);
+    expect(11);
     var assembler = new BetaAssembler();
     assembler.assemble("dot.uasm", ".", function(success, result) {
         ok(success, "'.' assembles.");
@@ -239,6 +239,9 @@ test("Special dot variable works", function() {
     });
     assembler.assemble("dot.uasm", ". = 5 . = 2", function(success, result) {
         ok(!success, "It is illegal to set dot to a lower value (by reassignment).");
+    });
+    assembler.assemble("dot.uasm", "blarg\n.= 0", function(success, result) {
+        equal(result[0].line, 1, "Dot assignment to zero after referencing an undefined symbol errors on the undefined symbol.");
     });
 });
 

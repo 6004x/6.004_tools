@@ -2,6 +2,7 @@
 var fs = require("fs");
 var https = require("https");
 var connect = require("connect"); 
+var path = require('path');
 var qs = require('querystring');
 var libraryHandler = require('./libraryHandler.js')
 
@@ -14,10 +15,11 @@ function authenticate_user(req,res,next) {
 
 var app = connect()
 	.use(authenticate_user)
+	.use(serverFunction)
     //.use(connect.bodyParser())   // set req.body with incoming data
     //.use('/libraries',library_handler)  // handle requests involving module libraries
-    //.use(connect.static(__dirname + '/courseware'))  // serve files from ./courseware
-    .use(serverFunction);
+    .use(connect.static(path.join(__dirname, '../')))  // serve files from ./courseware
+    
 
 function serverFunction(request, response, next){
 	
@@ -26,13 +28,7 @@ function serverFunction(request, response, next){
 		console.log(request.user);
 		var data = JSON.stringify({user:request.user, data:'GET'});
 		console.log(data);
-		response.writeHead(200,{
-			'Content-Length' : data.length,
-			'Access-Control-Allow-Origin' : '*',
-			//FIX THE ACCESS CONTROL SOON
-			    });
-		response.write(data);
-		response.end();
+		next();
 	} else if (request.method == 'POST'){
 		console.log('post');
 		//pull the data from the POST body requestuest

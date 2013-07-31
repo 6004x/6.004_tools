@@ -31,7 +31,6 @@ function TSMparser(){
 	function parse(stream){
 		var exceptions = [];
 		var tokens=stream.match(regexp);
-		console.log(tokens);
 		var parseDict={
 			symbols:[],
 			states:[],
@@ -294,8 +293,8 @@ function TSMparser(){
 				list_of_results1[tapeName]=tapeResult;
 			},
 			checkoff:function(args, lineNumber){
-				console.log('checkoff');
-				console.log(args);
+				// console.log('checkoff');
+				// console.log(args);
 			}
 		};
 		for (var i = 0; i < keys.length; i++){
@@ -344,6 +343,9 @@ function TSMparser(){
 				results+='desired current value: '+(list_of_results1[key]);
 				results+=', result1: '+String(list.peek()==(list_of_results1[key]))+'\n';
 			}
+			list_of_tapes[key].endSize = list.getSizes();
+			console.log(list.getSizes())
+			console.log(list_of_tapes[key])
 			results+='\n\n';
 		}
 		return results;
