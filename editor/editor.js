@@ -278,6 +278,7 @@ var Editor = function(container, mode) {
                 }
             }
         });
+        cm.on('change', _.debounce(CodeMirror.commands.autocomplete, 800, false));
         return cm;
     };
 
