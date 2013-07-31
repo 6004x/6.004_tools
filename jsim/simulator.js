@@ -127,7 +127,7 @@ Graph setup functions
         div.css("position","relative");
         zoom_pan_setup(div,plotObj);
         hover_setup(div,plotObj);
-        selection_setup(div,plotObj);
+        selection_setup(div,plotObj);    
         set_plot_heights();
     }
     
@@ -141,6 +141,7 @@ Graph setup functions
         $('#simulation-pane').height($('#editor-pane').height());
         $('#results').height($('#simulation-pane').height() - $('#graph-toolbar').height() - 40);
         $.each(allPlots,function(index,item){
+            
             // allow extra space for margins
             var margin_val;
             try{
@@ -222,9 +223,9 @@ Graph setup functions
                         value.getPlaceholder().trigger("hidePosTooltip");
                     }
                 }
-                if (!compactPlot){
-                    value.getPlaceholder().trigger("showPosTooltip",pos);
-                }
+//                if (!compactPlot){
+                value.getPlaceholder().trigger("showPosTooltip",pos);
+//                }
             });
             
         });
@@ -242,62 +243,77 @@ Graph setup functions
         /*******************
         showMousePos: called when a hover event is received and updates displayed values
         ********************/
-        var innerPosTextDivs = {};
         
         function showMousePos(){
             updateMouseTimeout = null;
             pos = latestPos;
             
-            // prevent the tooltip from blocking the legend
-            try{
-                var divWidth = plotObj.width() - 
-                    plotObj.getPlaceholder().find('.legend div').width() - 20;
-                posTextDiv.css("max-width",divWidth);
-            } catch (err) {}
-            
-            // only show the tooltip if the mouse is within graph boundaries (x only)
-            var axes = plotObj.getAxes();
-            if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max/* ||
-                pos.y < axes.yaxis.min || pos.y > axes.yaxis.max*/) {
-                posTextDiv.hide();
-                return;
-            }  
-    
-            // set tooltip text; each series gets its own div in innerPosTextDivs
             var dataset = plotObj.getData();
-            var legendBoxes = plotObj.getPlaceholder().find('.legendCheckbox');
-            for (var i = 0; i < dataset.length; i += 1) {
-                var series = dataset[i];
-                
-                posTextDiv.find('.xpos').text(suffix_formatter(pos.x)+series.xUnits);
-    
-//                if (!compactPlot){
-                posTextDiv.find('.xpos').prepend("X = ");
-                var y = interpolate(series,pos.x);
-                
-                var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
-                var toggleBox = legendBoxes.eq(i);
+            var legendBoxes = plotObj.getPlaceholder().find('.legendValue');
             
-                if (innerPosTextDivs["series"+i]===undefined){
-                    var innerDiv = $("<div>"+divText+"</div>");
-                    innerPosTextDivs["series"+i] = innerDiv;
-                    posTextDiv.append(innerPosTextDivs["series"+i]);
-                } else {
-                    innerPosTextDivs["series"+i].text(divText);
-                }
-                
-                if (toggleBox.prop("checked")){
-                    innerPosTextDivs["series"+i].show();
-                } else {
-                    innerPosTextDivs["series"+i].hide();
-                }
-                
-//                console.log("series number:",i,"series label:",series.label);
-//                console.log(/*"toggle box:",toggleBox,*/"checked:",toggleBox.prop("checked"));
-//                }
+            for (var i = 0; i < dataset.length; i += 1){
+                var series = dataset[i];
+                var y = interpolate(series,pos.x);
+                legendBoxes.eq(i).text(suffix_formatter(y)+series.yUnits);
             }
-            posTextDiv.show();
         }
+        
+//        var innerPosTextDivs = {};
+//
+//        function showMousePos2(){
+//            updateMouseTimeout = null;
+//            pos = latestPos;
+//            
+//            // prevent the tooltip from blocking the legend
+//            try{
+//                var divWidth = plotObj.width() - 
+//                    plotObj.getPlaceholder().find('.legend div').width() - 20;
+//                posTextDiv.css("max-width",divWidth);
+//            } catch (err) {}
+//            
+//            // only show the tooltip if the mouse is within graph boundaries (x only)
+//            var axes = plotObj.getAxes();
+//            if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max/* ||
+//                pos.y < axes.yaxis.min || pos.y > axes.yaxis.max*/) {
+//                posTextDiv.hide();
+//                return;
+//            }  
+//    
+//            // set tooltip text; each series gets its own div in innerPosTextDivs
+//            var dataset = plotObj.getData();
+//            var legendBoxes = plotObj.getPlaceholder().find('.legendCheckbox');
+//            for (var i = 0; i < dataset.length; i += 1) {
+//                var series = dataset[i];
+//                
+//                posTextDiv.find('.xpos').text(suffix_formatter(pos.x)+series.xUnits);
+//    
+////                if (!compactPlot){
+//                posTextDiv.find('.xpos').prepend("X = ");
+//                var y = interpolate(series,pos.x);
+//                
+//                var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
+//                var toggleBox = legendBoxes.eq(i);
+//            
+//                if (innerPosTextDivs["series"+i]===undefined){
+//                    var innerDiv = $("<div>"+divText+"</div>");
+//                    innerPosTextDivs["series"+i] = innerDiv;
+//                    posTextDiv.append(innerPosTextDivs["series"+i]);
+//                } else {
+//                    innerPosTextDivs["series"+i].text(divText);
+//                }
+//                
+//                if (toggleBox.prop("checked")){
+//                    innerPosTextDivs["series"+i].show();
+//                } else {
+//                    innerPosTextDivs["series"+i].hide();
+//                }
+//                
+////                console.log("series number:",i,"series label:",series.label);
+////                console.log(/*"toggle box:",toggleBox,*/"checked:",toggleBox.prop("checked"));
+////                }
+//            }
+//            posTextDiv.show();
+//        }
     }
     
     /************************
@@ -757,8 +773,8 @@ Graph setup functions
     Label formatter: puts a checkbox next to the legend labels
     ***********************/
     function legendFormatter(label,series){
-        return label+'</td><td><input class="legendCheckbox" \
-type="checkbox" value="'+series.label+'"></input></td>'
+        return '<table><tr><td>'+label+'</td><td>=</td>\
+<td class="legendValue">000.00'+series.yUnits+'</td></tr></table>'
     }
     
     /*********************
@@ -801,6 +817,7 @@ type="checkbox" value="'+series.label+'"></input></td>'
         },
         legend:{
             labelFormatter:legendFormatter,
+            position:'nw'
         },
         colors:['#268bd2','#b58900','#dc322f','#859900','#6c71c4','#d33682','#2aa198','#cb4b16']
     }
