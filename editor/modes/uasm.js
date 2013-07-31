@@ -267,6 +267,7 @@
             ['BF', ['reg test', 'literal branch_target', 'reg old_pc_destination']],
             ['BNE', ['reg test', 'literal branch_target', 'reg old_pc_destination']],
             ['BT', ['reg test', 'literal branch_target', 'reg old_pc_destination']],
+            ['BR', ['literal target', 'reg old_pc_destination'], ['literal target']],
             ['LDR', ['label address', 'reg destination']],
             ['MOVE', ['reg from', 'reg to']],
             ['CMOVE', ['literal value', 'reg to']],
