@@ -802,7 +802,7 @@ type="checkbox" value="'+series.label+'"></input></td>'
         legend:{
             labelFormatter:legendFormatter,
         },
-        colors:['#b58900','#268bd2','#dc322f','#859900','#6c71c4','#d33682','#2aa198','#cb4b16']
+        colors:['#268bd2','#b58900','#dc322f','#859900','#6c71c4','#d33682','#2aa198','#cb4b16']
     }
     
 /****************************************************
@@ -1157,6 +1157,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
 Exports
 **********************/
     return {setup:setup,
-            simulate:simulate};
+            simulate:simulate,
+            engineering_notation:engineering_notation};
     
 }());

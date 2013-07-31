@@ -107,4 +107,7 @@
 /*    font-size:20pt;*/
 }
 
+span.wrong {
+    color:red;
+}
 

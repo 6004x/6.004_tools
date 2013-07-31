@@ -67,18 +67,36 @@ simulation?');
             return;
         }
         
-        console.log("CURRENT RESULTS:",$('#results').data("current"));
-        runVerify();
-//        var passedModal = new ModalDialog();
-//        passedModal.setTitle("Checkoff Succeeded!");
-//        passedModal.setText("(But nothing actually happened.)");
-//        passedModal.addButton("Dismiss",'dismiss');
-//        passedModal.show();
+//        console.log("CURRENT RESULTS:",$('#results').data("current"));
+        var mistake = runVerify();
+        console.log("mistake:",mistake);
+        if (!mistake){
+            var passedModal = new ModalDialog();
+            passedModal.setTitle("Checkoff Succeeded!");
+            passedModal.setText("Verification succeeded! This is where it would be submitted to the \
+checkoff server or something if that was implemented yet.");
+            passedModal.addButton("Dismiss",'dismiss');
+            passedModal.show();
+        } else {
+            console.log("time:",mistake.time);
+            var failedModal = new ModalDialog()
+            failedModal.setTitle("Checkoff Failed!");
+            failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
+<p><table class='table'><tr><td>Node(s):</td><td>"+mistake.nodes+"</tr>\
+<tr><td>Time:</td><td>"+Simulator.engineering_notation(mistake.time,2)+"s</td></tr>\
+<tr><td>Expected Logic Value:</td><td>"+mistake.exp+"</td></tr>\
+<tr><td>Actual Logic Value:</td><td>"+mistake.given+"</td></tr></table></p>");
+
+            failedModal.addButton("Dismiss",'dismiss');
+            
+            failedModal.show();
+        }
     }
     
     
     /*************************
-    
+    Find Time Index: given a time, returns the index of the closest sampled time that is less than 
+    the given time
     *************************/
     function findTimeIndex(time, start_index){
         var times = mResults._time_;
@@ -94,40 +112,131 @@ simulation?');
     Run Verify: runs the stored verify statements
     **************************/
     function runVerify(){
-        console.log("run verify called");
+//        console.log("run verify called");
         for (var v = 0; v < mVerify_statements.length; v += 1){
             var vobj = mVerify_statements[v];
-            console.log("vobj: ",vobj);
+//            console.log("vobj: ",vobj);
             
             var times = mResults._time_;
             var time_indices = [];
+            var time_steps = [];
             var nodes = vobj.nodes.slice(0);
             var results = {};
             
             for (var i = 0; i < nodes.length; i += 1){
                 results[nodes[i]] = [];
             }
-            console.log("empty results obj:",results);
+//            console.log("empty results obj:",results);
             
             var index;
             if (vobj.type == "periodic"){
+                time_steps.push(vobj.tstart);
                 index = findTimeIndex(vobj.tstart,0)
                 time_indices.push(index);
                 for (node in results){
-                    results[node].push(Parser.logic(mResults[node][index]));
+                    results[node].push(mResults[node][index]);
                 }
                 for (var i = 1; i < vobj.values.length; i += 1){
+                    time_steps.push(vobj.tstart + vobj.tstep * i);
                     index = findTimeIndex(vobj.tstart + vobj.tstep * i, time_indices[i-1])
                     time_indices.push(index);
                     for (node in results){
-                        results[node].push(Parser.logic(mResults[node][index]));
+                        results[node].push(mResults[node][index]);
                     }
                 }
-                console.log("time indices: ",time_indices);
-                console.log("filled results obj:",results);
+//                console.log("time indices: ",time_indices);
+//                console.log("filled results obj:",results);
+                
+                var base;
+                var base_prefix;
+                if (vobj.display_base == 'hex') {
+                    base = 16;
+                    base_prefix = '0x'
+                }
+                if (vobj.display_base == 'octal') {
+                    base = 8;
+                    base_prefix = '0'
+                }
+                if (vobj.display_base == 'binary') {
+                    base = 2;
+                    base_prefix = '0b'
+                }
+                if (vobj.display_base == 'decimal') {
+                    base = 10;
+                    base_prefix = ''
+                }
+                
+                var mistake = false;
+                for (var i = 0; i < vobj.values.length; i += 1){
+                    var expectedVal = vobj.values[i].toString(base).split("");
+                    
+//                    var nodeVals = []
+                    var valAtTime = [];
+                    for (var j = 0; j < nodes.length; j += 1){
+//                        console.log("node:",nodes[j],"val:",results[nodes[j]][i])
+                        valAtTime.push(logic(results[nodes[j]][i]));
+                    }
+//                    console.log("valAtTime:",valAtTime,"joined:",valAtTime.join(''));
+////                    console.log("parsed:",parseInt(valAtTime.join(''),2));
+//                    valAtTime = parseInt(valAtTime.join(''),2)
+//                    if (isNaN(valAtTime)) valAtTime = 'X';
+//                    else valAtTime = valAtTime.toString(base).split('');
+                    
+                    while (expectedVal.length < valAtTime.length){
+                        expectedVal.unshift("0");
+                    }
+//                    while (valAtTime.length < nodes.length){
+//                        valAtTime.unshift("0");
+//                    }
+                    
+//                    console.log('val at time',i+':',valAtTime);
+//                    console.log('expected:',expectedVal);
+                    
+                    for (var k = 0; k < valAtTime.length; k += 1){
+                        if (expectedVal[k] != valAtTime[k]){
+                            mistake = true;
+                            valAtTime[k] = "<span class='wrong'>"+valAtTime[k]+"</span>";
+                        }
+                    }
+//                    var givenVal = parseInt(valAtTime,2);
+                    console.log("val2:",valAtTime);
+                    
+                    if (mistake){
+                        return {time:time_steps[i],
+                                nodes:nodes,
+                                exp:base_prefix+expectedVal.join(''),
+                                given:base_prefix+valAtTime.join('')};
+                    }
+                }
             }
         }
+        return null;
     }
+    
+    
+    /*************************
+    Turn into a logic value: 
+    V_il = 0.6
+    V_ih = 2.7
+    **************************/
+    var vil = 0.6;
+    var vih = 2.7;
+    function logic(number){
+        if (number < vil) return 0;
+        else if (number > vih) return 1;
+        else return "X";
+    }
+    
+//    function multi_logic(numbers){
+//        for (var i = 0; i < numbers.length; i += 1){
+////            console.log('logic numbers[i]:',logic(numbers[i]));
+//            numbers[i] = logic(numbers[i]);
+//        }
+//        var joined = numbers.join("");
+//        return {val:parse_number("0b"+joined),symbols:"0b"+joined}
+////        console.log("numbers:",joined);
+////        console.log("parsed:",parseInt(joined,2));
+//    }
     
     /*************************
     Exports

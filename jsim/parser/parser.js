@@ -381,29 +381,7 @@ Parse Number: taken from cktsim.js by Chris Terman, with permission. Slightly
         throw "Number expected";
     }
     
-/*************************
-Turn into a logic value: 
-V_il = 0.6
-V_ih = 2.7
-**************************/
-    var vil = 0.6;
-    var vih = 2.7;
-    function logic(number){
-        if (number < vil) return 0;
-        else if (number > vih) return 1;
-        else return null;
-    }
-    
-    function multi_logic(numbers){
-        for (var i = 0; i < numbers.length; i += 1){
-//            console.log('logic numbers[i]:',logic(numbers[i]));
-            numbers[i] = logic(numbers[i]);
-        }
-        var joined = numbers.join("");
-        return parse_number("0b"+joined)
-//        console.log("numbers:",joined);
-//        console.log("parsed:",parseInt(joined,2));
-    }
+
 
     
 /******************************
@@ -1038,6 +1016,13 @@ Read Device: takes a line representing a device and creates a device object
                 throw new CustomError("Number expected",fn);
             }
             
+            // find what base the values are given in so that the same base can be used to display errors
+            var display_base;
+            if (/^0x/i.test(values[i].token)) display_base = 'hex';
+            else if (/^0b/i.test(values[i].token)) display_base = 'binary';
+            else if (/^0/i.test(values[i].token) && !(/^0$/.test(values[i].token))) display_base = 'octal';
+            else display_base = 'decimal'
+            
             // parse values
             for (var i = 0; i < values.length; i += 1){
                 try{
@@ -1054,7 +1039,8 @@ Read Device: takes a line representing a device and creates a device object
                       tstart:tstart,
                       tstep:tstep,
                       token:fn, // for throwing errors later
-                      values:values
+                      values:values,
+                      display_base:display_base
                      };
         Checkoff.addVerify(fn_obj);
     
@@ -1481,8 +1467,8 @@ Exports
 //            netlist_device:netlist_device,
 //            netlist_instance:netlist_instance,
 //            subcircuits:subcircuits,
-            logic:logic,
-            multi_logic:multi_logic
+//            logic:logic,
+//            multi_logic:multi_logic
            }
 }());
 
