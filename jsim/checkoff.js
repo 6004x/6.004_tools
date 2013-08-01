@@ -73,12 +73,11 @@ simulation?');
         if (!mistake){
             var passedModal = new ModalDialog();
             passedModal.setTitle("Checkoff Succeeded!");
-            passedModal.setText("Verification succeeded! This is where it would be submitted to the \
-checkoff server or something if that was implemented yet.");
+            passedModal.setText("Verification succeeded!");
             passedModal.addButton("Dismiss",'dismiss');
             passedModal.show();
         } else {
-            console.log("time:",mistake.time);
+//            console.log("time:",mistake.time);
             var failedModal = new ModalDialog()
             failedModal.setTitle("Checkoff Failed!");
             failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
@@ -161,10 +160,11 @@ checkoff server or something if that was implemented yet.");
                     base = 2;
                     base_prefix = '0b'
                 }
-                if (vobj.display_base == 'decimal') {
-                    base = 10;
-                    base_prefix = ''
-                }
+                // not dealing with decimal, defaults to binary
+//                if (vobj.display_base == 'decimal') {
+//                    base = 10;
+//                    base_prefix = ''
+//                }
                 
                 var mistake = false;
                 for (var i = 0; i < vobj.values.length; i += 1){
