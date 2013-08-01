@@ -41,7 +41,6 @@ function TSM(){
 			stepCount++;
 		}
 		console.log('ended turing machine with '+stepCount+' steps');
-		console.log(tape.getSizes())
 		self.restart();
 		return tape;
 	}
@@ -51,6 +50,7 @@ function TSM(){
 		var tapeRead = stepTape.peek();	
 		var state_transition = current_state.transition[tapeRead];
 		
+		//set the current state as the new state of the transition
 		current_state = list_of_states[state_transition.new_state];
 		stepTape.traverse(state_transition.write, state_transition.move);
 		// console.log(new_state);

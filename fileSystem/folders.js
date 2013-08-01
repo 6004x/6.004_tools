@@ -3,9 +3,9 @@ var Folders=new function(){
     var openFiles=[];
     var editMode
     var fileRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~)/g;
+    var folderRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~|\.)/g;
     //attaches file list to the default node
     function refresh(){
-
         getFileList(rootNode.find('.filePaths'));
     }
 
@@ -27,6 +27,12 @@ var Folders=new function(){
                 fileList[username]=data;
                 addFiles(fileList, parentNode, '');
                 isLoadingFileList = false;
+                FileSystem.getFile('/lab 4/beaver_4.tsim', function(file){
+                    editor.openTab(file.name, file.data, true);
+                });
+                FileSystem.getRelativeFile('./newFolder/counting.tsim', '/lab 4/beaver_4.tsim', function(file){
+                    editor.openTab(file.name, file.data, true);
+                });
             }, noServer
         );
         var level = 0;
@@ -53,7 +59,8 @@ var Folders=new function(){
         function addFiles(fileList, parentNode, parentPath){
             //testing whether username chenged or not, to change data structure
             level++;
-            _.each(fileList, function(subList, name) {                
+            _.each(fileList, function(subList, name) {
+
                 var folderName = name;
                 var path = parentPath + name;
                 var collapseName='collapse'+(parentPath+name).replace(/(\/|\s)/g, '_');
@@ -62,10 +69,10 @@ var Folders=new function(){
                     name = '';
                 }
                 //collapseName is name without whitespace
-                
-                
-                //TODO: find a way to differentiate folders differently
-                if(name.indexOf('.') > -1){
+                if(name.indexOf('~') > -1){
+                    //metadata
+                    // console.log(name);
+                } else if(subList['~type'] === 'file') {
                     //if the name does not have a period, then it is a file and not a folder
                     var listVar=$('<li>').addClass('file_name')
                         .attr('data-path', parentPath+name)
@@ -168,19 +175,20 @@ var Folders=new function(){
     function newFolder(file_path){
         var handleCreate = function() {
             var folderName = modal.inputContent();
-
-            if(!isValidName(fileRegexp, folderName)){
-                modal.showError('Names cannot contain \\, \/, :, ", <, >, |, ?, or *');
+            //checks against regexp
+            if(!isValidName(folderRegexp, folderName)){
+                modal.showError('Folder names cannot contain ., \\, \/, :, ", <, >, |, ?, or *');
 
                 return;
             }
             var folderPath = file_path + folderName;
             
-
+            //check hopefully there is not another folder already with that name. 
             if(FileSystem.isFolder(folderPath)) {
                 modal.showError(folderPath+' is already a folder; please choose another name.');
                 return;
             }
+
 
             FileSystem.newFolder(folderPath, function(){
                 refresh();
@@ -219,10 +227,9 @@ var Folders=new function(){
                 newFileName=file_path+fileName+'.'+editMode;
             else
                 newFileName=file_path+fileName;
-
+            //checks that there is not already another file with that name.
             if (FileSystem.isFile(newFileName)){
                 modal.showError(fileName+'.'+editMode+' is already a file, please choose another name');
-
                 return;
             }
 

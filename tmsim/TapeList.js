@@ -2,94 +2,128 @@ function TapeList(){
 	var self = this;
 	var first = null;
 	var current = null;
+	var previous = null; //saves the previous current node, keeps track of last written
 	var last = null;
-	var leftSize = 0;
-	var rightSize = 0;
 	var size = 0;
 
-	//attaches a node with data as the last pointer of the LL
-	
-	this.init=function(list, currentIndex){
-		if(list){
-			makeList(list, currentIndex);
+	/*
+		Node component og the tapeList, each tapelist will have a linked list
+		of each tlnode, with a 'current' pointing towards the current traversal. 
+	*/
+	function tlnode(newData){
+		this.data = newData;
+		this.next = null;
+		this.prev = null;
+	}
+
+	/*
+		if they give us a list (in exported array form), then initialize the list
+		with such contents. If there isn't a list provided, initalize the list with
+		a blank '-' node. 
+	*/
+	this.init = function(listArray, currentIndex){
+		if(listArray){
+			makeList(listArray, currentIndex);
 		}
 		else if (!first) {
 		//initialise by adding the first blank node
 			this.append('-');
-			self.printLL();
-			current=first;
+			current = first;
 		}
-		//reset the current node
 		return self;
 	}
-	function makeList(list, currentIndex){
-		for (var i = 0; i < list.length; i++){
-			self.append(list[i]);
-			if(i==currentIndex)
+	//Takes in an array and exports is as a Linked  TapeList
+	function makeList(listArray, currentIndex){
+
+		for (var i = 0; i < listArray.length; i++){
+			self.append(listArray[i]);
+			if(i == currentIndex)
 				current = last;
 		}
-		// console.log('initiated list');
-		// console.log('current at '+currentIndex+' with data '+current.data);
 	}
-	this.traverse =function(write, direction){
+	/*
+		takes in a write symbol and a direction. 
+		Writes the symbol to the current node as current.data
+		Moves the current node opposite the direction specified, 
+		so as to move the whole tape in the direction specified. 
+		if there isn't a next/previous node, appends it/prepends it
+		and moves to it. this method has the ability to expand the list 
+		very far along. 
+	*/
+	this.traverse = function(write, direction){
 		if(current){
-			current.data=write;
+			previous = current;
+			current.data = write;
 			if(direction === 'l'){
 				//move tape left so we must move to next
-				current=current.next;
-				if(current){
+				current = current.next;
+				if(current !== null){
 					return current.data;
 				} else {
 					self.append('-');
-					current=last;
-					//console.log('we have reached end of line');
+					current = last;
+					// we have reached end of line
 					return current.data; //should be '-'
 				}
 			} else if (direction === 'r'){
-				current=current.prev;
-				if(current){
+				//move the tape right so we must move to prev
+				current = current.prev;
+				if(current !== null){
 					return current.data;
 				} else {
 					self.prepend('-');
 					current=first;
-					//console.log('we have reached beginning of line');
+					//we have reached beginning of line
 					return current.data;
 				}
-			} else if (direction==='-'){
+			} else if (direction === '-'){
+				//no movement 
+				if (current === null){
+					if(first === null)
+						self.append('-')
+					current = first;
+					console.log('traverse reset')
+				}
 				return current.data;
 			} else {
+				//the direction is not r, l, or -
 				console.log(direction + ' is invalid');
 			}
-		} else {
-			current=first;
+		} else { //there is no current node, so instantiate the current node
+			if(first === null)
+				self.append('-');
+			current = first;
 			console.log('starting traverse');
 			return first.data;
 		}
 	}
-	this.peek=function(){
+	this.peek = function(){
 		//peeks at current;
-		return current.data;
+		if(current)
+			return current.data;
+		else
+			return null;
 	}
-	//attaches a node with data as the first pointer of the LL
-	this.prepend=function(data){
 
-		if(first==null){
+	//attaches a node with data as the first pointer of the LL
+	this.prepend = function(data){
+
+		if(first === null){
 			//list is empty, so we make this node the first and last node
 			first=new tlnode(data);
 			last=first;
 			first.next=last.next=null;
 			first.prev=last.prev=null;
-		}
-		else{
-			//attach temp node to the first node and make it the first node
+		} else {
+			// attach temp node to the first node 
 			var temp = new tlnode(data);
-			temp.next=first;
-			first.prev=temp;
-			temp.prev=null;
-			first=temp;
+			temp.next = first;
+			first.prev = temp;
+			temp.prev = null;
+			// and make new node the first node
+			first = temp;
 		}
 		size++;
-		leftSize++;
 		return self;
 	}
 	this.append=function(data){
@@ -110,36 +144,28 @@ function TapeList(){
 			last.next=null;
 		}
 		size++;
-		rightSize++;
 		return self;
 	}
 	//finds first instance of this data and removes it
-	this.remove=function(data){
+	this.remove = function(data){
 		if(size == 0)
 			return self;
 		else{
-			var tempNode=first;
-			while(tempNode!=null){
-				// console.log(tempNode);
-				if(tempNode.data==data){
+			var tempNode = first;
+			while(tempNode != null){
+				if(tempNode.data == data){
 					//then this node is the one we must delete
-					// console.log(tempNode.prev);
-					if(tempNode.prev!=null){
+					if(tempNode.prev != null){
 						//there exists a previous node, is not the first node
 						tempNode.prev.next=tempNode.next;
 						tempNode.next.prev=tempNode.prev;
-						// console.log('deleted');
-						// console.log(tempNode);
 						size--;
-						// self.printLL();
 						return self;
 					}else{
-						first=first.next;
+						first = first.next;
 						size--;
 						if(first)
 							first.prev=null;
-						// self.printLL();
-						// console.log('deleted first');
 						return self;
 					}
 				}
@@ -156,19 +182,21 @@ function TapeList(){
 	this.toArray = function(){
 		var tempNode=first;
 		var arrayLL=[];
-		var index = 0; var currentIndex = 0;
+		var index = 0; var currentIndex = 0, previousIndex = null;
 		while(tempNode!=null){
 			arrayLL.push(tempNode.data);
 			if(tempNode == current)
 				currentIndex = index;
+			else if(tempNode == previous)
+				previousIndex = index;
 			tempNode=tempNode.next;
 			index++;
 		}
 
-		return {array:arrayLL, currentIndex:currentIndex};
+		return {array:arrayLL, currentIndex:currentIndex, previousIndex:previousIndex};
 	}
-	this.printLL=function(){
-		console.log(self.toArray());
+	this.printLL = function(){
+		console.log(self.toString());
 	}
 	this.toString = function (){
 		var tempNode=first;
@@ -191,10 +219,6 @@ function TapeList(){
 
 		mArray = self.toArray();
 		tArray = otherTape.toArray();
-		if(!self.getSizes() === otherTape.getSizes()){
-			console.log(otherTape.getSizes())
-			return false;
-		}
 
 		if(mArray.length!=tArray.length){
 			console.log('tapes are different size');
@@ -219,7 +243,7 @@ function TapeList(){
 
 			var compare = true;
 			while(tempMCurr!=null){
-				compare = tempMCurr.data==tempTCurr.data;
+				compare = tempMCurr.data == tempTCurr.data;
 				//can we do this?
 				if(!compare)
 					break;
@@ -229,44 +253,21 @@ function TapeList(){
 			if(!compare)
 				console.log("the two lists don't match");
 			return compare;
+		} else {
+			console.log(mArray === tArray)
+			return false;
 		}
-		console.log(mArray===tArray)
-		return false;
+		
 	}
 	this.cloneTape = function(){
 		var clone = new TapeList();
 		var toClone = self.toArray();
 		clone.init(toClone.array, toClone.currentIndex);
-		clone.setSizes(self.getSizes());
 		if(clone.equals(self))
 			return clone;
 		else
 			console.log('clone not equal');
 	}
 
-	this.getSizes = function(){
-		return{
-			totalSize : size,
-			rightSize : rightSize,
-			leftSize : leftSize,
-		}
-	}
-	this.setSizes = function(sizes){
-		if(leftSize == 0){
-			//copying the sizes of the cloning tape, 
-			leftSize = sizes.leftSize;
-			rightSize = sizes.rightSize;
-			size = sizes.totalSize;
-			return true;
-		}
-		return false;
-		
-	}
-
-	function tlnode(newData){
-		this.data = newData;
-		this.next = null;
-		this.prev = null;
-	}
 	return self;
 }
