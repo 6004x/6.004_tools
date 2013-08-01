@@ -5,7 +5,7 @@
 	var DIV_HEIGHT = 50;
 	var TAPE_WIDTH = 30;
 	var TOTAL_HEIGHT = 	250; 
-	var ANIMATION_SPEED = 5;
+	var ANIMATION_SPEED = 10;
 
 	var TMSIM = function(container, tsm, testLists){
 		var mContainer = $(container);
@@ -17,7 +17,9 @@
 		var self = this;
 		var slider_speed = 5;
 		var halt = false;
+		var simulation_done = false;
 		var steps = 0;
+		var speeds = [0.5, 0.5, 0.75, 1, 2, 3, 10, 100, 1000, 10000, 100000, 200000,500000]
 		//TODO:change magic numbers
 		this.initialise=function(){
 			console.log('initalise TMSIM');
@@ -48,7 +50,6 @@
 			radioWrapper.addClass('pull-center');
 
 			var stepsDiv = $('<div>').addClass('pull-right').append('Steps: ').append('<span class="stepsSpan"></span>');
-			var speedDiv = $('<div>').addClass('pull-left').append('Speed: ').append('<span class="speedSpan"></span>');
 			
 			//add the visual tape
 			var tapeWrapper = $('<div>').addClass('tape_wrapper');
@@ -56,6 +57,7 @@
 				height : DIV_HEIGHT,
 				overflow : 'hidden',
 				'background-color' : 'lightblue',
+				'border-radius' : '5px',
 			})
 
 			var tapeDiv = $('<div>').addClass('tape_div');
@@ -71,7 +73,7 @@
 			//make the state machine indicator, could be more elegant...
 			var machineDiv = $('<div>').addClass('pull-center machine_div').css({
 					'position':'relative',
-					top:0,
+					top:-10,
 					height:DIV_HEIGHT,
 			});
 			machineDiv.append($('<div>').addClass('arrow-up pull-center'));
@@ -82,7 +84,7 @@
 					width:2*TAPE_WIDTH,
 					border:'solid 1px black',
 					background:'lightblue', 
-			});//.append($('<div>').addClass(''));
+			});
 			labelDiv.text(tsm.getCurrentState().name);
 			machineDiv.append(labelDiv);
 			listToTape(firstTape, tapeDiv);
@@ -94,6 +96,7 @@
 				'position' : 'relative',
 				top : 0,
 			})
+
 			var playButton = $('<button>').addClass('btn btn-success tape_button')
 				.attr('title', 'Run')
 				.append('<i class=icon-play>');
@@ -111,7 +114,7 @@
 				.append('<i class=icon-fast-backward>');
 
 			$('.tape_button').each(function(i, button){
-                this.attr({
+                $(this).attr({
                     'data-toggle':"tooltip",
                     'data-trigger':'hover',
                     'data-container':'body',
@@ -121,53 +124,140 @@
 			stepButton.on('click', function(){
 				 //self.move('r');
 				console.log('step forward')
-				self.step(function(arg){
-					console.log('callback ' + arg)
-				});
+				if(!$(this).hasClass('disabled')){
+					self.step(function(arg){
+						console.log('callback')
+						console.log(arg);
+					});
+				}
 			});
 			prevStepButton.on('click', function(){
-				self.move('l');
+				if(!$(this).hasClass('disabled'))
+					self.move('l');
 			});
 			playButton.on('click', function(){
-				self.play();
+				if(!$(this).hasClass('disabled')){
+					halt = false;
+					playButton.addClass('disabled');
+					stepButton.addClass('disabled');
+					prevStepButton.addClass('disabled');
+					self.play();
+				}
 			})
 			resetButton.on('click', function(){
-				toggleTape();
-			})
+				if(!$(this).hasClass('disabled')){
+					self.stop();
+					playButton.removeClass('disabled');
+					stepButton.removeClass('disabled');
+					prevStepButton.removeClass('disabled');
+					toggleTape();
+				}
+			});
 			stopButton.on('click', function(){
-				self.stop();
-			})
+				if(!$(this).hasClass('disabled')){
+					self.stop();
+					playButton.removeClass('disabled');
+					stepButton.removeClass('disabled');
+					prevStepButton.removeClass('disabled');
+				}
+			});
 
-			var slider = $('<div>').addClass('slider').css('margin', '8px')
-			slider.slider({
-					'min' : 0,
-					'max' : 25,
-					'step' : 1,
-					'value' : 5,
-					'orientation' : 'horizontal',
-				});
-			slider_speed = ANIMATION_SPEED * (25-25*Math.sqrt(slider.slider('value')/25));
-			slider.slider('enable');
-			slider.on('slide', function(){
-				slider_speed = ANIMATION_SPEED * (25-25*Math.sqrt(slider.slider('value')/25));
-				$('.speedSpan').text(slider_speed);
-			})
+			var speedDiv = $('<div>').addClass('speed_div pull-right span5').css({
+				'margin': '8px',
+			});
+			var label1 = $('<label>').addClass('speed_options radio inline radio-inline').append('Slow');
+			var label2 = $('<label>').addClass('speed_options radio inline radio-inline').append('Medium');
+			var label3 = $('<label>').addClass('speed_options radio inline radio-inline').append('Fast');
+			var label4 = $('<label>').addClass('speed_options radio inline radio-inline').append('I want it done now');
+
+			var radio1 = $('<input>').attr({
+				type : 'radio',
+				id : 'inlineRadio1',
+				value : '100',
+				name : 'speed_options',
+			}).addClass('speed_options')
+			var radio2 = $('<input>').attr({
+				type : 'radio',
+				id : 'inlineRadio2',
+				value : '20',
+				name : 'speed_options',
+			}).addClass('speed_options')
+			var radio3 = $('<input>').attr({
+				type : 'radio',
+				id : 'inlineRadio3',
+				value : '0',
+				name : 'speed_options',
+			}).addClass('speed_options')
+			var radio4 = $('<input>').attr({
+				type : 'radio',
+				id : 'inlineRadio4',
+				value : '-100000',
+				name : 'speed_options',
+			}).addClass('speed_options')
+			label1.append(radio1);
+			label2.append(radio2);
+			radio2.defaultChecked;
+			label3.append(radio3);
+			label4.append(radio4);
+			speedDiv.append(label1);
+			speedDiv.append(label2);
+			speedDiv.append(label3);
+			speedDiv.append(label4);
+			
+			speedDiv.on('click', function (e) {   
+				console.log(e);
+				console.log('radio click');
+				var speed = $('.speed_options:checked').attr('value');
+				slider_speed = parseInt(speed);
+				console.log(speed);
+			});
+
+			//transition div
+
+			var transitionDiv = $('<div>').addClass('trasition_div pull-left').html(
+				'( <span class = "curr_state"></span>, \
+				<span class = "read_symbol"></span> ) &rarr;\
+				( <span class = "new_state"></span>,  \
+				<span class = "write_symbol"></span>,  \
+				<span class = "move_dir"></span> )'
+			);
+			console.log(transitionDiv)
 			actionButtonDiv.append(prevStepButton, playButton, stopButton, stepButton, resetButton);
-			actionDiv.append(slider, actionButtonDiv);
-			mContainer.append(stepsDiv, speedDiv, radioWrapper, tapeWrapper, machineDiv, actionDiv);
+			actionDiv.append(actionButtonDiv);
+			mContainer.append(stepsDiv, speedDiv, radioWrapper, tapeWrapper, machineDiv, speedDiv, transitionDiv, actionDiv);
 
 		}
 		this.step = function(callback){
-			var stepObject = mTSM.step(mCurrentTape);
-			steps++;
-			mContainer.find('.machine_label').text(stepObject.transition.new_state);
-			mContainer.find('.machine_label').append('<br/>'+stepObject.transition.move);
+			var callback = callback || _.identity;
+			// how to
+			mContainer.find('.read_symbol').text(mCurrentTape.peek());
 
+			var stepObject = mTSM.step(mCurrentTape);
+
+			steps++;
+
+
+			mContainer.find('.curr_state').text(stepObject.old_state.name);
+			//oops
+			mContainer.find('.new_state').text(stepObject.transition.new_state);
+			mContainer.find('.write_symbol').text(stepObject.transition.write);
+			mContainer.find('.move_dir').text(stepObject.transition.move);
+
+			mContainer.find('.machine_label').append('<br/>'+stepObject.transition.move);
 			mContainer.find('.current_segment').text(stepObject.transition.write);
-			self.move(stepObject.transition.move, function(){
-				callback(stepObject.new_state);
-				$('.stepsSpan').text(steps)
-			});			
+
+			mContainer.find('.prev_segment').removeClass('prev_segment');
+			mContainer.find('.current_segment').addClass('prev_segment');
+			
+			setTimeout(function(){
+				self.move(stepObject.transition.move, function(){
+
+					mContainer.find('.machine_label').text(stepObject.transition.new_state);
+					listToTape();
+					$('.stepsSpan').text(steps)
+						callback(stepObject.new_state);			
+				});
+			}, slider_speed*5);
 		}
 		this.stop = function(){
 			console.log('stop');
@@ -182,14 +272,33 @@
 					console.log('halted');
 				}
 				else if(new_state_name!='*halt*'&&new_state_name!='*error*'){
-					
-						setTimeout(function(){
+					if(slider_speed > 0){
 							self.step(nextStep);
-						}, slider_speed*5);
-					//
+					} else {
+						var i = -slider_speed;
+						console.log(i + ' super speed slider')
+						while( i > 0){
+							var stepObject = mTSM.step(mCurrentTape);
+							steps++;
+							if(stepObject.transition.new_state == '*halt*' || stepObject.transition.new_state == '*error*'){
+								console.log('return '+ stepObject.transition.new_state)
+								listToTape();
+								simulation_done = true;
+								break;
+							}
+							i--;
+						}
+						if(!simulation_done)
+						{	
+								self.step(nextStep);
+						}
+					}
 				}
-				else 
-					console.log('return '+new_state_name)
+				else {
+					console.log('return '+new_state_name);
+					simulation_done = true;
+				}
+					
 			}	
 		}
 		function toggleTape(buttonDiv){
@@ -197,69 +306,55 @@
 			var name = buttonDiv.data('tape-name');
 			mCurrentTape = mTapeList[name].cloneTape();
 			mTSM.restart();
-			halt = false;
+			halt = true	;
+			simulation_done = false;
 			steps = 0;
 			listToTape( mCurrentTape, mContainer.find('.tape_div'));
 			mContainer.find('.test_radio_buttons .active').toggleClass('active')
 			buttonDiv.toggleClass('active');
+			$('.tape_button').removeClass('disabled');
 		}
-		function listToTape(tape, tapeDiv){
-			var sizes = tape.getSizes();
-			if(tape.endSize){
-				console.log(tape.endSize);
-				sizes = tape.endSize;
-			}	
+		function listToTape(tapeList, tapeDiv){
+			var tapeDiv = tapeDiv || $('.tape_div');
+			var tape = tapeList || mCurrentTape;
+
+			tapeDiv.html('');
+			tapeDiv.css('left', 0);
+			
 			var listToArray = tape.toArray(); 
 			var currentIndex = listToArray.currentIndex;
+			var previousIndex = listToArray.previousIndex;
 			var array = listToArray.array;
-			tapeDiv.html('');
-			tapeDiv.css('left', 0)
-			console.log(currentIndex);
-			var end = 0;
-			for (var i = -sizes.leftSize-15; i < 0; i++){
-				var leftPos = (mContainer.width() - TAPE_WIDTH) / 2 + (i - currentIndex) * TAPE_WIDTH;
-				tapeDiv.append($('<div>').addClass('tape_segment')
-					.css({
-						'left' : leftPos,
-						'width' : TAPE_WIDTH - 2,
-						'height' : TAPE_HEIGHT - 4
-					})
-					.text('-')
-				);
-			}
-			for (var i = 0; i < array.length; i++){
-				//absolute positioning of the segment, off center to keep the currentIndex in the center
 
+			var numberOfSegments = Math.floor(mContainer.width() / TAPE_WIDTH) + 6; //3 thingy backup
+			
+			var startIndex = currentIndex - Math.floor((numberOfSegments / 2));
+			var endIndex = currentIndex + Math.floor((numberOfSegments / 2));
+
+			for (var i = startIndex, k = 0; i < endIndex; i++, k++){
 				var leftPos = (mContainer.width() - TAPE_WIDTH) / 2 + (i - currentIndex) * TAPE_WIDTH;
-				var tapeData = array[i];
-				
 				var tape_segment = $('<div>').addClass('tape_segment')
 					.css({
 						'left' : leftPos,
 						'width' : TAPE_WIDTH - 2,
 						'height' : TAPE_HEIGHT - 4
 					})
-					.text(tapeData);
-				if(i == currentIndex)
-					tape_segment.addClass('current_segment');
-				if(i - 1 == currentIndex )
-					tape_segment.addClass('right_segment');
-				if(i + 1 == currentIndex )
-					tape_segment.addClass('left_segment');
-				
+				if(i < 0 || i >= array.length){
+					tape_segment.text('-')
+				} else if(i < array.length) {
+					//in tape, so we can add the tape_segment data
+					tape_segment.text(array[i]);
+					if(i == currentIndex)
+						tape_segment.addClass('current_segment');
+					else if (i == previousIndex)
+						tape_segment.addClass('prev_segment');
+					else if(i - 1 == currentIndex )
+						tape_segment.addClass('right_segment');
+					else if(i + 1 == currentIndex )
+						tape_segment.addClass('segment_segment');
+					
+				}
 				tapeDiv.append(tape_segment);
-				end = i
-			}
-			for (var i = end+1; i < sizes.rightSize+15; i++){
-				var leftPos = (mContainer.width() - TAPE_WIDTH) / 2 + (i - currentIndex) * TAPE_WIDTH;
-				tapeDiv.append($('<div>').addClass('tape_segment')
-					.css({
-						'left' : leftPos,
-						'width' : TAPE_WIDTH - 2,
-						'height' : TAPE_HEIGHT - 4
-					})
-					.text('-')
-				);
 			}
 		}
 		this.move = function(dir, callback){
@@ -272,79 +367,18 @@
 				moveDir = -TAPE_WIDTH
 			else
 				moveDir = 0;
-			var prev, prev_2;
-			var penultimate = false, ultimate = false;
-			var new_slider_speed = slider_speed;
-			if(slider_speed != 0){
+			if(slider_speed > 0){
 				tapeDiv.animate({
 				    left: parseInt(currentPos)+moveDir,
 				}, slider_speed,  function(){
+					$('.current_segment').addClass('prev_segment');
 				 	callback();
-			 	 	if(moveDir != '-'){
-				 	 	$('.tape_segment').each(function(i, e){
-				 	 		if($(this).hasClass('current_segment')){
-				 	 			penultimate = true;
-				 	 			if(dir === 'r'){
-				 	 				$(this).removeClass('current_segment').addClass('right_segment');
-				 	 				prev.addClass('current_segment').removeClass('left_segment');
-				 	 				prev_2.addClass('left_segment');
-				 	 			} else if (dir === 'l'){
-				 	 				prev.removeClass('left_segment');
-				 	 				$(this).removeClass('current_segment').addClass('left_segment');
-				 	 			}
-				 	 		} else if (penultimate){
-				 	 			if(dir === 'r'){
-				 	 				$(this).removeClass('right_segment');
-				 	 				return false;
-				 	 			} else if (dir === 'l'){
-				 	 				$(this).addClass('current_segment').removeClass('right_segment');
-				 	 				penultimate = false;
-				 	 				ultimate  = true;
-				 	 			}
-				 	 		} else if (ultimate){
-				 	 			$(this).addClass('right_segment');
-				 	 			return false;
-				 	 		}
-				 	 		prev_2 = prev;
-				 	 		prev = $(this);
-				 	 	});
-				 	 }
 			 	 });
 			}
-		else {
-			console.log('speed');
-			tapeDiv.css('left', parseInt(currentPos)+moveDir)
-			callback();
-			 	 	if(moveDir != '-'){
-				 	 	$('.tape_segment').each(function(i, e){
-				 	 		if($(this).hasClass('current_segment')){
-				 	 			penultimate = true;
-				 	 			if(dir === 'r'){
-				 	 				$(this).removeClass('current_segment').addClass('right_segment');
-				 	 				prev.addClass('current_segment').removeClass('left_segment');
-				 	 				prev_2.addClass('left_segment');
-				 	 			} else if (dir === 'l'){
-				 	 				prev.removeClass('left_segment');
-				 	 				$(this).removeClass('current_segment').addClass('left_segment');
-				 	 			}
-				 	 		} else if (penultimate){
-				 	 			if(dir === 'r'){
-				 	 				$(this).removeClass('right_segment');
-				 	 				return false;
-				 	 			} else if (dir === 'l'){
-				 	 				$(this).addClass('current_segment').removeClass('right_segment');
-				 	 				penultimate = false;
-				 	 				ultimate  = true;
-				 	 			}
-				 	 		} else if (ultimate){
-				 	 			$(this).addClass('right_segment');
-				 	 			return false;
-				 	 		}
-				 	 		prev_2 = prev;
-				 	 		prev = $(this);
-				 	 	});
-				 	 }
-		}
+			else {
+				console.log('not animate');
+				callback();
+			}
 		}
 
 		self.initialise();

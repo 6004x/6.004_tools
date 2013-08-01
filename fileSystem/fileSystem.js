@@ -2,12 +2,14 @@ var FileSystem= function(){
     var DEFAULT_SERVER;
     var mServer;
     var mUsername;
+    var self = this;
 
     var openFiles=[];
     var allFiles=[];
     var allFolders=[];
     var fileTree={};
 
+    var delimRegExp = /[^<>\:\"\|\/\\\?\*]+/g;
     var updated=true;
     var online=false;
 
@@ -20,7 +22,7 @@ var FileSystem= function(){
     */
     /*
     *   each file will have 2 attributes:
-        file.name (relative path of file)       
+        file.name (path of file relative to root user folder)       
         file.data (String representation of file 'utf8')
 
         TO IMPLEMENT:
@@ -29,11 +31,9 @@ var FileSystem= function(){
     *
     */
 
-    //TODO: delete folder, delete items, version control
+    //TODO: rename folder, version control
 
-
-    var exports={};
-    function getFileList(callback, callbackFailed){
+    this.getFileList = function(callback, callbackFailed){
         //using username or some other sort of authentication, we can get the root folder of the user
         if(fileTree)
             console.log(Object.keys(fileTree).length);
@@ -48,12 +48,12 @@ var FileSystem= function(){
             sendAjaxRequest('/',null,'json', 'getFileList',
                 function(data, status){
                     if(status=='success'){
-                        // console.log('callback in filesys')
-                        // console.log(data.data)
+
                         mUsername = data.user;
-                        fileTree=data.data;
+                        fileTree = data.data;
                         allFiles=[];
                         allFolders=[];
+                        console.log(fileTree);
                         makeListOfFiles(fileTree,'');
 
                         // console.log(allFolders);
@@ -78,8 +78,11 @@ var FileSystem= function(){
     function makeListOfFiles(currTree, path){
         
         for(key in currTree){
-            if(isFile(key, currTree[key]))
+            if(key.indexOf('~') > -1){
+                // console.log(key)
+            } else if(isFile(key, currTree[key])){
                 allFiles.push(path+'/'+key);
+            }
             else{
                 allFolders.push(path+'/'+key);
                 makeListOfFiles(currTree[key], path+'/'+key);
@@ -87,11 +90,9 @@ var FileSystem= function(){
         }
     }
     function isFile(name, contents){
-
-        //todo:make this better
-        if(name.indexOf('.')>0)
-            return true;
-        return false;
+        // console.log(contents);
+        // console.log(contents['~type'] === 'file')
+        return contents['~type'] === 'file';
     }
     function writeTreeToLocalStorage(){
         // console.log('writing tree to local storage');
@@ -122,23 +123,23 @@ var FileSystem= function(){
     
     function traverseTree(fileName, action){
         //TODO NEEDS ERROR HANDLING
+
         // Whitelist not blacklist of filenames
-        var pathArray=fileName.match(/[^<>\:\"\|\/\\\?\*]+/g);
-        // console.log(pathArray);
-        var followPath=fileTree;
+        var pathArray = fileName.match(delimRegExp);
+        var followPath = fileTree;
         for(var i in pathArray){
 
             // action function of 3 variables, the index, the current path, the current path name
             //, and the length of the whole pathArray. 
             // returns true if we can continue
             if(action(i, followPath, pathArray[i], pathArray.length))
-                followPath=followPath[pathArray[i]];//.slice(1)];
+                followPath = followPath[pathArray[i]];//.slice(1)];
         }
-        return followPath || []; // wtf?
+        return followPath || {}; // wtf?
     }
     function getFileFromTree(fileName){
-        var finalTree=traverseTree(fileName, function(i, tree){return true;} );
-
+        var finalTree = traverseTree(fileName, function(i, tree){return true;} );
+        console.log(finalTree);
         if(finalTree.length==0)
             return false;
         //else there is a file
@@ -162,9 +163,13 @@ var FileSystem= function(){
 
 
     //SERVER FUNCTIONS
-    function getFile(fileName, callback, callbackFailed){
+    this.getFile = function(fileName, callback, callbackFailed){
         //username or some sort of authentication
-        var file= getFileFromTree(fileName);
+        console.log(fileName);
+        var file = null;
+        console.log(fileTree);
+        if(Object.keys(fileTree).length > 0)
+            file = getFileFromTree(fileName);
         
         if(online){
             sendAjaxRequest(fileName,null, 'json', 'getFile', function(data, status){
@@ -181,38 +186,86 @@ var FileSystem= function(){
             alert('file could not be retrieved')
         }
     }
-    function saveFile(fileName, fileData, callback, callbackFailed){
-        sendAjaxRequest(fileName, fileData,'json', 'saveFile', function(data, status){
+    this.getRelativeFile = function(fileName, relativeTo, callback, callbackFailed){
+        var pathArray = fileName.match(delimRegExp);
+        var relPathArray = relativeTo.match(delimRegExp);
+        var newPathArray = [];
+        console.log(pathArray);
+        console.log(relPathArray);
+        var first = true;
+        for (var i = pathArray.length - 1, j = relPathArray.length - 1; i >= 0 && j >= 0; i--){
+            if(first){
+                console.log('file is ' + pathArray[i])
+                console.log('rel file is ' + relPathArray[j])
+                newPathArray.push(pathArray[i]);
+                j--;
+                first = false;
+            } else {
+                if(pathArray[i] === '.'){
+                    console.log('current path')
+                    for( var k = 0; k < relPathArray.length -1; k++){
+                        newPathArray.push(relPathArray[k])
+                    }
+                    console.log(newPathArray);
+                    break;
+                } else if(pathArray[i] === '..'){
+                    console.log('.. path')
+                    newPathArray.push(relPathArray[j]);
+                    j--;
+                    console.log(newPathArray);
+                } else {
+                    newPathArray.push(pathArray[i]);
+                    console.log(newPathArray);
+                }
+
+            }
+        }
+        console.log(newPathArray);
+        newPathArray = newPathArray.reverse();
+        var newFilePath = '';
+        for (var i = 0; i < newPathArray.length; i++){
+            newFilePath += '/'+newPathArray[i];
+        }
+        console.log(newFilePath)
+        getFile(newFilePath, function(data){
+            console.log(data)
             
-                    callback(data);
+            if(data.status === 'success'){
+                callback(data);
+            } else {
+                callbackFailed(data);
+            }
+        }, callbackFailed);
+
+        return newPathArray.reverse();
+    }
+    this.saveFile = function(fileName, fileData, callback, callbackFailed){
+        sendAjaxRequest(fileName, fileData,'json', 'saveFile', function(data, status){
+            callback(data);
             writeFileToTree(fileName, fileData);
             updated=false;
         }, callbackFailed);
         
     }
 
-    function newFile(fileName, fileData, callback, callbackFailed){
+    this.newFile = function(fileName, fileData, callback, callbackFailed){
         sendAjaxRequest(fileName, fileData,'json', 'saveFile', callback, callbackFailed);
         updated=false;
     }   
-    function newFolder(folderName, callback, callbackFailed){
+    this.newFolder = function(folderName, callback, callbackFailed){
         sendAjaxRequest(folderName,null,'json', 'newFolder', callback, callbackFailed);
         updated=false;
     }   
-    function renameFile(oldFileName, newFileName, callback, callbackFailed){
+    this.renameFile = function(oldFileName, newFileName, callback, callbackFailed){
         callbackFailed = callbackFailed||failResponse;
-        getFile(oldFileName, function(oldFile){
-            console.log('renaming '+ oldFileName);
-            newFile(newFileName, oldFile.data, function(newFile){
-                deleteFile(oldFileName, function(){
-                    callback(newFile);
-                });
-            });
-        });
-        updated=false;
+        sendAjaxRequest(oldFileName, newFileName, 'json', 'renameFile', function(data, status){
+            console.log(status)
+            if(status === 'success')
+                callback(data);
+        }, callbackFailed);
     }
-    function deleteFile(fileName, callback, callbackFailed){
-        sendAjaxRequest(fileName,null,'json', 'deleteFile', callback, callbackFailed);
+    this.deleteFile = function(fileName, callback, callbackFailed){
+        sendAjaxRequest(fileName, null, 'json', 'deleteFile', callback, callbackFailed);
         updated=false;
     }
 
@@ -225,7 +278,7 @@ var FileSystem= function(){
 
 
         url=mServer+filePath;
-        var data={query:query, fname:filePath, fdata:fileData}
+        var data={query:query, name:filePath, data:fileData}
         var req=$.ajax({
                 type:"POST",
                 url:url, 
@@ -246,16 +299,11 @@ var FileSystem= function(){
         alert('failed response '+status+' '+error);
     }
 
-    exports.getFileList=getFileList;
-    exports.getFile=getFile;
-    exports.saveFile=saveFile;
-    exports.newFile=newFile;
-    exports.newFolder=newFolder;
-    exports.deleteFile =deleteFile;
-    exports.renameFile =renameFile;
 
-    exports.getServerName=function(){return mServer;};
-    exports.getUserName=function(){
+    this.getServerName = function(){
+        return mServer;
+    };
+    this.getUserName = function(){
         if(!mUsername)
             sendAjaxRequest('/', null, "json", "getUser", function(data){
                 mUsername = data.user;
@@ -264,23 +312,19 @@ var FileSystem= function(){
             })
         else
             return mUsername;
-        
     };
-    exports.isFile=function(fileName){
+    this.isFile = function(fileName){
         // console.log(fileName+' check if in allfiles');
         return _.contains(allFiles, fileName)
     }
-    exports.isFolder=function(folderName){
+    this.isFolder = function(folderName){
         // console.log(folderName+' check if in allFolders');
         return _.contains(allFolders, folderName)
     }
-    function setup(username, server){
+    this.setup = function(username, server){
 
         mServer=server||DEFAULT_SERVER;
     }
 
-    exports.setup=setup;
-    exports.getFileFromTree=getFileFromTree;
-
-    return exports;
+    return self;
 }();
