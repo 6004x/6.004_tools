@@ -15,10 +15,10 @@
        
         <script src='../fileSystem/fileSystem.js'></script>
         <script src='../fileSystem/folders.js'></script>
-        <script src='TapeList.js'></script>
-        <script src='TSM.js'></script>
-        <script src='TSMParser.js'></script>
-        <script src='TMSIM.js'></script>
+        <script src='tapeList.js'></script>
+        <script src='tsm.js'></script>
+        <script src='tsmParser.js'></script>
+        <script src='tmsim.js'></script>
         <script src='split_ui.js'></script>
         <!-- importing editor by mattpf -->
             <script src="../editor/toolbar.js"></script>
@@ -37,7 +37,7 @@
     <script>
     $(document).ready(function(){
         FileSystem.setup('dontony', 'https://18.62.29.122:6004');
-
+            
             var mode='tsim';
             editor = new Editor('.editor_split',mode);
             var set_height = function() {
@@ -57,12 +57,12 @@
             // Set up the split buttons.
             $('#maximise_editor').click(activeButton(split.maximiseBottom));
             $('#split_pane').click(activeButton(split.split));
-            $('#maximise_simulation').click(activeButton(split.maximiseTop));   
             Folders.setup('.span3', editor, mode);
             Folders.refresh();
 
             editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')])
             editor.openTab('','')
+
             function tmsimAssemble(){
                 var file=new Object();
                 file.name=editor.currentTab();
@@ -76,7 +76,7 @@
                         
                         // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
                         tsmparse.flattenMachine(parsedDict);
-                       // editor.openTab(file.name+'done', tsmparse.getResults(), true);
+                        editor.openTab(file.name+'done', tsmparse.getResults(), true);
                     } catch(e){
                         editor.clearErrors();
                         console.log(e.stack );
@@ -89,7 +89,6 @@
                         console.log(tmsim);
                         if(tmsim)
                             tmsim.stop()
-                        console.log(tmsim);
                         $('#split_pane').click();
                         console.log(tsmparse.getTSM())
                         console.log(tsmparse.getLists());
@@ -108,7 +107,6 @@
                 <ul class="pull-right nav nav-pills">
                     <li class="active" id="maximise_editor"><a>Editor</a></li>
                     <li id="split_pane"><a>Split</a></li>
-                    <li id="maximise_simulation"><a>Simulation</a></li>
                 </ul>
                 <h1>TMSim</h1>
             </div>

@@ -71,9 +71,12 @@ var path=require('path');
 					//should never really happen
 				}
 				else{
-					var fileList=recurseThroughFolders(full_path);
+					var fileList = recurseThroughFolders(full_path);
 					console.log('returned from fileList');
-					sendJSON({user:user, data:fileList});
+					sendJSON({
+						user:user,
+						data:fileList
+					});
 				}
 			}, 
 
@@ -140,17 +143,21 @@ var path=require('path');
 
 		function recurseThroughFolders(curr_path){
 			//console.log(curr_path);
-			var files=fs.readdirSync(curr_path);
-			var fileList={};
+			var files = fs.readdirSync(curr_path);
+			var fileList = {
+				'~type' : 'folder',
+			};
 			for(var i=0; i <files.length; i++){
 				var name = files[i];
-				var new_path=path.join(curr_path, name);
-				if(name.indexOf('~')<0){
+				var new_path = path.join(curr_path, name);
+				if(name.indexOf('~') < 0){
 					if(fs.lstatSync(new_path).isDirectory()){
-						fileList[name]= recurseThroughFolders(new_path);
-				//synchronois return of list of subfiles, only need to go one level down
+
+						fileList[name] = recurseThroughFolders(new_path);
 					} else {
-						fileList[name]=[];
+						fileList[name] = {
+							'~type' : 'file',
+						};
 					}
 				} else {
 					console.log(name +' is a deleted file, folder, or backed up');
@@ -242,23 +249,21 @@ var path=require('path');
 		}
 		function rename(full_path, file_path, new_path){
 			console.log('renaming to ' + path.join(path.dirname(full_path), path.basename(new_path)));
-			fs.exists(path.join(path.dirname(full_path), path.basename(new_path)), function(exists){
+			var new_full_path = path.join(path.dirname(full_path), path.basename(new_path));
+			fs.exists(new_full_path, function(exists){
 				if(exists){
 					//TODO: what should we do in case we overwrite a file
 					//shouldn't happen
 				}
 				else{
-					fs.rename(full_path, path.join(path.dirname(full_path), path.basename(new_path)), function (err) {
+					fs.rename(full_path, new_full_path, function (err) {
 						if (err) {
 							errorResponse(err + ' file could not be renamed');
 							return;
 						}
 						else{
 							console.log(path.join(path.dirname(full_path), path.basename(new_path)));
-							sendJSON({
-								status:'success',
-								name:new_path,
-							});
+							sendFile(new_path, new_full_path);
 						}
 					});
 				}

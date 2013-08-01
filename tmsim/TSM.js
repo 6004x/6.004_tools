@@ -41,7 +41,6 @@ function TSM(){
 			stepCount++;
 		}
 		console.log('ended turing machine with '+stepCount+' steps');
-		console.log(tape.getSizes())
 		self.restart();
 		return tape;
 	}
