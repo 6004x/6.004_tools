@@ -35,10 +35,8 @@
 	max-width : 900px;
 	min-width : 690px;
 	height : 300px;
-
-}
-.test_radio{
-
+	position : relative;
+	border-radius : 5px;
 }
 .pull-center {
     display: table;
@@ -51,4 +49,25 @@
 	border-left: 10px solid transparent;
 	border-right: 10px solid transparent;
 	border-bottom: 20px solid black;
+}
+.transition_div{
+	font : large monospace, sans-serif;
+}
+.old_transition_div{
+	font : monospace;
+}
+.write_symbol{
+	color : blue;
+}
+.read_symbol{
+	color : red;
+}
+.curr_state{
+	color : green;
+}
+.old_new_state{
+	color : green;
+}
+.old_write_symbol{
+	color : blue;
 }

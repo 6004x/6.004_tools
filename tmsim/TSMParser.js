@@ -315,7 +315,7 @@ function TSMparser(){
 			}
 		}
 
-		tsm.setup(tsmDict);
+		tsm.setup(tsmDict, validSymbols);
 		if(exceptions.length > 0)
 			throw exceptions;
 		return tsmDict;
@@ -402,7 +402,7 @@ function TSMparser(){
 				tapeContents.push(token)
 			}
 		}
-		return (new TapeList()).init(tapeContents, selectedIndex);
+		return (new TapeList()).init(tapeName, tapeContents, selectedIndex);
 	}
 
 	return {parse:parse, flattenMachine:flattenMachine, getResults:getResults, getTSM:getTSM, getLists:getLists}

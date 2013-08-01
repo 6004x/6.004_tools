@@ -5,6 +5,7 @@ function TapeList(){
 	var previous = null; //saves the previous current node, keeps track of last written
 	var last = null;
 	var size = 0;
+	self.name = '';
 
 	/*
 		Node component og the tapeList, each tapelist will have a linked list
@@ -21,7 +22,8 @@ function TapeList(){
 		with such contents. If there isn't a list provided, initalize the list with
 		a blank '-' node. 
 	*/
-	this.init = function(listArray, currentIndex){
+	this.init = function(name, listArray, currentIndex){
+		self.name = name;
 		if(listArray){
 			makeList(listArray, currentIndex);
 		}
@@ -231,7 +233,6 @@ function TapeList(){
 				equalArray = (mArray[i] == tArray[i]);
 		}
 		if (equalArray){
-			console.log('tapes are the same');
 			//now we must traverse and see if current is the same in both.
 			var tempMCurr = self.getCurrentNode();
 			var tempTCurr = otherTape.getCurrentNode();
@@ -261,10 +262,12 @@ function TapeList(){
 	}
 	this.cloneTape = function(){
 		var clone = new TapeList();
-		var toClone = self.toArray();
-		clone.init(toClone.array, toClone.currentIndex);
-		if(clone.equals(self))
+		var toCloneArray = self.toArray();
+		clone.init(self.name, toCloneArray.array, toCloneArray.currentIndex);
+		if(clone.equals(self)){
 			return clone;
+		}	
+			
 		else
 			console.log('clone not equal');
 	}

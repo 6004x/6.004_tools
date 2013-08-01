@@ -32,21 +32,18 @@ when new file renaming after old file?
 normalizing ../
 other path names
 .include functionality
+
 newfile with me
 
 roboant
 tsim
 
-x rename twice. First time doesn't refresh, second time it won't let you, file not found
 
 x get rid of tooltips. 
-get rid of foldernames in tooltips
-animate arrows before the collapsing
-x cursor hover
-highlight row on hover
+
+hide folder button
 
 TMSIM bugs:
 check syntax
 
-hide folder button
 
