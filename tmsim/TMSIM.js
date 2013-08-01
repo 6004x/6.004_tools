@@ -50,7 +50,6 @@
 			radioWrapper.addClass('pull-center');
 
 			var stepsDiv = $('<div>').addClass('pull-right').append('Steps: ').append('<span class="stepsSpan"></span>');
-			var speedDiv = $('<div>').addClass('pull-left').append('Speed: ').append('<span class="speedSpan"></span>');
 			
 			//add the visual tape
 			var tapeWrapper = $('<div>').addClass('tape_wrapper');
@@ -58,6 +57,7 @@
 				height : DIV_HEIGHT,
 				overflow : 'hidden',
 				'background-color' : 'lightblue',
+				'border-radius' : '5px',
 			})
 
 			var tapeDiv = $('<div>').addClass('tape_div');
@@ -96,6 +96,7 @@
 				'position' : 'relative',
 				top : 0,
 			})
+
 			var playButton = $('<button>').addClass('btn btn-success tape_button')
 				.attr('title', 'Run')
 				.append('<i class=icon-play>');
@@ -178,7 +179,7 @@
 			var radio2 = $('<input>').attr({
 				type : 'radio',
 				id : 'inlineRadio2',
-				value : '10',
+				value : '20',
 				name : 'speed_options',
 			}).addClass('speed_options')
 			var radio3 = $('<input>').attr({
@@ -210,25 +211,48 @@
 				slider_speed = parseInt(speed);
 				console.log(speed);
 			});
+
+			//transition div
+
+			var transitionDiv = $('<div>').addClass('trasition_div pull-left').html(
+				'( <span class = "curr_state"></span>, \
+				<span class = "read_symbol"></span> ) &rarr;\
+				( <span class = "new_state"></span>,  \
+				<span class = "write_symbol"></span>,  \
+				<span class = "move_dir"></span> )'
+			);
+			console.log(transitionDiv)
 			actionButtonDiv.append(prevStepButton, playButton, stopButton, stepButton, resetButton);
 			actionDiv.append(actionButtonDiv);
-			mContainer.append(stepsDiv, speedDiv, radioWrapper, tapeWrapper, machineDiv, speedDiv, actionDiv);
+			mContainer.append(stepsDiv, speedDiv, radioWrapper, tapeWrapper, machineDiv, speedDiv, transitionDiv, actionDiv);
 
 		}
 		this.step = function(callback){
 			var callback = callback || _.identity;
+			// how to
+			mContainer.find('.read_symbol').text(mCurrentTape.peek());
+
 			var stepObject = mTSM.step(mCurrentTape);
 
 			steps++;
-			mContainer.find('.machine_label').text(stepObject.transition.new_state);
-			mContainer.find('.machine_label').append('<br/>'+stepObject.transition.move);
 
+
+			mContainer.find('.curr_state').text(stepObject.old_state.name);
+			//oops
+			mContainer.find('.new_state').text(stepObject.transition.new_state);
+			mContainer.find('.write_symbol').text(stepObject.transition.write);
+			mContainer.find('.move_dir').text(stepObject.transition.move);
+
+			mContainer.find('.machine_label').append('<br/>'+stepObject.transition.move);
 			mContainer.find('.current_segment').text(stepObject.transition.write);
-			mContainer.find('.prev_segment').removeClass('prev_segment')
-			mContainer.find('.current_segment').addClass('prev_segment')
+
+			mContainer.find('.prev_segment').removeClass('prev_segment');
+			mContainer.find('.current_segment').addClass('prev_segment');
 			
 			setTimeout(function(){
 				self.move(stepObject.transition.move, function(){
+
+					mContainer.find('.machine_label').text(stepObject.transition.new_state);
 					listToTape();
 					$('.stepsSpan').text(steps)
 						callback(stepObject.new_state);			
