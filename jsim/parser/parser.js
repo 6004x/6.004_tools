@@ -1021,7 +1021,7 @@ Read Device: takes a line representing a device and creates a device object
             if (/^0x/i.test(values[i].token)) display_base = 'hex';
             else if (/^0b/i.test(values[i].token)) display_base = 'binary';
             else if (/^0/i.test(values[i].token) && !(/^0$/.test(values[i].token))) display_base = 'octal';
-            else display_base = 'decimal'
+            else display_base = 'binary'
             
             // parse values
             for (var i = 0; i < values.length; i += 1){
@@ -1149,7 +1149,7 @@ Device readers: each takes a line of tokens and returns a device object,
         var obj = {type:type,
                    ports:["D","G","S"],
                    connections:[],
-                   properties:{name:line[0].token,L:1}
+                   properties:{name:line[0].token,L:1,W:8}
                   }
         line.shift();
 //        if ((line.length !=10) && (line.length !=7)){
@@ -1168,52 +1168,48 @@ Device readers: each takes a line of tokens and returns a device object,
 //        obj.connections.push(line[3].token);
         
         var end = line.length;
-        var knex_end = line.length - 3;
+        var knex_end = line.length;
         
-        // the last argument should be an assignment (W or L)
-        if (line[end-2].token != "="){
-            throw new CustomError("Assignment expected", line[end-2]);
-        }
+        // the last argument should be an assignment (W or L) -- DEPRECATED
+        if (line[end-2].token == "="){
 //        if (line[end-1].type != "number"){
 //            throw new CustomError("Number expected",
 //                                  line[end-1].line,line[end-1].column);
 //        }
-        if (line[end-3].token.toUpperCase() != "L" &&
-            line[end-3].token.toUpperCase() != "W"){
-            throw new CustomError("Mosfet has no property "+
-                                  line[end-3].token,line[end-3]);
-        }
-        
-        try{
-            obj.properties[line[end-3].token.toUpperCase()] = 
-                parse_number(line[end-1].token);
-        } catch (err) {
-            throw new CustomError("Number expected", line[end-1]);
-        }
-        
-        if (line[end-5] !== undefined){
-            if (line[end-5].token == "="){
-//                if (line[end-4].type != "number"){
-//                    throw new CustomError("Number expected",
-//                                    line[end-4].line,line[end-4].column);
-//                }
-                if (line[end-6].token.toUpperCase() != "L" &&
-                    line[end-6].token.toUpperCase() != "W"){
-                    throw new CustomError("Mosfet has no property "+
-                                          line[end-6].token,line[end-6]);
-                }
-                try{
-                    obj.properties[line[end-6].token.toUpperCase()] = 
-                        parse_number(line[end-4].token);
-                } catch (err) {
-                    throw new CustomError("Number expected", line[end-4]);
-                }
-                knex_end -= 3;
+            if (line[end-3].token.toUpperCase() != "L" &&
+                line[end-3].token.toUpperCase() != "W"){
+                throw new CustomError("Mosfet has no property "+
+                                      line[end-3].token,line[end-3]);
             }
-        }
+            knex_end -= 3;
         
-        if (obj.properties.W === undefined){
-            throw new CustomError("Mosfet width must be specified", line[0]);
+            try{
+                obj.properties[line[end-3].token.toUpperCase()] = 
+                    parse_number(line[end-1].token);
+            } catch (err) {
+                throw new CustomError("Number expected", line[end-1]);
+            }
+        
+            if (line[end-5] !== undefined){
+                if (line[end-5].token == "="){
+    //                if (line[end-4].type != "number"){
+    //                    throw new CustomError("Number expected",
+    //                                    line[end-4].line,line[end-4].column);
+    //                }
+                    if (line[end-6].token.toUpperCase() != "L" &&
+                        line[end-6].token.toUpperCase() != "W"){
+                        throw new CustomError("Mosfet has no property "+
+                                              line[end-6].token,line[end-6]);
+                    }
+                    try{
+                        obj.properties[line[end-6].token.toUpperCase()] = 
+                            parse_number(line[end-4].token);
+                    } catch (err) {
+                        throw new CustomError("Number expected", line[end-4]);
+                    }
+                    knex_end -= 3;
+                }
+            }
         }
         
         for (var i = 0; i < knex_end; i += 1){

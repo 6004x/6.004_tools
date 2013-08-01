@@ -202,14 +202,18 @@ Graph setup functions
     Hover setup: displays values when the graph is moused over
     **********************/
     function hover_setup(div,plotObj){
-        // create and position div to show hover tooltip
-        var posTextDiv = $("<div class='posText'><div class='xpos'></div></div>");
-        var top = plotObj.getPlotOffset().top;
-        var left = plotObj.getPlotOffset().left;
-        posTextDiv.css("left",left + 5);
-        posTextDiv.css("top",top);
-        posTextDiv.hide();
-        plotObj.getPlaceholder().append(posTextDiv);
+        // create and position div to show hover tooltip -- DEPRECATED
+//        var posTextDiv = $("<div class='posText'><div class='xpos'></div></div>");
+//        var top = plotObj.getPlotOffset().top;
+//        var left = plotObj.getPlotOffset().left;
+//        posTextDiv.css("left",left + 5);
+//        posTextDiv.css("top",top);
+//        posTextDiv.hide();
+//        plotObj.getPlaceholder().append(posTextDiv);
+        
+//        var legend = plotObj.getPlaceholder().find('.legend').children('table');
+//        console.log("legend:",legend);
+//        legend.prepend('hi');
         
         // on hover, set the crosshair position on all plots and call their showtooltip function
         var updateMouseTimeout;
@@ -217,22 +221,18 @@ Graph setup functions
         plotObj.getPlaceholder().on("plothover", function(event,pos,item){
             $(this).trigger("showPosTooltip",pos);
             $.each(allPlots, function(index,value){
+                value.getPlaceholder().trigger("showPosTooltip",pos);
                 if (value != plotObj){
                     value.setCrosshair(pos);
                     if (compactPlot){
                         value.getPlaceholder().trigger("hidePosTooltip");
                     }
                 }
-//                if (!compactPlot){
-                value.getPlaceholder().trigger("showPosTooltip",pos);
-//                }
-            });
-            
+            });  
         });
         
         // showtooltip function: after an appropriate interval to prevent 
         // awful lag, update the position tooltip
-        plotObj.getPlaceholder().on("hidePosTooltip",function(){ posTextDiv.hide(); });
         plotObj.getPlaceholder().on("showPosTooltip", function(event,pos){
             latestPos = pos;
             if (!updateMouseTimeout){
@@ -257,63 +257,6 @@ Graph setup functions
                 legendBoxes.eq(i).text(suffix_formatter(y)+series.yUnits);
             }
         }
-        
-//        var innerPosTextDivs = {};
-//
-//        function showMousePos2(){
-//            updateMouseTimeout = null;
-//            pos = latestPos;
-//            
-//            // prevent the tooltip from blocking the legend
-//            try{
-//                var divWidth = plotObj.width() - 
-//                    plotObj.getPlaceholder().find('.legend div').width() - 20;
-//                posTextDiv.css("max-width",divWidth);
-//            } catch (err) {}
-//            
-//            // only show the tooltip if the mouse is within graph boundaries (x only)
-//            var axes = plotObj.getAxes();
-//            if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max/* ||
-//                pos.y < axes.yaxis.min || pos.y > axes.yaxis.max*/) {
-//                posTextDiv.hide();
-//                return;
-//            }  
-//    
-//            // set tooltip text; each series gets its own div in innerPosTextDivs
-//            var dataset = plotObj.getData();
-//            var legendBoxes = plotObj.getPlaceholder().find('.legendCheckbox');
-//            for (var i = 0; i < dataset.length; i += 1) {
-//                var series = dataset[i];
-//                
-//                posTextDiv.find('.xpos').text(suffix_formatter(pos.x)+series.xUnits);
-//    
-////                if (!compactPlot){
-//                posTextDiv.find('.xpos').prepend("X = ");
-//                var y = interpolate(series,pos.x);
-//                
-//                var divText = series.label+" = "+suffix_formatter(y)+series.yUnits;
-//                var toggleBox = legendBoxes.eq(i);
-//            
-//                if (innerPosTextDivs["series"+i]===undefined){
-//                    var innerDiv = $("<div>"+divText+"</div>");
-//                    innerPosTextDivs["series"+i] = innerDiv;
-//                    posTextDiv.append(innerPosTextDivs["series"+i]);
-//                } else {
-//                    innerPosTextDivs["series"+i].text(divText);
-//                }
-//                
-//                if (toggleBox.prop("checked")){
-//                    innerPosTextDivs["series"+i].show();
-//                } else {
-//                    innerPosTextDivs["series"+i].hide();
-//                }
-//                
-////                console.log("series number:",i,"series label:",series.label);
-////                console.log(/*"toggle box:",toggleBox,*/"checked:",toggleBox.prop("checked"));
-////                }
-//            }
-//            posTextDiv.show();
-//        }
     }
     
     /************************
@@ -461,72 +404,7 @@ Graph setup functions
     General setup
     ***********************/
     function general_setup(){
-        var tlbar = new Toolbar($('#graph-toolbar'));
-//        var closePlotButton = $('<button class="btn" id="closeplot-btn">\
-//<i class="icon-minus"></i></button>').tooltip({delay:100,title:"Remove Plot",
-//                                                           container:'body'});
-        
-        
-//        tlbar.append(closePlotButton);
-        
-//        var toggled = false;
-//        closePlotButton.popover({placement:'top',content:"Click on a graph to close it. "+
-//"Click this button again to return to normal mode.",
-//                                 container:'body'}).on("click",function(){
-//            if (!toggled){
-//                toggled = true;
-//                $('.plot-wrapper').on("click.remove",function(evt){
-//                    $(this).hide();
-//                    var plotObj = $(this).find('.placeholder').eq(0).data("plot");
-////                    console.log("plotobj:",plotObj);
-//                    allPlots.splice(allPlots.indexOf(plotObj),1);
-////                    console.log("all plots:",allPlots);
-//                });
-//                $('.plot-wrapper').on("mouseenter.remove",function(){
-//                    $(this).addClass("bg-alt");
-//                }).on("mouseleave.remove",function(){
-//                    $(this).removeClass("bg-alt");
-//                });
-//            } else {
-//                $('.plot-wrapper').off(".remove");
-//                toggled = false;
-//            }
-//            console.log("toggled:",toggled);
-//        });
-        
-//        var addPlotModal = $('<div id="addPlotModal" class="modal hide fade" \
-//aria-hidden="true">\
-//<div class="modal-header">\
-//<button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>\
-//<h3>Add Plot</h3>\
-//</div>\
-//<div class="modal-body">\
-//<p>Enter one or more node names, separated by commas or spaces, to be plotted on a single \
-//graph:</p><input id="addPlotInput" type="text" placeholder="New nodes...">\
-//</div>\
-//<div class="modal-footer">\
-//<button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>\
-//<button class="btn btn-primary" data-dismiss="modal" id="addPlotAccept">Add Plot</button>\
-//</div>\
-//</div>');
-//        
-//        addPlotModal.modal({show:false});
-//        addPlotModal.on("shown",function(){
-//            $('#addPlotInput').val("")
-//            $('#addPlotInput').focus();
-//        });
-//        $('#simulation-pane').append(addPlotModal);
-//        
-//        $('#addPlotInput').keyup(function(evt){
-//            if (evt.keyCode == 13){
-//                $('#addPlotAccept').click();
-//            }
-//        });
-        
-//        var addPlotButton = $('<button class="btn" type="button" id="addplot-btn" \
-//data-toggle="modal" data-target="#addPlotModal"><i class="icon-plus"></i> Add Plot</button>');
-//        addPlotButton.tooltip({delay:100,title:"Add Plot",placement:'top',
-//                               container:'body'});
+        var tlbar = new Toolbar($('#graph-toolbar'));   
         
         var addPlotModal;
         var addPlotButton = new ToolbarButton('<i class="icon-plus"></i> Add Plot',function(){
@@ -539,8 +417,7 @@ Graph setup functions
             addPlotModal.inputBox({placeholder:'New nodes...',callback:addPlot});
             addPlotModal.show();
         },"Add Plot");
-        
-//        $('#addPlotAccept').on("click",addPlot);                       
+                               
         function addPlot(){
             gbf(function(item){
                 item.zoom({amount:1e-10});
@@ -573,46 +450,6 @@ Graph setup functions
 //    /*******************
 //    Zoom/pan setup: sets up zooming and panning buttons
 //    ********************/
-//    function general_zoompan(){
-//        var tlbar = $('#graph-toolbar');
-        
-        // default options for tooltips
-//        var tooltipOpts = {delay:100, container:'body', placement:'top'};
-        
-        // helper function for creating buttons
-//        var zoompan_buttons = [];
-//        function create_button(tltp_txt, icon, onclick_fn){
-//            tooltipOpts.title = tltp_txt;
-//            zoompan_buttons.push( 
-//                $('<button class="btn"><i class="icon-'+icon+'"></i></button>')
-//                .tooltip(tooltipOpts)
-//                .on("click",function(){
-//                    $.each(allPlots, function(index,item){
-//                        item.clearSelection();
-//                        onclick_fn(item);
-//                    });
-//                })
-//            );
-//        }
-        
-        // create all the proper buttons
-//        create_button("Zoom In","zoom-in",function(item){item.zoom()});
-//        create_button("Reset Zoom","search",
-//                      function(item){item.zoom({amount:1e-10})});
-//        zoompan_buttons[1].addClass("reset-zoom");
-//        create_button("Zoom Out","zoom-out",function(item){item.zoomOut()});
-//        var btnGroup1 = $('<div class="btn-group zoompan"></div>');
-//        btnGroup1.append(zoompan_buttons);
-        
-//        zoompan_buttons = [];
-//        create_button("Pan Left","chevron-left",
-//                      function(item){item.pan({left:-100})});
-//        create_button("Pan Right","chevron-right",
-//                      function(item){item.pan({left:100})});
-//        var btnGroup2 = $('<div class="btn-group zoompan"></div>');
-//        btnGroup2.append(zoompan_buttons);
-//        tlbar.append(btnGroup1,btnGroup2);
-        
         // generic button function
         function gbf(onclick_fn){
             $.each(allPlots, function(index,item){
@@ -640,26 +477,16 @@ Graph setup functions
                     item.zoomOut();
                 });
             }, "Zoom Out (Shortcut: shift + double click)")
-        ]);
-        
-//        tooltipOpts.title = "Zoom to Selection";
-//        var selZoomButton = $('<button id="z2s" class="btn">\
-//<i class="icon-resize-full">').tooltip(tooltipOpts);
-//        tlbar.append(selZoomButton);
-//        selZoomButton.attr("disabled","disabled");
-//        
+        ]);  
         
         var selZoomButton = new ToolbarButton(
             '<i class="icon-resize-full"></i> Zoom to Selection',zoomToSel,
                                                 "Zoom to Selection");
-//        selZoomButton.attr('id','z2s');
         tlbar.addButtonGroup([selZoomButton]);
         selZoomButton.disable();
         
         var selRanges;
-//        selZoomButton.on("click",
         function zoomToSel(){
-//            selZoomButton.tooltip('hide');
             ranges = selRanges;
 //            console.log("ranges:",ranges);
             if (ranges){
@@ -674,7 +501,7 @@ Graph setup functions
                 });
                 $('#results').triggerHandler("plotzoom",allPlots[0]);
             }
-        }//);
+        }
         
         $('#results').on("plotunselected",function(){
             selZoomButton.disable();
@@ -685,8 +512,6 @@ Graph setup functions
             selRanges = ranges;
         });
     }
-    
-    
     
     /*********************************
     Scrollbar setup: sets up the scrollbar for panning
@@ -770,7 +595,7 @@ Graph setup functions
     
     
     /**********************
-    Label formatter: puts a checkbox next to the legend labels
+    Label formatter: sets up space to show values next to legend labels
     ***********************/
     function legendFormatter(label,series){
         return '<table><tr><td>'+label+'</td><td>=</td>\
@@ -817,9 +642,10 @@ Graph setup functions
         },
         legend:{
             labelFormatter:legendFormatter,
-            position:'nw'
+            position:'nw',
+            backgroundOpacity:0.7
         },
-        colors:['#268bd2','#b58900','#dc322f','#859900','#6c71c4','#d33682','#2aa198','#cb4b16']
+        colors:['#268bd2','#dc322f','#859900','#b58900','#6c71c4','#d33682','#2aa198']
     }
     
 /****************************************************
@@ -878,6 +704,15 @@ to dismiss)</div>').on("click",function(){div.hide()});
             var dataseries = []; // 'dataseries' is the list of objects that represent the 
                                  // data for the above set of nodes
             
+            if (p == 0){
+                dataseries.push({
+                    label: 'time',
+                    data: results._time_.map(function(val){return [val,val]}),
+                    yUnits: 's',
+                    color: 'rgba(0,0,0,0)'
+                });
+            }
+            
             // repeat for each node
             for (var i = 0; i < plot_nodes.length; i += 1) {
                 var node = plot_nodes[i];
@@ -908,9 +743,10 @@ to dismiss)</div>').on("click",function(){div.hide()});
                 });
             }
             
-            if (dataseries.length === 0) {
+            if (dataseries.length == 0 || (p == 0 && dataseries.length == 1)) {
                 continue;
             }
+            
             var xmin = results._time_[0];
             var xmax = results._time_[plot.length-1];
             

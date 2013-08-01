@@ -170,17 +170,39 @@ checkoff server or something if that was implemented yet.");
                 for (var i = 0; i < vobj.values.length; i += 1){
                     var expectedVal = vobj.values[i].toString(base).split("");
                     
-//                    var nodeVals = []
+                    var nodeVals = []
                     var valAtTime = [];
                     for (var j = 0; j < nodes.length; j += 1){
 //                        console.log("node:",nodes[j],"val:",results[nodes[j]][i])
-                        valAtTime.push(logic(results[nodes[j]][i]));
+                        nodeVals.push(logic(results[nodes[j]][i]));
                     }
 //                    console.log("valAtTime:",valAtTime,"joined:",valAtTime.join(''));
 ////                    console.log("parsed:",parseInt(valAtTime.join(''),2));
 //                    valAtTime = parseInt(valAtTime.join(''),2)
 //                    if (isNaN(valAtTime)) valAtTime = 'X';
 //                    else valAtTime = valAtTime.toString(base).split('');
+                    
+                    if (base == 2){
+                        valAtTime = nodeVals.slice(0);
+                    } else if (base == 8){
+                        // break into threes from the end
+                        while (nodeVals.length > 0){
+                            valAtTime.push(nodeVals.splice(-3,3))
+                        }
+                        for (var j = 0; j < valAtTime.length; j += 1){
+                            valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(8);
+                            if (isNaN(valAtTime[j])) valAtTime[j] = "X";
+                        }
+                    } else if (base == 16){
+                        // break into fours from the end
+                        while (nodeVals.length > 0){
+                            valAtTime.push(nodeVals.splice(-4,4))
+                        }
+                        for (var j = 0; j < valAtTime.length; j += 1){
+                            valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(16);
+                            if (isNaN(valAtTime[j])) valAtTime[j] = "X";
+                        }
+                    }
                     
                     while (expectedVal.length < valAtTime.length){
                         expectedVal.unshift("0");
