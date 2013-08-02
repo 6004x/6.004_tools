@@ -58,7 +58,7 @@ function TSM(){
 		self.restart();
 		return tape;
 	}
-	this.step=function(stepTape, new_state){
+	this.step = function(stepTape, new_state){
 		current_state = new_state||current_state;
 		var old_state = current_state;
 		var tapeRead = stepTape.peek();	
@@ -82,6 +82,11 @@ function TSM(){
 			new_state : current_state,
 			transition : state_transition,
 		};
+	}
+	this.stepPeek = function(stepTape){
+		var stepObject = self.step(stepTape);
+		current_state = stepObject.old_state;
+		return stepObject;
 	}
 	this.restart = function(){
 		current_state = start_state;
