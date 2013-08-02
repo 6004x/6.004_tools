@@ -429,19 +429,23 @@ Graph setup functions
 //            console.log("dropdown:",addPlotDropdown);
 //            console.log("results:",current_results);
             
-            var nodeList = $('<div class="muted well"><strong>Available Nodes:</strong></div>').css({"max-height":"50px",
-                                                 "overflow-y":"scroll"})
+//            var nodeList = $('<div class="muted well"><strong>Available Nodes:\
+//</strong></div>').css({"max-height":"50px","overflow-y":"scroll"})
+            var nodeList = [];
             for (var item in current_results){
                 if (item != "contains" && item != "_time_") {
 //                    addPlotDropdown.append($('<li><a tabindex="-1">'+item+'</a></li>'));
-                    nodeList.append("</br>"+item);
+                    nodeList.push(/*append("</br>"+*/item);
                 }
             }
-            content.append(nodeList);
+//            content.append(nodeList);
             addPlotModal.setContent(content);
             addPlotModal.addButton("Cancel",'dismiss');
             addPlotModal.addButton("Add Plot",addPlot,'btn-primary');
-            addPlotModal.inputBox({placeholder:'New nodes...',callback:addPlot});
+            addPlotModal.inputBox({placeholder:'New nodes...',
+                                   callback:addPlot,
+                                   typeahead:nodeList
+                                  });
             addPlotModal.show();
         },"Add Plot");
                                
