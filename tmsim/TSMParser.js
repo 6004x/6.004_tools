@@ -343,9 +343,6 @@ function TSMparser(){
 				results+='desired current value: '+(list_of_results1[key]);
 				results+=', result1: '+String(list.peek()==(list_of_results1[key]))+'\n';
 			}
-			list_of_tapes[key].endSize = list.getSizes();
-			console.log(list.getSizes())
-			console.log(list_of_tapes[key])
 			results+='\n\n';
 		}
 		return results;
