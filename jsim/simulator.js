@@ -407,11 +407,38 @@ Graph setup functions
         var tlbar = new Toolbar($('#graph-toolbar'));   
         
         var addPlotModal;
+        var addPlotDropdown;
         var addPlotButton = new ToolbarButton('<i class="icon-plus"></i> Add Plot',function(){
+//            console.log("nodes:",current_results.contains);
+//            for (node in current_results){if(node!='contains') console.log(node)}
+            
             addPlotModal = new ModalDialog();
             addPlotModal.setTitle("Add a New Plot");
-            addPlotModal.setText("Enter one or more node names, separated by spaces or commas,\
-    to plot on a single pair of axes.");
+//            addPlotModal.setText("Enter one or more node names, separated by spaces or commas,\
+//    to plot on a single pair of axes.");
+            var content =$("<div><p>Enter one or more node names, separated by spaces or commas,\
+    to plot on a single pair of axes.</p></div>")
+//            content.append($("<div class='btn-group'>\
+//<a class='btn dropdown-toggle' data-toggle='dropdown' href='#'>\
+//See Available Nodes <span class='caret'></span>\
+//</a>\
+//<ul class='dropdown-menu'>\
+//</ul>\
+//</div>"));
+//            addPlotDropdown = content.find('.dropdown-menu');
+//            console.log("dropdown:",addPlotDropdown);
+//            console.log("results:",current_results);
+            
+            var nodeList = $('<div class="muted well"><strong>Available Nodes:</strong></div>').css({"max-height":"50px",
+                                                 "overflow-y":"scroll"})
+            for (var item in current_results){
+                if (item != "contains" && item != "_time_") {
+//                    addPlotDropdown.append($('<li><a tabindex="-1">'+item+'</a></li>'));
+                    nodeList.append("</br>"+item);
+                }
+            }
+            content.append(nodeList);
+            addPlotModal.setContent(content);
             addPlotModal.addButton("Cancel",'dismiss');
             addPlotModal.addButton("Add Plot",addPlot,'btn-primary');
             addPlotModal.inputBox({placeholder:'New nodes...',callback:addPlot});
@@ -427,6 +454,7 @@ Graph setup functions
             newPlot = [newPlotRaw.match(/[^,\s]+/g)];
             addPlotModal.dismiss();
 //            console.log(newPlot);
+            if (newPlot[0] == null) return;
             
             switch (current_analysis.type){
                 case 'tran':

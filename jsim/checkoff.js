@@ -128,10 +128,9 @@ var Checkoff = (function(){
             }
 //            console.log("empty results obj:",results);
             
-            var index;
             if (vobj.type == "periodic"){
                 time_steps.push(vobj.tstart);
-                index = findTimeIndex(vobj.tstart,0)
+                var index = findTimeIndex(vobj.tstart,0)
                 time_indices.push(index);
                 for (node in results){
                     results[node].push(mResults[node][index]);
@@ -144,92 +143,97 @@ var Checkoff = (function(){
                         results[node].push(mResults[node][index]);
                     }
                 }
+            }
+            if (vobj.type == "tvpairs"){
+                for (var i = 0; i < vobj.values.length; i += 1){
+                    time_steps.push(vobj.values[i].time);
+                    
+                    var temp_index = (i == 0) ? 0 : time_indices[i-1];
+                    var index = findTimeIndex(vobj.values[i].time,temp_index)
+                    time_indices.push(index);
+                    for (node in results){
+                        results[node].push(mResults[node][index]);
+                    }
+                }
+            }
 //                console.log("time indices: ",time_indices);
 //                console.log("filled results obj:",results);
                 
-                var base;
-                var base_prefix;
-                if (vobj.display_base == 'hex') {
-                    base = 16;
-                    base_prefix = '0x'
-                }
-                if (vobj.display_base == 'octal') {
-                    base = 8;
-                    base_prefix = '0'
-                }
-                if (vobj.display_base == 'binary') {
-                    base = 2;
-                    base_prefix = '0b'
-                }
-                // not dealing with decimal, defaults to binary
-//                if (vobj.display_base == 'decimal') {
-//                    base = 10;
-//                    base_prefix = ''
-//                }
+            var base;
+            var base_prefix;
+            if (vobj.display_base == 'hex') {
+                base = 16;
+                base_prefix = '0x'
+            }
+            if (vobj.display_base == 'octal') {
+                base = 8;
+                base_prefix = '0'
+            }
+            if (vobj.display_base == 'binary') {
+                base = 2;
+                base_prefix = '0b'
+            }
                 
-                var mistake = false;
-                for (var i = 0; i < vobj.values.length; i += 1){
-                    var expectedVal = vobj.values[i].toString(base).split("");
+            var mistake = false;
+            for (var i = 0; i < vobj.values.length; i += 1){
+                var expectedVal = (vobj.type == "periodic") ? vobj.values[i] : vobj.values[i].value;
+                
+                expectedVal = expectedVal.toString(base).split("");
                     
-                    var nodeVals = []
-                    var valAtTime = [];
-                    for (var j = 0; j < nodes.length; j += 1){
-//                        console.log("node:",nodes[j],"val:",results[nodes[j]][i])
-                        nodeVals.push(logic(results[nodes[j]][i]));
-                    }
+                var nodeVals = []
+                var valAtTime = [];
+                for (var j = 0; j < nodes.length; j += 1){
+//                  console.log("node:",nodes[j],"val:",results[nodes[j]][i])
+                    nodeVals.push(logic(results[nodes[j]][i]));
+                }
 //                    console.log("valAtTime:",valAtTime,"joined:",valAtTime.join(''));
 ////                    console.log("parsed:",parseInt(valAtTime.join(''),2));
 //                    valAtTime = parseInt(valAtTime.join(''),2)
 //                    if (isNaN(valAtTime)) valAtTime = 'X';
 //                    else valAtTime = valAtTime.toString(base).split('');
                     
-                    if (base == 2){
-                        valAtTime = nodeVals.slice(0);
-                    } else if (base == 8){
-                        // break into threes from the end
-                        while (nodeVals.length > 0){
-                            valAtTime.push(nodeVals.splice(-3,3))
-                        }
-                        for (var j = 0; j < valAtTime.length; j += 1){
-                            valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(8);
-                            if (valAtTime[j] === NaN) valAtTime[j] = "X";
-                        }
-                    } else if (base == 16){
-                        // break into fours from the end
-                        while (nodeVals.length > 0){
-                            valAtTime.push(nodeVals.splice(-4,4))
-                        }
-                        for (var j = 0; j < valAtTime.length; j += 1){
-                            valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(16);
-                            if (valAtTime[j] === NaN) valAtTime[j] = "X";
-                        }
+                if (base == 2){
+                    valAtTime = nodeVals.slice(0);
+                } else if (base == 8){
+                    // break into threes from the end
+                    while (nodeVals.length > 0){
+                        valAtTime.push(nodeVals.splice(-3,3))
                     }
+                    for (var j = 0; j < valAtTime.length; j += 1){
+                        valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(8);
+                        if (valAtTime[j] === NaN) valAtTime[j] = "X";
+                    }
+                } else if (base == 16){
+                    // break into fours from the end
+                    while (nodeVals.length > 0){
+                        valAtTime.push(nodeVals.splice(-4,4))
+                    }
+                    for (var j = 0; j < valAtTime.length; j += 1){
+                        valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(16);
+                        if (valAtTime[j] === NaN) valAtTime[j] = "X";
+                    }
+                }
                     
-                    while (expectedVal.length < valAtTime.length){
-                        expectedVal.unshift("0");
-                    }
-//                    while (valAtTime.length < nodes.length){
-//                        valAtTime.unshift("0");
-//                    }
+                while (expectedVal.length < valAtTime.length){
+                    expectedVal.unshift("0");
+                }
                     
 //                    console.log('val at time',i+':',valAtTime);
 //                    console.log('expected:',expectedVal);
                     
-                    for (var k = 0; k < valAtTime.length; k += 1){
-                        if (expectedVal[k] != valAtTime[k]){
-                            mistake = true;
-                            valAtTime[k] = "<span class='wrong'>"+valAtTime[k]+"</span>";
-                        }
+                for (var k = 0; k < valAtTime.length; k += 1){
+                    if (expectedVal[k] != valAtTime[k]){
+                        mistake = true;
+                        valAtTime[k] = "<span class='wrong'>"+valAtTime[k]+"</span>";
                     }
-//                    var givenVal = parseInt(valAtTime,2);
-                    console.log("val2:",valAtTime);
+                }
+//                    console.log("val2:",valAtTime);
                     
-                    if (mistake){
-                        return {time:time_steps[i],
-                                nodes:nodes,
-                                exp:base_prefix+expectedVal.join(''),
-                                given:base_prefix+valAtTime.join('')};
-                    }
+                if (mistake){
+                    return {time:time_steps[i],
+                            nodes:nodes,
+                            exp:base_prefix+expectedVal.join(''),
+                            given:base_prefix+valAtTime.join('')};
                 }
             }
         }

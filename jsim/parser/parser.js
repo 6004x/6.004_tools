@@ -1040,7 +1040,7 @@ Read Device: takes a line representing a device and creates a device object
         if (fn_name == "tvpairs"){
             values = [];
             for (var i = 0; i < raw_values.length; i += 2){
-                values.push([raw_values[i],raw_values[i+1]]);
+                values.push({time:raw_values[i],value:raw_values[i+1]});
             }
         }
         
