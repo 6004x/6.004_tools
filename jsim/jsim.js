@@ -40,11 +40,9 @@ $(function() {
         Checkoff.reset();
         var content = editor.content();
         div = $('#results');
-        
         if (!content){
             return;
         }
-        
         var filename = editor.currentTab();
         Simulator.simulate(content,filename,div,error_catcher);
     }

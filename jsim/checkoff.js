@@ -51,14 +51,15 @@ var Checkoff = (function(){
     Test Results: called when the Checkoff button is pressed
     **************************/
     function testResults(){
+//        mResults = results;
         getResults();
-        if (mResults === null){
-//            console.log("No results! Did you run the simulation?");
-            var failedModal = new FailedModal('No results to verify. Did you run the \
-simulation?');
-            failedModal.show();
-            return;
-        }
+//        if (mResults === null){
+////            console.log("No results! Did you run the simulation?");
+//            var failedModal = new FailedModal('No results to verify. Did you run the \
+//simulation?');
+//            failedModal.show();
+//            return;
+//        }
         
         if (mCheckoff_statement === null){
             var failedModal = new FailedModal("No checkoff requested. Did you include the appropriate \
@@ -191,7 +192,7 @@ simulation?');
                         }
                         for (var j = 0; j < valAtTime.length; j += 1){
                             valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(8);
-                            if (isNaN(valAtTime[j])) valAtTime[j] = "X";
+                            if (valAtTime[j] === NaN) valAtTime[j] = "X";
                         }
                     } else if (base == 16){
                         // break into fours from the end
@@ -200,7 +201,7 @@ simulation?');
                         }
                         for (var j = 0; j < valAtTime.length; j += 1){
                             valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(16);
-                            if (isNaN(valAtTime[j])) valAtTime[j] = "X";
+                            if (valAtTime[j] === NaN) valAtTime[j] = "X";
                         }
                     }
                     

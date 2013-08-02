@@ -667,8 +667,9 @@ min-height:'+minHeight+'px"></div>');
     }
     
     function get_novaldiv(node){
-        var div = $('<div class="novalues">No values to plot for node '+node+' (Click message \
-to dismiss)</div>').on("click",function(){div.hide()});
+        var div = $('<div class="alert alert-danger">No values to plot for node '+node+
+                    '<button class="close" type="button" data-dismiss="alert">&times;\
+</button></div>');
         return div;
     }
     
@@ -697,6 +698,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
             div.text("No results!");
             return;
         }
+//        console.log("results:",results);
         
         // repeat for every set of plots
         for (var p = 0; p < plots.length; p += 1) {
@@ -867,7 +869,7 @@ to dismiss)</div>').on("click",function(){div.hide()});
             options.xaxis.zoomRange = [null,(xmax-xmin)];
             options.xaxis.panRange = [xmin, xmax];
             
-            options.yaxis.units = ' dB';
+//            options.yaxis.units = ' dB';
             
             // graph magnitude
             var plotObj = $.plot(plotDiv, mplots, options);

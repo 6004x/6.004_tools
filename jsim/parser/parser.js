@@ -476,6 +476,7 @@ iterators and duplicators, and includes files
         if (reset){
             included_contents = [];
             parseCalled = false;
+            numPendingFiles = 0;
         }
         return include(iter_expand(split(analyze(input_string),filename)),callback,error_cb);
     }
@@ -963,7 +964,7 @@ Read Device: takes a line representing a device and creates a device object
         var i = 1;
         var fn_index;
         var nodes = [];
-        var values;
+        var raw_values;
         
         // the token representing the function
         var fn;
@@ -978,7 +979,7 @@ Read Device: takes a line representing a device and creates a device object
                         throw new CustomError("No specified nodes to verify.",line[1]);
                     }
                     fn = line[i];
-                    values = line.slice(i+1);
+                    raw_values = line.slice(i+1);
                     break;
                 } else {
                     throw new CustomError("Node name expected.",line[i]);
@@ -988,7 +989,6 @@ Read Device: takes a line representing a device and creates a device object
             }
             i += 1;
         }
-//        console.log("nodes:",nodes,"fn:",fn);
         
         // picks out the name of the function and its args, if any
         // fn_array[1] is the name
@@ -1008,6 +1008,25 @@ Read Device: takes a line representing a device and creates a device object
             throw new CustomError("Invalid verify function: 'periodic' or 'tvpairs' expected",fn);
         }
         
+        // find what base the values are given in so that the same base can be used to display errors
+        var display_base;
+        var temp_index = fn_name == "periodic" ? 0 : 1;
+        if (/^0x/i.test(raw_values[temp_index].token)) display_base = 'hex';
+        else if (/^0b/i.test(raw_values[temp_index].token)) display_base = 'binary';
+        else if (/^0/i.test(raw_values[temp_index].token) && !(/^0$/.test(raw_values[temp_index].token))) display_base = 'octal';
+        else display_base = 'binary'
+        
+        // parse values
+        for (var i = 0; i < raw_values.length; i += 1){
+            try{
+                var newval = parse_number(raw_values[i].token);
+            } catch (err) {
+                throw new CustomError("Number expected.",raw_values[i]);
+            }
+            raw_values[i] = newval;
+        }
+        
+        var values;
         if (fn_name == "periodic"){
             try{
                 var tstart = parse_number(fn_array[3]);
@@ -1015,22 +1034,13 @@ Read Device: takes a line representing a device and creates a device object
             } catch (err){
                 throw new CustomError("Number expected",fn);
             }
-            
-            // find what base the values are given in so that the same base can be used to display errors
-            var display_base;
-            if (/^0x/i.test(values[i].token)) display_base = 'hex';
-            else if (/^0b/i.test(values[i].token)) display_base = 'binary';
-            else if (/^0/i.test(values[i].token) && !(/^0$/.test(values[i].token))) display_base = 'octal';
-            else display_base = 'binary'
-            
-            // parse values
-            for (var i = 0; i < values.length; i += 1){
-                try{
-                    var newval = parse_number(values[i].token);
-                } catch (err) {
-                    throw new CustomError("Number expected.",values[i]);
-                }
-                values[i] = newval;
+            values = raw_values.slice(0);
+        }
+        
+        if (fn_name == "tvpairs"){
+            values = [];
+            for (var i = 0; i < raw_values.length; i += 2){
+                values.push([raw_values[i],raw_values[i+1]]);
             }
         }
         
