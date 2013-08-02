@@ -7,9 +7,10 @@
 	var TOTAL_HEIGHT = 	300; 
 	var ANIMATION_SPEED = 10;
 
-	var TMSIM = function(container, tsm, testLists){
+	var TMSIM = function( filename, container, tsm, testLists){
 		var mContainer = $(container);
 		var mTSM = tsm;
+		var mFileName = filename;
 		//max of either the default tape width or the max length of the longest symbol
 		var mTAPE_WIDTH = (mTSM.longestSymbolLength * 10 > TAPE_WIDTH) ? mTSM.longestSymbolLength * 10 : TAPE_WIDTH;
 		var mCurrentTape;
@@ -290,6 +291,8 @@
 				mContainer.find('.tape_div .prev_segment').removeClass('prev_segment');
 				mContainer.find('.tape_div .read_symbol').removeClass('read_symbol');
 				mContainer.find('.tape_div .current_segment').addClass('prev_segment');
+
+				editor.highlightLine(mFileName, state_transition.lineNumber);
 				console.log(stepObject.transition.move)
 				setTimeout(function(){
 					self.animateTape(stepObject.transition.move, function(){
@@ -409,8 +412,7 @@
 								$('.feedback_div').html(e.stack);
 							}
 						}
-						if(!simulation_done)
-						{	
+						if(!simulation_done) {	
 								self.stepAction(nextStep);
 						}
 					}

@@ -209,6 +209,7 @@ function TSMparser(){
 					transition.new_state = args[2];
 					transition.write = args[3];
 					transition.move = args[4];
+					transition.lineNumber = lineNumber;
 					if(_.contains(validStates,state)
 						&&_.contains(validStates, transition.new_state)
 						&&_.contains(validSymbols, read_symbol)

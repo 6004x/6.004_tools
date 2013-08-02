@@ -13,13 +13,7 @@
         <link rel="stylesheet" type="text/css" href="TMSIM.css">   <link href='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css' rel='stylesheet' type='text/css'>
 
        
-        <script src='../fileSystem/fileSystem.js'></script>
-        <script src='../fileSystem/folders.js'></script>
-        <script src='tapeList.js'></script>
-        <script src='tsm.js'></script>
-        <script src='tsmParser.js'></script>
-        <script src='tmsim.js'></script>
-        <script src='split_ui.js'></script>
+       
         <!-- importing editor by mattpf -->
             <script src="../editor/toolbar.js"></script>
             <script src="../editor/editor.js"></script>
@@ -32,9 +26,17 @@
             <script src="../editor/modes/jsim.js"></script>
             <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
             <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+        <script src='../fileSystem/fileSystem.js'></script>
+        <script src='../fileSystem/folders.js'></script>
+        <script src='tapeList.js'></script>
+        <script src='tsm.js'></script>
+        <script src='tsmParser.js'></script>
+        <script src='tmsim.js'></script>
+        <script src='split_ui.js'></script>
 
     </head>
     <script>
+    var editor;
     $(document).ready(function(){
         FileSystem.setup('dontony', 'https://18.62.29.122:6004');
             
@@ -90,7 +92,7 @@
                         $('#split_pane').click();
                         console.log(tsmparse.getTSM())
                         console.log(tsmparse.getLists());
-                        tmsim = new TMSIM('.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
+                        tmsim = new TMSIM(file.name, '.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
                         console.log(tmsim);
                     }
                 }

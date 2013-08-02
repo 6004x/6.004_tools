@@ -14,7 +14,8 @@ var Editor = function(container, mode) {
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
-    var mMarkedLines = []; // List of lines we need to clear things from when requested.
+    var mErrorMarkedLines = []; // List of lines we need to clear things from when requested.
+    var mHighlightMarkedLines = []; // List of lines we need to clear things from when requested.
 
     // Given a list of ToolbarButtons, adds a button group.
     this.addButtonGroup = function(buttons) {
@@ -63,12 +64,26 @@ var Editor = function(container, mode) {
         focusTab(document);
         cm.scrollIntoView({line: line, ch: column});
         var handle = cm.lineInfo(line).handle;
-        mMarkedLines.push({filename: filename, handle: handle});
+        mErrorMarkedLines.push({filename: filename, handle: handle});
     };
+
+    this.highlightLine = function(filename, line, column){
+        self.cleanHighlight();
+        var document;
+        if(filename) document = mOpenDocuments[filename];
+        else document = mCurrentDocument;
+        if(!document) return false;
+        var cm = document.cm;
+        cm.addLineClass(line, 'background', 'cm-highlight-line');
+        focusTab(document);
+        cm.scrollIntoView({line: line, ch: column});
+        var handle = cm.lineInfo(line).handle;
+        mHighlightMarkedLines.push({filename: filename, handle: handle});
+    }
 
     // Clears all error markers in all files.
     this.clearErrors = function() {
-        _.each(mMarkedLines, function(value) {
+        _.each(mErrorMarkedLines, function(value) {
             if(mOpenDocuments[value.filename]) {
                 var cm = mOpenDocuments[value.filename].cm;
                 var line = cm.lineInfo(value.handle);
@@ -79,7 +94,19 @@ var Editor = function(container, mode) {
                 });
             }
         });
-        mMarkedLines = [];
+        mErrorMarkedLines = [];
+    };
+    this.cleanHighlight = function() {
+        _.each(mHighlightMarkedLines, function(value) {
+            if(mOpenDocuments[value.filename]) {
+                var cm = mOpenDocuments[value.filename].cm;
+                var line = cm.lineInfo(value.handle);
+                if(!line) return;
+                console.log(line);
+                cm.removeLineClass(line.handle, "background", "cm-hightlight-line");
+            }
+        });
+        mHighlightMarkedLines = [];
     };
 
     // Opens a new tab with the given filename and content.

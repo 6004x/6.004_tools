@@ -113,3 +113,14 @@ li.rootFolderName:hover{
     border-radius: 4px;
     z-index: 2;
 }
+.dragging_div{
+    background-color : slategrey;
+    padding : 3px; 
+    border-radius: 3px;
+}
+.active_drop{
+    border : solid 2px black ;
+}
+.hover_drop{
+    border-color: orangered;
+}

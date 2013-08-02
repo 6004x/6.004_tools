@@ -53,6 +53,9 @@
     background-color: #FFE8DF;
 }
 
+.cm-highlight-line {
+    background-color: rgba(204,255,51, 0.8);
+}
 .cm-error-widget {
     text-align: left;
     background-color: white; /* This should match the theme's background colour. */

@@ -35,7 +35,6 @@ var Folders=new function(){
                     } else {
                         $('#'+key).collapse('show')
                     }
-                    console.log(key);
                 }
             }, noServer
         );
@@ -91,7 +90,7 @@ var Folders=new function(){
                     var timeOut;
                     listVar.hover(function(e){
                             var div = $(e.currentTarget);
-                            var fileButtons = div.find('.file_button')
+                            var fileButtons = div.find('.file_button');
                             timeOut =setTimeout(function(){
                                 fileButtons.css({
                                     display:'block',
@@ -118,12 +117,33 @@ var Folders=new function(){
                     });
                     
                     parentNode.append(listVar);
+                    function cloneFileName(e){
+                        console.log(e);
+                        var current = $(e.currentTarget)
+                        var div = $('<div>').append(current.text()).addClass('dragging_div file_name');
+                        $('.filePaths').append(div)
+                        return div;
+                    }
+                    listVar.draggable({
+                        'containment' : '.filePaths',
+                        'cursor' : 'move',
+                        'delay' : 500,
+                        'helper' : cloneFileName,
+                        'distance' : 10,
+                        'revert' : 'invalid',
+                        'zIndex' : 100,
+                        'cursorAt' : {'left' : 20},
+                    })
+                    
                 }
                 else {//it is a folder, we must go deeper
 
                     //collapser area will hold the folder name and will 
                     //allow user to hide and expand folderContents
-                    var folderContensDiv = addDiv('folderContents');
+                    var folderContentsDiv = addDiv('folderContents')
+                        .attr({
+                            'data-path': parentPath+name+'/',
+                        });
                     var collapser = $('<li>').addClass('folderName')
                         .attr({
                             'data-toggle':'collapse',
@@ -133,8 +153,7 @@ var Folders=new function(){
                     if(level === 1)//keep track of the root
                         collapser.addClass('rootFolderName');
 
-                    folderContensDiv.append(collapser);
-
+                    folderContentsDiv.append(collapser);
                     //add folder name and the arrow
                     var arrow = $('<i>').addClass("icon-chevron-down pull-left open_indicator").addClass(collapseName).css('height', 16);
                     collapser.append(arrow).append($('<span>').text(folderName));
@@ -176,20 +195,20 @@ var Folders=new function(){
                     collapser.append(newButtonDiv);
                     if(!collapsedFolders[collapseName])
                         collapsedFolders[collapseName] = false;
+
                     //the folder contents sublist, will hold all files and subfolders
                     var subListUL=$('<ul>').attr('id', collapseName);
-                    //when it is not collaped, change the arrow icon
+
+                    //when it is not collaped, change the arrow icon, mark the state
                     subListUL.on('show', function(e) {
                         arrow.addClass('icon-chevron-down').removeClass('icon-chevron-right');
-                        
                         collapsedFolders[$(e.currentTarget).attr('id')] = false;
                         e.stopPropagation();
-                        console.log(collapsedFolders);
                     });
-                    //when it is collapsed, change the arrow icon
+
+                    //when it is collapsed, change the arrow icon, mark the state
                     subListUL.on('hide', function(e){
                         arrow.removeClass('icon-chevron-down').addClass('icon-chevron-right');
-                        
                         collapsedFolders[$(e.currentTarget).attr('id')] = true;
                         e.stopPropagation();
                     });
@@ -203,9 +222,24 @@ var Folders=new function(){
                         //the subfolder has no files inside, it's an empty folder
                         subListUL.append('[empty folder]');
                     }
-                    folderContensDiv.append(subListUL);
-                    parentNode.append(folderContensDiv);
+                    folderContentsDiv.append(subListUL);
+                    parentNode.append(folderContentsDiv);
                     // subListUL.collapse('show');
+
+                    folderContentsDiv.droppable({
+                        'accept' : '.file_name',
+                        'activeClass' : 'active_drop',
+                        'greedy' : true,
+                        'hoverClass' : 'hover_drop',
+                        'tolerance' : 'fit',
+                        'activate' : function(e, ui){
+                            console.log(ui.draggable.data('path'));
+                        },
+                        'drop' : function(e, ui){
+                            console.log('dropped at ' + $(e.target).data('path'));
+                        },
+                    });
+
                 }
 
             });
