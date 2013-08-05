@@ -29,12 +29,9 @@ Editor.Autocomplete = function(editor, language) {
 
     var prevent_including_quotes = function(old_selection, expected_text, cm, selection) {
         cm.off('beforeSelectionChange', mSelectionCallback);
-        console.log(selection);
         var text = cm.getRange(selection.anchor, selection.head);
         var old_text = cm.getRange(old_selection.from, old_selection.to);
-        console.log(old_text, expected_text);
         if(old_text == expected_text) {
-            console.log("re-marking at ", old_selection);
             create_mark(cm, old_selection.from, old_selection.to);
         } else if((text[0] == "'" && text[text.length-1] == "'") || (text[0] == '"' && text[text.length-1] == '"')) {
             selection.anchor.ch += 1;
@@ -63,7 +60,6 @@ Editor.Autocomplete = function(editor, language) {
             mark.clear();
             // Hack because we can't modify editor state from in here.
             // 50ms because that seems to let us override cursor input, too.
-            console.log('beforeCursorEnter', pos, cm.getRange(pos.from, pos.to));
             setTimeout(function() { select_placeholder(cm, pos); }, 50);
         });
         return mark;
@@ -71,21 +67,16 @@ Editor.Autocomplete = function(editor, language) {
 
     var expand_completion = function(cm, data, completion) {
         cm.replaceRange(completion.text, data.from, data.to);
-        console.log(data);
         var start = data.from.ch + completion.name.length + completion.settings.paramListStart.length;
-        console.log(start);
         var orig_start = start;
         var first_pos = null;
         var first_mark = null;
         _.each(completion.params, function(value) {
-            console.log(value);
             var p = [
                 {line: data.from.line, ch: start},
                 {line: data.from.line, ch: start + value.length}
             ];
-            console.log(p);
             var mark = create_mark(cm, p[0], p[1]);
-            console.log(mark);
             if(first_pos === null) first_pos = p;
             if(first_mark === null) first_mark = mark;
             start += value.length + completion.settings.paramSpacer.length;
@@ -146,7 +137,6 @@ Editor.Autocomplete = function(editor, language) {
         if(token.string !== '') {
             completions = get_completions(token);
         }
-        console.log(token, completions);
         return {
             list: completions,
             from: Pos(cm.getCursor().line, token.start),

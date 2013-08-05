@@ -17,6 +17,7 @@
                     stream.skipToEnd();
                 }
             }
+            return true;
         };
 
         // Returns true if the string has actually ended, false if we ran out of line first
@@ -59,7 +60,6 @@
             },
 
             token: function(stream, state) {
-                console.log(stream, state);
                 // Kill whitespace
                 if(stream.sol()) state.sol = true;
                 if(stream.eatSpace()) return;
@@ -100,7 +100,7 @@
                         state.in_args = true;
                         return 'keyword';
                     }
-                    if(stream.match(/^[WRNPCLVI][a-z0-9_:\$\[\]\.]+/i)) {
+                    if(stream.match(/^[WRNPCLVIO][a-z0-9_:\$\[\]\.]+/i)) {
                         state.in_args = true;
                         return 'variable-3';
                     } else if(stream.match(/^X[a-z0-9_:\$\[\]\.]+/i)) {
@@ -218,8 +218,9 @@
             {settings: primitiveSettings, term: ['I', ['id', 'n+', 'n-', 'current']]},
             {settings: primitiveSettings, term: ['V', ['id', 'n+', 'n-', 'voltage']]},
             {settings: primitiveSettings, term: ['W', ['id', 'nodes...', 'fn', 'data...']]},
-            {settings: primitiveSettings, term: ['P', ['id', 'drain', 'gate', 'source', 'W=width', 'L=length']]},
-            {settings: primitiveSettings, term: ['N', ['id', 'drain', 'gate', 'source', 'W=width', 'L=length']]},
+            {settings: primitiveSettings, term: ['P', ['id', 'drain', 'gate', 'source']]},
+            {settings: primitiveSettings, term: ['N', ['id', 'drain', 'gate', 'source']]},
+            {settings: primitiveSettings, term: ['O', ['id', 'n+', 'n-', 'output', 'a']]},
             {settings: keywordSettings, term: ['.connect', ['nodes...']]},
             {settings: keywordSettings, term: ['.dc', ['source1', 'start1', 'step2', 'source2', 'start2', 'stop2', 'step2']]},
             {settings: keywordSettings, term: ['.global', ['nodes...']]},
