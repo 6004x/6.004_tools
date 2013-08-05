@@ -915,6 +915,9 @@ Read Device: takes a line representing a device and creates a device object
             case "O":
                 device_obj = read_opamp(line);
                 break;
+            case "W":
+                device_obj = read_W(line);
+                break;
             case "X":
                 device_obj = read_instance(line);
                 break;
@@ -1320,6 +1323,85 @@ Device readers: each takes a line of tokens and returns a device object,
         }
         return obj;
     }
+    
+    /*****************************
+    W device: driving mulitple nodes at once
+    Syntax: Wid nodes... nrz(vlow,vhigh,tperiod,tdelay,trise,tfall) data...
+    *****************************/
+    function read_W(line){
+//        var obj = {type:"W",
+//                   ports:[],
+//                   connections:[],
+//                   properties:{name:line[0].token}
+//                  }
+        
+        var fn, raw_data;
+        var nodes = [];
+        var i = 1;
+        while (true) {
+            if (i >= line.length){
+                throw new CustomError("No nrz function specified.",line[0]);
+            }
+            if (line[i].type != "name"){
+                if (line[i].type == "function"){
+                    if (i == 1){
+                        throw new CustomError("No specified nodes to drive.",line[1]);
+                    }
+                    fn = line[i];
+                    raw_data = line.slice(i+1);
+                    break;
+                } else {
+                    throw new CustomError("Node name expected.",line[i]);
+                }
+            } else {
+                nodes.push(line[i].token);
+            }
+            i += 1;
+        }
+        
+        var fn_pttn = /(\w+)\((.+)\)/;
+        var fn_matched = fn.token.match(fn_pttn);
+        console.log("fn token:",fn.token,"fn_matched:",fn_matched);
+        var fn_name = fn_matched[1];
+        var fn_args = fn_matched[2].split(/[,\s]\s*/);
+        console.log("fn name:",fn_name,"args:",fn_args);
+        
+        if (fn_name == "nrz"){
+//            var param_names = ["vhigh","vlow","tperiod","tdelay","trise","tfall"];
+            var args = [];
+            for (var i = 0; i < fn_args.length; i += 1){
+                try{
+                    args.push(parse_number(fn_args[i]));
+                } catch (err){
+                    throw new CustomError("Number expected.",fn);
+                }
+                if (args.length != 6) throw new CustomError("nrz function expects six arguments.",fn);
+                
+                var data = [];
+                for (var i = 0; i < raw_data.length; i += 1){
+                    try{
+                        data.push(parse_number(raw_data[i].token));
+                    } catch (err) {
+                        throw new CustomError("Number expected.",raw_data[i]);
+                    }
+                }
+                
+                return parse_W(nodes,args,data);
+            }
+        } else {
+            throw new CustomError("Unrecognized W function",fn);
+        }
+        
+//        return obj;
+    }
+    
+    /*************************
+    Parse W: Turns the parameters of a W device into voltage sources
+        --args: -nodes: the list of nodes to be driven
+                -args: the parameters of the nrz function
+                -data: the given logic values the set of nodes should take
+        --returns: 
+    *************************/
     
     /*****************************
     Instance: instance of user-specified subcircuit
