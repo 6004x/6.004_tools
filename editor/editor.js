@@ -102,8 +102,7 @@ var Editor = function(container, mode) {
                 var cm = mOpenDocuments[value.filename].cm;
                 var line = cm.lineInfo(value.handle);
                 if(!line) return;
-                console.log(line);
-                cm.removeLineClass(line.handle, "background", "cm-hightlight-line");
+                cm.removeLineClass(line.handle, "background", "cm-highlight-line");
             }
         });
         mHighlightMarkedLines = [];

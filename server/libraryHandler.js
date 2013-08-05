@@ -223,13 +223,14 @@ var path=require('path');
 			});
 		}
 		function hide(full_path, file_path){
-			console.log('hiding '+path.dirname(full_path)+path.sep+'del~'+path.basename(full_path));
-			fs.exists(path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function(exists){
+			var hide_path = path.dirname(full_path)+path.sep+'del~'+path.basename(full_path);
+			console.log('hiding '+ hide_path);
+			fs.exists(hide_path, function(exists){
 				
 				if(exists){
 					//TODO: what should we do in case we delete a file/folder twice
+					fs.unlinkSync(hide_path);
 				}
-				else{
 					fs.rename(full_path, path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function (err) {
 						if (err) {
 							errorResponse(err + ' file could not be renamed');
@@ -243,13 +244,12 @@ var path=require('path');
 							});
 						}
 					});
-				}
 
 			})
 		}
 		function rename(full_path, file_path, new_path){
-			console.log('renaming to ' + path.join(path.dirname(full_path), path.basename(new_path)));
 			var new_full_path = path.join(path.dirname(full_path), path.basename(new_path));
+			console.log('renaming to ' + new_full_path)
 			fs.exists(new_full_path, function(exists){
 				if(exists){
 					//TODO: what should we do in case we overwrite a file
@@ -272,8 +272,7 @@ var path=require('path');
 		}
 		function create_user_path() {
 			fs.mkdirSync(user_path,function(err) {
-				if (err) throw(err);
-				// after();
+				if (err) errorResponse(err);
 			});
 		}
 	}

@@ -59,6 +59,40 @@ var Folders=new function(){
             return span;
         }
 
+        function dragFile(filePath, folderDestination, type){
+            type = type || 'move'
+
+            var filePathArr = filePath.split('/');
+            var folderPathArr = folderDestination.split('/');
+            console.log(filePathArr); console.log(folderPathArr);
+            var samePath = (filePathArr.length)  == folderPathArr.length;
+            for(var i = 0, j = 0; i < filePathArr.length -1 && j < folderPathArr.length; i++, j++){
+                console.log(filePathArr[i] === folderPathArr[j])
+                if(filePathArr[i] !== folderPathArr[j]){
+                    samePath = false;
+                    console.log(filePathArr);
+                    console.log(folderPathArr);
+                    break;
+                }
+            }
+            console.log(samePath);
+            if(!samePath){
+                if(type === 'move')
+                    FileSystem.moveFile(filePath, folderDestination, function(data){
+                        console.log('moving ' + filePath )
+                        console.log('to ' + data );
+                        refresh();
+                    })
+                else if (type === 'copy')
+                    FileSystem.copyFile(filePath, folderDestination, function(data){
+                        console.log('moving ' + filePath )
+                        console.log('to ' + data );
+                        refresh();
+                    })
+            } else {
+                console.log('do nothing');
+            }
+        }
         function addFiles(fileList, parentNode, parentPath){
             //testing whether username chenged or not, to change data structure
             level++;
@@ -118,7 +152,6 @@ var Folders=new function(){
                     
                     parentNode.append(listVar);
                     function cloneFileName(e){
-                        console.log(e);
                         var current = $(e.currentTarget)
                         var div = $('<div>').append(current.text()).addClass('dragging_div file_name');
                         $('.filePaths').append(div)
@@ -127,12 +160,15 @@ var Folders=new function(){
                     listVar.draggable({
                         'containment' : '.filePaths',
                         'cursor' : 'move',
-                        'delay' : 500,
+                        'delay' : 300,
                         'helper' : cloneFileName,
                         'distance' : 10,
                         'revert' : 'invalid',
                         'zIndex' : 100,
                         'cursorAt' : {'left' : 20},
+                        'drag' : function(e, ui){
+
+                        }
                     })
                     
                 }
@@ -223,27 +259,56 @@ var Folders=new function(){
                         subListUL.append('[empty folder]');
                     }
                     folderContentsDiv.append(subListUL);
+
+                    var copyDiv = $('<div>').addClass('copy_div').css({
+                        'position' : 'absolute',
+                        'right' : 0,
+                        'top' : 0,
+                        'height' : 40,
+                        'width' : 40,
+                    })
+                    folderContentsDiv.append(copyDiv);
+
                     parentNode.append(folderContentsDiv);
-                    // subListUL.collapse('show');
 
                     folderContentsDiv.droppable({
                         'accept' : '.file_name',
                         'activeClass' : 'active_drop',
                         'greedy' : true,
                         'hoverClass' : 'hover_drop',
-                        'tolerance' : 'fit',
+                        'tolerance' : 'pointer',
                         'activate' : function(e, ui){
-                            console.log(ui.draggable.data('path'));
+                            // console.log(ui.draggable.data('path'));
                         },
                         'drop' : function(e, ui){
-                            console.log('dropped at ' + $(e.target).data('path'));
+                            var filePath = ui.draggable.data('path');
+                            var folderDestination = $(e.target).data('path');
+                            console.log('file dragged ' + filePath);
+                            console.log('dropped at ' + folderDestination);
+                            dragFile(filePath, folderDestination, 'move')
+                            
+                        },
+                    });
+
+                    copyDiv.droppable({
+                        'accept' : '.file_name',
+                        'activeClass' : 'active_drop',
+                        'greedy' : true,
+                        'hoverClass' : 'hover_drop',
+                        'tolerance' : 'pointer',
+                        'activate' : function(e, ui){   
+                        },
+                        'drop' : function(e, ui){
+                            var filePath = ui.draggable.data('path');
+                            var folderDestination = $(e.target).data('path');
+                            dragFile(filePath, folderDestination, 'copy');
                         },
                     });
 
                 }
 
             });
-
+        
         }
     }
     function noServer(){
@@ -419,7 +484,6 @@ var Folders=new function(){
         rootNode=$(root);
         editor=editorN;
         editMode=mode;
-        //editorWrapper=addDiv('span10 folderStruct');
         var buttonDiv=addDiv('buttonDiv');
         addButtons(buttonDiv);
 
@@ -462,10 +526,10 @@ var Folders=new function(){
         rootNode.animate({'left' :width}, 500, 'swing', function(){
                 rootNode.detach()
         });
-        var offset=-editorWrapper.offset().left+parseInt(editorWrapper.css('margin-left'));
+        var offset = -editorWrapper.offset().left + parseInt(editorWrapper.css('margin-left'));
         console.log(offset)
         editorWrapper.css('position', 'relative')
-        editorWrapper.animate({'left' :offset}, 500, 'swing', function(){
+        editorWrapper.animate({'left' : offset}, 500, 'swing', function(){
             editorWrapper.removeClass('span9').addClass('span12');
             editorWrapper.css('left', 0);
         });

@@ -4,7 +4,7 @@
 	vertical-align: center;
 }
 .nav-pills li a{
-	background-color: whitesmoke;
+	background-color: azure;
 	cursor: pointer;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -45,6 +45,7 @@
 	position : relative;
 	border-radius : 5px;
 	font : monospace;
+	background-color : whitesmoke	;
 }
 .pull-center {
     display: table;
@@ -65,7 +66,7 @@
 	font : medium monospace;
 }
 .write_symbol{
-	color : blue;
+	
 }
 .read_symbol{
 	color : red;

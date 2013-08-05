@@ -1,17 +1,25 @@
 to add
++
+
+normalizing ../
+other path names
+.include functionality
+
+SCROLLING FILE SYSTEM
+SYNC UP STRIPING
+
 
 delete
 indexedDB?
 algorithm for local storage?
 version control
 KEYWORD ~ for version control
-hover on for buttons (delete, rename)
+x hover on for buttons (delete, rename)
 cygwin apache server for authentication
 ca server certificate
 environment variables pass to node
 
 when new file renaming after old file?
-
 
 	filesystem object
 
@@ -26,12 +34,9 @@ when new file renaming after old file?
 	filepath:
 	success:true/false
 	//come from either server, or not able to access server
-	filecontents:..
+	data:..
 	}
 
-normalizing ../
-other path names
-.include functionality
 
 newfile with me
 

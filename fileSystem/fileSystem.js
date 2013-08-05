@@ -140,7 +140,7 @@ var FileSystem= function(){
     function getFileFromTree(fileName){
         var finalTree = traverseTree(fileName, function(i, tree){return true;} );
         console.log(finalTree);
-        if(finalTree.length==0)
+        if(finalTree.length == 0)
             return false;
         //else there is a file
         return finalTree[0];
@@ -177,7 +177,6 @@ var FileSystem= function(){
                     callback(data);
                     writeFileToTree(data.name, data.data, true);
                 }
-                console.log(status)
             }, callbackFailed);
         }else if (file){
             getFileFromTree[onServer]=false;
@@ -257,7 +256,7 @@ var FileSystem= function(){
         updated=false;
     }   
     this.renameFile = function(oldFileName, newFileName, callback, callbackFailed){
-        callbackFailed = callbackFailed||failResponse;
+        callbackFailed = callbackFailed || failResponse;
         sendAjaxRequest(oldFileName, newFileName, 'json', 'renameFile', function(data, status){
             console.log(status)
             if(status === 'success')
@@ -267,6 +266,33 @@ var FileSystem= function(){
     this.deleteFile = function(fileName, callback, callbackFailed){
         sendAjaxRequest(fileName, null, 'json', 'deleteFile', callback, callbackFailed);
         updated=false;
+    }
+    this.copyFile = function(fileName, folderDestination,  callback, callbackFailed){
+        callbackFailed = callbackFailed || failResponse;
+        var newFileName = fileName.split('/');
+        console.log(newFileName)
+        newFileName = newFileName.pop();
+        newFileName = folderDestination + newFileName;
+        console.log(newFileName);
+        self.getFile(fileName, function(oldFile){
+            self.saveFile(newFileName, oldFile.data, function(newFile){
+                if(newFile.status = 'success'){
+                    callback(newFile);
+                }
+
+            })
+        }, callbackFailed)
+    }
+    this.moveFile = function(fileName, folderDestination, callback, callbackFailed){
+        self.copyFile(fileName, folderDestination, function(newFile){
+            self.deleteFile(fileName, function(data){
+                if(data)
+                    callback(newFile);
+                console.log(data)
+                console.log('from deleteFile');
+            }, callbackFailed)
+        }, callbackFailed)
+
     }
 
     function sendAjaxRequest(filePath, fileData, dataType, query, callbackFunction, failFunction){

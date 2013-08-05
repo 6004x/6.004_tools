@@ -112,6 +112,7 @@ li.rootFolderName:hover{
     border:none;
     border-radius: 4px;
     z-index: 2;
+    position : relative;
 }
 .dragging_div{
     background-color : slategrey;
