@@ -912,6 +912,9 @@ Read Device: takes a line representing a device and creates a device object
             case "I":
                 device_obj = read_isource(line);
                 break;
+            case "O":
+                device_obj = read_opamp(line);
+                break;
             case "X":
                 device_obj = read_instance(line);
                 break;
@@ -1288,6 +1291,32 @@ Device readers: each takes a line of tokens and returns a device object,
             throw new CustomError("Number or function expected", line[3]);
         } else {
             obj.properties.value = line[3].token;   
+        }
+        return obj;
+    }
+    
+    /*****************************
+    Opamp: 
+        --ports: nplus, nminus, output
+        --properties: name, A
+    *******************************/
+    function read_opamp(line){
+        var obj = {type:'opamp',
+                   ports:["nplus","nminus","output"],
+                   connections:[],
+                   properties:{name:line[0].token}
+                  }
+        try{
+            obj.properties.A = parse_number(line[line.length-1].token)
+        } catch (err) {
+            throw new CustomError("Number expected.",line[line.length-1]);
+        }
+        
+        for (var i = 1; i < line.length - 1; i += 1){
+            if (line[i].type != 'name'){
+                throw new CustomError("Node name expected.",line[i]);
+            }
+            obj.connections.push(line[i].token);
         }
         return obj;
     }
