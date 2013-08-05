@@ -178,7 +178,7 @@ var path=require('path');
 		}
 		
 		function sendJSON(data) {
-			var sdata= JSON.stringify(data);
+			var sdata = JSON.stringify(data);
 			response.writeHead(200,{
 				'Content-Length': sdata.length,
 				'Content-Type': 'application/json',
@@ -223,14 +223,15 @@ var path=require('path');
 			});
 		}
 		function hide(full_path, file_path){
-			console.log('hiding '+path.dirname(full_path)+path.sep+'del~'+path.basename(full_path));
-			fs.exists(path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function(exists){
+			var hide_path = path.dirname(full_path)+path.sep+'del~'+path.basename(full_path)
+			console.log('hiding '+hide_path);
+			fs.exists(hide_path, function(exists){
 				
 				if(exists){
 					//TODO: what should we do in case we delete a file/folder twice
+					fs.unlinkSync(hide_path)
 				}
-				else{
-					fs.rename(full_path, path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function (err) {
+					fs.rename(hide_path, function (err) {
 						if (err) {
 							errorResponse(err + ' file could not be renamed');
 							return;
@@ -243,8 +244,6 @@ var path=require('path');
 							});
 						}
 					});
-				}
-
 			})
 		}
 		function rename(full_path, file_path, new_path){
@@ -272,8 +271,7 @@ var path=require('path');
 		}
 		function create_user_path() {
 			fs.mkdirSync(user_path,function(err) {
-				if (err) throw(err);
-				// after();
+				if (err) errorResponse(err);
 			});
 		}
 	}
