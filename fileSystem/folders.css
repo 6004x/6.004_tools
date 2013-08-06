@@ -12,13 +12,14 @@ li.file_name:hover{
     float:none;
     position:absolute;
     right:0;
+    top:0;
 	display:inline-block;
     vertical-align: center;
+    background-color: lightyellow;
 }
 .file_name:hover .file_button_div{
    display:block;
    position:absolute;
-   /*right:0;*/
 }
 .file_button {
     padding: 0px;
@@ -36,10 +37,10 @@ li.file_name:hover{
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    position: relative;
 }
 
 .folderContents:first-child li.rootFolderName{
-    background-color:rgba(255,192,0, .8);
     position:relative;
     right:0;
 }

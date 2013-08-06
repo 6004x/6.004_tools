@@ -316,10 +316,6 @@ var Editor = function(container, mode) {
         $(this).text("\u00D7"); // U+00D7 MULTIPLICATION SIGN
     };
 
-    var create_new_document = function() {
-        self.openTab(null, '', true);
-    };
-
     var save_current_document = function() {
         if(!mCurrentDocument) return;
         do_save();
@@ -339,8 +335,6 @@ var Editor = function(container, mode) {
         mToolbar = new Toolbar(mToolbarHolder);
         // Add some basic button groups
         self.addButtonGroup([
-            new ToolbarButton('icon-file', create_new_document, "New file"),
-            new ToolbarButton('icon-refresh'),
             new ToolbarButton('icon-hdd', save_current_document, "Save current file")
         ]);
         mContainer.append(mToolbarHolder);
