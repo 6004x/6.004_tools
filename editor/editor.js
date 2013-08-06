@@ -17,6 +17,8 @@ var Editor = function(container, mode) {
 
     var mMarkedLines = []; // List of lines we need to clear things from when requested.
 
+    _.extend(this, Backbone.Events);
+
     // Given a list of ToolbarButtons, adds a button group.
     this.addButtonGroup = function(buttons) {
         mToolbar.addButtonGroup(buttons);
@@ -45,18 +47,14 @@ var Editor = function(container, mode) {
     // If filename is given, returns the content of that file in the buffer
     // If filename is omitted, returns the content of the current editor
     this.content = function(filename) {
-        var document;
-        if(filename) document = mOpenDocuments[filename];
-        else document = mCurrentDocument;
+        var document = try_get_document(filename);
         if(!document) return null;
         return document.cm.getValue();
     };
 
     // Marks the given line in the given file as having an error, and displays it to the user.
     this.markErrorLine = function(filename, message, line, column) {
-        var document;
-        if(filename) document = mOpenDocuments[filename];
-        else document = mCurrentDocument;
+        var document = try_get_document(filename);
         if(!document) return false;
         var cm = document.cm;
         cm.addLineClass(line, 'background', 'cm-error-line');
@@ -81,6 +79,28 @@ var Editor = function(container, mode) {
             }
         });
         mMarkedLines = [];
+    };
+
+    // Highlight the given line by applying the CSS class cls
+    // Returns an object with a clear() method that will remove the class again.
+    this.addLineClass = function(filename, line, cls) {
+        var document = try_get_document(filename);
+        if(!document) return false;
+        var handle = document.cm.addLineClass(line, 'background', cls);
+        return {
+            clear: function() {
+                document.cm.removeLineClass(handle, 'background', cls);
+            }
+        };
+    };
+
+    // Focus on the given line in the given document (or the current if filename is null).
+    // 'line' is the line number; 'chr' is the optional character on the line.
+    this.showLine = function(filename, line, chr) {
+        var document = try_get_document(filename);
+        if(!document) return false;
+        document.cm.scrollIntoView({line: line, chr: chr|0});
+        return true;
     };
 
     // Opens a new tab with the given filename and content.
@@ -126,8 +146,10 @@ var Editor = function(container, mode) {
             'margin-left': 5,
             'margin-right': -7
         }).on('mouseenter', tab_mouse_enter).on('mouseleave', function() { handle_change_tab_icon(doc); });
-        cm.on('change', function() {
+        cm.on('change', function(c, changeObj) {
             handle_change_tab_icon(doc);
+            // Let our listeners know, too.
+            self.trigger('change', filename, changeObj);
         });
         // Append all that stuff
         a.append(close);
@@ -248,7 +270,6 @@ var Editor = function(container, mode) {
             mode: mSyntaxMode,
             extraKeys: {
                 Tab: function() {
-                    console.log('hi');
                     var marks = cm.getAllMarks();
                     var cursor = cm.getCursor();
                     var closest = null;
@@ -303,6 +324,14 @@ var Editor = function(container, mode) {
         if(!mCurrentDocument) return;
         do_save();
     };
+
+    var try_get_document = function(filename) {
+        var document;
+        if(filename) document = mOpenDocuments[filename];
+        else document = mCurrentDocument;
+        if(!document) return false;
+        return document;
+    }
 
     var initialise = function() {
         // Build up our editor UI.
