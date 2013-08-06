@@ -27,12 +27,6 @@ var Folders=new function(){
                 fileList[username]=data;
                 addFiles(fileList, parentNode, '');
                 isLoadingFileList = false;
-                FileSystem.getFile('/lab 4/beaver_4.tsim', function(file){
-                    editor.openTab(file.name, file.data, true);
-                });
-                FileSystem.getRelativeFile('./newFolder/counting.tsim', '/lab 4/beaver_4.tsim', function(file){
-                    editor.openTab(file.name, file.data, true);
-                });
             }, noServer
         );
         var level = 0;
