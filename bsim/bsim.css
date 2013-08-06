@@ -1,16 +1,3 @@
-.tab-pane {
-    border-bottom: 1px solid #ddd;
-    border-left: 1px solid #ddd;
-    border-right: 1px solid #ddd;
-}
-.nav-tabs {
-    margin-bottom: 0;
-}
-
-.nav-pills li {
-    cursor: pointer;
-}
-
 button.btn {
     cursor: pointer;
 }

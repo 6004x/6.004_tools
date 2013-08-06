@@ -1,7 +1,3 @@
-.sim_split{
-    background-color: lightgray;
-    height:250px;
-}
 .open_indicator{
     margin: 4px 10px 4px 4px ;
 }
@@ -40,7 +36,6 @@ li.file_name:hover{
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    color: #08c;
 }
 
 .folderContents:first-child li.rootFolderName{
@@ -54,9 +49,6 @@ li.file_name:hover{
     position:absolute;
     right:0;
 }
-.file_name:nth-child(even){
-	background-color: #F8F8F8;
-}
 .file_name{
     vertical-align: center;
 }
@@ -68,14 +60,6 @@ li.file_name:hover{
 }
 .sidebar-nav ul{
     list-style-type: none;
-}
-.tab-pane {
-    border-bottom: 1px solid #ddd;
-    border-left: 1px solid #ddd;
-    border-right: 1px solid #ddd;
-}
-.nav-tabs {
-    margin-bottom: 0;
 }
 .span2{
     min-width: 170px;
@@ -89,9 +73,6 @@ li.file_name:hover{
     padding:0px;
 }	
 .folderName {
-    background-color: lightgray;
-    border: solid white 1px;
-    border-radius: 4px;
     z-index:3;
 }
 .folderName:hover{

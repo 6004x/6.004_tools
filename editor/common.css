@@ -1,0 +1,25 @@
+/* The official background colour */
+body {
+    background-color: #eee;
+}
+
+/* Sidebar sizing */
+.sidebar-nav li {
+    line-height: 22px;
+    font-size: 13px;
+}
+
+/* Editors should have a border around them, but not between the editor and the tabs */
+.tab-pane {
+    border-bottom: 1px solid #ddd;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+.nav-tabs {
+    margin-bottom: 0;
+}
+
+/* Tabs should be obviously clickable. */
+.nav-pills li {
+    cursor: pointer;
+}
