@@ -1,7 +1,6 @@
 JSim = {};
 
 $(function() {
-    FileSystem.setup('seterman', 'https://localhost:6004');
     
     var split = new SplitUI('#split-container', '#editor-pane', '#simulation-pane');
     split.maximiseLeft();
@@ -24,37 +23,58 @@ $(function() {
                                  $('<div id="graphScrollOuter">\
 <div id="graphScrollInner"></div></div>')
                                 );
+    
+    $('#results').data("current",null);
 
     // Make an editor
     var mode = 'jsim';
     var editor = new Editor('#editor', mode);
     
+    FileSystem.setup('seterman', 'https://localhost:6004');
     Folders.setup('.span3', editor, mode);
-
-    Folders.refresh();
+    
     
     function dls(){
         $('#split_pane').click();
         editor.clearErrors();
-        var content = editor.content()
-        var filename = editor.currentTab();
+        Checkoff.reset();
+        var content = editor.content();
         div = $('#results');
-        try{
-            Simulator.simulate(content,filename,div);
-        } catch (err) {
-            if (err instanceof Parser.CustomError){
-                editor.markErrorLine(filename, err.message, err.line-1, err.column);
+        if (!content){
+            return;
+        }
+        var filename = editor.currentTab();
+        Simulator.simulate(content,filename,div,error_catcher);
+    }
+    
+    function error_catcher(err){
+        if (err instanceof Parser.CustomError){
+            if (editor.filenames().indexOf(err.filename) == -1){
+                FileSystem.getFile(err.filename,function(obj){
+                    editor.openTab(err.filename,obj.data,true);
+                    editor.markErrorLine(err.filename, err.message, err.line-1, err.column);
+                })
             } else {
-                throw err;
+                editor.markErrorLine(err.filename, err.message, err.line-1, err.column);
             }
+        } else {
+            throw err;
         }
     }
 
     // Add some buttons to it
     editor.addButtonGroup([new ToolbarButton('<img src="simulate.png"> Simulate', dls, 'Device-level simulation')]);
-    editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
-        editor.clearErrors();
-    })]);
+//    editor.addButtonGroup([new ToolbarButton('Clear Errors', function() {
+//        editor.clearErrors();
+//    })]);
+    
+    editor.addButtonGroup([new ToolbarButton('Checkoff',function(){
+        try{
+            Checkoff.testResults();
+        } catch (err) {
+            error_catcher(err);
+        }
+    },"Checkoff")])
     
     Simulator.setup();
     var set_height = function() {

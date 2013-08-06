@@ -65,6 +65,18 @@ var ModalDialog = function() {
                 }
             });
         }
+        if(settings.typeahead) {
+            var typeahead = settings.typeahead;
+            if(_.isFunction(typeahead)) {
+                typeahead = {source: typeahead};
+            } else if (_.isArray(typeahead)) {
+                typeahead = {source: typeahead};
+            }
+            // Hack: we want the typeahead to drop down below the container, but the container instead
+            // gains a scrollbar. If we have a typeahead, override the scroll behaviour.
+            mDialog.find('.modal-body').css('overflow-y', 'visible');
+            input.typeahead(typeahead);
+        }
     };
 
     this.inputContent = function() {
