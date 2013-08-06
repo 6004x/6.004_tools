@@ -1,5 +1,5 @@
 var FileSystem= function(){
-    var DEFAULT_SERVER;
+    var DEFAULT_SERVER = 'https://localhost:6004';
     var mServer;
     var mUsername;
     var self = this;
@@ -9,7 +9,7 @@ var FileSystem= function(){
     var allFolders=[];
     var fileTree={};
 
-    var delimRegExp = /[^<>\:\"\|\/\\\?\*]+/g;
+    var delimRegExp = /[^<>\$\:\"\|\/\\\?\*]+/g;
     var updated=true;
     var online=false;
 
@@ -150,7 +150,7 @@ var FileSystem= function(){
         var finalTree=traverseTree(fileName, function(i, followPath, currentPath, length){
             if(i==length-1){
                 // console.log(fileName+' being written');
-                followPath[currentPath]={name:fileName, data:fileData, onServer:onServer};
+                followPath[currentPath] = {name:fileName, data:fileData, onServer:onServer};
                 
                 return false;
             }
@@ -185,58 +185,69 @@ var FileSystem= function(){
             alert('file could not be retrieved')
         }
     }
-    this.getRelativeFile = function(fileName, relativeTo, callback, callbackFailed){
-        var pathArray = fileName.match(delimRegExp);
-        var relPathArray = relativeTo.match(delimRegExp);
-        var newPathArray = [];
-        console.log(pathArray);
-        console.log(relPathArray);
-        var first = true;
-        for (var i = pathArray.length - 1, j = relPathArray.length - 1; i >= 0 && j >= 0; i--){
-            if(first){
-                console.log('file is ' + pathArray[i])
-                console.log('rel file is ' + relPathArray[j])
-                newPathArray.push(pathArray[i]);
-                j--;
-                first = false;
-            } else {
-                if(pathArray[i] === '.'){
-                    console.log('current path')
-                    for( var k = 0; k < relPathArray.length -1; k++){
-                        newPathArray.push(relPathArray[k])
-                    }
-                    console.log(newPathArray);
-                    break;
-                } else if(pathArray[i] === '..'){
-                    console.log('.. path')
-                    newPathArray.push(relPathArray[j]);
-                    j--;
-                    console.log(newPathArray);
-                } else {
-                    newPathArray.push(pathArray[i]);
-                    console.log(newPathArray);
-                }
+    this.getRelativeFile = function(fileName, relativeFile, callback, callbackFailed){
 
+        sendAjaxRequest(fileName, relativeFile, 'json', 'getRelative', function(data, status){
+            console.log(data);
+            //callback(data);
+            var pathArray = fileName.match(delimRegExp);
+            var relPathArray = relativeFile.match(delimRegExp);
+            var newPathArray = [];
+            console.log(pathArray);
+            console.log(relPathArray);
+            var first = true;
+            for (var i = pathArray.length - 2, j = 0; j < relPathArray.length; j++){
+                if(first){
+                    first = false;
+                } 
+                    if (relPathArray[j] === '..'){
+                        console.log('.. path')
+                        //newPathArray.push(pathArray[i]);
+                        //FIX DOUBLE ..
+                        i--;
+
+                        console.log(i);
+                    } else {
+                        console.log('current path'+i)
+                        var k = 0;
+                        for( k = 0; k <= i && k < pathArray.length - 1 ; k++){
+                            newPathArray.push(pathArray[k])
+                        }
+                        for ( k = j; k < relPathArray.length ; k++){
+                            var pathSeg = relPathArray[k];
+                            console.log(pathSeg)
+                            if(pathSeg !== '.' && pathSeg !== '..')
+                                newPathArray.push(pathSeg)
+                            else if(pathSeg === '.')
+                                console.log('. detected')
+                            else
+                                break;
+                        }
+                        if(k === relPathArray.length)
+                            break;
+                    } 
+                    if(i < -1)
+                        console.log('broke');
             }
-        }
-        console.log(newPathArray);
-        newPathArray = newPathArray.reverse();
-        var newFilePath = '';
-        for (var i = 0; i < newPathArray.length; i++){
-            newFilePath += '/'+newPathArray[i];
-        }
-        console.log(newFilePath)
-        getFile(newFilePath, function(data){
-            console.log(data)
+            console.log(newPathArray);
             
-            if(data.status === 'success'){
-                callback(data);
-            } else {
-                callbackFailed(data);
+            var newFilePath = '';
+            for (var i = 0; i < newPathArray.length; i++){
+                newFilePath += '/'+newPathArray[i];
             }
-        }, callbackFailed);
+            console.log(newFilePath + ' is calculated')
+            console.log('compared to ' + data.newPath);
+            // getFile(newFilePath, function(data){
+            //     console.log(data)
+                
+            //     if(data.status === 'success'){
+            //         callback(data);
+            //     } else {
+            //         callbackFailed(data);
+            //     }
+            // }, callbackFailed);
 
-        return newPathArray.reverse();
+        });
     }
     this.saveFile = function(fileName, fileData, callback, callbackFailed){
         sendAjaxRequest(fileName, fileData,'json', 'saveFile', function(data, status){
@@ -347,7 +358,7 @@ var FileSystem= function(){
         // console.log(folderName+' check if in allFolders');
         return _.contains(allFolders, folderName)
     }
-    this.setup = function(username, server){
+    this.setup = function(server){
 
         mServer=server||DEFAULT_SERVER;
     }

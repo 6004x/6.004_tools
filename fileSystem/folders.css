@@ -1,7 +1,4 @@
-.sim_split{
-    background-color: lightgray;
-    height:250px;
-}
+
 i.open_indicator{
     margin: 2px 10px 2px 2px ;
 }
@@ -19,28 +16,25 @@ li.file_name:hover{
 .file_name .file_button{
     border: 0px;
 }
-.file_button_div{
+.file_button_div,
+.folder_button_div{
 	text-align:right;
-    float:none;
-    position:absolute;
-    right:0;
-	display:inline-block;
-    vertical-align: center;
-}
-.file_name:hover .file_button_div{
-   display:block;
-   position:absolute;
-   /*right:0;*/
+    float : right;
+    position : absolute;
+    right : 0;
+	display : inline;
+    vertical-align : center;
 }
 .file_button, .folder_button {
     padding: 0px;
     width: 15px;
+    top : 0;
     display: none;
 }
-/*.file_name:hover .file_button,
-.folderName:hover .file_button {
+.file_name:hover .file_button,
+.folderName:hover .folder_button {
     display: inline;
-}*/
+}
 .file_name,
 .folderName {
     cursor: pointer;
@@ -53,23 +47,18 @@ li.file_name:hover{
 
 li.rootFolderName{
     background-color:rgba(255, 192, 0, .8);
-    position:relative;
-    right:0;
+    position : relative;
+   /* right : 0;*/
 }
 li.rootFolderName:hover{
     background-color:rgba(50, 101, 255, .8);
-}
-.folder_button_div{
-    display:inline-block;
-    float:none;
-    position:absolute;
-    right:0;
 }
 .file_name:nth-child(even){
 	background-color: #F8F8F8;
 }
 .file_name{
     vertical-align: center;
+    position : relative;
 }
 .file_name:hover {
     background-color: lightblue;

@@ -26,7 +26,6 @@
 		//TODO:change magic numbers
 		this.initialise=function(){
 			console.log('initalise TMSIM');
-			console.log(mTSM);
 			mContainer.height(TOTAL_HEIGHT);
 			var firstTape;
 			//make the radio buttons for the different tests
@@ -311,7 +310,7 @@
 				mContainer.find('.tape_div .prev_segment').removeClass('prev_segment');
 				mContainer.find('.tape_div .read_symbol').removeClass('read_symbol');
 				mContainer.find('.tape_div .current_segment').addClass('prev_segment');
-				if(!preventAnimate)
+				// if(!preventAnimate)
 					editor.highlightLine(mFileName, state_transition.lineNumber-1);
 				function updateTransitionDiv(){
 					mContainer.find('.transition_div').css({
@@ -349,14 +348,12 @@
 						halt();
 						console.log('halt');
 					}
-					console.log('callback to nextStep');
 					listToTape();
 					callback(stepObject.new_state);	
 				}
 				//timeout needed for pause button to interrupt, i don't know why though.
-					setTimeout(function(){
-						self.animateTape(stepObject.transition.move, function(){
-
+				setTimeout(function(){
+					self.animateTape(stepObject.transition.move, function(){
 						//prepare for an animation.
 						mContainer.find('.transition_div').css({
 							'position' : 'relative',
@@ -371,11 +368,10 @@
 									updateTransitionDiv();
 								});
 						} else {
-							console.log('transition Two not animate');
 							updateTransitionDiv();
 						}
 					});
-					}, slider_speed*2);
+				}, slider_speed*2);
 			} catch (e) {
 				console.log(e.stack);
 
@@ -392,7 +388,6 @@
 				}
 				else if(new_state_name != '*halt*' && new_state_name != '*error*'){
 					if(slider_speed >= 0){
-						console.log('nextStep action');
 						self.stepAction(nextStep);
 					} else {
 						var i = -slider_speed;
@@ -443,7 +438,7 @@
 				mContainer.find('.next_button').css('visibility', 'visible');
 			var name = mCurrentTape.name;
 			var result = mResultList[name] ? mResultList[name] : mResult1List[name];
-			console.log(result);
+			
 			if(result){
 				console.log(result)
 				var feedback  = '';
@@ -534,7 +529,6 @@
 				}
 				tapeDiv.append(tape_segment);
 			}
-			console.log('end list to tape ' + steps);
 		}
 		this.animateTape = function(dir, callback){
 			var tapeDiv = mContainer.find('.tape_div');
@@ -555,7 +549,6 @@
 			 	 });
 			}
 			else {
-				console.log('not animate at animateTape');
 				callback();
 			}
 		}

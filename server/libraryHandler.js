@@ -12,8 +12,8 @@ var path=require('path');
 
 		var file_path = unescape(url.parse(request.url).pathname);
 
-		var user=request.user;
-		var query=String(postData['query']);
+		var user = request.user;
+		var query = String(postData['query']);
 		// console.log(data);
 		// console.log(root_path);
 		// console.log(request.url);
@@ -81,7 +81,7 @@ var path=require('path');
 			}, 
 
 			saveFile : function(exists){
-				var fdata=postData.data;
+				var fdata = postData.data;
 				fs.exists(path.dirname(full_path), function(parent_exists){
 					if(parent_exists){
 						if(!exists){
@@ -137,6 +137,16 @@ var path=require('path');
 					rename(full_path, file_path, String(postData.data));
 				} else {
 					errorResponse(file_path + ' does not exist')
+				}
+			},
+			getRelative : function(exists){
+				if(exists){
+					var relPath = postData.data;
+					var newPath = (path.join(path.dirname(file_path), relPath));
+					console.log(newPath)
+					sendJSON({'newPath' : newPath, 'oldPath' : relPath});
+				} else {
+					errorResponse('does not exist')
 				}
 			}
 		}

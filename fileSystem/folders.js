@@ -2,8 +2,8 @@ var Folders=new function(){
     var rootNode, editor, editorWrapper;
     var openFiles=[];
     var editMode
-    var fileRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~)/g;
-    var folderRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~|\.)/g;
+    var fileRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~)/;
+    var folderRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~|\.)/;
     var collapsedFolders = {};
     //attaches file list to the default node
     function refresh(){
@@ -53,7 +53,7 @@ var Folders=new function(){
                 e.stopPropagation();
                 var current_path=$(e.currentTarget).parents('li').attr('data-path'); 
                 if(callback) {
-                    callback(current_path);
+                    callback(current_path, $(e.currentTarget).parents('li'));
                 }
             });
             return span;
@@ -122,12 +122,12 @@ var Folders=new function(){
                     var fileButtonDiv = addDiv('file_button_div');
 
                     var timeOut;
-                    listVar.hover(function(e){
+                    /*listVar.hover(function(e){
                             var div = $(e.currentTarget);
                             var fileButtons = div.find('.file_button');
-                            timeOut =setTimeout(function(){
+                            timeOut = setTimeout(function(){
                                 fileButtons.css({
-                                    display:'block',
+                                    display:'inline',
                                 });
                                 fileButtons.animate({'opacity' : 1,},150)
                             }, 200);
@@ -138,10 +138,10 @@ var Folders=new function(){
 
                             fileButtons.animate({'opacity' : 0,},300, function(){
                                 fileButtons.css({
-                                    'display':'none',
+                                   'display':'none',
                                 });
                             });
-                    });
+                    });*/
                     fileButtonDiv.append(downloadButton, renameButton, deleteButton);
 
                     listVar.append(fileButtonDiv);
@@ -201,7 +201,8 @@ var Folders=new function(){
                     var newButtonDiv = addDiv('folder_button_div');
                     newButtonDiv.append(newFileButton, newFolderButton);
                     var timeOut;
-                    collapser.hover(function(e){
+
+                    /*collapser.hover(function(e){
                             var div = $(e.currentTarget);
                             var folderButtons = div.find('.folder_button')
                             timeOut =setTimeout(function(){
@@ -220,7 +221,8 @@ var Folders=new function(){
                                     'display':'none',
                                 });
                             });
-                    });
+                    });*/
+
                     collapser.on('click', function(){
                         subListUL.collapse('toggle');
                         console.log('toggle');
@@ -266,8 +268,9 @@ var Folders=new function(){
                         'top' : 0,
                         'height' : 40,
                         'width' : 40,
+                        'z-index' : 0,
                     })
-                    folderContentsDiv.append(copyDiv);
+                    // folderContentsDiv.append(copyDiv);
 
                     parentNode.append(folderContentsDiv);
 
@@ -368,49 +371,103 @@ var Folders=new function(){
         return (name.length > 0) && !fileRegexp.test(name);
     }
 
-    function newFile(file_path) {
-        var handleCreate = function() {
-            var fileName = modal.inputContent();
-            
-            if(!isValidName(fileRegexp, fileName)){
-                modal.showError('File names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~');
+    function textNameInput(callback, parent){
+        console.log(parent);
+        var inputLi = $('<div>').addClass('text-input input-append')
+            .css('margin-bottom', 0);
+        var newNameInput = $('<input>').addClass('new_text span2').attr({
+            'type' : 'text', 
+            'placeholder' : 'new file',
+        })
+        var cancelButton = $('<button>').addClass('add-on btn btn-danger')
+            .append('&times;')
+            .height('30px');
+        cancelButton.on('click', function(e){
+                newNameInput.popover('destroy');
+                inputLi.detach();
 
-                return;
+            });
+        newNameInput.on('keypress', function(e) {
+                var key = e.which || e.keyCode;
+                if (key == 13) { // 13 is enter
+                    console.log(callback(newNameInput.val(), newNameInput));
+                    e.preventDefault();
+                }
+            });
+        newNameInput.popover({
+            'placement' : 'bottom',
+            'trigger' : 'manual',
+            'title' : 'new file',
+            'container'  : 'body',
+        })
+        inputLi.append(newNameInput, cancelButton);
+        $(parent).append(inputLi);
+        newNameInput.focus();
+        return inputLi;
+    }
+
+    function newFile(file_path, parent) {
+        
+        var handleCreate = function(text, input) {
+            // var fileName = modal.inputContent();
+            var fileName = text;
+            var valid = false;
+            console.log(fileName)
+            if(!isValidName(fileRegexp, fileName)){
+                input.attr({
+                    'data-content' : 'File names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~',
+                });
+                console.log(input.data('content'));
+                input.popover('show');  
+                valid = false;
+                return false;
+            } else {
+                valid = true;
             }
 
             var newFileName = '';
-            if(fileName.indexOf('.')<0)
+            if(fileName.indexOf('.') < 0)
                 newFileName=file_path+fileName+'.'+editMode;
             else
                 newFileName=file_path+fileName;
             //checks that there is not already another file with that name.
             if (FileSystem.isFile(newFileName)){
-                modal.showError(fileName+'.'+editMode+' is already a file, please choose another name');
-                return;
+                input.attr('data-content', 'file already exists ');
+                input.popover('show');  
+                valid = false;
+                return false;
+            } else {
+                valid = true;
             }
 
             var new_file = {
                 name: newFileName,
                 data: '',
             };
-
-            FileSystem.newFile(new_file.name, new_file.data, function(data){
-                displayFile(data);
-                refresh();
-                modal.dismiss();
-            });
+            console.log(new_file);
+            console.log(valid);
+            if(valid)
+                FileSystem.newFile(new_file.name, new_file.data, function(data){
+                    displayFile(data);
+                    input.popover('destroy');
+                    input.detach();
+                    refresh();
+                    return true;
+                });
         }
+        var childDiv = $($(parent).attr('href'));
+        var textInput = textNameInput(handleCreate, childDiv);
 
-        var modal = new ModalDialog();
-        modal.setTitle("New File");
-        modal.setText("Enter a name for your file:");
-        modal.inputBox({
-            prefix: '/' + FileSystem.getUserName() + file_path,
-            callback: handleCreate
-        });
-        modal.addButton('Cancel', 'dismiss');
-        modal.addButton('Create', handleCreate, 'btn-primary');
-        modal.show();
+        // var modal = new ModalDialog();
+        // modal.setTitle("New File");
+        // modal.setText("Enter a name for your file:");
+        // modal.inputBox({
+        //     prefix: '/' + FileSystem.getUserName() + file_path,
+        //     callback: handleCreate
+        // });
+        // modal.addButton('Cancel', 'dismiss');
+        // modal.addButton('Create', handleCreate, 'btn-primary');
+        // modal.show();
     }
 
     function deleteFile(path){
@@ -430,6 +487,7 @@ var Folders=new function(){
     function renameFile(path){
         var file_path = path.slice(0, path.lastIndexOf('/'));
         var newFileName = '';
+
 
         var handleRename = function() {
             var fileName = modal.inputContent();
@@ -464,40 +522,21 @@ var Folders=new function(){
         }
 
 
-        var modal = new ModalDialog();
-        modal.setTitle("Rename");
-        modal.addButton('Cancel', 'dismiss');
-        modal.addButton('Rename', handleRename, 'btn-primary');
-        modal.setContent("<p>Enter a new name for <strong>" + path + "</strong></p>");
-        modal.inputBox({
-            prefix: '/' + FileSystem.getUserName() + file_path+'/',
-            callback: handleRename
-        });
-        modal.show();
+        // var modal = new ModalDialog();
+        // modal.setTitle("Rename");
+        // modal.addButton('Cancel', 'dismiss');
+        // modal.addButton('Rename', handleRename, 'btn-primary');
+        // modal.setContent("<p>Enter a new name for <strong>" + path + "</strong></p>");
+        // modal.inputBox({
+        //     prefix: '/' + FileSystem.getUserName() + file_path+'/',
+        //     callback: handleRename
+        // });
+        //modal.show();
     }
 
+    
     function commit() {
         // Todo.
-    }
-
-    function setup(root, editorN, mode){
-        rootNode=$(root);
-        editor=editorN;
-        editMode=mode;
-        var buttonDiv=addDiv('buttonDiv');
-        addButtons(buttonDiv);
-
-        sideBarNav=addDiv('sidebar-nav');
-        var filesWrapper=$('<ul>').addClass('filePaths nav nav-list nav-stacked');
-        
-        sideBarNav.append(filesWrapper);
-
-        var username = FileSystem.getUserName();
-        
-        rootNode.append(buttonDiv);
-        rootNode.append(sideBarNav);
-
-        refresh();
     }
 
     function addDiv(classes){
@@ -555,6 +594,25 @@ var Folders=new function(){
                 editorWrapper.removeClass('span12').addClass('span9')
             });
         }
+    }
+    function setup(root, editorN, mode){
+        rootNode = $(root);
+        editor = editorN;
+        editMode = mode;
+        var buttonDiv = addDiv('buttonDiv');
+        addButtons(buttonDiv);
+
+        sideBarNav = addDiv('sidebar-nav');
+        var filesWrapper = $('<ul>').addClass('filePaths nav nav-list nav-stacked');
+        
+        sideBarNav.append(filesWrapper);
+
+        var username = FileSystem.getUserName();
+        
+        rootNode.append(buttonDiv);
+        rootNode.append(sideBarNav);
+
+        refresh();
     }
     return {setup:setup, refresh:refresh};
 }();

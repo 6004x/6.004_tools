@@ -38,8 +38,15 @@
     <script>
     var editor;
     $(document).ready(function(){
-        FileSystem.setup('dontony', 'https://18.62.29.122:6004');
+        FileSystem.setup('https://18.62.29.122:6004');
             
+           /* FileSystem.getRelativeFile('/lab 6/alu/lab3.jsim', '/beta.uasm', function(data){console.log(data);});
+            FileSystem.getRelativeFile('/lab 6/alu/lab3.jsim', '/beta2.uasm', function(data){console.log(data);});
+            FileSystem.getRelativeFile('/lab 6/alu/lab3.jsim', 'mult.uasm', function(data){console.log(data);});
+            FileSystem.getRelativeFile('/lab 6/alu/lab3.jsim', './mult.uasm', function(data){console.log(data);});
+            FileSystem.getRelativeFile('/lab 6/alu/lab3.jsim', '../lab6.jsim', function(data){console.log(data);});
+            FileSystem.getRelativeFile('/lab 6/alu/lab3.jsim', '../../lab 3/lab3_extra.jsim', function(data){console.log(data);});
+            FileSystem.getRelativeFile('/lab 6/alu/lab3.jsim', '../../lab 3/../lab 3/lab3_extra.jsim', function(data){console.log(data);});*/
             var mode='tsim';
             editor = new Editor('.editor_split',mode);
             var set_height = function() {
@@ -90,10 +97,10 @@
                         if(tmsim)
                             tmsim.stop()
                         $('#split_pane').click();
-                        console.log(tsmparse.getTSM())
-                        console.log(tsmparse.getLists());
+                        // console.log(tsmparse.getTSM())
+                        // console.log(tsmparse.getLists());
                         tmsim = new TMSIM(file.name, '.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
-                        console.log(tmsim);
+                        
                     }
                 }
                 else {
