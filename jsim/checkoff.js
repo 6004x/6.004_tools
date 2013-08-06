@@ -272,6 +272,7 @@ var Checkoff = (function(){
             getResults:getResults,
             testResults:testResults,
             addVerify:addVerify,
-            setCheckoffStatement:setCheckoffStatement
+            setCheckoffStatement:setCheckoffStatement,
+            logic:logic
            };
 }());

@@ -549,7 +549,12 @@ Parse
                     parse_control(toParse);
                     toParse = [];
                 } else {
-                    current_subckt.devices.push(read_device(toParse));
+                    var dev = read_device(toParse);
+                    if (dev instanceof Array){
+                        current_subckt.devices = current_subckt.devices.concat(dev);
+                    } else {
+                        current_subckt.devices.push(dev);
+                    }
                     token_array.shift();
                     toParse = [];
                 }
@@ -916,7 +921,8 @@ Read Device: takes a line representing a device and creates a device object
                 device_obj = read_opamp(line);
                 break;
             case "W":
-                device_obj = read_W(line);
+                var device_objs = read_W(line);
+                return device_objs;
                 break;
             case "X":
                 device_obj = read_instance(line);
@@ -1361,33 +1367,34 @@ Device readers: each takes a line of tokens and returns a device object,
         
         var fn_pttn = /(\w+)\((.+)\)/;
         var fn_matched = fn.token.match(fn_pttn);
-        console.log("fn token:",fn.token,"fn_matched:",fn_matched);
+//        console.log("fn token:",fn.token,"fn_matched:",fn_matched);
         var fn_name = fn_matched[1];
-        var fn_args = fn_matched[2].split(/[,\s]\s*/);
-        console.log("fn name:",fn_name,"args:",fn_args);
+        var fn_args = fn_matched[2]
+        fn_args = fn_args.split(/[,\s]\s*/);
+//        console.log("fn name:",fn_name,"args:",fn_args);
         
         if (fn_name == "nrz"){
-//            var param_names = ["vhigh","vlow","tperiod","tdelay","trise","tfall"];
-            var args = [];
+            if (fn_args.length != 6) throw new CustomError("nrz function expects six arguments.",fn);
+            var param_names = ["vlow","vhigh","tperiod","tdelay","trise","tfall"];
+            var args = {};
             for (var i = 0; i < fn_args.length; i += 1){
                 try{
-                    args.push(parse_number(fn_args[i]));
+                    fn_args[i] = parse_number(fn_args[i]);
                 } catch (err){
                     throw new CustomError("Number expected.",fn);
                 }
-                if (args.length != 6) throw new CustomError("nrz function expects six arguments.",fn);
-                
-                var data = [];
-                for (var i = 0; i < raw_data.length; i += 1){
-                    try{
-                        data.push(parse_number(raw_data[i].token));
-                    } catch (err) {
-                        throw new CustomError("Number expected.",raw_data[i]);
-                    }
-                }
-                
-                return parse_W(nodes,args,data);
+                args[param_names[i]] = fn_args[i];
             }
+            
+            var data = [];
+            for (var i = 0; i < raw_data.length; i += 1){
+                try{
+                    data.push(parse_number(raw_data[i].token));
+                } catch (err) {
+                    throw new CustomError("Number expected.",raw_data[i]);
+                }
+            }
+            return parse_W(nodes,args,data,line[0]);
         } else {
             throw new CustomError("Unrecognized W function",fn);
         }
@@ -1399,9 +1406,76 @@ Device readers: each takes a line of tokens and returns a device object,
     Parse W: Turns the parameters of a W device into voltage sources
         --args: -nodes: the list of nodes to be driven
                 -args: the parameters of the nrz function
+                    (vhigh, vlow, tperiod, tdelay, trise, tfall)
                 -data: the given logic values the set of nodes should take
         --returns: 
     *************************/
+    function parse_W(nodes,args,data,token){
+//        console.log("nodes:",nodes,"args:",args,"data:",data);
+        var time_steps = [];
+        var values = [];
+        var results = [];
+        
+        for (var i = 0; i < data.length; i += 1){
+            time_steps.push(args.tdelay + (args.tperiod * i));
+            // turn each value into an array of each digit of its binary representation
+            // values[t] is an array represting values for all nodes at time t
+            values[i] = data[i].toString(2).split(""); 
+            while (values[i].length != nodes.length){
+                values[i].unshift("0");
+            }
+        }
+//        console.log("arrayified values:",data);
+        var drive_vals = {};
+        for (var n = 0; n < nodes.length; n += 1){
+            var node = nodes[n]
+            drive_vals[node] = [];
+            for (var t = 0; t < time_steps.length; t += 1){
+                drive_vals[node].push(values[t][n]);
+//                var temp_val = values[t][n] == "0" ? args.vlow : args.vhigh;
+//                pwl_args.push(temp_val,time_steps[t]); //!!!!!!!!!!!!!!!!!! check this
+            }
+            
+            var pwl_args = [0,0];
+            for (var t = 0; t < time_steps.length; t += 1){
+                var prev_val = pwl_args[pwl_args.length-1]
+                var current_val;
+//                current_val = (drive_vals[node][t] == "0") ? args.vlow : args.vhigh;
+                if (drive_vals[node][t] == "0") {
+                    current_val = args.vlow;
+                } else {
+                    current_val = args.vhigh;
+                }
+                
+//                console.log("d. v.:",drive_vals[node][t],"current val:",current_val);
+//                console.log("node:",node,"time:",time_steps[t],"drive val:",drive_vals[node][t],"prev val:",prev_val,"cur. val:",current_val);
+                
+                var margin = (prev_val < current_val) ? args.trise : args.tfall;
+                pwl_args.push(time_steps[t], prev_val,
+                              time_steps[t] + margin, current_val);
+            }
+            
+            console.log("time steps:",time_steps,"vals:",drive_vals);
+            
+            var vobj = {type:"voltage source",
+                        ports:["nplus","nminus"],
+                        connections:[nodes[n],"gnd"],
+                        properties:{name:token.token+"_"+nodes[n],
+                                    value:"pwl("+pwl_args.join()+")"},
+                        line:token.line,
+                        file:token.origin_file
+                       }
+//            console.log("node:",nodes[n],"obj:",vobj);
+//            console.log("pwl args:",pwl_args);
+            results.push(vobj);
+            
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // drive each node with a pwl function that gives pairs of (time_steps[i], value*)
+            // where value* = vlow if drive_vals[node][i] == 0 or vhigh if drive_vals[node][i] == 1
+        }
+//        console.log("drive vals:",drive_vals);
+        return results;
+    }
     
     /*****************************
     Instance: instance of user-specified subcircuit
