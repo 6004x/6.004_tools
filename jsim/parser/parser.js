@@ -494,6 +494,7 @@ Parse
     var subcircuits;
     var current_subckt;
     var used_names;
+    var plotdefs;
 //    var netlist;
     
     function parse(callback, error_cb){
@@ -525,6 +526,7 @@ Parse
         options = {};
         analyses = [];
         used_names = [];
+        plotdefs = {};
         var netlist = [];
         subcircuits = {_top_level_:{name:"_top_level_",
                                     ports:[],
@@ -570,8 +572,12 @@ Parse
                                          instanceOf:"_top_level_"}
                             },netlist);
         
-        return {globals:globals,options:options,plots:plots,
-                analyses:analyses,netlist:netlist};
+        return {globals:globals,
+                options:options,
+                plots:plots,
+                plotdefs:plotdefs,
+                analyses:analyses,
+                netlist:netlist};
     }
     
 /*****************************
@@ -592,6 +598,9 @@ Parse Control
                 break;
             case ".plot":
                 read_plot(line);
+                break;
+            case ".plotdef":
+                read_plotdef(line);
                 break;
             case ".tran":
                 if (current_subckt.name != "_top_level_"){
@@ -684,6 +693,21 @@ Control statement readers
         } else {
             throw new CustomError("Node name expected",line[0]);
         }
+    }
+    
+    /********************
+    Read plotdef: define a new graphing function, <op>(<node>)
+    ********************/
+    function read_plotdef(line){
+        if (line[1].type != "name"){
+            throw new CustomError("Invalid plot definition name",line[1]);
+        }
+        var defs = line.slice(2).map(function(item){return item.token});
+//        console.log("name:",line[1].token,"defs:",def);
+//        var obj = {};
+        plotdefs[line[1].token] = defs;
+//        plotdefs.push(obj);
+        console.log("plotdefs:",plotdefs);
     }
     
     /*********************
@@ -1421,7 +1445,7 @@ Device readers: each takes a line of tokens and returns a device object,
             // turn each value into an array of each digit of its binary representation
             // values[t] is an array represting values for all nodes at time t
             values[i] = data[i].toString(2).split(""); 
-            while (values[i].length != nodes.length){
+            while (values[i].length < nodes.length){
                 values[i].unshift("0");
             }
         }
