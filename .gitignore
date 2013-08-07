@@ -1,3 +1,7 @@
+.gitignore
+
 server/libraries/
 server/node_modules/
 server/ssl*
+
+*.DS_Store

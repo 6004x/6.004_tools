@@ -49,6 +49,7 @@ $(function() {
     
     function gls(){
         var content = editor.content();
+        editor.clearErrors();
         div = $('#results');
         if (!content){
             return;

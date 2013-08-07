@@ -394,6 +394,10 @@ Parse
     var used_names;
     var plotdefs;
     
+    /********************
+    Parse: combines contents of all included files, interpets them (=turns into netlists), and runs the 
+    callback
+    ********************/
     function parse(callback, error_cb){
         parseCalled = true;
         
@@ -409,6 +413,35 @@ Parse
         }
     }
     
+    /*************************
+    Instance mover: takes all lines that list instances of user-defined subcircuits and puts them at the
+    end of the token array so that subcircuit definitions can be in any included file
+    **************************/
+    function move_instances(token_array){
+        var new_token_array = [];
+        var instances = [];
+        var line = [];
+        while (token_array.length > 0){
+            var current = token_array[0];
+            line.push(token_array.shift());
+            
+            if (current.token == "\n"){
+                if (line[0].token[0].toUpperCase() == "X"){
+                    instances = instances.concat(line);
+                } else {
+                    new_token_array = new_token_array.concat(line);
+                }
+                line = [];
+            }
+        }
+        new_token_array = new_token_array.concat(instances);
+//        console.log("new token array:",new_token_array);
+        return new_token_array;
+    }
+    
+    /***************************
+    Interpret: turns a token array into a hierarchal representation then calls the flattening functions
+    ***************************/
     function interpret(token_array){
         globals = [];
         plots = [];
@@ -426,6 +459,7 @@ Parse
         current_subckt = subcircuits["_top_level_"];
         
         var toParse = [];
+        token_array = move_instances(token_array);
         
         // go through tokens one line at a time, and pass the line to the 
         // appropriate handler
@@ -1384,6 +1418,7 @@ Device readers: each takes a line of tokens and returns a device object,
                 throw new CustomError("Node name expected", line[i]);
             }
             obj.connections.push(line[i].token);
+            obj.ports.push(line[i].token);
         }
         for (var i = 0; i < props.length; i += 1){
 //            if (props[i][2].type != "number"){
@@ -1503,12 +1538,18 @@ Flattening
     
     
     
-
+    function moveInstTest(input_string){
+        var tokens = split(analyze(input_string),"test_file");
+        console.log("old tokens:",tokens);
+        move_instances(tokens);
+    }
        
 /***************************
 Exports
 ****************************/
     return {parse:tokenize,
             CustomError:CustomError,
+//            move_instances:move_instances
+            moveInstTest:moveInstTest
            }
 }());
