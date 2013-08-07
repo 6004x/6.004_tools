@@ -1,6 +1,7 @@
 /* The official background colour */
 body {
-    background-color: #eee;
+    background-color: #E9EBED;
+    padding-right: 0;
 }
 
 /* Sidebar sizing */
@@ -19,7 +20,37 @@ body {
     margin-bottom: 0;
 }
 
+.nav-tabs>li>a {
+    color: black;
+}
+
 /* Tabs should be obviously clickable. */
 .nav-pills li {
     cursor: pointer;
+}
+
+/* Split pane styles */
+.split-holder {
+    float: left;
+    overflow: hidden;
+    border-top: 1px solid #aaa;
+}
+
+.split-splitter {
+    float: left;
+    width: 10px;
+    cursor: col-resize;
+    border-top: 1px solid #aaa;
+}
+
+.split-splitter > div {
+    margin-left: auto;
+    margin-right: auto;
+    width: 1px;
+    background-color: #aaa;
+    height: 100%;
+}
+
+.btn-toolbar {
+    white-space: nowrap;
 }
