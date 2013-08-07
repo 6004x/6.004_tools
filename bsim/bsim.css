@@ -3,23 +3,16 @@ button.btn {
 }
 
 #filetree {
-    display: none;
-    float: left;
-}
-
-.maximised #filetree {
     display: block;
-    width: 250px;
+    width: 100%;
 }
 
 #editor {
     width: 100%;
-    float: left;
 }
 
-.maximised #editor {
-    width: -webkit-calc(100% - 250px);
-    width: calc(100% - 250px);
+#programmer-view .content {
+    position: relative;
 }
 
 .regfile .register {
@@ -50,14 +43,15 @@ pre.tty-output {
 }
 
 .tty {
-    width: calc(97.2% - 20px);
+    width: 100%;
 }
 
 div.stack-holder {
-    float: right;
-    margin-right: 20px;
+    position: absolute;
+    left: 550px;
+    top: 0px;
     width: 170px;
-    display: none;
+    /*display: none;*/
 }
 
 div.stack {
@@ -75,10 +69,10 @@ div.stack {
 }
 
 div.memory-holder {
-    float: right;
-    margin-right: 20px;
+    position: absolute;
+    top: 0px;
+    left: 750px;
     width: 140px;
-    display: none;
 }
 
 .memory-key ul {

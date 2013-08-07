@@ -103,6 +103,13 @@ var Editor = function(container, mode) {
         return true;
     };
 
+    // Makes sure the edit buffer is displayed correctly.
+    this.redraw = function() {
+        if(mCurrentDocument) {
+            mCurrentDocument.cm.refresh();
+        }
+    };
+
     // Opens a new tab with the given filename and content.
     // filename should be a full path to the file. If not given, the document will be called 'untitled'
     // If activate is true, the tab will be focused. If false, the tab will be focused only if there are
