@@ -35,12 +35,91 @@ var cktsim = (function() {
     //   netlist: JSON description of the circuit
     //   returns associative array mapping node names -> DC value
     //   throws a string to report errors
-    function dc_analysis(netlist) {
+    function dc_analysis(netlist,sweep1,sweep2) {
         if (netlist.length > 0) {
             var ckt = new Circuit(netlist);
 
-            // run the analysis
-            return ckt.dc();
+	    var source1,start1,stop1,step1,source1_saved_src;
+	    var source2,start2,stop2,step2,source2_saved_src;
+
+	    if (sweep1 !== undefined) {
+		source1 = ckt.device_map[sweep1.source];
+		if (!(source1 instanceof VSource) && !(source1 instanceof ISource))
+		    throw "Device not independent source in DC sweep: "+sweep1.source;
+		start1 = parse_number_alert(sweep1.start);
+		stop1 = parse_number_alert(sweep1.stop);
+		step1 = parse_number_alert(sweep1.step);
+		// make sure sign of step is compatible with bounds
+		if (start1 <= stop1) step1 = Math.abs(step1);
+		else step1 = -Math.abs(step1);
+		// save source function user specified
+		source1_saved_src = source1.src;
+	    }
+
+	    if (sweep2 !== undefined) {
+		source2 = ckt.device_map[sweep2.source];
+		if (!(source2 instanceof VSource) && !(source2 instanceof ISource))
+		    throw "Device not independent source in DC sweep: "+sweep2.source;
+		start2 = parse_number_alert(sweep2.start);
+		stop2 = parse_number_alert(sweep2.stop);
+		step2 = parse_number_alert(sweep2.step);
+		// make sure sign of step is compatible with bounds
+		if (start2 <= stop2) step2 = Math.abs(step2);
+		else step2 = -Math.abs(step2);
+		// save source function user specified
+		source2_saved_src = source2.src;
+	    }
+
+	    // do the sweeps
+	    var val1 = start1;
+	    var val2 = start2;
+	    var results = {_sweep1_: []};   // remember sweep1 values as one of the"results
+	    var results2 = [];
+	    while (true) {
+		// start by setting source values
+		if (source1 !== undefined) source1.src = parse_source(val1.toString());
+		if (source2 !== undefined) source2.src = parse_source(val2.toString());
+
+		// do DC analysis, add result to accumulated results for each node and branch
+		var result = ckt.dc();
+		for (var n in result) {
+		    if (results[n] === undefined) results[n] = [];
+		    results[n].push(result[n]);
+		}
+		results['_sweep1_'].push(val1);   // keep track of sweep settings
+		results['_sweep2_'] = val2;	// remember sweep2 value as one of the results
+
+		if (val1 == undefined) break;
+		else if (val1 == stop1) {
+		    // end of sweep for first source
+		    if (val2 === undefined) break;
+		    results2.push(results);  // accumulate results from first sweep
+		    if (val2 == stop2) {
+			results = results2;   // use accumlated results when there are two sweeps
+			break;
+		    }
+		    // start first source over again
+		    results = {_sweep1_: []};
+		    val1 = start1;
+		    // increment second sweep value, make sure we stop at specified end point
+		    val2 += step2;
+		    if ((step2 > 0 && val2 > stop2) || (step2 < 0 && val2 < stop2))
+			val2 = stop2;
+		} else {
+		    // increment first sweep value, make sure we stop at specified end point
+		    val1 += step1;
+		    if ((step1 > 0 && val1 > stop1) || (step1 < 0 && val1 < stop1))
+			val1 = stop1;
+		}
+	    }
+	    // all done, restore saved source functions
+	    if (source1_saved_src !== undefined) source1.src = source1_saved_src;
+	    if (source2_saved_src !== undefined) source2.src = source2_saved_src;
+
+	    // for no sweep or one sweep: results is dictionary of arrays giving DC results
+	    // for two sweeps: results is an array containing the first sweep results for each
+	    //   sweep value of the second source
+	    return results;
         }
     }
 
@@ -1723,7 +1802,7 @@ var cktsim = (function() {
         m = x.match(/^\s*[\-+]?[0-9]*(\.([0-9]+)?)?([eE][\-+]?[0-9]+)?\s*$/); // decimal, float
         if (m) return parseFloat(m[0]);
 
-        m = x.match(/^\s*([\-+]?[0-9]*(\.([0-9]+)?)?)(A|f|F|g|G|k|K|m|M|n|N|p|P|t|T|u|U)?/); // decimal, float
+        m = x.match(/^\s*([\-+]?[0-9]*(\.([0-9]+)?)?)(a|A|f|F|g|G|k|K|m|M|n|N|p|P|t|T|u|U)?/); // decimal, float
         if (m) {
             var result = parseFloat(m[1]);
             var scale = m[4];
