@@ -53,6 +53,87 @@ function suffix_formatter() {
     return engineering_notation(this.value, 2);
 }
 
+function dc_plot(div, results, plots, sweep1, sweep2) {
+    if (sweep1 === undefined) return;
+
+    for (var p = 0; p < plots.length; p += 1) {
+        var node = plots[p][0];  // for now: only one value per plot
+        var series = [];
+	var index2 = 0;
+	while (true) {
+	    var values;
+	    var x,x2;
+	    if (sweep2 === undefined) {
+		values = results[node];
+		x = results['_sweep1_'];
+	    } else {
+		values = results[index2][node];
+		x = results[index2]['_sweep1_'];
+		x2 = results[index2]['_sweep2_'];
+		index2 += 1;
+	    }
+
+            if (values === undefined) {
+                div.text("No values to plot for node "+node);
+                return;
+            }
+            var plot = [];
+            for (var j = 0; j < values.length; j += 1) {
+                plot.push([x[j],values[j]]);
+            }
+            var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
+	    var name = current ? node : "Node " + node; 
+	    if (sweep2 !== undefined) name += " with " + sweep2.source + "=" + x2;
+            series.push({
+	        name: name,
+                data: plot,
+                lineWidth: 5,
+                units: current ? 'Amps (A)' : 'Volts (V)'
+            });
+
+	    if (sweep2 === undefined || index2 >= results.length) break;
+	}
+        var plotdiv = $('<div style="width:600px;height:300px"></div>');
+        div.append(plotdiv);
+        var options = {
+            chart: {
+                type: 'line'
+            },
+            title: {
+                text: 'DC Analysis' //title
+            },
+            xAxis: {
+                title: {
+                    text: 'Volts (V)'
+                },
+                labels: {
+                    formatter: suffix_formatter
+                },
+                type: 'linear',
+                gridLineWidth: 1
+            },
+            yAxis: {
+                title: {
+                    text: series[0].units //'Volts (v)'
+                },
+                labels: {
+                    formatter: suffix_formatter
+                },
+                type: 'linear',
+            },
+            series: series,
+            plotOptions: {
+                line: {
+                    marker: {
+                        enabled: false
+                    }
+                }
+            },
+        };
+        plotdiv.highcharts(options);
+    }
+}
+
 function tran_plot(div, results, plots) {
     if (results === undefined) {
         div.text("No results!");
@@ -325,8 +406,31 @@ function parse_netlist(text) {
                         break;
                     case '.ac':     // .ac source fstart fstop
                         if (tokens.length != 4) return "Malformed .ac statement";
-                        analyses.push({type: 'ac', ac_source_name: tokens[1], fstart: tokens[2], fstop: tokens[3]});
+                        analyses.push({type: 'ac', source: tokens[1], fstart: tokens[2], fstop: tokens[3]});
                         break;
+    		    case '.dc':     // .dc [src1 start1 stop1 step1 [src2 start2 stop2 step2]]
+			if (tokens.length == 1)
+			    analyses.push({type: 'dc'});
+			else if (tokens.length == 5) analyses.push({
+				type: 'dc',
+				sweep1: {source: tokens[1],
+					 start: tokens[2],
+					 stop: tokens[3],
+					 step: tokens[4]}
+			    });
+			else if (tokens.length == 9) analyses.push({
+				type: 'dc',
+				sweep1: {source: tokens[1],
+					 start: tokens[2],
+					 stop: tokens[3],
+					step: tokens[4]},
+				sweep2: {source: tokens[5],
+					 start: tokens[6],
+					 stop: tokens[7],
+					 step: tokens[8]}
+			    });
+			else return "Malformed .dc statement";
+			break;
                     case '.plot':
                         if (tokens.length <= 1) return "Malformed .plot statement";
                         plots.push(tokens.slice(1));
@@ -346,11 +450,6 @@ function parse_netlist(text) {
 
 function simulate(text,div) {
     div.empty();  // we'll fill this with results
-//    try{
-//        var parse = Parser.parse(text);
-//    } catch (e) {
-//        div.append("Message: ",e.message,"\nLine: ",e.line,"\nColumn: ",e.column);
-//    }
     var parse = parse_netlist(text);
     if ((typeof parse) === 'string') {
         div.text(parse);
@@ -360,8 +459,6 @@ function simulate(text,div) {
     var analyses = parse.analyses;
     var plots = parse.plots;
     
-//    console.log("My netlist:",netlist);
-    
     if (netlist.length === 0) return;
     if (analyses.length === 0) return;
 
@@ -369,21 +466,23 @@ function simulate(text,div) {
         var analysis = analyses[0];
         switch (analysis.type) {
         case 'tran':
-            cktsim.transient_analysis(netlist, analysis/*.parameters.*/tstop, [], function(ignore, results) {
+            cktsim.transient_analysis(netlist, analysis.tstop, [], function(ignore, results) {
                 tran_plot(div, results, plots);
             });
             break;
         case 'ac':
-            var results = cktsim.ac_analysis(netlist, analysis/*.parameters*/.fstart, analysis/*.parameters*/.fstop, analysis/*.parameters*/.src_name);
+            var results = cktsim.ac_analysis(netlist, analysis.fstart, analysis.fstop, analysis.source);
             ac_plot(div, results, plots);
             break;
         case 'dc':
+            var results = cktsim.dc_analysis(netlist, analysis.sweep1, analysis.sweep2);
+	    dc_plot(div, results, plots, analysis.sweep1, analysis.sweep2);
             break;
         }
     }
     catch (e) {
         div.append(e);
-    }   
+    }
 }
 
 function setup_test(div) {
@@ -398,7 +497,7 @@ function setup_test(div) {
     })
 
     textarea.val(text);
-    simulate(text,plotdiv);
+    //simulate(text,plotdiv);
 }
 
 $(document).ready(function() {
