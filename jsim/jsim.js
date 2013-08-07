@@ -47,6 +47,16 @@ $(function() {
         Simulator.simulate(content,filename,div,error_catcher);
     }
     
+    function gls(){
+        var content = editor.content();
+        div = $('#results');
+        if (!content){
+            return;
+        }
+        var filename = editor.currentTab();
+        GateSimulator.simulate(content,filename,div,error_catcher);
+    }
+    
     function error_catcher(err){
         if (err instanceof Parser.CustomError){
             if (editor.filenames().indexOf(err.filename) == -1){
@@ -63,7 +73,10 @@ $(function() {
     }
 
     // Add some buttons to it
-    editor.addButtonGroup([new ToolbarButton('<img src="simulate.png"> Simulate', dls, 'Device-level simulation')]);
+    editor.addButtonGroup([new ToolbarButton('<img src="simulate.png"> Simulate',
+                                             dls, 'Device-level Simulation'),
+                           new ToolbarButton('<img src="gatesim.png"> Simulate',
+                                             gls, 'Gate-level Simulation')]);
     
     editor.addButtonGroup([new ToolbarButton('Checkoff',function(){
         try{

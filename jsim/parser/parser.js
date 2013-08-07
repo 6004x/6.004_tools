@@ -81,8 +81,6 @@ var Parser = (function(){
         var string_pattern = /".*?"/;
         var num_pattern = /^(([+-]?\d*\.?)|(0x)|(0b))\d+(([eE]-?\d+)|[A-Za-z]*)/;
         
-        var op_pattern = /[+-*\/^]/;
-        
         var matched_array;
         var substrings = [];
         var lineNumber = 1;
@@ -95,9 +93,7 @@ var Parser = (function(){
             } else if (string_pattern.test(matched_array[0])){
                 matched_array[0] = matched_array[0].replace(/"/g,'');
                 type = 'string';
-            } else if (op_pattern.test(matched_array[0])){
-                type = 'operator';
-            } else if (names_pattern.test(matched_array[0])){
+            }  else if (names_pattern.test(matched_array[0])){
                 type = 'name';
             } else if (num_pattern.test(matched_array[0])){
                 type = 'number';
@@ -813,6 +809,9 @@ Parse
             case "X":
                 device_obj = read_instance(line);
                 break;
+            case "G":
+                device_obj = read_gate(line);
+                break;
             default:
                 throw new CustomError("Invalid device type", line[0]);
         }
@@ -1349,6 +1348,48 @@ Device readers: each takes a line of tokens and returns a device object,
                 throw new CustomError("Subcircuit "+inst.token+" has no property "+
                                       props[i][0].token, props[i][0]);
             }
+            try{
+                obj.properties[props[i][0].token] = parse_number(props[i][2].token);
+            } catch (err) {
+                throw new CustomError("Number expected", props[i][2]);
+            }
+        }
+        return obj;
+    }
+    
+    /***********************
+    Gate: built-in gate device
+    ************************/
+    function read_gate(line){
+        var props = [];
+        if (line.length >= 4){
+            try{
+                while (line[line.length-2].token == "="){
+                    props.push(line.slice(-3));
+                    line = line.slice(0,-3);
+                }
+            } catch (err) {}
+        }
+//        var type = line[1];
+        
+        var obj = {type:line[1].token,
+                   connections:[],
+                   ports:[],
+                   properties:{name:line[0].token}
+                  }
+        line.shift();
+        
+        for (var i = 1; i < line.length; i += 1){
+            if (line[i].type != "name"){
+                throw new CustomError("Node name expected", line[i]);
+            }
+            obj.connections.push(line[i].token);
+        }
+        for (var i = 0; i < props.length; i += 1){
+//            if (props[i][2].type != "number"){
+//                throw new CustomError("Number expected",
+//                                props[2].line,props[2].column)
+//            }
             try{
                 obj.properties[props[i][0].token] = parse_number(props[i][2].token);
             } catch (err) {
