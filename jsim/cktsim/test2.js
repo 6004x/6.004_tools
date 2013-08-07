@@ -100,7 +100,7 @@ function dc_plot(div, results, plots, sweep1, sweep2) {
                 type: 'line'
             },
             title: {
-                text: 'DC Analysis' //title
+                text: '' //title
             },
             xAxis: {
                 title: {
