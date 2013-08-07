@@ -497,7 +497,7 @@ function setup_test(div) {
     })
 
     textarea.val(text);
-    //simulate(text,plotdiv);
+    simulate(text,plotdiv);
 }
 
 $(document).ready(function() {
