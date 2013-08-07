@@ -4,6 +4,16 @@ body {
     padding-right: 0;
 }
 
+/* Prevent bouncing on OS X/iOS */
+html {
+    overflow: hidden;
+}
+
+/* This fixes the several pixel jump when toggling split screen caused by the right buttons being too tall. */
+.masthead {
+    height: 55px;
+}
+
 /* Sidebar sizing */
 .sidebar-nav li {
     line-height: 22px;
@@ -20,7 +30,7 @@ body {
     margin-bottom: 0;
 }
 
-.nav-tabs>li>a {
+.nav-tabs > li > a {
     color: black;
 }
 
@@ -51,6 +61,7 @@ body {
     height: 100%;
 }
 
+/* Wrapping toolbars is bad. */
 .btn-toolbar {
     white-space: nowrap;
 }
