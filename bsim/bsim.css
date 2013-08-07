@@ -25,6 +25,7 @@ button.btn {
 table.regfile {
     border: 1px solid gray;
     width: 452px;
+    background-color: white;
 }
 
 .regfile, .disassembly, .tty, .memory, .stack, .pc-value, .pc-label {
@@ -60,6 +61,7 @@ div.stack-holder {
 div.stack {
     border: 1px solid gray;
     height: 398px;
+    background-color: white;
 }
 
 .stack td:nth-child(1) {
@@ -97,6 +99,7 @@ div.memory-holder {
 div.memory {
     border: 1px solid gray;
     height: 398px;
+    background-color: white;
 }
 
 .memory td:nth-child(1), .stack td:nth-child(2) {
@@ -194,6 +197,7 @@ div.disassembly {
     overflow-x: hidden;
     width: 450px;
     border: 1px solid gray;
+    background-color: white;
 }
 
 .disassembly td {
