@@ -10,19 +10,19 @@ $(function() {
     $('#maximise_editor').click(function() {
         split.setPaneWidth(0, 200);
         split.setPaneWidth(1, $(window).width() - 220);
-        // split.setPaneWidth(2, 0);
+        split.setPaneWidth(2, 0);
     });
     $('#split_pane').click(function() {
         var width = $(window).width() - 20;
         split.setPaneWidth(0, 0);
         split.setPaneWidth(1, width/2);
-        // split.setPaneWidth(2, width/2);
+        split.setPaneWidth(2, width/2);
     });
     $('#maximise_simulation').click(function() {
         var width = $(window).width() - 20;
         split.setPaneWidth(0, 0);
         split.setPaneWidth(1, 0);
-        // split.setPaneWidth(2, width);
+        split.setPaneWidth(2, width);
     });
 
     split.on('resize', function(widths) {

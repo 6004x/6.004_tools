@@ -18,10 +18,13 @@ button.btn {
 .regfile .register {
     color: gray;
     text-align: right;
+    padding-left: 10px;
+    padding-right: 5px;
 }
 
 table.regfile {
     border: 1px solid gray;
+    width: 452px;
 }
 
 .regfile, .disassembly, .tty, .memory, .stack, .pc-value, .pc-label {
@@ -43,12 +46,12 @@ pre.tty-output {
 }
 
 .tty {
-    width: 100%;
+    width: 454px;
 }
 
 div.stack-holder {
     position: absolute;
-    left: 550px;
+    left: 500px;
     top: 0px;
     width: 170px;
     /*display: none;*/
@@ -56,7 +59,7 @@ div.stack-holder {
 
 div.stack {
     border: 1px solid gray;
-    height: 352px;
+    height: 398px;
 }
 
 .stack td:nth-child(1) {
@@ -64,14 +67,10 @@ div.stack {
     text-align: right;
 }
 
-.maximised div.stack-holder {
-    display: block;
-}
-
 div.memory-holder {
     position: absolute;
     top: 0px;
-    left: 750px;
+    left: 700px;
     width: 140px;
 }
 
@@ -97,11 +96,7 @@ div.memory-holder {
 
 div.memory {
     border: 1px solid gray;
-    height: 352px;
-}
-
-.maximised div.memory-holder {
-    display: block;
+    height: 398px;
 }
 
 .memory td:nth-child(1), .stack td:nth-child(2) {
@@ -227,9 +222,4 @@ div.disassembly {
     border-top: 2px solid black;
     border-bottom: 2px solid black;
     line-height: 18px;
-}
-
-/* This fixes the several pixel jump when toggling split screen caused by the right buttons being too tall. */
-.masthead {
-    height: 55px;
 }
