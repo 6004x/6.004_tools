@@ -103,7 +103,8 @@ BSim.StackView = function(container, beta) {
     }
 
     var initialise = function() {
-        mTable = new BigTable(container, 170, 350, 22, 3);
+        var height = mContainer.data('height') || 350;
+        mTable = new BigTable(container, 170, height, 22, 3);
 
         mBeta.on('change:word', beta_change_word);
         mBeta.on('change:bulk:word', beta_bulk_change_word);
