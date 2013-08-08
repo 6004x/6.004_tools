@@ -8,7 +8,6 @@ var Folders=new function(){
     var textInputOn = false;
     //attaches file list to the default node
     function refresh(){
-        $('.tooltip').hide();
         getFileList(rootNode.find('.file_paths'));
     }
 
