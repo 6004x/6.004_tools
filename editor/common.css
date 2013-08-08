@@ -43,22 +43,22 @@ html {
 .split-holder {
     float: left;
     overflow: hidden;
-    border-top: 1px solid #aaa;
 }
 
 .split-splitter {
     float: left;
     width: 10px;
     cursor: col-resize;
-    border-top: 1px solid #aaa;
 }
 
 .split-splitter > div {
     margin-left: auto;
     margin-right: auto;
-    width: 1px;
+    width: 3px;
     background-color: #aaa;
     height: 100%;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
 }
 
 /* Wrapping toolbars is bad. */
