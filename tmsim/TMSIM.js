@@ -6,7 +6,7 @@
 	var TAPE_WIDTH = 30;
 	var TOTAL_HEIGHT = 	300; 
 	var ANIMATION_SPEED = 10;
-
+	var old_speed = 300;
 	var TMSIM = function( filename, container, tsm, testLists){
 		var mContainer = $(container);
 		var mTSM = tsm;
@@ -18,7 +18,7 @@
 		var mResultList = testLists.list_of_results;
 		var mResult1List = testLists.list_of_results1;
 		var self = this;
-		var slider_speed = 300;
+		var slider_speed = old_speed;
 		var pauseSimulation = false;
 		var simulation_done = false;
 		var steps = 0;
@@ -26,6 +26,7 @@
 		//TODO:change magic numbers
 		this.initialise=function(){
 			console.log('initalise TMSIM');
+			// console.log(mTSM);
 			mContainer.height(TOTAL_HEIGHT);
 			var firstTape;
 			//make the radio buttons for the different tests
@@ -240,26 +241,32 @@
 				id : 'inlineRadio1',
 				value : '300',
 				name : 'speed_options',
-				checked : '',
-			}).addClass('speed_options')
+			}).addClass('speed_options');
 			var radio2 = $('<input>').attr({
 				type : 'radio',
 				id : 'inlineRadio2',
 				value : '100',
 				name : 'speed_options',
-			}).addClass('speed_options')
+			}).addClass('speed_options');
 			var radio3 = $('<input>').attr({
 				type : 'radio',
 				id : 'inlineRadio3',
 				value : '0',
 				name : 'speed_options',
-			}).addClass('speed_options')
+			}).addClass('speed_options');
 			var radio4 = $('<input>').attr({
 				type : 'radio',
 				id : 'inlineRadio4',
 				value : '-100000',
 				name : 'speed_options',
-			}).addClass('speed_options')
+			}).addClass('speed_options');
+			switch(old_speed){
+				case 300 : radio1.attr('checked', ''); break;
+				case 100 : radio2.attr('checked', ''); break;
+				case 0 : radio3.attr('checked', ''); break;
+				case -100000 : radio4.attr('checked', ''); break;
+				default : radio1.attr('checked', '');
+			}
 			label1.append(radio1);
 			label2.append(radio2);
 			label3.append(radio3);
@@ -277,7 +284,7 @@
 					preventAnimate = true;
 				else
 					preventAnimate = false;
-				console.log(speed);
+				old_speed = slider_speed;
 			});
 
 			actionButtonDiv.append(resetButton, /*prevStepButton,*/ playButton, pauseButton, stepButton);
@@ -550,7 +557,7 @@
 			var result = mResultList[name] ? mResultList[name] : mResult1List[name];
 			if(result && result.toString)
 				result = result.toString();
-			mContainer.find('.feedback_div').html('<p>This is tape ' + name + ', looking for ' + result.toString() + '</p>');
+			mContainer.find('.feedback_div').html('<p>This is tape ' + name + ', looking for ' + result + '</p>');
 			mContainer.find('.feedback_div').append('<span class = "result_div"></span>');
 
 			$('.tape_button').removeClass('disabled');

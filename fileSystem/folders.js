@@ -272,7 +272,6 @@ var Folders=new function(){
                         'width' : 40,
                         'z-index' : 0,
                     })
-                    // folderContentsDiv.append(copyDiv);
 
                     parentNode.append(folderContentsDiv);
 
