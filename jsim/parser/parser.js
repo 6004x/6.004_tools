@@ -681,59 +681,106 @@ Parse
     *********************/
     function read_dc(line){
         line.shift();
-        var dc_obj = {type:'dc',parameters:{},line:line[0].line};
-        var param_names = ["source1","start1","stop1","step1",
-                           "source2","start2","stop2","step2"];
+        var dc_obj = {type:'dc',parameters:{sweep1:{},sweep2:{}},line:line[0].line};
+//        var param_names = ["source1","start1","stop1","step1",
+//                           "source2","start2","stop2","step2"];
+        var param_names = ["source","start","stop","step"]
         if (line.length != 2 && line.length != 4 && line.length != 8){
-            throw new CustomError("Two, four or eight parameters expected: "+
-                                  "src1, [start1, stop1, step1], [src2, start2, "+
+            throw new CustomError("Four or eight parameters expected: "+
+                                  "[src1, start1, stop1, step1], [src2, start2, "+
                                   "stop2, step2]", line[0]);
         }
         
-        for (var i = 0; i < line.length; i += 1){
-            if (i == 0 || i == 4){
-                if (line[i].type != "name"){
-                    throw new CustomError("Node name expected", line[i]);
-                } else {
-                    dc_obj.parameters[param_names[i]] = line[i].token;
-                }
+        if (line.length >= 4) {
+            if (line[0].type != "name"){
+                throw new CustomError("Node name expected", line[0]);
             } else {
-                try{
-                    line[i].token = parse_number(line[i].token);
-                } catch (err) {
-                    throw new CustomError("Number expected", line[i]);
+                dc_obj.parameters.sweep1.source = line[0].token;
+            }
+            for (var i = 1; i <= 3; i += 1){
+//                try {
+//                    dc_obj.parameters.sweep1[param_names[i]] = parse_number(line[i].token);
+//                } catch (err) {
+//                    throw new CustomError("Number expected.",line[i]);
+//                }
+                if (line[i].type != "number"){
+                    throw new CustomError("Number expectd.",line[i]);
                 }
+                dc_obj.parameters.sweep1[param_names[i]] = line[i].token;
             }
         }
-        dc_obj = parse_dc(dc_obj);
+        
+        if (line.length == 8) {
+            if (line[4].type != "name"){
+                throw new CustomError("Node name expected", line[4]);
+            } else {
+                dc_obj.parameters.sweep2.source = line[4].token;
+            }
+            for (var i = 1; i <= 3; i += 1){
+//                try {
+//                    dc_obj.parameters.sweep2[param_names[i]] = parse_number(line[i+4].token);
+//                } catch (err) {
+//                    throw new CustomError("Number expected.",line[i+4]);
+//                }
+                if (line[i+4].type != "number"){
+                    throw new CustomError("Number expectd.",line[i+4]);
+                }
+                dc_obj.parameters.sweep2[param_names[i]] = line[i+4].token;
+            }
+        }
+        
+//        for (var i = 0; i < line.length; i += 1){
+//            switch (i) {
+//                case 0:
+//                    if (line[i].type != "name"){
+//                        throw new CustomError("Node name expected", line[i]);
+//                    } else {
+//                        dc_obj.parameters.sweep1.source = line[i].token;
+//                    }
+//            }
+//            if (i == 0 || i == 4){
+//                if (line[i].type != "name"){
+//                    throw new CustomError("Node name expected", line[i]);
+//                } else {
+//                    dc_obj.parameters[param_names[i]] = line[i].token;
+//                }
+//            } else {
+//                try{
+//                    line[i].token = parse_number(line[i].token);
+//                } catch (err) {
+//                    throw new CustomError("Number expected", line[i]);
+//                }
+//            }
+//        }
+//        dc_obj = parse_dc(dc_obj);
         analyses.push(dc_obj);
     }
     
     /**********************
     Parse DC: makes sure all parameters are valid
     **********************/
-    function parse_dc(dc_obj){
-        var temp_ps = {};
-        for (var param in dc_obj.parameters){
-            temp_ps[param] = dc_obj.parameters[param].token;
-            if (param != "source1" && param != "source2"){
-                temp_ps[param] = parse_number(temp_ps[param]);
-            }
-        }
-        
-        for (var i=1; i<=2; i+=1){
-            if (temp_ps["start"+i] >= temp_ps["stop"+i]){
-                throw new CustomError("Stop time must be greater than start time",
-                                dc_obj.parameters["start"+i]);
-            }
-            if (temp_ps["step"+i] <= 0) {
-                throw new CustomError("Step interval must be a non-zero, positive number",
-                                dc_obj.parameters["step"+i]);
-            }
-        }
-        dc_obj.parameters = temp_ps;
-        return dc_obj;
-    }
+//    function parse_dc(dc_obj){
+//        var temp_ps = {};
+//        for (var param in dc_obj.parameters){
+//            temp_ps[param] = dc_obj.parameters[param].token;
+//            if (param != "source1" && param != "source2"){
+//                temp_ps[param] = parse_number(temp_ps[param]);
+//            }
+//        }
+//        
+//        for (var i=1; i<=2; i+=1){
+//            if (temp_ps["start"+i] >= temp_ps["stop"+i]){
+//                throw new CustomError("Stop time must be greater than start time",
+//                                dc_obj.parameters["start"+i]);
+//            }
+//            if (temp_ps["step"+i] <= 0) {
+//                throw new CustomError("Step interval must be a non-zero, positive number",
+//                                dc_obj.parameters["step"+i]);
+//            }
+//        }
+//        dc_obj.parameters = temp_ps;
+//        return dc_obj;
+//    }
 
     /*********************
     Read AC: AC analysis

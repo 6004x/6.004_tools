@@ -716,11 +716,11 @@ min-height:'+minHeight+'px"></div>');
             if (compactPlot){
                 wdiv.css("margin-bottom",'-10px');
             }
-            var ldiv;
-            if (compactPlot){
-                ldiv = $('<div class="plot-legend"></div>');
-                wdiv.append(ldiv);
-            }
+//            var ldiv;
+//            if (compactPlot){
+//                ldiv = $('<div class="plot-legend"></div>');
+//                wdiv.append(ldiv);
+//            }
             var plotdiv = get_plotdiv();
             wdiv.append(plotdiv);
             div.append(wdiv);
@@ -769,8 +769,9 @@ min-height:'+minHeight+'px"></div>');
             for (var i = 0; i < plot_nodes.length; i += 1) {
                 var node = plot_nodes[i];
                 if (results[node] === undefined) {
-                    div.text('No values to plot for node '+node);
-                    return;
+                    var novaldiv = get_novaldiv(node);
+                    div.prepend(novaldiv);
+                    continue;
                 }
                 var magnitudes = results[node].magnitude;
                 var phases = results[node].phase;
@@ -837,6 +838,72 @@ min-height:'+minHeight+'px"></div>');
             var plotObj = $.plot(plotDiv, pplots, options);
             graph_setup(div2, plotObj);
         }
+    }
+    /**************************
+    DC plot
+    **************************/
+    function dc_plot(div, results, plots, sweep1, sweep2){
+        if (sweep1 === undefined) return;
+    
+        console.log("results:",results);
+        for (var p = 0; p < plots.length; p += 1) {
+            var node = plots[p][0];  // for now: only one value per plot
+            var dataseries = [];
+            var index2 = 0;
+            while (true) {
+                var values;
+                var x,x2;
+                if (sweep2 === undefined) {
+                    values = results[node];
+                    x = results['_sweep1_'];
+                } else {
+                    values = results[index2][node];
+                    x = results[index2]['_sweep1_'];
+                    x2 = results[index2]['_sweep2_'];
+                    index2 += 1;
+                }
+        
+                if (values === undefined) {
+                    var novaldiv = get_novaldiv(node);
+                    div.prepend(novaldiv);
+                    continue;
+                }
+                var plot = [];
+                for (var j = 0; j < values.length; j += 1) {
+                    plot.push([x[j],values[j]]);
+                }
+                var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
+                var name = current ? node : "Node " + node; 
+                if (sweep2 !== undefined) name += " with " + sweep2.source + "=" + x2;
+                
+                dataseries.push({label: name,
+                                 data: plot,
+                                 lineWidth: 5,
+                                 yUnits: current ? 'A' : 'V'
+                                });
+                if (sweep2 === undefined || index2 >= results.length) break;
+            }
+        }
+        
+        var xmin = x[0];
+        var xmax = x[values.length-1];
+        
+        var wdiv = $('<div class="plot-wrapper"></div>');
+        addCloseBtn(wdiv);
+        var plotdiv = get_plotdiv();
+        wdiv.append(plotdiv);
+        div.append(wdiv);
+        
+        var options = $.extend(true, {}, default_options);
+        options.xaxis.axisLabel = 'Volts (V)';
+        options.xaxis.units = 'V';
+        options.xaxis.zoomRange = [null,(xmax-xmin)];
+        options.xaxis.panRange = [xmin, xmax];
+        options.yaxis.axisLabel = current? 'Amps (A)' : 'Volts (V)';
+        options.yaxis.units = current? 'A' : 'V';
+        
+        var plotObj = $.plot(plotdiv, dataseries, options);
+        graph_setup(wdiv, plotObj);
     }
     
     /******************************
@@ -924,6 +991,11 @@ min-height:'+minHeight+'px"></div>');
                 ac_plot(div, current_results, plots);
                 break;
             case 'dc':
+                current_results = cktsim.dc_analysis(netlist,current_analysis.parameters.sweep1,
+                                                     current_analysis.parameters.sweep2);
+                dc_plot(div, current_results, plots, current_analysis.parameters.sweep1,
+                       current_analysis.parameters.sweep2);
+//                console.log("dc results:",current_results);
                 break;
             }
         }
