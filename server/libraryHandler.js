@@ -8,7 +8,7 @@ var path=require('path');
     	var root_path = 	process.cwd();//__dirname
 		//current directory will hold all user files in /libraries
 		var lib_path = path.join(root_path, 'libraries'); 
-		var m_user_path, m_full_path, m_shared_path;
+		var m_user_path, m_full_path, m_shared_path, m_shared_full_path;
 
 		var m_file_path = unescape(url.parse(request.url).pathname);
 
@@ -20,8 +20,9 @@ var path=require('path');
 		// console.log(m_file_path);
 		if(user){
 			m_user_path = path.join(lib_path, user);
-			m_shared_path = path.join(lib_path, 'shared')
+			m_shared_path = path.join(root_path, 'shared')
 			m_full_path = path.join(m_user_path, m_file_path);
+			m_shared_full_path = path.join(m_shared_path, m_file_path);
 			console.log(m_user_path)
 		}
 		if(!fs.existsSync(m_user_path))
@@ -45,10 +46,20 @@ var path=require('path');
 				console.log('file path is '+ m_full_path);
 				if (!exists) {
 					// it's not in user's directory, try shared directory
-					shared_full_path = path.join(m_shared_path, m_file_path);
-					fs.exists(shared_full_path,function(exists) {
-						if (exists) 
-							sendFile(shared_full_path, m_file_path);
+					fs.exists(m_shared_full_path,function(exists) {
+						if (exists){
+							fs.readFile(shared_full_path, 'utf8', function(err,data){
+								if(err){
+									errorResponse(err)
+								} else {
+									console.log('reading shared file ' + data.name)
+									saveFile(m_full_path, m_file_path, data.data);
+									console.log('and saving to the user folder')
+								}
+							});
+							
+						}
+							
 						else {
 						// library not found, send empty one
 							errorResponse('could not find the file');
@@ -86,16 +97,16 @@ var path=require('path');
 				fs.exists(path.dirname(m_full_path), function(parent_exists){
 					if(parent_exists){
 						if(!exists){
-							saveFile(m_file_path, m_full_path, fdata);
+							saveFile(m_full_path, m_file_path, fdata);
 						}
 						else{
 							//merge? overwrite changes?
-							saveFile(m_file_path, m_full_path, fdata);
+							saveFile(m_full_path, m_file_path, fdata);
 						}
 					}
 					else {
 						console.log('path of file does not exist');
-						var pathdiff=path.relative(m_full_path, user_path);
+						var pathdiff=path.relative(m_full_path, m_user_path);
 						console.log(pathdiff);
 						console.log(m_full_path);
 						//do something with patthdiff...
@@ -105,7 +116,7 @@ var path=require('path');
 								errorResponse(err + ' could not make directory');
 								// sendJSON({name:m_file_path,status:'failed',error:err})
 							} else {
-								saveFile(m_file_path, m_full_path, fdata);
+								saveFile(m_full_path,m_file_path, fdata);
 							}
 						});
 					}
@@ -116,7 +127,7 @@ var path=require('path');
 					errorResponse('path already exists at '+ m_file_path);
 				}else{
 					console.log('mkdir path');
-					fs.mkdir((m_full_path), function(err){
+					fs.mkdir(m_full_path, function(err){
 						if(err){
 							console.log(err);
 							errorResponse(err+' path could not be made')
