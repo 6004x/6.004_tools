@@ -1,0 +1,67 @@
+/* The official background colour */
+body {
+    background-color: #E9EBED;
+    padding-right: 0;
+}
+
+/* Prevent bouncing on OS X/iOS */
+html {
+    overflow: hidden;
+}
+
+/* This fixes the several pixel jump when toggling split screen caused by the right buttons being too tall. */
+.masthead {
+    height: 55px;
+}
+
+/* Sidebar sizing */
+.sidebar-nav li {
+    line-height: 22px;
+    font-size: 13px;
+}
+
+/* Editors should have a border around them, but not between the editor and the tabs */
+.tab-pane {
+    border-bottom: 1px solid #ddd;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+.nav-tabs {
+    margin-bottom: 0;
+}
+
+.nav-tabs > li > a {
+    color: black;
+}
+
+/* Tabs should be obviously clickable. */
+.nav-pills li {
+    cursor: pointer;
+}
+
+/* Split pane styles */
+.split-holder {
+    float: left;
+    overflow: hidden;
+    border-top: 1px solid #aaa;
+}
+
+.split-splitter {
+    float: left;
+    width: 10px;
+    cursor: col-resize;
+    border-top: 1px solid #aaa;
+}
+
+.split-splitter > div {
+    margin-left: auto;
+    margin-right: auto;
+    width: 1px;
+    background-color: #aaa;
+    height: 100%;
+}
+
+/* Wrapping toolbars is bad. */
+.btn-toolbar {
+    white-space: nowrap;
+}
