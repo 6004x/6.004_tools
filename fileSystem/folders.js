@@ -581,49 +581,8 @@ var Folders=new function(){
             new ToolbarButton('icon-refresh', refresh, 'Refresh'),
             new ToolbarButton('icon-off', _.identity, 'Commit and Close')
         ]);
-
-        //now adding editor buttons
-        editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
     }
 
-    function hideNavBar(){
-        rootNode.css('position', 'relative');
-        var width=-(rootNode.width());
-        var editorWrapper = $('.span9');
-        console.log(width);
-        rootNode.animate({'left' :width}, 500, 'swing', function(){
-                rootNode.detach()
-        });
-        var offset = -editorWrapper.offset().left + parseInt(editorWrapper.css('margin-left'));
-        console.log(offset)
-        editorWrapper.css('position', 'relative')
-        editorWrapper.animate({'left' : offset}, 500, 'swing', function(){
-            editorWrapper.removeClass('span9').addClass('span12');
-            editorWrapper.css('left', 0);
-        });
-    }
-
-    function showNavBar(){
-        if(rootNode.parent().length==0){
-            var editorWrapper = $('.span12');
-            editorWrapper.removeClass('span12').addClass('span9');
-
-            console.log(rootNode.parent());
-
-            $('.row').prepend(rootNode);
-            var width=(rootNode.width());
-            editorWrapper.css('left', -width);
-            console.log(width);
-            editorWrapper.removeClass('float-right');
-            
-            rootNode.animate({'left' :0}, 500, 'swing', function(){
-                
-            });
-            editorWrapper.animate({'left' :0}, 500, 'swing', function(){
-                editorWrapper.removeClass('span12').addClass('span9')
-            });
-        }
-    }
     function setup(root, editorN, mode){
         rootNode = $(root);
         editor = editorN;

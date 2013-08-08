@@ -2,8 +2,7 @@
 <head>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
 <script src="highcharts/highcharts.js"></script>
-<script src="cktsim copy.js"></script>
-<script src="../parser/parser.js"></script>
+<script src="cktsim.js"></script>
 <script src="test2.js"></script>
 </head>
 <body>
@@ -24,7 +23,7 @@ C1 n2 gnd 1n
 V1 e1 gnd step(1,0,1u)
 R1 e1 e2 1k
 C1 e2 gnd 1n
-* .ac V1 e1 1G
+.ac V1 1 1G
 .plot e2
 </div>
 
@@ -46,9 +45,20 @@ Ndown out in gnd W=4 L=1
 Vin in gnd sin(1M)
 Rin in e1 1k
 Rfeedback out e1 2k
-* Oamp gnd 1 out 0 1e5
+Oamp gnd e1 out gnd 1e5
 .tran 5u
 .plot in out
+</div>
+
+<div class="cktsim">
+* plot Ids vs. Vds for 5 different Vgs values
+Vmeter vds drain 0v
+Vds vds gnd 0v
+Vgs gate gnd 0v
+* N-channel mosfet used for our test
+N drain gate gnd W=2 L=1
+.dc Vds 0 5 .1 Vgs 0 5 1
+.plot I(Vmeter)
 </div>
     
 </body>
