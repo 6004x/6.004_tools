@@ -267,7 +267,7 @@ var cktsim = (function() {
         }
 
         if (!found_ground) { // No ground connection from some device
-            throw 'Please make at least one connection to ground (node 0)';
+            throw 'Please make at least one connection to ground (node gnd)';
         }
 
         // report circuit stats
@@ -1723,7 +1723,7 @@ var cktsim = (function() {
         m = x.match(/^\s*[\-+]?[0-9]*(\.([0-9]+)?)?([eE][\-+]?[0-9]+)?\s*$/); // decimal, float
         if (m) return parseFloat(m[0]);
 
-        m = x.match(/^\s*([\-+]?[0-9]*(\.([0-9]+)?)?)(a|A|f|F|g|G|k|K|m|M|n|N|p|P|t|T|u|U)\s*$/); // decimal, float
+        m = x.match(/^\s*([\-+]?[0-9]*(\.([0-9]+)?)?)(A|f|F|g|G|k|K|m|M|n|N|p|P|t|T|u|U)?/); // decimal, float
         if (m) {
             var result = parseFloat(m[1]);
             var scale = m[4];

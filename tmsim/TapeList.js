@@ -184,15 +184,26 @@ function TapeList(){
 	this.toArray = function(){
 		var tempNode=first;
 		var arrayLL=[];
-		var index = 0; var currentIndex = 0, previousIndex = null;
-		while(tempNode!=null){
-			arrayLL.push(tempNode.data);
-			if(tempNode == current)
-				currentIndex = index;
-			else if(tempNode == previous)
-				previousIndex = index;
-			tempNode=tempNode.next;
-			index++;
+		var index = 0; 
+		var currentIndex = 0, previousIndex = null;
+		var trimBeginning = true;
+		var trimEnd = true;
+		while(tempNode != null){
+
+			if(tempNode.data === '-' && trimBeginning){
+				console.log('trimming')
+				tempNode=tempNode.next;
+			}
+			else {
+				trimBeginning = false;
+				arrayLL.push(tempNode.data);
+				if(tempNode == current)
+					currentIndex = index;
+				else if(tempNode == previous)
+					previousIndex = index;
+				tempNode=tempNode.next;
+				index++;
+			}
 		}
 
 		return {array:arrayLL, currentIndex:currentIndex, previousIndex:previousIndex};
@@ -219,10 +230,10 @@ function TapeList(){
 	this.equals=function(otherTape){
 		//dependent on access to the other current node... might scrap that for array representation
 
-		mArray = self.toArray();
-		tArray = otherTape.toArray();
+		mArray = self.toArray().array;
+		tArray = otherTape.toArray().array;
 
-		if(mArray.length!=tArray.length){
+		if(mArray.length != tArray.length){
 			console.log('tapes are different size');
 			return false;
 		}
@@ -230,21 +241,23 @@ function TapeList(){
 		var equalArray = true;
 		for (var i =0; i < mArray.length; i++){
 			if(equalArray)
-				equalArray = (mArray[i] == tArray[i]);
+				equalArray = (mArray[i] === tArray[i]);
 		}
+		console.log(equalArray);
 		if (equalArray){
 			//now we must traverse and see if current is the same in both.
 			var tempMCurr = self.getCurrentNode();
 			var tempTCurr = otherTape.getCurrentNode();
 			
-			if(tempMCurr!=tempTCurr){
+			if(tempMCurr !== tempTCurr){
 				console.log('current node is not the same');
 				return false;
 			}
 
 			var compare = true;
-			while(tempMCurr!=null){
-				compare = tempMCurr.data == tempTCurr.data;
+
+			while(tempMCurr != null && tempTCurr != null){
+				compare = tempMCurr.data === tempTCurr.data;
 				//can we do this?
 				if(!compare)
 					break;

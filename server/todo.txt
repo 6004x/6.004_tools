@@ -1,23 +1,23 @@
 to add
-+
 
-normalizing ../
+semi working? normalizing ../
 other path names
 .include functionality
 
 SCROLLING FILE SYSTEM
-SYNC UP STRIPING
+ORDERED LIST OF FILES
 
+
+KEYWORD ~ for version control
 
 delete
 indexedDB?
 algorithm for local storage?
 version control
-KEYWORD ~ for version control
-x hover on for buttons (delete, rename)
+
 cygwin apache server for authentication
-ca server certificate
-environment variables pass to node
+
+environment variables pass to node?
 
 when new file renaming after old file?
 
@@ -38,17 +38,14 @@ when new file renaming after old file?
 	}
 
 
-newfile with me
-
 roboant
 tsim
 
 
-x get rid of tooltips. 
-
-hide folder button
+get rid of tooltips. 
 
 TMSIM bugs:
 check syntax
+check overlapping actions
 
 

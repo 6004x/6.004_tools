@@ -73,7 +73,7 @@
 			});
 			tapeWrapper.append(tapeDiv);
 			//populate the tape
-			listToTape(firstTape, tapeDiv);
+			listToTape(firstTape);
 
 			//make the state machine indicator, could be more elegant...
 			var machineDiv = $('<div>').addClass('pull-center machine_div').css({
@@ -133,6 +133,7 @@
 			var resetButton = $('<button>').addClass('btn btn-warning reset_button tape_button')
 				.attr('title', 'Reset')
 				.append('<i class = "icon-fast-backward">');
+			
 			$('.tape_button').each(function(i, button){
                 $(button).attr({
                     'data-toggle':"tooltip",
@@ -171,11 +172,12 @@
 			});
 			playButton.on('click', function(){
 				if(!$(this).hasClass('disabled')){
-					pauseSimulation = false;
 					playButton.addClass('disabled');
 					stepButton.addClass('disabled');
 					prevStepButton.addClass('disabled');
-					self.play();
+					self.play(function(){
+						console.log('play callback')
+					});
 				}
 			})
 			resetButton.on('click', function(){
@@ -197,10 +199,22 @@
 				}
 			});
 
+			var allTestsButton = $('<button>').addClass('btn btn-info all_tests_button tape_button')
+				.attr('title', 'All Tests')
+				.append('<i class = "icon-fast-forward"></i> All Tests');
+
+			allTestsButton.on('click', function(){
+				if(!$(this).hasClass('disabled')){
+					self.allTests();
+				}
+			})
+
 			var nextButton = $('<button>').addClass('btn btn-warning next_button tape_button')
 				.attr('title', 'Next Tape')
 				.append('<i class = "icon-arrow-right">')
 				.css('visibility', 'hidden')
+			;
+
 			nextButton.on('click', function(){
 				if(!$(this).hasClass('disabled')){
 					var nextTape = mContainer.find('.test_radio_buttons .active').attr('id')
@@ -267,7 +281,7 @@
 			});
 
 			actionButtonDiv.append(resetButton, /*prevStepButton,*/ playButton, pauseButton, stepButton);
-			actionDiv.append(actionButtonDiv, nextButton);
+			actionDiv.append(allTestsButton, actionButtonDiv, nextButton);
 
 			var feedbackDiv = $('<div>').addClass('feedback_div').css({
 				'position' : 'absolute',
@@ -289,6 +303,7 @@
 			mContainer.append(stepsDiv, speedDiv, headingDiv, feedbackDiv, legendDiv, tapeWrapper, machineDiv, speedDiv, actionDiv);
 			toggleTape();
 		}
+		var oldLineClassDelete;
 		this.stepAction = function(callback){
 			var callback = callback || _.identity;
 			mContainer.find('.transition_div .read_symbol').text(mCurrentTape.peek());
@@ -311,7 +326,9 @@
 				mContainer.find('.tape_div .read_symbol').removeClass('read_symbol');
 				mContainer.find('.tape_div .current_segment').addClass('prev_segment');
 				// if(!preventAnimate)
-					editor.highlightLine(mFileName, state_transition.lineNumber-1);
+				if(oldLineClassDelete)
+					oldLineClassDelete.clear();
+				oldLineClassDelete = editor.addLineClass(mFileName, state_transition.lineNumber-1, 'highlight-line');
 				function updateTransitionDiv(){
 					mContainer.find('.transition_div').css({
 						'top' : 0,
@@ -327,13 +344,19 @@
 					mContainer.find('.transition_div .curr_state').text(stepObject.transition.new_state);
 					mContainer.find('.transition_div .read_symbol').text(mCurrentTape.peek());
 					try{
-						var nextStepObject = mTSM.stepPeek(mCurrentTape);
-						var nextState_transition = nextStepObject.transition;
+						if(!(mTSM.getCurrentState() === '*halt*' || mTSM.getCurrentState() === '*error*')){
+							var nextStepObject = mTSM.stepPeek(mCurrentTape);
+							var nextState_transition = nextStepObject.transition;
+							
 						
-					
-						mContainer.find('.transition_div .new_state').text(nextState_transition.new_state);
-						mContainer.find('.transition_div .write_symbol').text(nextState_transition.write_symbol);
-						mContainer.find('.transition_div .move_dir').text(nextState_transition.move);
+							mContainer.find('.transition_div .new_state').text(nextState_transition.new_state);
+							mContainer.find('.transition_div .write_symbol').text(nextState_transition.write_symbol);
+							mContainer.find('.transition_div .move_dir').text(nextState_transition.move);
+						} else {
+							mContainer.find('.transition_div .new_state').text('');
+							mContainer.find('.transition_div .write_symbol').text('');
+							mContainer.find('.transition_div .move_dir').text('');
+						}
 					} catch (e) {
 						console.log(e.stack);
 						mContainer.find('.transition_div .new_state').text('');
@@ -345,7 +368,6 @@
 					$('.stepsSpan').text(steps)
 
 					if(stepObject.transition.new_state === '*halt*'){
-						halt();
 						console.log('halt');
 					}
 					listToTape();
@@ -378,10 +400,44 @@
 				$('.feedback_div').html('state '+ mTSM.getCurrentState().name + ' has no action for symbol ' + mCurrentTape.peek());
 			}
 		}
-		this.play = function(){
+		this.allTests = function(){
+			var count = 0;
+			var results = [];
+			nextTest();
+			function nextTest(){
+				var tapeButton = $('#tape'+count);
+				if(count < Object.keys(mTapeList).length){
+					toggleTape(tapeButton);
+					self.play(function(passed){
+						count++;
+						results.push(passed);
+						if(passed){
+							setTimeout(function(){
+
+								nextTest();
+							}, 0)
+						}
+						else {
+							console.log('not passed')
+							doneTests(results);
+						}
+					});
+				} else {
+					doneTests(results);
+				}
+
+			}
+			
+		}
+		function doneTests(results){
+			console.log(results);
+		}
+		//callback executed when test is halted
+		this.play = function(callback){
+
+			pauseSimulation = false;
 			var new_state = tsm.getCurrentState();
 			nextStep(new_state.name);
-
 			function nextStep(new_state_name){
 				if(pauseSimulation){
 					console.log('pauseSimulationed');
@@ -400,7 +456,7 @@
 							
 								if(stepObject.transition.new_state == '*halt*' || stepObject.transition.new_state == '*error*'){
 									console.log('return '+ stepObject.transition.new_state)
-									halt();
+									halt(callback);
 									listToTape();
 									simulation_done = true;
 									break;
@@ -418,7 +474,7 @@
 				}
 				else {
 					console.log('return '+new_state_name);
-					halt();
+					halt(callback);
 					listToTape();
 					simulation_done = true;
 				}
@@ -430,12 +486,13 @@
 			console.log('pause');
 			pauseSimulation = true;
 		}
-		function halt(){
+		function halt(callback){
 			mContainer.find('.play_button').addClass('disabled');
 			mContainer.find('.step_button').addClass('disabled');
 			mContainer.find('.pause_button').addClass('disabled');
-			if(mContainer.find('.test_radio_buttons #tape' + (parseInt(mContainer.find('.test_radio_buttons .active').attr('id').slice(4)) + 1)).length > 0)
-				mContainer.find('.next_button').css('visibility', 'visible');
+			$('.stepsSpan').text(steps)
+			listToTape();
+			
 			var name = mCurrentTape.name;
 			var result = mResultList[name] ? mResultList[name] : mResult1List[name];
 			
@@ -450,24 +507,35 @@
 				else{
 					passedTest = result === mCurrentTape.peek();
 				}
+				console.log(passedTest)
+				console.log(result.toString());
+				console.log(mCurrentTape.toString());
 				feedback = passedTest ? 'pass' : 'fail';
 				color = passedTest ? 'green' : 'red';
 				mContainer.find('.result_div').text(feedback).css('color', color);
+				var testNumber = parseInt(mContainer.find('.test_radio_buttons .active').attr('id').slice(4));
+				//check if there is another test after this one, if so, then show the next button
+				//shows only if it passes
+				if(passedTest && mContainer.find('.test_radio_buttons #tape' + (testNumber+ 1)).length > 0)
+					mContainer.find('.next_button').css('visibility', 'visible');
+				callback(passedTest);
 			}
+			
 
 		}
-		function toggleTape(testNameButtonDiv){
-			testNameButtonDiv = testNameButtonDiv||$('.test_radio_buttons .active');
-			var name = testNameButtonDiv.data('tape-name');
+		
+		function toggleTape(tapeButton){
+			tapeButton = tapeButton||$('.test_radio_buttons .active');
+			var name = tapeButton.data('tape-name');
 			mCurrentTape = mTapeList[name].cloneTape();
 			mTSM.restart();
 			pauseSimulation = true	;
 			simulation_done = false;
 			steps = 0;
 			console.log('toggle tape ' + mCurrentTape.toString());
-			listToTape( mCurrentTape, mContainer.find('.tape_div'));
+			listToTape();
 			mContainer.find('.test_radio_buttons .active').toggleClass('active')
-			testNameButtonDiv.toggleClass('active');
+			tapeButton.toggleClass('active');
 			mContainer.find('.machine_label .curr_state').text(tsm.getCurrentState().name);
 			mContainer.find('.machine_label .move_dir').text('');
 			mContainer.find('.transition_div .curr_state').text(mTSM.getCurrentState().name);
@@ -487,8 +555,8 @@
 
 			$('.tape_button').removeClass('disabled');
 		}
-		function listToTape(tapeList, tapeDiv){
-			var tapeDiv = tapeDiv || $('.tape_div');
+		function listToTape(tapeList){
+			var tapeDiv = $('.tape_div');
 			var tape = tapeList || mCurrentTape;
 
 			tapeDiv.html('');

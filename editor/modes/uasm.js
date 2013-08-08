@@ -27,6 +27,10 @@
                     state.is_include = false;
                     return 'string';
                 }
+                // Spaces are never anything.
+                if(stream.eatSpace()) {
+                    return;
+                }
                 if(state.is_macro_def) {
                     stream.eatSpace();
                     var token = stream.match(/^([^\s()]+)/);
@@ -83,16 +87,16 @@
                     return ret;
                 }
                 var is_start = stream.sol();
-                // It could be a label:
                 if(is_start) {
                     if(state.macro_ends_at_end_of_line) {
                         state.is_macro_value = false;
                     }
-                    var label = stream.match(/^\s*([a-zA-Z0-9_]+):/);
-                    if(label) {
-                        state.labels[label[1]] = true;
-                        return 'def';
-                    }
+                }
+                // It could be a label:
+                var label = stream.match(/^\s*([a-zA-Z0-9_]+):/);
+                if(label) {
+                    state.labels[label[1]] = true;
+                    return 'def';
                 }
                 // Get rid of any unwanted whitespace.
                 stream.eatSpace();
@@ -174,6 +178,10 @@
                     }
                     return 'keyword';
                 }
+                // Or an illegal one... (the autocomplete needs these)
+                if(stream.match(/^\.[a-z]+/i)) {
+                    return 'error';
+                }
                 // Maybe just a dot
                 if(stream.match(/^\.\b/)) {
                     return 'keyword';
@@ -203,5 +211,91 @@
     };
 
     CodeMirror.defineMode('uasm', EditorModeBSim);
+
+    var op = ['reg a', 'reg b', 'reg destination'];
+    var opc = ['reg a', 'literal b', 'reg destination'];
+    var fnSettings = {
+        paramListStart: '(',
+        paramListEnd: ')',
+        paramSpacer: ', '
+    };
+    var keywordSettings = {
+        paramListStart: ' ',
+        paramListEnd: '',
+        paramSpacer: ' '
+    };
+
+    Editor.Completions.uasm = {
+        Settings: {
+            paramListStart: '(',
+            paramListEnd: ')',
+            paramSpacer: ', '
+        },
+        Terms: [
+            ['ADD', op],
+            ['SUB', op],
+            ['MUL', op],
+            ['DIV', op],
+            ['AND', op],
+            ['OR', op],
+            ['XOR', op],
+            ['XNOR', op],
+            ['CMPEQ', op],
+            ['CMPLT', op],
+            ['CMPLE', op],
+            ['SHL', op],
+            ['SHR', op],
+            ['SRA', op],
+            ['ADDC', opc],
+            ['SUBC', opc],
+            ['MULC', opc],
+            ['DIVC', opc],
+            ['ANDC', opc],
+            ['ORC', opc],
+            ['XORC', opc],
+            ['XNORC', opc],
+            ['CMPEQC', opc],
+            ['CMPLTC', opc],
+            ['CMPLEC', opc],
+            ['SHLC', opc],
+            ['SHRC', opc],
+            ['SRAC', opc],
+            ['LD', ['reg address', 'literal offset', 'reg destination'], ['literal address', 'reg destination']],
+            ['ST', ['reg value', 'literal address', 'reg offset'], ['reg value', 'literal address']],
+            ['JMP', ['reg target', 'reg old_pc_destination']],
+            ['BEQ', ['reg test', 'literal branch_target', 'reg old_pc_destination']],
+            ['BF', ['reg test', 'literal branch_target', 'reg old_pc_destination']],
+            ['BNE', ['reg test', 'literal branch_target', 'reg old_pc_destination']],
+            ['BT', ['reg test', 'literal branch_target', 'reg old_pc_destination']],
+            ['BR', ['literal target', 'reg old_pc_destination'], ['literal target']],
+            ['LDR', ['label address', 'reg destination']],
+            ['MOVE', ['reg from', 'reg to']],
+            ['CMOVE', ['literal value', 'reg to']],
+            ['HALT', []],
+            ['PUSH', ['reg value']],
+            ['POP', ['reg destination']],
+            ['ALLOCATE', ['literal words']],
+            ['DEALLOCATE', ['literal words']],
+            ['CALL', ['label'], ['label', 'literal arg_count']],
+            ['RTN', []],
+            ['XRTN', []],
+            ['WORD', ['literal value']],
+            ['LONG', ['literal value']],
+            ['STORAGE', ['literal nwords']],
+            ['GETFRAME', ['literal frame', 'reg target']],
+            ['PUTFRAME', ['reg value', 'literal frame']],
+            {settings: keywordSettings, term: ['.include', ['filename']]},
+            {settings: keywordSettings, term: ['.align', ['alignment']]},
+            {settings: keywordSettings, term: ['.ascii', ['string']]},
+            {settings: keywordSettings, term: ['.text', ['string']]},
+            {settings: keywordSettings, term: ['.breakpoint', []]},
+            {settings: keywordSettings, term: ['.protect', []]},
+            {settings: keywordSettings, term: ['.unprotect', []]},
+            {settings: keywordSettings, term: ['.options', ['options...']]},
+            {settings: keywordSettings, term: ['.tcheckoff', ['url', 'name', 'checksum']]},
+            {settings: keywordSettings, term: ['.pcheckoff', ['url', 'name', 'checksum']]},
+            {settings: keywordSettings, term: ['.verify', ['address', 'words', 'word...']]}
+        ]
+    };
 
 })();

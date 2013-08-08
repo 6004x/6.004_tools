@@ -12,6 +12,9 @@ BSim.Beta.Opcodes = {};
  * disassemble: returns a string giving the disassembly of the instruction (optional)
  * privileged: true if the opcode can only be used in supervisor mode (optional; default false)
  * has_literal: true if the opcode takes a literal instead of a register (optional; defualt false)
+ * paths: dictionary of signal values that the opcode should trigger. If omitted, default is determined by
+ *        the value of has_literal and alufn must be provided.
+ * alufn: Used when paths is omitted to provide a sane default. (mandatory iff paths is omitted)
  */
 
 // Build up our opcode table.
@@ -543,9 +546,12 @@ BSim.Beta.Opcodes = {};
                 case 6: // RANDOM
                     this.writeRegister(c, _.random(0xFFFFFFFF));
                     break;
+                case 7: // SEED
+                    throw new BSim.Beta.RuntimeError("SEED() is unimplemented. To implement, you must provide your own RNG (Math.random is unseedable)");
+                case 8: // SERVER
+                    throw new BSim.Beta.RuntimeError("SERVER() is currently unimplemented.");
                 default:
-                    throw "Unimplemented instruction " + literal;
-                    // return this.handleIllegalInstruction();
+                    return this.handleIllegalInstruction();
             }
         },
         disassemble: function(op) {

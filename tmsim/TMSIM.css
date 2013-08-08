@@ -80,3 +80,6 @@
 .old_write_symbol{
 	color : blue;
 }
+.highlight-line{
+	background-color : yellow; 
+}

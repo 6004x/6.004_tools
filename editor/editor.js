@@ -11,11 +11,13 @@ var Editor = function(container, mode) {
     var mSyntaxMode = mode; // The syntax mode for the editors
     var mExpectedHeight = null; // The height the entire editor view (including toolbars and tabs) should maintain
     var mUntitledDocumentCount = 0; // The number of untitled documents (used to name the next one)
+    var mAutocompleter = new Editor.Autocomplete(this, mode);
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
-    var mErrorMarkedLines = []; // List of lines we need to clear things from when requested.
-    var mHighlightMarkedLines = []; // List of lines we need to clear things from when requested.
+    var mMarkedLines  = []; // List of lines we need to clear things from when requested.
+   
+    _.extend(this, Backbone.Events);
 
     // Given a list of ToolbarButtons, adds a button group.
     this.addButtonGroup = function(buttons) {
@@ -45,18 +47,14 @@ var Editor = function(container, mode) {
     // If filename is given, returns the content of that file in the buffer
     // If filename is omitted, returns the content of the current editor
     this.content = function(filename) {
-        var document;
-        if(filename) document = mOpenDocuments[filename];
-        else document = mCurrentDocument;
+        var document = try_get_document(filename);
         if(!document) return null;
         return document.cm.getValue();
     };
 
     // Marks the given line in the given file as having an error, and displays it to the user.
     this.markErrorLine = function(filename, message, line, column) {
-        var document;
-        if(filename) document = mOpenDocuments[filename];
-        else document = mCurrentDocument;
+        var document = try_get_document(filename);
         if(!document) return false;
         var cm = document.cm;
         cm.addLineClass(line, 'background', 'cm-error-line');
@@ -64,26 +62,12 @@ var Editor = function(container, mode) {
         focusTab(document);
         cm.scrollIntoView({line: line, ch: column});
         var handle = cm.lineInfo(line).handle;
-        mErrorMarkedLines.push({filename: filename, handle: handle});
+        mMarkedLines.push({filename: filename, handle: handle});
     };
-
-    this.highlightLine = function(filename, line, column){
-        self.cleanHighlight();
-        var document;
-        if(filename) document = mOpenDocuments[filename];
-        else document = mCurrentDocument;
-        if(!document) return false;
-        var cm = document.cm;
-        cm.addLineClass(line, 'background', 'cm-highlight-line');
-        focusTab(document);
-        cm.scrollIntoView({line: line, ch: column});
-        var handle = cm.lineInfo(line).handle;
-        mHighlightMarkedLines.push({filename: filename, handle: handle});
-    }
 
     // Clears all error markers in all files.
     this.clearErrors = function() {
-        _.each(mErrorMarkedLines, function(value) {
+        _.each(mMarkedLines, function(value) {
             if(mOpenDocuments[value.filename]) {
                 var cm = mOpenDocuments[value.filename].cm;
                 var line = cm.lineInfo(value.handle);
@@ -94,18 +78,30 @@ var Editor = function(container, mode) {
                 });
             }
         });
-        mErrorMarkedLines = [];
+        mMarkedLines = [];
     };
-    this.cleanHighlight = function() {
-        _.each(mHighlightMarkedLines, function(value) {
-            if(mOpenDocuments[value.filename]) {
-                var cm = mOpenDocuments[value.filename].cm;
-                var line = cm.lineInfo(value.handle);
-                if(!line) return;
-                cm.removeLineClass(line.handle, "background", "cm-highlight-line");
+
+
+    // Highlight the given line by applying the CSS class cls
+    // Returns an object with a clear() method that will remove the class again.
+    this.addLineClass = function(filename, line, cls) {
+        var document = try_get_document(filename);
+        if(!document) return false;
+        var handle = document.cm.addLineClass(line, 'background', cls);
+        return {
+            clear: function() {
+                document.cm.removeLineClass(handle, 'background', cls);
             }
-        });
-        mHighlightMarkedLines = [];
+        };
+    };
+
+    // Focus on the given line in the given document (or the current if filename is null).
+    // 'line' is the line number; 'chr' is the optional character on the line.
+    this.showLine = function(filename, line, chr) {
+        var document = try_get_document(filename);
+        if(!document) return false;
+        document.cm.scrollIntoView({line: line, chr: chr|0});
+        return true;
     };
 
     // Opens a new tab with the given filename and content.
@@ -151,8 +147,10 @@ var Editor = function(container, mode) {
             'margin-left': 5,
             'margin-right': -7
         }).on('mouseenter', tab_mouse_enter).on('mouseleave', function() { handle_change_tab_icon(doc); });
-        cm.on('change', function() {
+        cm.on('change', function(c, changeObj) {
             handle_change_tab_icon(doc);
+            // Let our listeners know, too.
+            self.trigger('change', filename, changeObj);
         });
         // Append all that stuff
         a.append(close);
@@ -270,8 +268,39 @@ var Editor = function(container, mode) {
             indentWithTabs: true,
             styleActiveLine: true,
             value: content,
-            mode: mSyntaxMode
+            mode: mSyntaxMode,
+            extraKeys: {
+                Tab: function() {
+                    var marks = cm.getAllMarks();
+                    var cursor = cm.getCursor();
+                    var closest = null;
+                    var closest_mark = null;
+                    var distance = Infinity;
+                    for (var i = marks.length - 1; i >= 0; i--) {
+                        var mark = marks[i];
+                        var pos = mark.find();
+                        if(pos === undefined) continue;
+                        if(cursor.line >= pos.from.line - 5) {
+                            if(cursor.line < pos.from.line || cursor.ch <= pos.from.ch) {
+                                var new_distance = 10000 * (pos.from.line - cursor.line) + (pos.from.ch - cursor.ch);
+                                if(new_distance < distance) {
+                                    closest = pos;
+                                    closest_mark = mark;
+                                    distance = new_distance;
+                                }
+                            }
+                        }
+                    }
+                    if(closest !== null) {
+                        closest_mark.clear();
+                        mAutocompleter.selectPlaceholder(cm, closest);
+                    } else {
+                        return CodeMirror.Pass;
+                    }
+                }
+            }
         });
+        cm.on('change', _.debounce(CodeMirror.commands.autocomplete, 800, false));
         return cm;
     };
 
@@ -297,6 +326,14 @@ var Editor = function(container, mode) {
         do_save();
     };
 
+    var try_get_document = function(filename) {
+        var document;
+        if(filename) document = mOpenDocuments[filename];
+        else document = mCurrentDocument;
+        if(!document) return false;
+        return document;
+    }
+
     var initialise = function() {
         // Build up our editor UI.
         mToolbarHolder = $('<div>');
@@ -319,10 +356,16 @@ var Editor = function(container, mode) {
         // Do some one-time setup.
         if(!Editor.IsSetUp) {
             CodeMirror.commands.save = do_save;
+            CodeMirror.commands.autocomplete = function(cm) {
+                CodeMirror.showHint(cm, mAutocompleter.complete, {completeSingle: false});
+            };
 
             // Add our keyboard shortcuts for the command to comment your code.
             CodeMirror.keyMap.macDefault['Cmd-/'] = 'toggleComment';
             CodeMirror.keyMap.pcDefault['Ctrl-/'] = 'toggleComment';
+
+            CodeMirror.keyMap.macDefault['Ctrl-Space'] = 'autocomplete';
+            CodeMirror.keyMap.pcDefault['Ctrl-Space'] = 'autocomplete';
 
             Editor.IsSetUp = true;
         }
@@ -334,7 +377,7 @@ var Editor = function(container, mode) {
         FileSystem.saveFile(current_document.name, current_document.cm.getValue(), function() {
             // Mark the file as clean.
             current_document.generation = current_document.cm.changeGeneration();
-            handle_change_tab_icon(current_document)
+            handle_change_tab_icon(current_document);
         });
     };
 
@@ -350,4 +393,5 @@ var Editor = function(container, mode) {
 
     initialise();
 };
+Editor.Completions = {};
 Editor.IsSetUp = false;

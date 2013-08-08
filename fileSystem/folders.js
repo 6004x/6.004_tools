@@ -5,6 +5,7 @@ var Folders=new function(){
     var fileRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~)/;
     var folderRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~|\.)/;
     var collapsedFolders = {};
+    var textInputOn = false;
     //attaches file list to the default node
     function refresh(){
         $('.tooltip').hide();
@@ -51,7 +52,7 @@ var Folders=new function(){
             }
             span.click(function(e) {
                 e.stopPropagation();
-                var current_path=$(e.currentTarget).parents('li').attr('data-path'); 
+                var current_path = $(e.currentTarget).parents('li').attr('data-path'); 
                 if(callback) {
                     callback(current_path, $(e.currentTarget).parents('li'));
                 }
@@ -191,7 +192,8 @@ var Folders=new function(){
 
                     folderContentsDiv.append(collapser);
                     //add folder name and the arrow
-                    var arrow = $('<i>').addClass("icon-chevron-down pull-left open_indicator").addClass(collapseName).css('height', 16);
+                    var arrow = $('<i>').addClass("icon-chevron-down pull-left open_indicator").addClass(collapseName)
+                        .css('height', 16);
                     collapser.append(arrow).append($('<span>').text(folderName));
 
                     var newFileButton = buildListButton('icon-file', newFile, 'folder_button', 'New File');
@@ -331,100 +333,128 @@ var Folders=new function(){
     }
 
 
-    function newFolder(file_path){
-        var handleCreate = function() {
-            var folderName = modal.inputContent();
-            //checks against regexp
-            if(!isValidName(folderRegexp, folderName)){
-                modal.showError('Folder names cannot contain ., \\, \/, :, ", <, >, |, ?, or *');
+    
+    function isValidName(regExp, name){
+        return (name.length > 0) && !regExp.test(name);
+    }
 
-                return;
-            }
-            var folderPath = file_path + folderName;
-            
-            //check hopefully there is not another folder already with that name. 
-            if(FileSystem.isFolder(folderPath)) {
-                modal.showError(folderPath+' is already a folder; please choose another name.');
-                return;
-            }
-
-
-            FileSystem.newFolder(folderPath, function(){
-                refresh();
-                modal.dismiss();
-            });
+    function textInput(callback, parent, validFunction, title, defaultText){
+        var title = title || 'Warning';
+        var validFunction = validFunction || function(text){return text.length > 0};
+        var defaultText = defaultText || 'type here';
+        var valid = false;
+        if(textInputOn){
+            return false;
         }
-        
-        var modal = new ModalDialog();
-        modal.setTitle("New Folder");
-        modal.setText("Enter a name for your folder:");
-        modal.inputBox({
-            prefix: '/' + FileSystem.getUserName() + file_path,
-            callback: handleCreate
-        });
-        modal.addButton('Cancel', 'dismiss');
-        modal.addButton('Create', handleCreate, 'btn-primary');
-        modal.show();
-    }
-
-    function isValidName(fileRegexp, name){
-        return (name.length > 0) && !fileRegexp.test(name);
-    }
-
-    function textNameInput(callback, parent){
+        textInputOn = true;
         console.log(parent);
-        var inputLi = $('<div>').addClass('text-input input-append')
-            .css('margin-bottom', 0);
-        var newNameInput = $('<input>').addClass('new_text span2').attr({
+
+        var inputLi = $('<div>').addClass('text-input input-append control-group input_file_name')
+            .css({
+                    'margin-bottom': 0,
+                });
+        var input = $('<input>').addClass('new_text span2 input_file_name').attr({
             'type' : 'text', 
-            'placeholder' : 'new file',
+            'placeholder' : defaultText,
         })
         var cancelButton = $('<button>').addClass('add-on btn btn-danger')
-            .append('&times;')
-            .height('30px');
-        cancelButton.on('click', function(e){
-                newNameInput.popover('destroy');
-                inputLi.detach();
+            .append('&times;').css('padding-top', '0px');
 
+        var actions = {
+            showError : function(message){
+                input.attr('data-content', message);
+                inputLi.addClass('error')
+                if(valid)
+                    input.popover('show');
+            }, 
+            hideError : function(){
+                inputLi.removeClass('error');
+                input.popover('hide');
+            },
+            destroy : function(){
+                parent.height(parent.height()-inputLi.height())
+                input.popover('destroy');
+                inputLi.detach();
+                console.log($(parent).attr('id'));
+                collapsedFolders[$(parent).attr('id')] = false; 
+                console.log(collapsedFolders);
+                textInputOn = false;
+            }
+        }
+
+        cancelButton.on('click', function(e){
+                actions.destroy();
             });
-        newNameInput.on('keypress', function(e) {
+        
+        input.on('keyup', function(e) {
                 var key = e.which || e.keyCode;
+                var text = input.val();
                 if (key == 13) { // 13 is enter
-                    console.log(callback(newNameInput.val(), newNameInput));
+                    callback(text,  actions);
                     e.preventDefault();
+                } else if (key == 27) { //27 is escape key
+                    actions.destroy();
+                }
+                if(!validFunction(text,  actions)){
+                    //input.popover('show')
+                    console.log('invalid action');
+                    valid = false;
+                } else {
+                    actions.hideError();
+                    valid = true;
                 }
             });
-        newNameInput.popover({
+
+        input.popover({
             'placement' : 'bottom',
             'trigger' : 'manual',
-            'title' : 'new file',
+            'title' : title,
             'container'  : 'body',
         })
-        inputLi.append(newNameInput, cancelButton);
-        $(parent).append(inputLi);
-        newNameInput.focus();
-        return inputLi;
-    }
+        inputLi.append(input, cancelButton);
 
+        $(parent).prepend(inputLi);
+        parent.height(parent.height()+inputLi.height())
+
+        input.focus();
+        return input;
+    }
+    function newFSObject(parent, validName, action, title, defaultText){
+        var handleCreate = function(fileName, actions) {
+            validName = validName(fileName, actions);
+            if(validName){
+                action(validName, actions);
+            } else {
+                console.log(validName + ' is invalid, oops')
+            }
+        }
+        //attaches the input to the collapsable value of 
+        var childDiv = $($(parent).attr('href'));
+        textInput(handleCreate, childDiv, validName, title, defaultText);
+    }
     function newFile(file_path, parent) {
-        
-        var handleCreate = function(text, input) {
-            // var fileName = modal.inputContent();
-            var fileName = text;
+        function newFileAction(validName, actions){
+            var new_file = {
+                name: validName,
+                data: '',
+            };
+            FileSystem.newFile(new_file.name, new_file.data, function(data){
+                displayFile(data);
+                actions.destroy();
+                refresh();
+                return true;
+            });
+        }
+        function validNewFileName(fileName, actions){
             var valid = false;
             console.log(fileName)
             if(!isValidName(fileRegexp, fileName)){
-                input.attr({
-                    'data-content' : 'File names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~',
-                });
-                console.log(input.data('content'));
-                input.popover('show');  
+                actions.showError('File names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~');
                 valid = false;
                 return false;
             } else {
                 valid = true;
             }
-
             var newFileName = '';
             if(fileName.indexOf('.') < 0)
                 newFileName=file_path+fileName+'.'+editMode;
@@ -432,44 +462,44 @@ var Folders=new function(){
                 newFileName=file_path+fileName;
             //checks that there is not already another file with that name.
             if (FileSystem.isFile(newFileName)){
-                input.attr('data-content', 'file already exists ');
-                input.popover('show');  
+                actions.showError('file already exists ');
                 valid = false;
                 return false;
             } else {
                 valid = true;
             }
-
-            var new_file = {
-                name: newFileName,
-                data: '',
-            };
-            console.log(new_file);
-            console.log(valid);
-            if(valid)
-                FileSystem.newFile(new_file.name, new_file.data, function(data){
-                    displayFile(data);
-                    input.popover('destroy');
-                    input.detach();
-                    refresh();
-                    return true;
-                });
+            return newFileName;
         }
-        var childDiv = $($(parent).attr('href'));
-        var textInput = textNameInput(handleCreate, childDiv);
 
-        // var modal = new ModalDialog();
-        // modal.setTitle("New File");
-        // modal.setText("Enter a name for your file:");
-        // modal.inputBox({
-        //     prefix: '/' + FileSystem.getUserName() + file_path,
-        //     callback: handleCreate
-        // });
-        // modal.addButton('Cancel', 'dismiss');
-        // modal.addButton('Create', handleCreate, 'btn-primary');
-        // modal.show();
+        newFSObject(parent, validNewFileName, newFileAction, 'New File', 'new file name');
+
     }
+    function newFolder(file_path, parent){
+            //checks against regexp
+        function validFolderName(folderName, actions){
+            if(!isValidName(folderRegexp, folderName)){
+                actions.showError('Folder names cannot contain ., \\, \/, :, ", <, >, |, ?, or *');
 
+                return false;
+            }
+            var folderPath = file_path + folderName;
+            
+            //check hopefully there is not another folder already with that name. 
+            if(FileSystem.isFolder(folderPath)) {
+                actions.showError(folderPath+' is already a folder; please choose another name.');
+                return false;
+            }
+            return folderPath;
+        }
+        function newFolderAction(validFolderPath, actions){
+
+            FileSystem.newFolder(validFolderPath, function(){
+                actions.destroy()
+                refresh();
+            });
+        }
+        newFSObject(parent, validFolderName, newFolderAction, 'New Folder', 'new folder name');
+    }
     function deleteFile(path){
         var modal = new ModalDialog();
         modal.setTitle("Delete File");

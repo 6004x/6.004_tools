@@ -127,13 +127,20 @@ var FileSystem= function(){
         // Whitelist not blacklist of filenames
         var pathArray = fileName.match(delimRegExp);
         var followPath = fileTree;
-        for(var i in pathArray){
-
+        for(var i = 0; i < pathArray.length; i++){
+            var pathName = pathArray[i]
             // action function of 3 variables, the index, the current path, the current path name
             //, and the length of the whole pathArray. 
             // returns true if we can continue
-            if(action(i, followPath, pathArray[i], pathArray.length))
-                followPath = followPath[pathArray[i]];//.slice(1)];
+            try{
+                if(action(i, followPath, pathName, pathArray.length))
+                    followPath = followPath[pathName];//.slice(1)];
+            } catch(e) {
+                console.log(e.stack)
+                console.log(i)
+                console.log(pathArray);
+                console.log(followPath);
+            }
         }
         return followPath || {}; // wtf?
     }
@@ -186,68 +193,81 @@ var FileSystem= function(){
         }
     }
     this.getRelativeFile = function(fileName, relativeFile, callback, callbackFailed){
-
-        sendAjaxRequest(fileName, relativeFile, 'json', 'getRelative', function(data, status){
-            console.log(data);
-            //callback(data);
-            var pathArray = fileName.match(delimRegExp);
-            var relPathArray = relativeFile.match(delimRegExp);
-            var newPathArray = [];
-            console.log(pathArray);
-            console.log(relPathArray);
-            var first = true;
-            for (var i = pathArray.length - 2, j = 0; j < relPathArray.length; j++){
-                if(first){
-                    first = false;
-                } 
-                    if (relPathArray[j] === '..'){
-                        console.log('.. path')
-                        //newPathArray.push(pathArray[i]);
-                        //FIX DOUBLE ..
-                        i--;
-
-                        console.log(i);
-                    } else {
-                        console.log('current path'+i)
-                        var k = 0;
-                        for( k = 0; k <= i && k < pathArray.length - 1 ; k++){
-                            newPathArray.push(pathArray[k])
-                        }
-                        for ( k = j; k < relPathArray.length ; k++){
-                            var pathSeg = relPathArray[k];
-                            console.log(pathSeg)
-                            if(pathSeg !== '.' && pathSeg !== '..')
-                                newPathArray.push(pathSeg)
-                            else if(pathSeg === '.')
-                                console.log('. detected')
-                            else
-                                break;
-                        }
-                        if(k === relPathArray.length)
-                            break;
+        if(relativeFile.substring(0,1) == '/'){
+            //not a relative file, but a direct path
+            getFile(relativeFile, callback, callbackFailed);
+        } else {
+            //syntax
+            // .. for up a level
+            // . for up one level
+            // nothing for directly relative file
+            // / is not allowed as the first char, as that points to direct path file. 
+            sendAjaxRequest(fileName, relativeFile, 'json', 'getRelative', function(data, status){
+                console.log(data);
+                callback(data);
+            }, function(data, status){
+                console.log('failure');
+                var pathArray = fileName.match(delimRegExp);
+                var relPathArray = relativeFile.match(delimRegExp);
+                var newPathArray = [];
+                console.log(pathArray);
+                console.log(relPathArray);
+                var first = true;
+                for (var i = pathArray.length - 2, j = 0; j < relPathArray.length; j++){
+                    if(first){
+                        first = false;
                     } 
-                    if(i < -1)
-                        console.log('broke');
-            }
-            console.log(newPathArray);
-            
-            var newFilePath = '';
-            for (var i = 0; i < newPathArray.length; i++){
-                newFilePath += '/'+newPathArray[i];
-            }
-            console.log(newFilePath + ' is calculated')
-            console.log('compared to ' + data.newPath);
-            // getFile(newFilePath, function(data){
-            //     console.log(data)
-                
-            //     if(data.status === 'success'){
-            //         callback(data);
-            //     } else {
-            //         callbackFailed(data);
-            //     }
-            // }, callbackFailed);
+                        if (relPathArray[j] === '..'){
+                            console.log('.. path')
+                            //newPathArray.push(pathArray[i]);
+                            //FIX DOUBLE ..
+                            i--;
 
-        });
+                            console.log(i);
+                        } else {
+                            console.log('current path'+i)
+                            var k = 0;
+                            for( k = 0; k <= i && k < pathArray.length - 1 ; k++){
+                                newPathArray.push(pathArray[k])
+                            }
+                            for ( k = j; k < relPathArray.length ; k++){
+                                var pathSeg = relPathArray[k];
+                                console.log(pathSeg)
+                                if(pathSeg !== '.' && pathSeg !== '..')
+                                    newPathArray.push(pathSeg)
+                                else if(pathSeg === '.')
+                                    console.log('. detected')
+                                else if(pathSeg == '..'){
+                                    console.log('.. is not allowed here, sorry');
+                                } else
+                                    break;
+                            }
+                            if(k === relPathArray.length)
+                                break;
+                        } 
+                        if(i < -1)
+                            console.log('broke');
+                }
+                console.log(newPathArray);
+                
+                var newFilePath = '';
+                for (var i = 0; i < newPathArray.length; i++){
+                    newFilePath += '/'+newPathArray[i];
+                }
+                console.log(newFilePath + ' is calculated')
+                console.log('compared to ' + data.newPath);
+                // getFile(newFilePath, function(data){
+                //     console.log(data)
+                    
+                //     if(data.status === 'success'){
+                //         callback(data);
+                //     } else {
+                //         callbackFailed(data);
+                //     }
+                // }, callbackFailed);
+
+            });
+        }
     }
     this.saveFile = function(fileName, fileData, callback, callbackFailed){
         sendAjaxRequest(fileName, fileData,'json', 'saveFile', function(data, status){
@@ -352,11 +372,11 @@ var FileSystem= function(){
     };
     this.isFile = function(fileName){
         // console.log(fileName+' check if in allfiles');
-        return _.contains(allFiles, fileName)
+        return allFiles.indexOf(fileName) !== -1;
     }
     this.isFolder = function(folderName){
         // console.log(folderName+' check if in allFolders');
-        return _.contains(allFolders, folderName)
+        return allFolders.indexOf(folderName) !== -1;
     }
     this.setup = function(server){
 

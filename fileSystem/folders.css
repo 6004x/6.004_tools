@@ -16,6 +16,24 @@ li.file_name:hover{
 .file_name .file_button{
     border: 0px;
 }
+input.input_file_name[type="text"], li.input_file_name button{
+   height: 20px;
+   font-size: 14px;
+   line-height: 20px;
+   padding : 2px;
+   min-height : 10px;
+   /*border : initial;*/
+   
+}
+li.input_file_name button{
+    border-width : 0px;
+    padding: 2px;
+    padding-top: 0px;
+}
+button{
+
+    border : 0px;
+}
 .file_button_div,
 .folder_button_div{
 	text-align:right;
