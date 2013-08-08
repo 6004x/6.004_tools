@@ -11,7 +11,21 @@ html {
 
 /* This fixes the several pixel jump when toggling split screen caused by the right buttons being too tall. */
 .masthead {
-    height: 55px;
+    height: 40px;
+    margin-bottom:0px;
+    background-color:#FFC000;
+    margin-top:0px;
+    padding-top:2px;
+    text-align:center;
+}
+
+.masthead h1 {
+    margin-top:0px;
+    margin-bottom:5px;
+}
+
+.masthead .nav {
+    margin-bottom:5px;
 }
 
 /* Sidebar sizing */
@@ -43,22 +57,22 @@ html {
 .split-holder {
     float: left;
     overflow: hidden;
-    border-top: 1px solid #aaa;
 }
 
 .split-splitter {
     float: left;
     width: 10px;
     cursor: col-resize;
-    border-top: 1px solid #aaa;
 }
 
 .split-splitter > div {
     margin-left: auto;
     margin-right: auto;
-    width: 1px;
+    width: 3px;
     background-color: #aaa;
     height: 100%;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
 }
 
 /* Wrapping toolbars is bad. */
