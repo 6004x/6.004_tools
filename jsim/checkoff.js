@@ -51,15 +51,7 @@ var Checkoff = (function(){
     Test Results: called when the Checkoff button is pressed
     **************************/
     function testResults(){
-//        mResults = results;
         getResults();
-//        if (mResults === null){
-////            console.log("No results! Did you run the simulation?");
-//            var failedModal = new FailedModal('No results to verify. Did you run the \
-//simulation?');
-//            failedModal.show();
-//            return;
-//        }
         
         if (mCheckoff_statement === null){
             var failedModal = new FailedModal("No checkoff requested. Did you include the appropriate \
@@ -68,7 +60,6 @@ var Checkoff = (function(){
             return;
         }
         
-//        console.log("CURRENT RESULTS:",$('#results').data("current"));
         var mistake = runVerify();
         console.log("mistake:",mistake);
         if (!mistake){
@@ -78,7 +69,6 @@ var Checkoff = (function(){
             passedModal.addButton("Dismiss",'dismiss');
             passedModal.show();
         } else {
-//            console.log("time:",mistake.time);
             var failedModal = new ModalDialog()
             failedModal.setTitle("Checkoff Failed!");
             failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
@@ -112,10 +102,8 @@ var Checkoff = (function(){
     Run Verify: runs the stored verify statements
     **************************/
     function runVerify(){
-//        console.log("run verify called");
         for (var v = 0; v < mVerify_statements.length; v += 1){
             var vobj = mVerify_statements[v];
-//            console.log("vobj: ",vobj);
             
             var times = mResults._time_;
             var time_indices = [];
@@ -126,7 +114,6 @@ var Checkoff = (function(){
             for (var i = 0; i < nodes.length; i += 1){
                 results[nodes[i]] = [];
             }
-//            console.log("empty results obj:",results);
             
             if (vobj.type == "periodic"){
                 time_steps.push(vobj.tstart);
@@ -156,8 +143,6 @@ var Checkoff = (function(){
                     }
                 }
             }
-//                console.log("time indices: ",time_indices);
-//                console.log("filled results obj:",results);
                 
             var base;
             var base_prefix;
@@ -183,18 +168,13 @@ var Checkoff = (function(){
                 var nodeVals = []
                 var valAtTime = [];
                 for (var j = 0; j < nodes.length; j += 1){
-//                  console.log("node:",nodes[j],"val:",results[nodes[j]][i])
                     nodeVals.push(logic(results[nodes[j]][i]));
                 }
-//                    console.log("valAtTime:",valAtTime,"joined:",valAtTime.join(''));
-////                    console.log("parsed:",parseInt(valAtTime.join(''),2));
-//                    valAtTime = parseInt(valAtTime.join(''),2)
-//                    if (isNaN(valAtTime)) valAtTime = 'X';
-//                    else valAtTime = valAtTime.toString(base).split('');
                     
                 if (base == 2){
                     valAtTime = nodeVals.slice(0);
                 } else if (base == 8){
+                    // three binary digits equal one octal digit
                     // break into threes from the end
                     while (nodeVals.length > 0){
                         valAtTime.push(nodeVals.splice(-3,3))
@@ -204,6 +184,7 @@ var Checkoff = (function(){
                         if (valAtTime[j] === NaN) valAtTime[j] = "X";
                     }
                 } else if (base == 16){
+                    // four binary digits equal one hexadecimal digit
                     // break into fours from the end
                     while (nodeVals.length > 0){
                         valAtTime.push(nodeVals.splice(-4,4))
@@ -218,16 +199,12 @@ var Checkoff = (function(){
                     expectedVal.unshift("0");
                 }
                     
-//                    console.log('val at time',i+':',valAtTime);
-//                    console.log('expected:',expectedVal);
-                    
                 for (var k = 0; k < valAtTime.length; k += 1){
                     if (expectedVal[k] != valAtTime[k]){
                         mistake = true;
                         valAtTime[k] = "<span class='wrong'>"+valAtTime[k]+"</span>";
                     }
                 }
-//                    console.log("val2:",valAtTime);
                     
                 if (mistake){
                     return {time:time_steps[i],
@@ -254,17 +231,6 @@ var Checkoff = (function(){
         else return "X";
     }
     
-//    function multi_logic(numbers){
-//        for (var i = 0; i < numbers.length; i += 1){
-////            console.log('logic numbers[i]:',logic(numbers[i]));
-//            numbers[i] = logic(numbers[i]);
-//        }
-//        var joined = numbers.join("");
-//        return {val:parse_number("0b"+joined),symbols:"0b"+joined}
-////        console.log("numbers:",joined);
-////        console.log("parsed:",parseInt(joined,2));
-//    }
-    
     /*************************
     Exports
     **************************/
@@ -273,6 +239,6 @@ var Checkoff = (function(){
             testResults:testResults,
             addVerify:addVerify,
             setCheckoffStatement:setCheckoffStatement,
-            logic:logic
+//            logic:logic
            };
 }());

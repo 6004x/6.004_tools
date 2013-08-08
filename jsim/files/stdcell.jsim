@@ -1,0 +1,229 @@
+// 6.004 standard cell library (3/5/00)
+
+.options mem_cin=.005pf	// input terminal capacitance (F)
+.options mem_cout=0	// output terminal capacitance (F)
+.options mem_tr=1000	// output rise time (s/F)
+.options mem_tf=500	// output fall time (s/F)
+.options mem_tpd_regfile=2ns	// tpd when nlocs <= 128 (s)
+.options mem_tpd_sram=4ns	// tpd when 128 < nlocs <= 1024 (s)
+.options mem_tpd_dram=40ns	// tpd when nlocs > 1024 (s)
+.options mem_tcd=20ps	// contamination delay (s)
+
+.options mem_size_sram=5	// size of static memory cell (u**2)
+.options mem_size_access=1	// size of access fet to mem cell (u**2)
+.options mem_size_address_buffer=20 // size of memory address buffer (u**2)
+.options mem_size_address_decoder=4 // size of 1 bit's worth of memory address decoder (u**2)
+.options mem_size_output_buffer=30  // size of memory output buffer (u**2)
+.options mem_size_write_buffer=20  // size of memory write data buffer (u**2)
+
+/********************************************************************************
+********************************************************************************
+***
+***  constants, buffers and inverters
+***
+********************************************************************************
+********************************************************************************/
+
+.subckt constant0 z
+Gconstant0 or z size=0
+.ends
+
+.subckt constant1 z
+Gconstant1 and z size=0
+.ends
+
+.subckt buffer a z 
+Gbuffer and a z size=13 tcd=20ps tpd=80ps tr=2200 tf=1200 cin=.003pf
+.ends
+
+.subckt buffer_2 a z 
+Gbuffer_2 and a z size=17 tcd=20ps tpd=70ps tr=1100 tf=600 cin=.005pf
+.ends
+
+.subckt buffer_4 a z 
+Gbuffer_4 and a z size=30 tcd=20ps tpd=70ps tr=560 tf=300 cin=.010pf
+.ends
+
+.subckt buffer_8 a z 
+Gbuffer_8 and a z size=43 tcd=20ps tpd=70ps tr=280 tf=150 cin=.020pf
+.ends
+
+.subckt inverter a z
+Ginverter nand a z size=10 tcd=5ps tpd=20ps tr=2300 tf=1200 cin=.007pf
+.ends
+
+.subckt inverter_2 a z
+Ginterter_2 nand a z size=13 tcd=9ps tpd=20ps tr=1100 tf=600 cin=.013pf
+.ends
+
+.subckt inverter_4 a z
+Ginverter_4 nand a z size=20 tcd=9ps tpd=20ps tr=560 tf=300 cin=.027pf
+.ends
+
+.subckt inverter_8 a z
+Ginverter_8 nand a z size=56 tcd=20ps tpd=110ps tr=280 tf=150 cin=.009pf
+.ends
+
+.subckt tristate e a z
+Gtristate tristate_buffer e a z size=23 tcd=30ps tpd=150ps tr=2300 tf=1300 cin=.004pf tristate=1
+.ends
+
+.subckt tristate_2 e a z
+Gtristate_2 tristate_buffer e a z size=30 tcd=30ps tpd=130ps tr=1100 tf=600 cin=.006pf tristate=1
+.ends
+
+.subckt tristate_4 e a z
+Gtristate_4 tristate_buffer e a z size=40 tcd=20ps tpd=120ps tr=600 tf=300 cin=.011pf tristate=1
+.ends
+
+.subckt tristate_8 e a z
+Gtristate_8 tristate_buffer e a z size=56 tcd=20ps tpd=110ps tr=300 tf=170 cin=.02pf tristate=1
+.ends
+
+/********************************************************************************
+********************************************************************************
+***
+***  AND gates
+***
+********************************************************************************
+********************************************************************************/
+
+.subckt and2 a b z
+Gand2 and a b z size=13 tcd=30ps tpd=120ps tr=4500 tf=2300 cin=.002pf
+.ends
+
+.subckt and3 a b c z
+Gand3 and a b c z size=17 tcd=30ps tpd=150ps tr=4500 tf=2600 cin=.002pf
+.ends
+
+.subckt and4 a b c d z
+Gand4 and a b c d z size=20 tcd=30ps tpd=160ps tr=4500 tf=2800 cin=.002pf
+.ends
+
+/********************************************************************************
+********************************************************************************
+***
+***  NAND gates
+***
+********************************************************************************
+********************************************************************************/
+
+.subckt nand2 a b z
+Gnand2 nand a b z size=10 tcd=10ps tpd=30ps tr=4500 tf=2800 cin=.004pf
+.ends
+
+.subckt nand3 a b c z
+Gnand3 nand a b c z size=13 tcd=10ps tpd=50ps tr=4200 tf=3000 cin=.005pf
+.ends
+
+.subckt nand4 a b c d z
+Gnand4 nand a b c d z size=17 tcd=10ps tpd=70ps tr=4400 tf=3500 cin=.005pf
+.ends
+
+/********************************************************************************
+********************************************************************************
+***
+***  OR gates
+***
+********************************************************************************
+********************************************************************************/
+
+.subckt or2 a b z
+Gor2 or a b z size=13 tcd=30ps tpd=150ps tr=4500 tf=2500 cin=.002pf
+.ends
+
+.subckt or3 a b c z
+Gor3 or a b c z size=17 tcd=40ps tpd=210ps tr=4500 tf=2500 cin=.003pf
+.ends
+
+.subckt or4 a b c d z
+Gor4 or a b c d z size=20 tcd=60ps tpd=290ps tr=4500 tf=2600 cin=.003pf
+.ends
+
+/********************************************************************************
+********************************************************************************
+***
+***  NOR gates
+***
+********************************************************************************
+********************************************************************************/
+
+.subckt nor2 a b z
+Gnor2 nor a b z size=10 tcd=10ps tpd=50ps tr=6700 tf=2400 cin=.004pf
+.ends
+
+.subckt nor3 a b c z
+Gnor3 nor a b c z size=13 tcd=20ps tpd=80ps tr=8500 tf=2400 cin=.005pf
+.ends
+
+.subckt nor4 a b c d z
+Gnor4 nor a b c d z size=20 tcd=20ps tpd=120ps tr=9500 tf=2400 cin=.005pf
+.ends
+
+/********************************************************************************
+********************************************************************************
+***
+***  XOR gates
+***
+********************************************************************************
+********************************************************************************/
+
+.subckt xor2 a b z
+Gxor2 xor a b z size=27 tcd=30ps tpd=140ps tr=4500 tf=2500 cin=.006pf
+.ends
+
+.subckt xnor2 a b z
+Gxnor2 xnor a b z size=27 tcd=30ps tpd=140ps tr=4500 tf=2500 cin=.006pf
+.ends
+
+/********************************************************************************
+********************************************************************************
+***
+***  AOI/OAI gates
+***
+********************************************************************************
+********************************************************************************/
+
+.subckt aoi21 a1 a2 b z
+Ginternal and a1 a2 a cin=.005pf
+Gaoi21 nor a b z size=13 tcd=20ps tpd=70ps tr=6800 tf=2700 cin=.005pf
+.ends
+
+.subckt oai21 a1 a2 b z
+Ginternal or a1 a2 a cin=.005pf
+Goai21 nand a b z size=17 tcd=20ps tpd=70ps tr=6700 tf=2700 cin=.005pf
+.ends
+
+/********************************************************************************
+********************************************************************************
+***
+***  Muxes
+***
+********************************************************************************
+********************************************************************************/
+
+.subckt mux2 s d0 d1 z
+Gmux2 mux2 s d0 d1 z size=27 tcd=20ps tpd=120ps tr=4500 tf=2500 cin=.005pf
+.ends
+
+.subckt mux4 s0 s1 d0 d1 d2 d3 z
+Ginternal1 mux2 s0 d0 d1 a cin=.006pf
+Ginternal2 mux2 s0 d2 d3 b cin=.006pf
+Gmux4 mux2 s1 a b z size=66 tcd=40ps tpd=190ps tr=4500 tf=2500 cin=.006pf
+.ends
+
+/********************************************************************************
+********************************************************************************
+***
+***  Registers
+***
+********************************************************************************
+********************************************************************************/
+
+.subckt dreg d clk q
+Gdreg dreg d clk q size=56 tcd=30ps tpd=190ps tr=4300 tf=2500 cin=.002pf ts=200ps th=25ps
+.ends
+
+.subckt dlatch d clk q
+Gdlatch dlatch d clk q size=36 tcd=30ps tpd=190ps tr=4300 tf=2500 cin=.002pf
+.ends
