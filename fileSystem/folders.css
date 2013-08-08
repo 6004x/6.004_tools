@@ -7,7 +7,7 @@ li.file_name:hover{
 .folder_button_div span.btn{
     margin : 0;
 }
-.folderName span{
+.folder_name span{
     margin-left : 5px;
     font : bold sans-serif;
     color : black;
@@ -15,22 +15,21 @@ li.file_name:hover{
 .file_name .file_button{
     border: 0px;
 }
-input.input_file_name[type="text"], li.input_file_name button{
+input.input_file_name[type="text"], div.input_file_name button{
    height: 20px;
    font-size: 14px;
    line-height: 20px;
-   padding : 2px;
+   padding : initial;
    min-height : 10px;
-   /*border : initial;*/
-   
+   border : solid 1px black;
+   margin : initial;
+   border-radius : initial;
 }
-li.input_file_name button{
-    border-width : 0px;
-    padding: 2px;
+div.input_file_name button{
     padding-top: 0px;
+    border:initial;
 }
 button{
-
     border : 0px;
 }
 .file_button_div,
@@ -50,7 +49,6 @@ button{
     top:0;
 	display:inline-block;
     vertical-align: center;
-    background-color: lightyellow;
 }
 .file_name:hover .file_button_div{
    display:block;
@@ -63,11 +61,11 @@ button{
     display: none;
 }
 .file_name:hover .file_button,
-.folderName:hover .folder_button {
+.folder_name:hover .folder_button {
     display: inline;
 }
 .file_name,
-.folderName {
+.folder_name {
     cursor: pointer;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -75,20 +73,12 @@ button{
     user-select: none;
     position: relative;
 }
-li.rootFolderName{
-    background-color:rgba(255, 192, 0, .8);
-    position : relative;
-   /* right : 0;*/
-}
-li.rootFolderName:hover{
-    background-color:rgba(50, 101, 255, .8);
-}
 .file_name{
     vertical-align: center;
     position : relative;
 }
 .file_name:hover {
-    background-color: lightblue;
+    /*background-color: lightblue;*/
 }
 .sidebar-nav li{
 	list-style-type: none;
@@ -104,16 +94,17 @@ li.rootFolderName:hover{
     text-align: center;
     width: 100%;
 }
-.filePaths{
+.file_paths{
     padding:0px;
+    overflow-x : auto; 
 }	
-.folderName {
+.folder_name {
     z-index:3;
 }
-.folderName:hover{
+.folder_name:hover{
     background-color:lightblue;
 }
-.folderContents{
+.folder_contents{
     border:none;
     border-radius: 4px;
     z-index: 2;

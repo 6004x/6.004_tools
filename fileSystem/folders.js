@@ -9,7 +9,7 @@ var Folders=new function(){
     //attaches file list to the default node
     function refresh(){
         $('.tooltip').hide();
-        getFileList(rootNode.find('.filePaths'));
+        getFileList(rootNode.find('.file_paths'));
     }
 
     var isLoadingFileList = false;
@@ -37,6 +37,8 @@ var Folders=new function(){
                         $('#'+key).collapse('show')
                     }
                 }
+                FileSystem.getUserName();
+
             }, noServer
         );
         var level = 0;
@@ -155,11 +157,11 @@ var Folders=new function(){
                     function cloneFileName(e){
                         var current = $(e.currentTarget)
                         var div = $('<div>').append(current.text()).addClass('dragging_div file_name');
-                        $('.filePaths').append(div)
+                        $('.file_paths').append(div)
                         return div;
                     }
                     listVar.draggable({
-                        'containment' : '.filePaths',
+                        'containment' : '.file_paths',
                         'cursor' : 'move',
                         'delay' : 300,
                         'helper' : cloneFileName,
@@ -177,18 +179,18 @@ var Folders=new function(){
 
                     //collapser area will hold the folder name and will 
                     //allow user to hide and expand folderContents
-                    var folderContentsDiv = addDiv('folderContents')
+                    var folderContentsDiv = addDiv('folder_contents')
                         .attr({
                             'data-path': parentPath+name+'/',
                         });
-                    var collapser = $('<li>').addClass('folderName')
+                    var collapser = $('<li>').addClass('folder_name')
                         .attr({
                             'data-toggle':'collapse',
                             'href':'#'+collapseName,
                             'data-path': parentPath+name+'/',
                         });
                     if(level === 1)//keep track of the root
-                        collapser.addClass('rootFolderName');
+                        collapser.addClass('root_folder_name');
 
                     folderContentsDiv.append(collapser);
                     //add folder name and the arrow
@@ -253,14 +255,14 @@ var Folders=new function(){
                         e.stopPropagation();
                     });
 
-                    if(Object.keys(subList).length>0){
+                    if(Object.keys(subList).length > 1){
                         //if the subfolder has files inside
                         //recursively fill the tree out
                         addFiles(subList, subListUL,parentPath+name+'/');
                     }
                     else{
                         //the subfolder has no files inside, it's an empty folder
-                        subListUL.append('[empty folder]');
+                        subListUL.append(addDiv('muted').text('[empty folder]'));
                     }
                     folderContentsDiv.append(subListUL);
 
@@ -357,7 +359,7 @@ var Folders=new function(){
             'placeholder' : defaultText,
         })
         var cancelButton = $('<button>').addClass('add-on btn btn-danger')
-            .append('&times;').css('padding-top', '0px');
+            .append('&times;').css('padding-top', '0px').css('border', 'initial');
 
         var actions = {
             showError : function(message){
@@ -577,9 +579,8 @@ var Folders=new function(){
     function addButtons(buttonDiv){
         var toolbar = new Toolbar(buttonDiv);
         toolbar.addButtonGroup([
-            new ToolbarButton('icon-chevron-left', hideNavBar, 'Hide Folders'),
             new ToolbarButton('icon-refresh', refresh, 'Refresh'),
-            new ToolbarButton('icon-off', _.identity, 'Commit and Close')
+            new ToolbarButton('icon-off', _.identity, 'temp')
         ]);
     }
 
@@ -591,8 +592,9 @@ var Folders=new function(){
         addButtons(buttonDiv);
 
         sideBarNav = addDiv('sidebar-nav');
-        var filesWrapper = $('<ul>').addClass('filePaths nav nav-list nav-stacked');
-        
+        var filesWrapper = $('<ul>').addClass('file_paths nav nav-list nav-stacked');
+        filesWrapper.height(window.innerHeight - filesWrapper.offset().top);
+        $(window).on('resize',function(){filesWrapper.height(window.innerHeight - filesWrapper.offset().top);})
         sideBarNav.append(filesWrapper);
 
         var username = FileSystem.getUserName();

@@ -103,8 +103,13 @@ function TapeList(){
 		//peeks at current;
 		if(current)
 			return current.data;
-		else
-			return null;
+		else{
+			if(first === null)
+				self.append('-');
+			current = first;
+			console.log('starting peek traverse');
+			return first.data;
+		}
 	}
 
 	//attaches a node with data as the first pointer of the LL

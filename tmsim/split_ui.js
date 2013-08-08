@@ -7,7 +7,7 @@
         var mTop = $(top_node);
         var mBottom = $(bottom_node);
 
-        $(window).on('resize',function(){mHeight = mContainer.height();console.log(mHeight)})
+        $(window).on('resize',function(){mHeight = mContainer.height();})
         this.split = function() {
             splitSide(mTop);
             splitSide(mBottom);

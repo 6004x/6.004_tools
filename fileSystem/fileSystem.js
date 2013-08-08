@@ -53,7 +53,7 @@ var FileSystem= function(){
                         fileTree = data.data;
                         allFiles=[];
                         allFolders=[];
-                        console.log(fileTree);
+                        // console.log(fileTree);
                         makeListOfFiles(fileTree,'');
 
                         // console.log(allFolders);
@@ -147,6 +147,7 @@ var FileSystem= function(){
     function getFileFromTree(fileName){
         var finalTree = traverseTree(fileName, function(i, tree){return true;} );
         console.log(finalTree);
+        //TODO fix, length does not work for objects
         if(finalTree.length == 0)
             return false;
         //else there is a file
@@ -174,10 +175,8 @@ var FileSystem= function(){
         //username or some sort of authentication
         console.log(fileName);
         var file = null;
-        console.log(fileTree);
         if(Object.keys(fileTree).length > 0)
             file = getFileFromTree(fileName);
-        
         if(online){
             sendAjaxRequest(fileName,null, 'json', 'getFile', function(data, status){
                 if(status=='success'){
@@ -205,7 +204,8 @@ var FileSystem= function(){
             sendAjaxRequest(fileName, relativeFile, 'json', 'getRelative', function(data, status){
                 console.log(data);
                 callback(data);
-            }, function(data, status){
+            });
+            function getRelativeLocal(){
                 console.log('failure');
                 var pathArray = fileName.match(delimRegExp);
                 var relPathArray = relativeFile.match(delimRegExp);
@@ -266,7 +266,7 @@ var FileSystem= function(){
                 //     }
                 // }, callbackFailed);
 
-            });
+            }
         }
     }
     this.saveFile = function(fileName, fileData, callback, callbackFailed){
@@ -365,6 +365,7 @@ var FileSystem= function(){
             sendAjaxRequest('/', null, "json", "getUser", function(data){
                 mUsername = data.user;
                 console.log(data);
+                online = true;
                 return mUsername;
             })
         else
