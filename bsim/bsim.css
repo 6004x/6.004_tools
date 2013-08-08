@@ -1,47 +1,31 @@
-.tab-pane {
-    border-bottom: 1px solid #ddd;
-    border-left: 1px solid #ddd;
-    border-right: 1px solid #ddd;
-}
-.nav-tabs {
-    margin-bottom: 0;
-}
-
-.nav-pills li {
-    cursor: pointer;
-}
-
 button.btn {
     cursor: pointer;
 }
 
 #filetree {
-    display: none;
-    float: left;
-}
-
-.maximised #filetree {
     display: block;
-    width: 250px;
+    width: 100%;
 }
 
 #editor {
     width: 100%;
-    float: left;
 }
 
-.maximised #editor {
-    width: -webkit-calc(100% - 250px);
-    width: calc(100% - 250px);
+#programmer-view .content {
+    position: relative;
 }
 
 .regfile .register {
     color: gray;
     text-align: right;
+    padding-left: 10px;
+    padding-right: 5px;
 }
 
 table.regfile {
     border: 1px solid gray;
+    width: 452px;
+    background-color: white;
 }
 
 .regfile, .disassembly, .tty, .memory, .stack, .pc-value, .pc-label {
@@ -63,19 +47,21 @@ pre.tty-output {
 }
 
 .tty {
-    width: calc(97.2% - 20px);
+    width: 454px;
 }
 
 div.stack-holder {
-    float: right;
-    margin-right: 20px;
+    position: absolute;
+    left: 500px;
+    top: 0px;
     width: 170px;
-    display: none;
+    /*display: none;*/
 }
 
 div.stack {
     border: 1px solid gray;
-    height: 352px;
+    height: 398px;
+    background-color: white;
 }
 
 .stack td:nth-child(1) {
@@ -83,15 +69,11 @@ div.stack {
     text-align: right;
 }
 
-.maximised div.stack-holder {
-    display: block;
-}
-
 div.memory-holder {
-    float: right;
-    margin-right: 20px;
+    position: absolute;
+    top: 0px;
+    left: 700px;
     width: 140px;
-    display: none;
 }
 
 .memory-key ul {
@@ -116,11 +98,8 @@ div.memory-holder {
 
 div.memory {
     border: 1px solid gray;
-    height: 352px;
-}
-
-.maximised div.memory-holder {
-    display: block;
+    height: 398px;
+    background-color: white;
 }
 
 .memory td:nth-child(1), .stack td:nth-child(2) {
@@ -218,6 +197,7 @@ div.disassembly {
     overflow-x: hidden;
     width: 450px;
     border: 1px solid gray;
+    background-color: white;
 }
 
 .disassembly td {
@@ -246,9 +226,4 @@ div.disassembly {
     border-top: 2px solid black;
     border-bottom: 2px solid black;
     line-height: 18px;
-}
-
-/* This fixes the several pixel jump when toggling split screen caused by the right buttons being too tall. */
-.masthead {
-    height: 55px;
 }

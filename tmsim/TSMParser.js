@@ -205,10 +205,19 @@ function TSMparser(){
 				if(args.length == 5){
 					var state = args[0];
 					var read_symbol = args[1];
+
 					var transition = new Object();
 					transition.new_state = args[2];
 					transition.write = args[3];
 					transition.move = args[4];
+					transition.lineNumber = lineNumber;
+					//two actions for the same state
+					if(tsmDict[state].transition[read_symbol]){
+						message = 'you have two actions for state '+state+' at symbol ' + read_symbol;
+						exceptions.push({
+							message:message, lineNumber:lineNumber,
+						})
+					}
 					if(_.contains(validStates,state)
 						&&_.contains(validStates, transition.new_state)
 						&&_.contains(validSymbols, read_symbol)
@@ -315,7 +324,7 @@ function TSMparser(){
 			}
 		}
 
-		tsm.setup(tsmDict);
+		tsm.setup(tsmDict, validSymbols);
 		if(exceptions.length > 0)
 			throw exceptions;
 		return tsmDict;
@@ -402,7 +411,7 @@ function TSMparser(){
 				tapeContents.push(token)
 			}
 		}
-		return (new TapeList()).init(tapeContents, selectedIndex);
+		return (new TapeList()).init(tapeName, tapeContents, selectedIndex);
 	}
 
 	return {parse:parse, flattenMachine:flattenMachine, getResults:getResults, getTSM:getTSM, getLists:getLists}

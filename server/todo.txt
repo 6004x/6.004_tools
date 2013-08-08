@@ -1,17 +1,25 @@
 to add
 
+semi working? normalizing ../
+other path names
+.include functionality
+
+SCROLLING FILE SYSTEM
+ORDERED LIST OF FILES
+
+
+KEYWORD ~ for version control
+
 delete
 indexedDB?
 algorithm for local storage?
 version control
-KEYWORD ~ for version control
-hover on for buttons (delete, rename)
+
 cygwin apache server for authentication
-ca server certificate
-environment variables pass to node
+
+environment variables pass to node?
 
 when new file renaming after old file?
-
 
 	filesystem object
 
@@ -26,27 +34,18 @@ when new file renaming after old file?
 	filepath:
 	success:true/false
 	//come from either server, or not able to access server
-	filecontents:..
+	data:..
 	}
 
-normalizing ../
-other path names
-.include functionality
-newfile with me
 
 roboant
 tsim
 
-x rename twice. First time doesn't refresh, second time it won't let you, file not found
 
-x get rid of tooltips. 
-get rid of foldernames in tooltips
-animate arrows before the collapsing
-x cursor hover
-highlight row on hover
+get rid of tooltips. 
 
 TMSIM bugs:
 check syntax
+check overlapping actions
 
-hide folder button
 

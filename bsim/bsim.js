@@ -1,28 +1,46 @@
 BSim = {};
 
 $(function() {
-    var split = new SplitUI('#split-container', '#editor-pane', '#simulation-pane');
-    split.maximiseLeft();
-
-    var activeButton = function(callback) {
-        return function() {
-            $(this).siblings().removeClass('active');
-            $(this).addClass('active');
-            callback();
-        };
-    }
+    var split = new SplitPane('#split-container', ['#filetree', '#editor-pane', '#simulation-pane']);
+    split.setPaneWidth(0, 200);
+    split.setPaneWidth(1, $(window).width() - 220);
+    split.setPaneWidth(2, 0);
 
     // Set up the split buttons.
-    $('#maximise_editor').click(activeButton(split.maximiseLeft));
-    $('#split_pane').click(activeButton(split.split));
-    $('#maximise_simulation').click(activeButton(split.maximiseRight));
+    $('#maximise_editor').click(function() {
+        split.setPaneWidth(0, 200);
+        split.setPaneWidth(1, $(window).width() - 220);
+        split.setPaneWidth(2, 0);
+    });
+    $('#split_pane').click(function() {
+        var width = $(window).width() - 20;
+        split.setPaneWidth(0, 0);
+        split.setPaneWidth(1, width/2);
+        split.setPaneWidth(2, width/2);
+    });
+    $('#maximise_simulation').click(function() {
+        var width = $(window).width() - 20;
+        split.setPaneWidth(0, 0);
+        split.setPaneWidth(1, 0);
+        split.setPaneWidth(2, width);
+    });
+
+    split.on('resize', function(widths) {
+        if(widths[2] == 0) {
+            $('#maximise_editor').addClass('active').siblings().removeClass('active');
+        } else if(widths[0] == 0 && widths[1] == 0) {
+            $('#maximise_simulation').addClass('active').siblings().removeClass('active');
+        } else {
+            $('#split_pane').addClass('active').siblings().removeClass('active');
+        }
+    });
 
 
     // Make an editor
     var editor = new Editor('#editor', 'uasm');
 
     // Filesystem tree thing
-    FileSystem.setup('mattpf', 'https://6004.mattpf.net:6004/');
+    FileSystem.setup('https://6004.mattpf.net:6004/');
     Folders.setup('#filetree', editor, 'uasm');
 
     var do_assemble = function() {
@@ -61,7 +79,7 @@ $(function() {
                 } else {
                     beta.setVerifier(null);
                 }
-                if(split.currentState() == 'left') {
+                if(split.currentState()[2] == 0) {
                     $('#maximise_simulation').click();
                 }
             }
@@ -73,10 +91,11 @@ $(function() {
     // And a couple of tabs.
     editor.openTab(null, '');
     var set_height = function() {
-        editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
+        editor.setHeight(document.documentElement.clientHeight - 90); // Set height to window height minus title.
     }
     set_height();
     $(window).resize(set_height); // Update the height whenever the browser window changes size.
+    split.on('resize', _.throttle(editor.redraw, 50));
 
     // Stuff for the simulator
 
@@ -108,6 +127,11 @@ $(function() {
 
     new BSim.Beta.ErrorHandler(beta);
     new BSim.SchematicView($('svg.schematic'), beta);
+
+    // Work around weird sizing bug.
+    _.delay(function() {
+        $(window).resize();
+    }, 10);
 
     // // Convenient way of loading a file for testing and such.
     // var neuter = function(e) {

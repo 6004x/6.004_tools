@@ -15,8 +15,8 @@ var Editor = function(container, mode) {
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
-    var mMarkedLines = []; // List of lines we need to clear things from when requested.
-
+    var mMarkedLines  = []; // List of lines we need to clear things from when requested.
+   
     _.extend(this, Backbone.Events);
 
     // Given a list of ToolbarButtons, adds a button group.
@@ -81,6 +81,7 @@ var Editor = function(container, mode) {
         mMarkedLines = [];
     };
 
+
     // Highlight the given line by applying the CSS class cls
     // Returns an object with a clear() method that will remove the class again.
     this.addLineClass = function(filename, line, cls) {
@@ -101,6 +102,13 @@ var Editor = function(container, mode) {
         if(!document) return false;
         document.cm.scrollIntoView({line: line, chr: chr|0});
         return true;
+    };
+
+    // Makes sure the edit buffer is displayed correctly.
+    this.redraw = function() {
+        if(mCurrentDocument) {
+            mCurrentDocument.cm.refresh();
+        }
     };
 
     // Opens a new tab with the given filename and content.
@@ -316,10 +324,6 @@ var Editor = function(container, mode) {
         $(this).text("\u00D7"); // U+00D7 MULTIPLICATION SIGN
     };
 
-    var create_new_document = function() {
-        self.openTab(null, '', true);
-    };
-
     var save_current_document = function() {
         if(!mCurrentDocument) return;
         do_save();
@@ -339,8 +343,6 @@ var Editor = function(container, mode) {
         mToolbar = new Toolbar(mToolbarHolder);
         // Add some basic button groups
         self.addButtonGroup([
-            new ToolbarButton('icon-file', create_new_document, "New file"),
-            new ToolbarButton('icon-refresh'),
             new ToolbarButton('icon-hdd', save_current_document, "Save current file")
         ]);
         mContainer.append(mToolbarHolder);

@@ -30,7 +30,7 @@ $(function() {
     var mode = 'jsim';
     var editor = new Editor('#editor', mode);
     
-    FileSystem.setup('seterman', 'https://localhost:6004');
+    FileSystem.setup('https://localhost:6004');
     Folders.setup('.span3', editor, mode);
     
     

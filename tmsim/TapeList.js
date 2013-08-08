@@ -5,6 +5,7 @@ function TapeList(){
 	var previous = null; //saves the previous current node, keeps track of last written
 	var last = null;
 	var size = 0;
+	self.name = '';
 
 	/*
 		Node component og the tapeList, each tapelist will have a linked list
@@ -21,7 +22,8 @@ function TapeList(){
 		with such contents. If there isn't a list provided, initalize the list with
 		a blank '-' node. 
 	*/
-	this.init = function(listArray, currentIndex){
+	this.init = function(name, listArray, currentIndex){
+		self.name = name;
 		if(listArray){
 			makeList(listArray, currentIndex);
 		}
@@ -101,8 +103,13 @@ function TapeList(){
 		//peeks at current;
 		if(current)
 			return current.data;
-		else
-			return null;
+		else{
+			if(first === null)
+				self.append('-');
+			current = first;
+			console.log('starting peek traverse');
+			return first.data;
+		}
 	}
 
 	//attaches a node with data as the first pointer of the LL
@@ -182,15 +189,26 @@ function TapeList(){
 	this.toArray = function(){
 		var tempNode=first;
 		var arrayLL=[];
-		var index = 0; var currentIndex = 0, previousIndex = null;
-		while(tempNode!=null){
-			arrayLL.push(tempNode.data);
-			if(tempNode == current)
-				currentIndex = index;
-			else if(tempNode == previous)
-				previousIndex = index;
-			tempNode=tempNode.next;
-			index++;
+		var index = 0; 
+		var currentIndex = 0, previousIndex = null;
+		var trimBeginning = true;
+		var trimEnd = true;
+		while(tempNode != null){
+
+			if(tempNode.data === '-' && trimBeginning){
+				console.log('trimming')
+				tempNode=tempNode.next;
+			}
+			else {
+				trimBeginning = false;
+				arrayLL.push(tempNode.data);
+				if(tempNode == current)
+					currentIndex = index;
+				else if(tempNode == previous)
+					previousIndex = index;
+				tempNode=tempNode.next;
+				index++;
+			}
 		}
 
 		return {array:arrayLL, currentIndex:currentIndex, previousIndex:previousIndex};
@@ -217,10 +235,10 @@ function TapeList(){
 	this.equals=function(otherTape){
 		//dependent on access to the other current node... might scrap that for array representation
 
-		mArray = self.toArray();
-		tArray = otherTape.toArray();
+		mArray = self.toArray().array;
+		tArray = otherTape.toArray().array;
 
-		if(mArray.length!=tArray.length){
+		if(mArray.length != tArray.length){
 			console.log('tapes are different size');
 			return false;
 		}
@@ -228,22 +246,23 @@ function TapeList(){
 		var equalArray = true;
 		for (var i =0; i < mArray.length; i++){
 			if(equalArray)
-				equalArray = (mArray[i] == tArray[i]);
+				equalArray = (mArray[i] === tArray[i]);
 		}
+		console.log(equalArray);
 		if (equalArray){
-			console.log('tapes are the same');
 			//now we must traverse and see if current is the same in both.
 			var tempMCurr = self.getCurrentNode();
 			var tempTCurr = otherTape.getCurrentNode();
 			
-			if(tempMCurr!=tempTCurr){
+			if(tempMCurr !== tempTCurr){
 				console.log('current node is not the same');
 				return false;
 			}
 
 			var compare = true;
-			while(tempMCurr!=null){
-				compare = tempMCurr.data == tempTCurr.data;
+
+			while(tempMCurr != null && tempTCurr != null){
+				compare = tempMCurr.data === tempTCurr.data;
 				//can we do this?
 				if(!compare)
 					break;
@@ -261,10 +280,12 @@ function TapeList(){
 	}
 	this.cloneTape = function(){
 		var clone = new TapeList();
-		var toClone = self.toArray();
-		clone.init(toClone.array, toClone.currentIndex);
-		if(clone.equals(self))
+		var toCloneArray = self.toArray();
+		clone.init(self.name, toCloneArray.array, toCloneArray.currentIndex);
+		if(clone.equals(self)){
 			return clone;
+		}	
+			
 		else
 			console.log('clone not equal');
 	}
