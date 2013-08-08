@@ -50,6 +50,7 @@ $(function() {
     var editor = new Editor('#editor', mode);
     
     FileSystem.setup('https://6004.mattpf.net:6004/');
+//    FileSystem.setup('https://localhost:6004');
     Folders.setup('#filetree', editor, mode);
     
     
@@ -93,9 +94,9 @@ $(function() {
     }
 
     // Add some buttons to it
-    editor.addButtonGroup([new ToolbarButton('<img src="simulate.png"> Simulate',
+    editor.addButtonGroup([new ToolbarButton('<img src="simulate.png" style="position:relative;bottom:1px">',
                                              dls, 'Device-level Simulation'),
-                           new ToolbarButton('<img src="gatesim.png"> Simulate',
+                           new ToolbarButton('<img src="gatesim.png" style="position:relative;bottom:2px">',
                                              gls, 'Gate-level Simulation')]);
     
     editor.addButtonGroup([new ToolbarButton('Checkoff',function(){
