@@ -19,9 +19,9 @@ var path=require('path');
 		// console.log(request.url);
 		// console.log(file_path);
 		if(user){
-			user_path=path.join(lib_path, user);
-			shared_path=path.join(lib_path, 'shared')
-			full_path=path.join(user_path,file_path);
+			user_path = path.join(lib_path, user);
+			shared_path = path.join(lib_path, 'shared')
+			full_path = path.join(user_path,file_path);
 			console.log(user_path)
 		}
 		if(!fs.existsSync(user_path))

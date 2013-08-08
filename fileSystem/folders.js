@@ -108,7 +108,7 @@ var Folders=new function(){
                 }
                 //collapseName is name without whitespace
                 if(name.indexOf('~') > -1){
-                    //metadata
+                    //metadata, ignore
                     // console.log(name);
                 } else if(subList['~type'] === 'file') {
                     //if the name does not have a period, then it is a file and not a folder
@@ -253,14 +253,14 @@ var Folders=new function(){
                         e.stopPropagation();
                     });
 
-                    if(Object.keys(subList).length>0){
+                    if(Object.keys(subList).length>1){
                         //if the subfolder has files inside
                         //recursively fill the tree out
                         addFiles(subList, subListUL,parentPath+name+'/');
                     }
                     else{
                         //the subfolder has no files inside, it's an empty folder
-                        subListUL.append('[empty folder]');
+                        subListUL.append(addDiv('muted').text('[empty folder]'));
                     }
                     folderContentsDiv.append(subListUL);
 
@@ -578,53 +578,11 @@ var Folders=new function(){
     function addButtons(buttonDiv){
         var toolbar = new Toolbar(buttonDiv);
         toolbar.addButtonGroup([
-            new ToolbarButton('icon-chevron-left', hideNavBar, 'Hide Folders'),
             new ToolbarButton('icon-refresh', refresh, 'Refresh'),
             new ToolbarButton('icon-off', _.identity, 'Commit and Close')
         ]);
-
-        //now adding editor buttons
-        editor.addButtonGroup([new ToolbarButton('show folders',showNavBar, '')]);
     }
 
-    function hideNavBar(){
-        rootNode.css('position', 'relative');
-        var width=-(rootNode.width());
-        var editorWrapper = $('.span9');
-        console.log(width);
-        rootNode.animate({'left' :width}, 500, 'swing', function(){
-                rootNode.detach()
-        });
-        var offset = -editorWrapper.offset().left + parseInt(editorWrapper.css('margin-left'));
-        console.log(offset)
-        editorWrapper.css('position', 'relative')
-        editorWrapper.animate({'left' : offset}, 500, 'swing', function(){
-            editorWrapper.removeClass('span9').addClass('span12');
-            editorWrapper.css('left', 0);
-        });
-    }
-
-    function showNavBar(){
-        if(rootNode.parent().length==0){
-            var editorWrapper = $('.span12');
-            editorWrapper.removeClass('span12').addClass('span9');
-
-            console.log(rootNode.parent());
-
-            $('.row').prepend(rootNode);
-            var width=(rootNode.width());
-            editorWrapper.css('left', -width);
-            console.log(width);
-            editorWrapper.removeClass('float-right');
-            
-            rootNode.animate({'left' :0}, 500, 'swing', function(){
-                
-            });
-            editorWrapper.animate({'left' :0}, 500, 'swing', function(){
-                editorWrapper.removeClass('span12').addClass('span9')
-            });
-        }
-    }
     function setup(root, editorN, mode){
         rootNode = $(root);
         editor = editorN;

@@ -13,7 +13,7 @@
 var BigTable = function(container, width, height, row_height, column_count) {
     var mContainer = $(container);
     var mRowHeight = row_height;
-    var mDisplayRowCount = Math.round(height / row_height);
+    var mDisplayRowCount = Math.floor(height / row_height);
     var mWidth = width;
     var mHeight = mDisplayRowCount * mRowHeight;
     var mColumnCount = column_count;

@@ -11,6 +11,7 @@
         <script src="../editor/toolbar.js"></script>
         <script src="../editor/editor.js"></script>
         <script src="../editor/prompt.js"></script>
+        <script src="../editor/split_pane.js"></script>
         <script src="../editor/autocomplete.js"></script>
         <script src="../editor/external/codemirror-extensions.js"></script>
         <script src="../editor/modes/uasm.js"></script>
@@ -19,7 +20,6 @@
         <script src="external/sstream.js"></script>
         <script src="external/dequeue.js"></script>
         <script src="assemble.js"></script>
-        <script src="split_ui.js"></script>
         <script src="bsim.js"></script>
         <script src="simulation/bsim_common.js"></script>
         <script src="simulation/big_table.js"></script>
@@ -28,7 +28,6 @@
         <script src="simulation/beta_instructions.js"></script>
         <script src="simulation/regfile_view.js"></script>
         <script src="simulation/controls.js"></script>
-        <script src="simulation/projcheckoff.js"></script>
         <script src="simulation/tty.js"></script>
         <script src="simulation/disassembled_view.js"></script>
         <script src="simulation/memory_view.js"></script>
@@ -39,12 +38,13 @@
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+        <link rel="stylesheet" type="text/css" href="../editor/common.css">
         <link rel="stylesheet" type="text/css" href="bsim.css">
         <link rel="stylesheet" type="text/css" href="schematic.css">
         <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">
     </head>
     <body>
-        <div class="container-fluid">
+        <div>
             <div class="masthead">
                 <ul class="pull-right nav nav-pills">
                     <li class="active" id="maximise_editor"><a>Editor</a></li>
@@ -54,34 +54,34 @@
                 <h1>BSim</h1>
             </div>
             <div id="split-container">
+                <div id="filetree"></div>
                 <div id="editor-pane">
-                    <div class="row-fluid">
-                        <div id="filetree"></div>
-                        <div id="editor"></div>
-                    </div>
+                    <div id="editor"></div>
                 </div>
                 <div id="simulation-pane">
                     <div id="programmer-view">
-                        <div class="memory-holder">
-                            Memory
-                            <div class="memory"></div>
-                            <div class="memory-key">
-                                <ul>
-                                    <li><span class="read"></span> Last read</li>
-                                    <li><span class="write"></span> Last write</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="stack-holder">
-                            Stack
-                            <div class="stack"></div>
-                        </div>
                         <div class="program-controls"></div>
-                        Registers
-                        <div class="regfile"></div>
-                        Disassembly
-                        <div class="disassembly"></div>
-                        <div class="tty"></div>
+                        <div class="content">
+                            Registers
+                            <div class="regfile"></div>
+                            Disassembly
+                            <div class="disassembly"></div>
+                            <div class="memory-holder">
+                                Memory
+                                <div class="memory" data-height="398"></div>
+                                <div class="memory-key">
+                                    <ul>
+                                        <li><span class="read"></span> Recent reads</li>
+                                        <li><span class="write"></span> Recent writes</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="stack-holder">
+                                Stack
+                                <div class="stack" data-height="398"></div>
+                            </div>
+                            <div class="tty"></div>
+                        </div>
                     </div>
                     <div id="schematic-view" style="display: none;">
                         <div class="program-controls"></div>

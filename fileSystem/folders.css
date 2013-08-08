@@ -22,7 +22,6 @@ input.input_file_name[type="text"], li.input_file_name button{
    line-height: 20px;
    padding : 2px;
    min-height : 10px;
-   /*border : initial;*/
    
 }
 li.input_file_name button{
@@ -43,6 +42,22 @@ button{
 	display : inline;
     vertical-align : center;
 }
+/*=======*/
+.file_button_div{
+	text-align:right;
+    float:none;
+    position:absolute;
+    right:0;
+    top:0;
+	display:inline-block;
+    vertical-align: center;
+    background-color: lightyellow;
+}
+.file_name:hover .file_button_div{
+   display:block;
+   position:absolute;
+/*>>>>>>> 0d558828b0431ce61bac1dbdd1a0482d190bcf81*/
+}
 .file_button, .folder_button {
     padding: 0px;
     width: 15px;
@@ -60,7 +75,7 @@ button{
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    color: #08c;
+    position: relative;
 }
 
 li.rootFolderName{
@@ -68,11 +83,12 @@ li.rootFolderName{
     position : relative;
    /* right : 0;*/
 }
+.folderContents:first-child li.rootFolderName{
+    position:relative;
+    right:0;
+}
 li.rootFolderName:hover{
     background-color:rgba(50, 101, 255, .8);
-}
-.file_name:nth-child(even){
-	background-color: #F8F8F8;
 }
 .file_name{
     vertical-align: center;
@@ -87,14 +103,6 @@ li.rootFolderName:hover{
 .sidebar-nav ul{
     list-style-type: none;
 }
-.tab-pane {
-    border-bottom: 1px solid #ddd;
-    border-left: 1px solid #ddd;
-    border-right: 1px solid #ddd;
-}
-.nav-tabs {
-    margin-bottom: 0;
-}
 .span2{
     min-width: 170px;
 }
@@ -107,9 +115,6 @@ li.rootFolderName:hover{
     padding:0px;
 }	
 .folderName {
-    background-color: lightgray;
-    border: solid white 1px;
-    border-radius: 4px;
     z-index:3;
 }
 .folderName:hover{

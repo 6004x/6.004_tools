@@ -95,7 +95,7 @@ function TapeList(){
 			if(first === null)
 				self.append('-');
 			current = first;
-			console.log('starting traverse');
+			// console.log('starting traverse');
 			return first.data;
 		}
 	}
@@ -103,8 +103,13 @@ function TapeList(){
 		//peeks at current;
 		if(current)
 			return current.data;
-		else
-			return null;
+		else{
+			if(first === null)
+				self.append('-');
+			current = first;
+			// console.log('starting peek');
+			return first.data;
+		}
 	}
 
 	//attaches a node with data as the first pointer of the LL
@@ -191,7 +196,6 @@ function TapeList(){
 		while(tempNode != null){
 
 			if(tempNode.data === '-' && trimBeginning){
-				console.log('trimming')
 				tempNode=tempNode.next;
 			}
 			else {
@@ -214,7 +218,7 @@ function TapeList(){
 	this.toString = function (){
 		var tempNode=first;
 		var stringLL = '';
-		while(tempNode!=null){
+		while(tempNode != null){
 			if(tempNode == current)
 				stringLL += '['+tempNode.data+'], ';
 			else
@@ -243,7 +247,6 @@ function TapeList(){
 			if(equalArray)
 				equalArray = (mArray[i] === tArray[i]);
 		}
-		console.log(equalArray);
 		if (equalArray){
 			//now we must traverse and see if current is the same in both.
 			var tempMCurr = self.getCurrentNode();
@@ -278,6 +281,7 @@ function TapeList(){
 		var toCloneArray = self.toArray();
 		clone.init(self.name, toCloneArray.array, toCloneArray.currentIndex);
 		if(clone.equals(self)){
+			// console.log('clone: '+ clone.toString());
 			return clone;
 		}	
 			
