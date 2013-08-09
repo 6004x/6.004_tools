@@ -418,6 +418,8 @@ Graph setup functions
                     ac_plot(bigDiv,current_results,newPlot);
                     break;
                 case 'dc':
+                    dc_plot(bigDiv, current_results, newPlot, current_analysis.parameters.sweep1,
+                       current_analysis.parameters.sweep2);
                     break;
             }
         }
