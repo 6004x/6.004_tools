@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>ui test</title>
+        <title>TMSim</title>
+        <!-- importing external files -->
         <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
-        <script src="../fileSystem/external/jquery-ui.js"></script>
-
-        <link href='../fileSystem/external/jquery-ui.css' rel='stylesheet' type='text/css'>
-
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
+
+        <script src="../fileSystem/external/jquery-ui.js"></script>
+        <link href='../fileSystem/external/jquery-ui.css' rel='stylesheet' type='text/css'>
        
        
         <!-- importing editor by mattpf -->
@@ -19,19 +19,19 @@
         <script src="../editor/editor.js"></script>
         <script src="../editor/autocomplete.js"></script>
         <script src="../editor/prompt.js"></script>
+        <script src="../editor/split_pane.js"></script>
         <script src="../editor/external/codemirror.js"></script>
         <script src="../editor/external/codemirror-extensions.js"></script>
         <script src="../editor/external/radix.js"></script>
         <script src="../editor/modes/tsim.js"></script>
         <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
-
+        <!-- other files -->
         <script src='../fileSystem/fileSystem.js'></script>
         <script src='../fileSystem/folders.js'></script>
         <script src='tapeList.js'></script>
         <script src='tsm.js'></script>
         <script src='tsmParser.js'></script>
         <script src='tmsim.js'></script>
-        <script src='split_ui.js'></script>
         <link rel="stylesheet" type="text/css" href="../editor/common.css">
         <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">    
         <link rel="stylesheet" type="text/css" href="TMSIM.css">   
@@ -41,86 +41,107 @@
     $(document).ready(function(){
         FileSystem.setup('https://18.62.29.122:6004');
 
-            var mode = 'tsim';
-            editor = new Editor('.editor_split',mode);
-            var set_height = function() {
-                editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
-            }
-            set_height();
-            $(window).resize(set_height);
+        var split = new SplitPane('#main_wrapper', ['#folders_div', '#editor_div', '#tsim_div'])
+        split.setPaneWidth(0, 200);
+        split.setPaneWidth(1, $(window).width() - 220);
+        split.setPaneWidth(2, 0);
 
-           var activeButton = function(callback) {
-                return function() {
-                    $(this).siblings().removeClass('active');
-                    $(this).addClass('active');
-                    callback();
-                };
-            }
-            var split = new SplitUI('.span9', '.sim_split', '.editor_split')
-            // Set up the split buttons.
-            $('#maximise_editor').click(activeButton(split.maximiseBottom));
-            $('#split_pane').click(activeButton(split.split));
-            Folders.setup('.span3', editor, mode);
-            Folders.refresh();
-
-            editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')])
-
-            function tmsimAssemble(){
-                var file = new Object();
-                file.name=editor.currentTab();
-                file.data=editor.content();
-                var tsmparse = new TSMparser();
-                var tmsim;
-                var valid = true;
-                if(file.name.split('.').pop() === 'tsim'){
-                    try{
-                        var parsedDict = tsmparse.parse(file.data);
-                        editor.clearErrors();
-                        // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
-                        tsmparse.flattenMachine(parsedDict);
-                        // editor.openTab(file.name+'done', tsmparse.getResults(), true);
-                    } catch(e){
-                        console.log(e.stack );
-                        for (var i = 0; i < e.length; i++)
-                            editor.markErrorLine(file.name, e[i].message, e[i].lineNumber - 1);
-                        valid = false;
-                    }
-                    if(valid){
-                        $('.sim_split').html('');
-                        if(tmsim)
-                            tmsim.stop()
-                        $('#split_pane').click();
-                        // console.log(tsmparse.getTSM())
-                        // console.log(tsmparse.getLists());
-                        tmsim = new TMSIM(file.name, '.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
-                        
-                    }
-                }
-                else {
-                    alert("can't assemble a file that is not .tsim");
-                }
-            }
-            
+        // Set up the split buttons.
+        $('#maximise_editor').click(function() {
+            split.setPaneWidth(0, 200);
+            split.setPaneWidth(1, $(window).width() - 220);
+            split.setPaneWidth(2, 0);
         });
+        $('#split_pane').click(function() {
+            var width = $(window).width() - 20;
+            split.setPaneWidth(0, 0);
+            split.setPaneWidth(1, width/2);
+            split.setPaneWidth(2, width/2);
+        });
+        $('#maximise_simulation').click(function() {
+            var width = $(window).width() - 20;
+            split.setPaneWidth(0, 0);
+            split.setPaneWidth(1, 0);
+            split.setPaneWidth(2, width);
+        });
+        // split.on('resize', _.throttle(editor.redraw, 50));
+
+        split.on('resize', function(widths) {
+            if(widths[2] == 0) {
+                $('#maximise_editor').addClass('active').siblings().removeClass('active');
+            } else if(widths[0] == 0 && widths[1] == 0) {
+                $('#maximise_simulation').addClass('active').siblings().removeClass('active');
+            } else {
+                $('#split_pane').addClass('active').siblings().removeClass('active');
+            }
+        });
+        var mode = 'tsim';
+        editor = new Editor('#editor',mode);
+        Folders.setup('#folders_div', editor, mode);
+        
+        var set_height = function() {
+            editor.setHeight(window.clientHeight - 70); // Set height to window height minus title.
+        }
+        set_height();
+        $(window).resize(set_height);
+        Folders.refresh();
+        editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')]) 
+
+
+        function tmsimAssemble(){
+            var file = new Object();
+            file.name=editor.currentTab();
+            file.data=editor.content();
+            var tsmparse = new TSMparser();
+            var tmsim;
+            var valid = true;
+            if(file.name.split('.').pop() === 'tsim'){
+                try{
+                    var parsedDict = tsmparse.parse(file.data);
+                    editor.clearErrors();
+                    // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
+                    tsmparse.flattenMachine(parsedDict);
+                    // editor.openTab(file.name+'done', tsmparse.getResults(), true);
+                } catch(e){
+                    console.log(e.stack );
+                    for (var i = 0; i < e.length; i++)
+                        editor.markErrorLine(file.name, e[i].message, e[i].lineNumber - 1);
+                    valid = false;
+                }
+                if(valid){
+                    $('#tmsim_div').html('');
+                    if(tmsim)
+                        tmsim.pause()
+                    $('#split_pane').click();
+                    tmsim = new TMSIM(file.name, '#tmsim_div', tsmparse.getTSM(), tsmparse.getLists() );
+                    
+                }
+            }
+            else {
+                alert("can't assemble a file that is not .tsim");
+            }
+        }
+        
+    });
     </script>
     <body>
 
-        <div class="container container-fluid">
             <div class="masthead">
                 <ul class="pull-right nav nav-pills">
                     <li class="active" id="maximise_editor"><a>Editor</a></li>
                     <li id="split_pane"><a>Split</a></li>
+                    <li id="maximise_simulation"><a>Simulator</a></li>
                 </ul>
-                <a href="http://6004.mit.edu"><img src="../editor/title.gif" width=250 class="pull-left"></a>
+                
                 <h1>TMSim</h1>
             </div>
-            <div class='row row-fluid mainWrapper'>
-                <div class="span3"></div>
-                <div class="span9">
-                    <div class='editor_split'></div>
-                    <div class='sim_split'></div>
+            <div id="main_wrapper">
+                <div id="folders_div"></div>
+                <div id="editor_div">
+                    <div id="editor"></div>
                 </div>
+                <div id='tmsim_div'></div>
             </div>
-        </div>
+      
     </body>
 </html>

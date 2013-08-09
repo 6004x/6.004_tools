@@ -7,7 +7,9 @@
 	var TOTAL_HEIGHT = 	300; 
 	var ANIMATION_SPEED = 10;
 	var old_speed = 300;
+
 	var TMSIM = function( filename, container, tsm, testLists){
+		//pass in tsm and 
 		var mContainer = $(container);
 		var mTSM = tsm;
 		var mFileName = filename;
@@ -18,46 +20,65 @@
 		var mResultList = testLists.list_of_results;
 		var mResult1List = testLists.list_of_results1;
 		var self = this;
+
 		var slider_speed = old_speed;
 		var pauseSimulation = false;
 		var simulation_done = false;
 		var steps = 0;
 		var preventAnimate = false;
-		//TODO:change magic numbers
-		this.initialise=function(){
-			console.log('initalise TMSIM');
-			// console.log(mTSM);
-			mContainer.height(TOTAL_HEIGHT);
-			var firstTape;
-			//make the radio buttons for the different tests
-			var testRadioButtons = $('<ul>').addClass('test_radio_buttons nav nav-pills');
+
+		this.initTapeButtons = function(testRadioButtons){
+			testRadioButtons = testRadioButtons || mContainer.find('.test_radio_buttons');
 			var first = true;
 			//attach each test button to the nav-pills div
 			var i = 0;
 			for (var tapeName in mTapeList){
+				//clone the tape as to not destroy the original
 				var tape = mTapeList[tapeName].cloneTape();
-				tape.endSize = mTapeList[tapeName].endSize;
+
+				// create the radio button, count them by their id #tape+i
 				var radioButton = $('<li>').addClass('test_radio')
 					.append('<a>'+tapeName+'</a>')
 					.attr('id', 'tape'+i)
 					.data('sanitized_name', tapeName.replace(/(\s|\/|\\)/g, '_'))
 					.data('tape-name', tapeName);
+				// by default, the first tape is the one selected, and active
 				if (first){
-					radioButton.addClass('active')
+					radioButton.addClass('active');
 					first = false;
-					firstTape = mCurrentTape = tape;
+					//and declare thhe first tape as shown.
+					mCurrentTape = tape;
 				}
 				radioButton.on('click', function(e){
-					toggleTape($(e.currentTarget));
+					// toggle tape of the div, uses the dom element data
+					// to gather the name of the list. 
+					toggleTape($(this));
 				});
+
 				testRadioButtons.append(radioButton);
 				i++;
 			}
-			//make the test buttons centered//
-			var headingDiv = $('<div>').append(testRadioButtons);
-			headingDiv.addClass('pull-center');
+		}
+		//readjusts the variable elements in the TSMSIM area to fit to a new instance of tsm and tapes
+		this.restartTSM = function(filename, container, tsm, testLists){
+			mFileName = filename || mFileName;
+			mContainer = $(container) || mContainer;
+			mTSM = tsm || mTSM;
+			mTapeList = testLists.list_of_tapes || mTapeList;
+			mResultList = testLists.list_of_results || mTapeList;
+			mResult1List = testLists.list_of_results1 || mTapeList;
 
-			var stepsDiv = $('<div>').addClass('pull-right').append('Steps: ').append('<span class="stepsSpan"></span>');
+			self.initTapeButtons();
+
+		}
+		this.initialise=function(){
+			console.log('initalise TMSIM');
+			//make the radio buttons for the different tests
+			var testRadioButtons = $('<ul>').addClass('test_radio_buttons nav nav-pills');
+
+			self.initTapeButtons(testRadioButtons);
+
+			var stepsDiv = $('<div>').addClass('steps_div').append('Steps: <span class="steps_span"></span>');
 			
 			//add the visual tape wrapper
 			var tapeWrapper = $('<div>').addClass('tape_wrapper');
@@ -66,15 +87,13 @@
 				overflow : 'hidden',
 				'background-color' : 'lightblue',
 			})
-			//the div will hold all the segments and move along with the segments
+			//this div will hold all the segments and move along with the segments
 			var tapeDiv = $('<div>').addClass('tape_div');
 			tapeDiv.css({
 				position : 'relative',
 				height : DIV_HEIGHT,
 			});
 			tapeWrapper.append(tapeDiv);
-			//populate the tape
-			listToTape(firstTape);
 
 			//make the state machine indicator, could be more elegant...
 			var machineDiv = $('<div>').addClass('pull-center machine_div').css({
@@ -94,7 +113,7 @@
 				.html('<span class = "curr_state"></span><br/><span class = "move_dir"></>');
 			machineDiv.append(labelDiv);
 			//transition div, shows the previous and current transition
-			var transitionsDiv = $('<div>').addClass('transitions pull-left');
+			var transitionsDiv = $('<div>').addClass('transitions');
 			var transitionDiv = $('<div>').addClass('transition_div').html(
 				'( <span class = "curr_state"></span>, \
 				<span class = "read_symbol"></span> ) &rarr;\
@@ -229,7 +248,7 @@
 			})
 
 			//speed radio button indicators
-			var speedDiv = $('<div>').addClass('speed_div pull-right span5').css({
+			var speedDiv = $('<div>').addClass('speed_div span5').css({
 				'margin': '8px',
 			});
 			var label1 = $('<label>').addClass('speed_options radio inline radio-inline').append('Slow');
@@ -307,10 +326,15 @@
 			var blueDiv = $('<div>').append('<span class = "write_symbol">BLUE</span> marks the previous written symbol');
 			legendDiv.append(greenDiv, redDiv, blueDiv)
 
-			mContainer.append(stepsDiv, speedDiv, headingDiv, feedbackDiv, legendDiv, tapeWrapper, machineDiv, speedDiv, actionDiv);
+			mContainer.append(stepsDiv, speedDiv, testRadioButtons, tapeWrapper, machineDiv, speedDiv, actionDiv, feedbackDiv, legendDiv);
 			toggleTape();
 		}
 		var oldLineClassDelete;
+		function markLine(lineNumber){
+			if(oldLineClassDelete)
+					oldLineClassDelete.clear();
+				oldLineClassDelete = editor.addLineClass(mFileName, lineNumber, 'highlight-line');
+		}
 		this.stepAction = function(callback){
 			var callback = callback || _.identity;
 			mContainer.find('.transition_div .read_symbol').text(mCurrentTape.peek());
@@ -333,9 +357,7 @@
 				mContainer.find('.tape_div .read_symbol').removeClass('read_symbol');
 				mContainer.find('.tape_div .current_segment').addClass('prev_segment');
 				// if(!preventAnimate)
-				if(oldLineClassDelete)
-					oldLineClassDelete.clear();
-				oldLineClassDelete = editor.addLineClass(mFileName, state_transition.lineNumber-1, 'highlight-line');
+				oldLineClassDelete(	)
 				function updateTransitionDiv(){
 					mContainer.find('.transition_div').css({
 						'top' : 0,
@@ -372,7 +394,7 @@
 					}
 					
 					
-					$('.stepsSpan').text(steps)
+					$('.steps_span').text(steps)
 
 					if(stepObject.transition.new_state === '*halt*'){
 						console.log('halt');
@@ -497,7 +519,7 @@
 			mContainer.find('.play_button').addClass('disabled');
 			mContainer.find('.step_button').addClass('disabled');
 			mContainer.find('.pause_button').addClass('disabled');
-			$('.stepsSpan').text(steps)
+			$('.steps_span').text(steps)
 			listToTape();
 			
 			var name = mCurrentTape.name;
