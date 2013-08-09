@@ -4,31 +4,33 @@ var fs = require('fs');
 var path=require('path');
 
 (function() {
-    var libraryHandler = function(request, response, data){
-    	var root_path=process.cwd();//__dirname
+    var libraryHandler = function(request, response, postData){
+    	var root_path = 	process.cwd();//__dirname
 		//current directory will hold all user files in /libraries
-		var lib_path=path.join(root_path, 'libraries'); 
-		var user_path, full_path, shared_path;
+		var lib_path = path.join(root_path, 'libraries'); 
+		var m_user_path, m_full_path, m_shared_path, m_shared_full_path;
 
-		var file_path = unescape(url.parse(request.url).pathname);
+		var m_file_path = unescape(url.parse(request.url).pathname);
 
-		var user=request.user;
-		var query=String(data['query']);
+		var user = request.user;
+		var query = String(postData['query']);
 		// console.log(data);
 		// console.log(root_path);
 		// console.log(request.url);
-		// console.log(file_path);
+		// console.log(m_file_path);
 		if(user){
-			user_path=path.join(lib_path, user);
-			shared_path=path.join(lib_path, 'shared')
-			full_path=path.join(user_path,file_path);
-			console.log(user_path)
+			m_user_path = path.join(lib_path, user);
+			m_shared_path = path.join(root_path, 'shared')
+			m_full_path = path.join(m_user_path, m_file_path);
+			m_shared_full_path = path.join(m_shared_path, m_file_path);
+			console.log(m_user_path)
 		}
-		if(!fs.existsSync(user_path))
+		if(!fs.existsSync(m_user_path))
 			create_user_path()
 		console.log(user + ' wants ' + query);
+		console.log('directory: ' + m_full_path)
 
-		fs.exists(full_path, function(exists){
+		fs.exists(m_full_path, function(exists){
 			try{
 				functions[query](exists);
 			} catch(e) {
@@ -41,13 +43,23 @@ var path=require('path');
 				sendJSON({user:user});
 			},
 			getFile:function(exists){
-				console.log('file path is '+ full_path);
+				console.log('file path is '+ m_full_path);
 				if (!exists) {
 					// it's not in user's directory, try shared directory
-					shared_file = path.join(shared_path, file_path);
-					fs.exists(shared_file,function(exists) {
-						if (exists) 
-							sendFile(shared_file);
+					fs.exists(m_shared_full_path,function(exists) {
+						if (exists){
+							fs.readFile(shared_full_path, 'utf8', function(err,data){
+								if(err){
+									errorResponse(err)
+								} else {
+									console.log('reading shared file ' + data.name)
+									saveFile(m_full_path, m_file_path, data.data);
+									console.log('and saving to the user folder')
+								}
+							});
+							
+						}
+							
 						else {
 						// library not found, send empty one
 							errorResponse('could not find the file');
@@ -55,98 +67,123 @@ var path=require('path');
 					});
 				}
 				else{
-					console.log(full_path);
+					console.log(m_full_path);
 					console.log('sendFile');
-					if(!fs.lstatSync(full_path).isDirectory())
-						sendFile(file_path, full_path);
+					if(!fs.lstatSync(m_full_path).isDirectory())
+						sendFile(m_full_path, m_file_path);
 					else{
 						errorResponse('the file that you are speaking of does not exist');
 					}   
 				}
 			},
 			getFileList : function(exists){
-				console.log('file path is '+ full_path);
+				console.log('file path is '+ m_full_path);
 				if (!exists) {
 					errorResponse('could not find the directory');
 					//should never really happen
 				}
 				else{
-					var fileList=recurseThroughFolders(full_path);
+					var fileList = recurseThroughFolders(m_full_path);
 					console.log('returned from fileList');
-					sendJSON({user:user, data:fileList});
+					sendJSON({
+						user:user,
+						data:fileList
+					});
 				}
 			}, 
 
 			saveFile : function(exists){
-				var fdata=data['fdata'];
-				fs.exists(path.dirname(full_path), function(parent_exists){
+				var fdata = postData.data;
+				fs.exists(path.dirname(m_full_path), function(parent_exists){
 					if(parent_exists){
 						if(!exists){
-							saveFile(file_path, full_path, fdata);
+							saveFile(m_full_path, m_file_path, fdata);
 						}
 						else{
 							//merge? overwrite changes?
-							saveFile(file_path, full_path, fdata);
+							saveFile(m_full_path, m_file_path, fdata);
 						}
 					}
 					else {
 						console.log('path of file does not exist');
-						var pathdiff=path.relative(full_path, user_path);
+						var pathdiff=path.relative(m_full_path, m_user_path);
 						console.log(pathdiff);
-						console.log(full_path);
+						console.log(m_full_path);
 						//do something with patthdiff...
-						fs.mkdir(path.dirname(full_path), function(err){
+						fs.mkdir(path.dirname(m_full_path), function(err){
 							if(err){
 								console.log(err);
 								errorResponse(err + ' could not make directory');
-								// sendJSON({name:file_path,status:'failed',error:err})
+								// sendJSON({name:m_file_path,status:'failed',error:err})
 							} else {
-								saveFile(file_path, full_path, fdata);
+								saveFile(m_full_path,m_file_path, fdata);
 							}
 						});
 					}
 				});
 			},
-			newFile : function(exists){
-
-			}, 
 			newFolder : function(exists){
 				if(exists){
-					errorResponse('path already exists at '+ file_path);
+					errorResponse('path already exists at '+ m_file_path);
 				}else{
 					console.log('mkdir path');
-					fs.mkdir((full_path), function(err){
+					fs.mkdir(m_full_path, function(err){
 						if(err){
 							console.log(err);
 							errorResponse(err+' path could not be made')
 						} else {
-							sendJSON({user_path:user_path, status:'success'});
+							sendJSON({user_path:m_user_path, status:'success'});
 						}
 					});
 				}
 			},
 			deleteFile : function(exists){
 				if(exists){
-					hideFile(full_path, file_path);
+					hide(m_full_path, m_file_path);
 				} else { //doesn't exists
-					errorResponse(file_path +' does not exist');
+					errorResponse(m_file_path +' does not exist');
 				}
 			},
+			renameFile : function(exists){
+				if(exists){
+					rename(m_full_path, m_file_path, String(postData.data));
+				} else {
+					errorResponse(m_file_path + ' does not exist')
+				}
+			},
+			getRelative : function(exists){
+				if(exists){
+					var rel_path = postData.data;
+					console.log(rel_path);
+					var new_path = (path.join(path.dirname(m_file_path), rel_path));
+					var new_full_path = (path.join(m_user_path, new_path));
+					console.log('new_path');
+					console.log(new_full_path)
+					sendFile(new_full_path, rel_path);
+				} else {
+					console.log(postData.data)
+					errorResponse( m_file_path + 'does not exist')
+				}
+			}
 		}
 
 		function recurseThroughFolders(curr_path){
 			//console.log(curr_path);
-			var files=fs.readdirSync(curr_path);
-			var fileList={};
+			var files = fs.readdirSync(curr_path);
+			var fileList = {
+				'~type' : 'folder',
+			};
 			for(var i=0; i <files.length; i++){
 				var name = files[i];
-				var new_path=path.join(curr_path, name);
-				if(name.indexOf('~')<0){
+				var new_path = path.join(curr_path, name);
+				if(name.indexOf('~') < 0){
 					if(fs.lstatSync(new_path).isDirectory()){
-						fileList[name]= recurseThroughFolders(new_path);
-				//synchronois return of list of subfiles, only need to go one level down
+
+						fileList[name] = recurseThroughFolders(new_path);
 					} else {
-						fileList[name]=[];
+						fileList[name] = {
+							'~type' : 'file',
+						};
 					}
 				} else {
 					console.log(name +' is a deleted file, folder, or backed up');
@@ -167,7 +204,7 @@ var path=require('path');
 		}
 		
 		function sendJSON(data) {
-			var sdata= JSON.stringify(data);
+			var sdata = JSON.stringify(data);
 			response.writeHead(200,{
 				'Content-Length': sdata.length,
 				'Content-Type': 'application/json',
@@ -176,9 +213,9 @@ var path=require('path');
 			response.end(sdata);
 			console.log('data sent');
 		}
-		function sendFile(file_path, full_path) {
-			data.user = user;
-			fs.readFile(full_path,'utf8',function(err,data) {
+		function sendFile(full_path, file_path) {
+			postData.user = user;
+			fs.readFile(full_path, 'utf8', function(err,data) {
 				if (err){
 					console.log(err);
 					errorResponse(err+' file could not be read');
@@ -190,7 +227,7 @@ var path=require('path');
 				});
 			});
 		}
-		function saveFile(file_path, full_path, fdata) {
+		function saveFile(full_path, file_path, fdata) {
 			fs.writeFile(full_path, fdata, 'utf8', function (err) {
 					if (err){
 						console.log(err);
@@ -211,18 +248,17 @@ var path=require('path');
 					}
 			});
 		}
-		function hideFile(full_path, file_path){
-			console.log('hiding '+path.dirname(full_path)+path.sep+'del~'+path.basename(full_path));
-			fs.exists(path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function(exists){
-				if (err) {
-					errorResponse(err + ' file could not be renamed');
-					return;
-				}
+		function hide(full_path, file_path){
+			var hide_path = path.dirname(full_path)+path.sep+'del~'+path.basename(full_path)
+			console.log('hiding '+hide_path);
+			fs.exists(hide_path, function(exists){
+				
 				if(exists){
 					//TODO: what should we do in case we delete a file/folder twice
+
+					fs.unlinkSync(hide_path)
 				}
-				else{
-					fs.rename(full_path, path.dirname(full_path)+path.sep+'del~'+path.basename(full_path), function (err) {
+					fs.rename(hide_path, function (err) {
 						if (err) {
 							errorResponse(err + ' file could not be renamed');
 							return;
@@ -235,15 +271,35 @@ var path=require('path');
 							});
 						}
 					});
+
+			})
+		}
+		function rename(full_path, file_path, new_path){
+			var new_full_path = path.join(path.dirname(full_path), path.basename(new_path));
+			console.log('renaming to ' + new_full_path)
+			fs.exists(new_full_path, function(exists){
+				if(exists){
+					//TODO: what should we do in case we overwrite a file
+					//shouldn't happen
+				}
+				else{
+					fs.rename(full_path, new_full_path, function (err) {
+						if (err) {
+							errorResponse(err + ' file could not be renamed');
+							return;
+						}
+						else{
+							console.log(path.join(path.dirname(full_path), path.basename(new_path)));
+							sendFile(new_full_path, new_path);
+						}
+					});
 				}
 
 			})
-			
 		}
 		function create_user_path() {
-			fs.mkdirSync(user_path,function(err) {
-				if (err) throw(err);
-				// after();
+			fs.mkdirSync(m_user_path,function(err) {
+				if (err) errorResponse(err);
 			});
 		}
 	}

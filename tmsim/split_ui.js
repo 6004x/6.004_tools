@@ -7,12 +7,13 @@
         var mTop = $(top_node);
         var mBottom = $(bottom_node);
 
-        $(window).on('resize',function(){mHeight = mContainer.height();console.log(mHeight)})
+        $(window).on('resize',function(){mHeight = mContainer.height();})
         this.split = function() {
             splitSide(mTop);
             splitSide(mBottom);
             mBottom.css({
-                position:'relative',
+                position : 'relative',
+                height : mHeight - mTop.css('height'),
             })
         };
 
@@ -25,13 +26,16 @@
         };
 
         var maximise = function(maximise, minimise) {
-            maximise.show().css('margin-top', 0);
+            maximise.show().css({
+                'margin-top' : 0,
+                'height' : mHeight,
+            });
             minimise.hide();
         };
 
         var splitSide = function(pane) {
-            
             pane.show();
+
         };
 
         var initialise = function() {

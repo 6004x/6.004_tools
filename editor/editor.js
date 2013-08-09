@@ -15,7 +15,9 @@ var Editor = function(container, mode) {
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
-    var mMarkedLines = []; // List of lines we need to clear things from when requested.
+    var mMarkedLines  = []; // List of lines we need to clear things from when requested.
+   
+    _.extend(this, Backbone.Events);
 
     // Given a list of ToolbarButtons, adds a button group.
     this.addButtonGroup = function(buttons) {
@@ -45,18 +47,14 @@ var Editor = function(container, mode) {
     // If filename is given, returns the content of that file in the buffer
     // If filename is omitted, returns the content of the current editor
     this.content = function(filename) {
-        var document;
-        if(filename) document = mOpenDocuments[filename];
-        else document = mCurrentDocument;
+        var document = try_get_document(filename);
         if(!document) return null;
         return document.cm.getValue();
     };
 
     // Marks the given line in the given file as having an error, and displays it to the user.
     this.markErrorLine = function(filename, message, line, column) {
-        var document;
-        if(filename) document = mOpenDocuments[filename];
-        else document = mCurrentDocument;
+        var document = try_get_document(filename);
         if(!document) return false;
         var cm = document.cm;
         cm.addLineClass(line, 'background', 'cm-error-line');
@@ -81,6 +79,36 @@ var Editor = function(container, mode) {
             }
         });
         mMarkedLines = [];
+    };
+
+
+    // Highlight the given line by applying the CSS class cls
+    // Returns an object with a clear() method that will remove the class again.
+    this.addLineClass = function(filename, line, cls) {
+        var document = try_get_document(filename);
+        if(!document) return false;
+        var handle = document.cm.addLineClass(line, 'background', cls);
+        return {
+            clear: function() {
+                document.cm.removeLineClass(handle, 'background', cls);
+            }
+        };
+    };
+
+    // Focus on the given line in the given document (or the current if filename is null).
+    // 'line' is the line number; 'chr' is the optional character on the line.
+    this.showLine = function(filename, line, chr) {
+        var document = try_get_document(filename);
+        if(!document) return false;
+        document.cm.scrollIntoView({line: line, chr: chr|0});
+        return true;
+    };
+
+    // Makes sure the edit buffer is displayed correctly.
+    this.redraw = function() {
+        if(mCurrentDocument) {
+            mCurrentDocument.cm.refresh();
+        }
     };
 
     // Opens a new tab with the given filename and content.
@@ -126,8 +154,10 @@ var Editor = function(container, mode) {
             'margin-left': 5,
             'margin-right': -7
         }).on('mouseenter', tab_mouse_enter).on('mouseleave', function() { handle_change_tab_icon(doc); });
-        cm.on('change', function() {
+        cm.on('change', function(c, changeObj) {
             handle_change_tab_icon(doc);
+            // Let our listeners know, too.
+            self.trigger('change', filename, changeObj);
         });
         // Append all that stuff
         a.append(close);
@@ -239,8 +269,8 @@ var Editor = function(container, mode) {
             indentUint: 4,
             lineNumbers: true,
             electricChars: true,
-            matchBracktes: true,
-            autoCloseBrackets: true,
+            matchBrackets: true,
+            autoCloseBrackets: (mSyntaxMode != 'tsim'), // HACK: no parenthesis closing in TMSim.
             smartIndent: true,
             indentWithTabs: true,
             styleActiveLine: true,
@@ -248,7 +278,6 @@ var Editor = function(container, mode) {
             mode: mSyntaxMode,
             extraKeys: {
                 Tab: function() {
-                    console.log('hi');
                     var marks = cm.getAllMarks();
                     var cursor = cm.getCursor();
                     var closest = null;
@@ -278,6 +307,7 @@ var Editor = function(container, mode) {
                 }
             }
         });
+        cm.on('change', _.debounce(CodeMirror.commands.autocomplete, 800, false));
         return cm;
     };
 
@@ -294,14 +324,18 @@ var Editor = function(container, mode) {
         $(this).text("\u00D7"); // U+00D7 MULTIPLICATION SIGN
     };
 
-    var create_new_document = function() {
-        self.openTab(null, '', true);
-    };
-
     var save_current_document = function() {
         if(!mCurrentDocument) return;
         do_save();
     };
+
+    var try_get_document = function(filename) {
+        var document;
+        if(filename) document = mOpenDocuments[filename];
+        else document = mCurrentDocument;
+        if(!document) return false;
+        return document;
+    }
 
     var initialise = function() {
         // Build up our editor UI.
@@ -309,8 +343,6 @@ var Editor = function(container, mode) {
         mToolbar = new Toolbar(mToolbarHolder);
         // Add some basic button groups
         self.addButtonGroup([
-            new ToolbarButton('icon-file', create_new_document, "New file"),
-            new ToolbarButton('icon-refresh'),
             new ToolbarButton('icon-hdd', save_current_document, "Save current file")
         ]);
         mContainer.append(mToolbarHolder);

@@ -3,6 +3,7 @@ Editor.Autocomplete = function(editor, language) {
     var mLanguage = language;
     var mTrie = null;
     var mLanguageSettings = null;
+    var mSelectionCallback = null;
     var Pos = CodeMirror.Pos;
 
     var initialise = function() {
@@ -26,60 +27,65 @@ Editor.Autocomplete = function(editor, language) {
         });
     };
 
-    var prevent_including_quotes = function(cm, selection) {
+    var prevent_including_quotes = function(old_selection, expected_text, cm, selection) {
+        cm.off('beforeSelectionChange', mSelectionCallback);
         var text = cm.getRange(selection.anchor, selection.head);
-        if((text[0] == "'" && text[text.length-1] == "'") || (text[0] == '"' && text[text.length-1] == '"')) {
+        var old_text = cm.getRange(old_selection.from, old_selection.to);
+        if(old_text == expected_text) {
+            create_mark(cm, old_selection.from, old_selection.to);
+        } else if((text[0] == "'" && text[text.length-1] == "'") || (text[0] == '"' && text[text.length-1] == '"')) {
             selection.anchor.ch += 1;
             selection.head.ch -= 1;
         }
-        cm.off('beforeSelectionChange', prevent_including_quotes);
     };
 
-    var select_placeholder = function(cm, pos) {
+    var select_placeholder = function(cm, pos, expected_text) {
+        var expected_text = cm.getRange(pos.from, pos.to);
         cm.setSelection(pos.from, pos.to);
-        cm.on('beforeSelectionChange', prevent_including_quotes);
+        mSelectionCallback = _.partial(prevent_including_quotes, pos, expected_text);
+        cm.on('beforeSelectionChange', mSelectionCallback);
     };
+
+    var create_mark = function(cm, from, to) {
+        var mark = cm.markText(from, to, {
+            className: 'cm-autofilled',
+            inclusiveLeft: false,
+            inclusiveRight: false,
+            atomic: true,
+            startStyle: 'cm-autofilled-start',
+            endStyle: 'cm-autofilled-end'
+        });
+        CodeMirror.on(mark, 'beforeCursorEnter', function() {
+            var pos = mark.find();
+            mark.clear();
+            // Hack because we can't modify editor state from in here.
+            // 50ms because that seems to let us override cursor input, too.
+            setTimeout(function() { select_placeholder(cm, pos); }, 50);
+        });
+        return mark;
+    }
 
     var expand_completion = function(cm, data, completion) {
         cm.replaceRange(completion.text, data.from, data.to);
-        console.log(data);
         var start = data.from.ch + completion.name.length + completion.settings.paramListStart.length;
-        console.log(start);
         var orig_start = start;
         var first_pos = null;
         var first_mark = null;
         _.each(completion.params, function(value) {
-            console.log(value);
             var p = [
                 {line: data.from.line, ch: start},
                 {line: data.from.line, ch: start + value.length}
             ];
-            console.log(p);
-            var mark = cm.markText(p[0], p[1], {
-                className: 'cm-autofilled',
-                inclusiveLeft: false,
-                inclusiveRight: false,
-                atomic: true,
-                startStyle: 'cm-autofilled-start',
-                endStyle: 'cm-autofilled-end'
-            });
-            console.log(mark);
+            var mark = create_mark(cm, p[0], p[1]);
             if(first_pos === null) first_pos = p;
             if(first_mark === null) first_mark = mark;
-            CodeMirror.on(mark, 'beforeCursorEnter', function() {
-                var pos = mark.find();
-                mark.clear();
-                // Hack because we can't modify editor state from in here.
-                // 50ms because that seems to let us override cursor input, too.
-                setTimeout(function() { selectPlaceholder(cm, pos); }, 50);
-            });
             start += value.length + completion.settings.paramSpacer.length;
         });
         if(first_pos === null) {
             cm.setSelection({ch: orig_start, line: data.from.line});
         } else {
             first_mark.clear();
-            cm.setSelection(first_pos[0], first_pos[1]);
+            select_placeholder(cm, {from: first_pos[0], to: first_pos[1]});
         }
     };
 
@@ -131,7 +137,6 @@ Editor.Autocomplete = function(editor, language) {
         if(token.string !== '') {
             completions = get_completions(token);
         }
-        console.log(token, completions);
         return {
             list: completions,
             from: Pos(cm.getCursor().line, token.start),

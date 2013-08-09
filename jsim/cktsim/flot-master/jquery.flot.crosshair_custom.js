@@ -191,6 +191,7 @@ The plugin also adds four public methods:
                         y = plot.getAxes().yaxis.p2c(y);
 //                        console.log("canvas y:",y);
                         
+                        ctx.strokeStyle = series.color;
                         ctx.beginPath();
                         ctx.arc(drawX, y, 4, 0, 2*Math.PI);
                         ctx.stroke();

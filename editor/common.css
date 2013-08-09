@@ -1,0 +1,100 @@
+/* The official background colour */
+body {
+    background-color: #E9EBED;
+    padding-right: 0;
+}
+
+/* Prevent bouncing on OS X/iOS */
+html {
+    overflow: hidden;
+}
+
+/* Thin-ish yellow header with centred title */
+.masthead {
+    height: 40px;
+    margin-bottom:0px;
+    background-color: #FED881; /* A paler shade of the official colour. */
+    margin-top:0px;
+    padding-top:0px;
+    text-align:center;
+}
+
+.masthead h1 {
+    margin-top:0px;
+    padding-top: 0px;
+    line-height: 40px;
+}
+
+.masthead .nav {
+    margin-bottom:5px;
+}
+
+/* Nav pills should be black because blue on yellow is ugly. */
+.masthead .nav-pills {
+    padding-top: 2px;
+    margin-bottom: 0;
+}
+.masthead .nav-pills > li > a:hover {
+    background-color: white;
+}
+
+.masthead .nav-pills > li > a {
+    color: #444;
+}
+
+.masthead .nav-pills > li.active > a {
+    background-color: #444;
+    color: white;
+}
+
+/* Sidebar sizing */
+.sidebar-nav li {
+    line-height: 22px;
+    font-size: 13px;
+}
+
+/* Editors should have a border around them, but not between the editor and the tabs */
+.tab-pane {
+    border-bottom: 1px solid #ddd;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+.nav-tabs {
+    margin-bottom: 0;
+}
+
+.nav-tabs > li > a {
+    color: black;
+}
+
+/* Tabs should be obviously clickable. */
+.nav-pills li {
+    cursor: pointer;
+}
+
+/* Split pane styles */
+.split-holder {
+    float: left;
+    overflow: hidden;
+}
+
+.split-splitter {
+    float: left;
+    width: 10px;
+    cursor: col-resize;
+}
+
+.split-splitter > div {
+    margin-left: auto;
+    margin-right: auto;
+    width: 2px;
+    background-color: #aaa;
+    height: 100%;
+/*    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;*/
+}
+
+/* Wrapping toolbars is bad. */
+.btn-toolbar {
+    white-space: nowrap;
+}

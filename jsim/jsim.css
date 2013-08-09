@@ -1,21 +1,11 @@
-.tab-pane {
-                border-bottom: 1px solid #ddd;
-                border-left: 1px solid #ddd;
-                border-right: 1px solid #ddd;
-            }
-
-.nav-tabs {
-    margin-bottom: 0;
-}
-
 .posText {
     position:absolute;
     background-color:white;
     opacity: .75;
-    padding: 2px;
+    padding: 0px;
     font-size:10pt;
     text-align:left;
-    z-index:5;
+/*    z-index:5;*/
 }
 
 .posText div {
@@ -54,6 +44,15 @@
     margin-top:-20px;
 }
 
+.legend {
+    text-align:left
+}
+
+.legendCheckbox {
+    position:relative;
+    top: -4px;
+}
+
 .novalues {
     text-align:center;
     padding:5px;
@@ -85,7 +84,7 @@
 #simulation-pane {
     position:relative;
 /*    overflow:scroll;*/
-    border: 1px solid #ddd;
+/*    border: 1px solid #ddd;*/
 }
 
 #results {
@@ -98,4 +97,8 @@
 /*    font-size:20pt;*/
 }
 
+span.wrong {
+    color:red;
+    font-weight:bold;
+}
 

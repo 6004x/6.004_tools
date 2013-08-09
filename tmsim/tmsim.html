@@ -2,42 +2,46 @@
 <html lang="en">
     <head>
         <title>ui test</title>
-        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
-        <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
-        <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
-        <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
-        <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
-        <script src="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script src="../fileSystem/external/jquery-ui.js"></script>
 
-        <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">    
-        <link rel="stylesheet" type="text/css" href="TMSIM.css">   <link href='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css' rel='stylesheet' type='text/css'>
+        <link href='../fileSystem/external/jquery-ui.css' rel='stylesheet' type='text/css'>
 
+        <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
+        <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
        
+       
+        <!-- importing editor by mattpf -->
+        <script src="../editor/toolbar.js"></script>
+        <script src="../editor/editor.js"></script>
+        <script src="../editor/autocomplete.js"></script>
+        <script src="../editor/prompt.js"></script>
+        <script src="../editor/external/codemirror.js"></script>
+        <script src="../editor/external/codemirror-extensions.js"></script>
+        <script src="../editor/external/radix.js"></script>
+        <script src="../editor/modes/tsim.js"></script>
+        <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+
         <script src='../fileSystem/fileSystem.js'></script>
         <script src='../fileSystem/folders.js'></script>
-        <script src='TapeList.js'></script>
-        <script src='TSM.js'></script>
-        <script src='TSMParser.js'></script>
-        <script src='TMSIM.js'></script>
+        <script src='tapeList.js'></script>
+        <script src='tsm.js'></script>
+        <script src='tsmParser.js'></script>
+        <script src='tmsim.js'></script>
         <script src='split_ui.js'></script>
-        <!-- importing editor by mattpf -->
-            <script src="../editor/toolbar.js"></script>
-            <script src="../editor/editor.js"></script>
-            <script src="../editor/autocomplete.js"></script>
-            <script src="../editor/prompt.js"></script>
-            <script src="../editor/external/codemirror.js"></script>
-            <script src="../editor/external/codemirror-extensions.js"></script>
-            <script src="../editor/external/radix.js"></script>
-            <script src="../editor/modes/tsim.js"></script>
-            <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
-            <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
-
+        <link rel="stylesheet" type="text/css" href="../editor/common.css">
+        <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">    
+        <link rel="stylesheet" type="text/css" href="TMSIM.css">   
     </head>
     <script>
+    var editor;
     $(document).ready(function(){
-        FileSystem.setup('dontony', 'https://18.62.29.122:6004');
+        FileSystem.setup('https://18.62.29.122:6004');
 
-            var mode='tsim';
+            var mode = 'tsim';
             editor = new Editor('.editor_split',mode);
             var set_height = function() {
                 editor.setHeight(document.documentElement.clientHeight - 70); // Set height to window height minus title.
@@ -56,28 +60,26 @@
             // Set up the split buttons.
             $('#maximise_editor').click(activeButton(split.maximiseBottom));
             $('#split_pane').click(activeButton(split.split));
-            $('#maximise_simulation').click(activeButton(split.maximiseTop));   
             Folders.setup('.span3', editor, mode);
             Folders.refresh();
 
             editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')])
-            editor.openTab('','')
+
             function tmsimAssemble(){
-                var file=new Object();
+                var file = new Object();
                 file.name=editor.currentTab();
                 file.data=editor.content();
                 var tsmparse = new TSMparser();
                 var tmsim;
                 var valid = true;
-                if(file.name){
+                if(file.name.split('.').pop() === 'tsim'){
                     try{
                         var parsedDict = tsmparse.parse(file.data);
-                        
+                        editor.clearErrors();
                         // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
                         tsmparse.flattenMachine(parsedDict);
-                        editor.openTab(file.name+'done', tsmparse.getResults(), true);
+                        // editor.openTab(file.name+'done', tsmparse.getResults(), true);
                     } catch(e){
-                        editor.clearErrors();
                         console.log(e.stack );
                         for (var i = 0; i < e.length; i++)
                             editor.markErrorLine(file.name, e[i].message, e[i].lineNumber - 1);
@@ -85,16 +87,17 @@
                     }
                     if(valid){
                         $('.sim_split').html('');
-                        console.log(tmsim);
                         if(tmsim)
                             tmsim.stop()
-                        console.log(tmsim);
                         $('#split_pane').click();
-                        console.log(tsmparse.getTSM())
-                        console.log(tsmparse.getLists());
-                        tmsim = new TMSIM('.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
-                        console.log(tmsim);
+                        // console.log(tsmparse.getTSM())
+                        // console.log(tsmparse.getLists());
+                        tmsim = new TMSIM(file.name, '.sim_split', tsmparse.getTSM(), tsmparse.getLists() );
+                        
                     }
+                }
+                else {
+                    alert("can't assemble a file that is not .tsim");
                 }
             }
             
@@ -107,8 +110,8 @@
                 <ul class="pull-right nav nav-pills">
                     <li class="active" id="maximise_editor"><a>Editor</a></li>
                     <li id="split_pane"><a>Split</a></li>
-                    <li id="maximise_simulation"><a>Simulation</a></li>
                 </ul>
+                <a href="http://6004.mit.edu"><img src="../editor/title.gif" width=250 class="pull-left"></a>
                 <h1>TMSim</h1>
             </div>
             <div class='row row-fluid mainWrapper'>
