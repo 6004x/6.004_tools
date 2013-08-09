@@ -32,6 +32,7 @@ html {
 /* Nav pills should be black because blue on yellow is ugly. */
 .masthead .nav-pills {
     padding-top: 2px;
+    margin-bottom: 0;
 }
 .masthead .nav-pills > li > a:hover {
     background-color: white;
