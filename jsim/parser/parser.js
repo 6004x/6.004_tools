@@ -588,7 +588,7 @@ Parse
             if (line[i].type != "name"){
                 throw new CustomError("Node name expected.",line[i]);
             }
-            obj.nodes.push(line[i].token);
+            obj.connections.push(line[i].token);
         }
         netlist.push(obj)
     }
