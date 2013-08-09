@@ -4,6 +4,7 @@ BSim.MemoryView = function(container, beta) {
     var mTable = null;
     var mWriteHighlight = [];
     var mReadHighlight = [];
+    var mCurrentLabelRows = [];
 
     var beta_resize_memory = function(length) {
         var zero_word = BSim.Common.FormatWord(0);
@@ -66,6 +67,19 @@ BSim.MemoryView = function(container, beta) {
         mTable.endBatch();
     };
 
+    var beta_bulk_change_labels = function(labels) {
+        mTable.startBatch();
+        for (var i = mCurrentLabelRows.length - 1; i >= 0; i--) {
+            mCurrentLabelRows[i].updateCell(mCurrentLabelRows[i], 0, BSim.Common.FormatWord(mCurrentLabelRows[i]*4, 4));
+        };
+        for(var address in labels) {
+            console.log(address);
+            var address = parseInt(address, 10);
+            mTable.updateCell(address / 4, 0, labels[address]);
+        }
+        mTable.endBatch();
+    };
+
     var initialise = function() {
         var height = mContainer.data('height') || 350;
         mTable = new BigTable(mContainer, 140, height, 22, 2);
@@ -77,6 +91,7 @@ BSim.MemoryView = function(container, beta) {
         mBeta.on('read:word', beta_read_word);
         mBeta.on('read:bulk:word', beta_bulk_read_word);
         mBeta.on('write:bulk:word', beta_bulk_write_word);
+        mBeta.on('change:bulk:labels', beta_bulk_change_labels);
     };
     initialise();
 };
