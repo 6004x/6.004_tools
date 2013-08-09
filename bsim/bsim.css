@@ -179,6 +179,21 @@ div.memory {
     background-color: hsl(169, 60%, 50%);
 }
 
+/* regfile read indicators. */
+.regfile .last-read {
+    background-color: hsl(120, 60%, 50%);
+    color: white;
+}
+.regfile .last-write {
+    background-color: hsl(217, 67%, 50%);
+    color: white;
+}
+.regfile .last-read.last-write {
+    background-color: hsl(169, 60%, 50%);
+    color: white;
+}
+
+
 .disassembly table, .memory table, .stack table {
     table-layout: fixed;
     border-spacing: 0px;
