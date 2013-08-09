@@ -88,8 +88,7 @@ $(function() {
 
     // Add some buttons to it
     editor.addButtonGroup([new ToolbarButton('Assemble', do_assemble, 'Runs your program!')]);
-    // And a couple of tabs.
-    editor.openTab(null, '');
+
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 90); // Set height to window height minus title.
     }
