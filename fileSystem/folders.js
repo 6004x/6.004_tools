@@ -1,18 +1,20 @@
 var Folders=new function(){
     var rootNode, editor, editorWrapper;
-    var openFiles=[];
-    var editMode
+    var openFiles = [];
+    var editMode;
     var fileRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~)/;
     var folderRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~|\.)/;
     var collapsedFolders = {};
     var textInputOn = false;
     //attaches file list to the default node
-    function refresh(){
-        getFileList(rootNode.find('.file_paths'));
+    function refresh(callback){
+        getFileList(callback);
     }
 
     var isLoadingFileList = false;
-    function getFileList(parentNode){
+    function getFileList(callback, parentNode){
+        callback = callback || _.identity
+        parentNode = parentNode || rootNode.find('.file_paths');
         if(isLoadingFileList) return;
         isLoadingFileList = true;
 
@@ -29,16 +31,12 @@ var Folders=new function(){
                 fileList[username]=data;
                 addFiles(fileList, parentNode, '');
                 isLoadingFileList = false;
-                for (var key in collapsedFolders){
-                    if(collapsedFolders[key]){
-                        $('#'+key).collapse('hide');
-                    } else {
-                        $('#'+key).collapse('show')
-                    }
-                }
                 FileSystem.getUserName();
-
-            }, noServer
+                callback(true);
+            }, function(status){
+                noServer();
+                callback(false);
+            }
         );
         var level = 0;
 
@@ -203,9 +201,8 @@ var Folders=new function(){
 
                     var newButtonDiv = addDiv('folder_button_div');
                     newButtonDiv.append(newFileButton, newFolderButton);
-                    var timeOut;
-
-                    /*collapser.hover(function(e){
+                    /*var timeOut;
+                    collapser.hover(function(e){
                             var div = $(e.currentTarget);
                             var folderButtons = div.find('.folder_button')
                             timeOut =setTimeout(function(){
@@ -234,35 +231,48 @@ var Folders=new function(){
                         newButtonDiv.append(deleteButton);
 
                     collapser.append(newButtonDiv);
-                    if(!collapsedFolders[collapseName])
-                        collapsedFolders[collapseName] = false;
+                    if(collapsedFolders[collapseName] === undefined){
+                        console.log(collapseName + ' does not exist, default close')
+                        collapsedFolders[collapseName] = level > 1;
+                    }
 
                     //the folder contents sublist, will hold all files and subfolders
-                    var subListUL=$('<ul>').attr('id', collapseName);
+                    var subListUL=$('<ul>').addClass('collapse').attr('id', collapseName);
+                    //adding the class in will expand/collapse the folder according to user preference/
+                    if(!collapsedFolders[collapseName]){
+                        subListUL.addClass('in');
+
+                    } else {
+                        arrow.toggleClass('icon-chevron-down icon-chevron-right');
+                    }
 
                     //when it is not collaped, change the arrow icon, mark the state
                     subListUL.on('show', function(e) {
-                        arrow.addClass('icon-chevron-down').removeClass('icon-chevron-right');
+                        arrow.toggleClass('icon-chevron-down icon-chevron-right');
                         collapsedFolders[$(e.currentTarget).attr('id')] = false;
+                        updatePrefs();
                         e.stopPropagation();
                     });
 
                     //when it is collapsed, change the arrow icon, mark the state
                     subListUL.on('hide', function(e){
-                        arrow.removeClass('icon-chevron-down').addClass('icon-chevron-right');
+                        arrow.toggleClass('icon-chevron-down icon-chevron-right');
                         collapsedFolders[$(e.currentTarget).attr('id')] = true;
+                        updatePrefs();
                         e.stopPropagation();
                     });
 
+                    
                     if(Object.keys(subList).length > 1){
                         //if the subfolder has files inside
                         //recursively fill the tree out
-                        addFiles(subList, subListUL,parentPath+name+'/');
+                        addFiles(subList, subListUL, parentPath+name+'/');
                     }
                     else{
                         //the subfolder has no files inside, it's an empty folder
                         subListUL.append(addDiv('muted').text('[empty folder]'));
                     }
+
                     folderContentsDiv.append(subListUL);
 
                     var copyDiv = $('<div>').addClass('copy_div').css({
@@ -328,60 +338,70 @@ var Folders=new function(){
 
     function displayFile(file){
         editor.openTab(file.name, file.data, true); 
-        openFiles.push(file);
         $(window).resize();
+        updatePrefs();
     }
 
-
+    function updatePrefs(){
+        var openFiles = editor.filenames();
+        var object = {
+            openFiles : openFiles,
+            collapsedFolders:collapsedFolders,
+        }
+        localStorage.setItem('6004folderspref', JSON.stringify(object))
+    }
     
     function isValidName(regExp, name){
         return (name.length > 0) && !regExp.test(name);
     }
 
-    function textInput(callback, parent, validFunction, title, defaultText){
+    function textInput(submitTextAction, parent, validateFunction, title, defaultText){
         var title = title || 'Warning';
-        var validFunction = validFunction || function(text){return text.length > 0};
+        var validateFunction = validateFunction || function(text){return text.length > 0};
         var defaultText = defaultText || 'type here';
-        var valid = false;
+        var valid = false, canceled = false;;
         if(textInputOn){
             return false;
         }
         textInputOn = true;
-        console.log(parent);
 
         var inputLi = $('<div>').addClass('text-input input-append control-group input_file_name')
             .css({
                     'margin-bottom': 0,
                 });
-        var input = $('<input>').addClass('new_text span2 input_file_name').attr({
-            'type' : 'text', 
-            'placeholder' : defaultText,
-        })
-        var cancelButton = $('<button>').addClass('add-on btn btn-danger')
-            .append('&times;').css('padding-top', '0px').css('border', 'initial');
 
+        var input = $('<input>').addClass('new_text input_file_name')
+            .width(parseInt(parent.width())-60)
+            .attr({
+                'type' : 'text', 
+                'placeholder' : defaultText,
+                'border-color' : 'gray',
+        });
+        var cancelButton = $('<button>').addClass('add-on btn btn-danger')
+            .append('&times;')
+        //adding actions for external
         var actions = {
             showError : function(message){
                 input.attr('data-content', message);
-                inputLi.addClass('error')
+                inputLi.addClass('error');
                 if(valid)
                     input.popover('show');
+                valid = false;
             }, 
             hideError : function(){
                 inputLi.removeClass('error');
                 input.popover('hide');
             },
             destroy : function(){
-                parent.height(parent.height()-inputLi.height())
+                console.log('destroy');
+                canceled = true;
                 input.popover('destroy');
                 inputLi.detach();
-                console.log($(parent).attr('id'));
                 collapsedFolders[$(parent).attr('id')] = false; 
-                console.log(collapsedFolders);
                 textInputOn = false;
             }
         }
-
+        //adding listener actions
         cancelButton.on('click', function(e){
                 actions.destroy();
             });
@@ -390,13 +410,12 @@ var Folders=new function(){
                 var key = e.which || e.keyCode;
                 var text = input.val();
                 if (key == 13) { // 13 is enter
-                    callback(text,  actions);
+                    submitTextAction(text,  actions); //submit action
                     e.preventDefault();
                 } else if (key == 27) { //27 is escape key
                     actions.destroy();
                 }
-                if(!validFunction(text,  actions)){
-                    //input.popover('show')
+                if(!validateFunction(text,  actions)){
                     console.log('invalid action');
                     valid = false;
                 } else {
@@ -404,6 +423,14 @@ var Folders=new function(){
                     valid = true;
                 }
             });
+        input.on('focusout', function(){
+            console.log('unfocused newfile');
+            
+            if(!canceled && valid)
+                submitTextAction(untitled, actions);
+            else
+                actions.destroy();
+        })
 
         input.popover({
             'placement' : 'bottom',
@@ -411,13 +438,22 @@ var Folders=new function(){
             'title' : title,
             'container'  : 'body',
         })
+        
+        //filling in text box with default value
+        var count = 0;
+        var untitled = defaultText;
+        while(!validateFunction(untitled, actions)){
+            count++;
+            untitled = defaultText+count;
+        }
+        input.val(untitled);
         inputLi.append(input, cancelButton);
-
         $(parent).prepend(inputLi);
-        parent.height(parent.height()+inputLi.height())
 
         input.focus();
-        return input;
+        input.select();
+        
+
     }
     function newFSObject(parent, validName, action, title, defaultText){
         var handleCreate = function(fileName, actions) {
@@ -426,10 +462,15 @@ var Folders=new function(){
                 action(validName, actions);
             } else {
                 console.log(validName + ' is invalid, oops')
+                actions.destroy();
             }
         }
         //attaches the input to the collapsable value of 
         var childDiv = $($(parent).attr('href'));
+        if(!childDiv.hasClass('in')){
+            childDiv.collapse('show');
+            console.log('not shown after new')
+        }
         textInput(handleCreate, childDiv, validName, title, defaultText);
     }
     function newFile(file_path, parent) {
@@ -442,7 +483,7 @@ var Folders=new function(){
                 displayFile(data);
                 actions.destroy();
                 refresh();
-                return true;
+                return true;    
             });
         }
         function validNewFileName(fileName, actions){
@@ -471,7 +512,7 @@ var Folders=new function(){
             return newFileName;
         }
 
-        newFSObject(parent, validNewFileName, newFileAction, 'New File', 'new file name');
+        newFSObject(parent, validNewFileName, newFileAction, 'New File', 'new file');
 
     }
     function newFolder(file_path, parent){
@@ -498,7 +539,7 @@ var Folders=new function(){
                 refresh();
             });
         }
-        newFSObject(parent, validFolderName, newFolderAction, 'New Folder', 'new folder name');
+        newFSObject(parent, validFolderName, newFolderAction, 'New Folder', 'new folder');
     }
     function deleteFile(path){
         var modal = new ModalDialog();
@@ -550,18 +591,6 @@ var Folders=new function(){
                 modal.dismiss();
             });
         }
-
-
-        // var modal = new ModalDialog();
-        // modal.setTitle("Rename");
-        // modal.addButton('Cancel', 'dismiss');
-        // modal.addButton('Rename', handleRename, 'btn-primary');
-        // modal.setContent("<p>Enter a new name for <strong>" + path + "</strong></p>");
-        // modal.inputBox({
-        //     prefix: '/' + FileSystem.getUserName() + file_path+'/',
-        //     callback: handleRename
-        // });
-        //modal.show();
     }
 
     
@@ -579,7 +608,7 @@ var Folders=new function(){
         var toolbar = new Toolbar(buttonDiv);
         toolbar.addButtonGroup([
             new ToolbarButton('icon-refresh', refresh, 'Refresh'),
-            new ToolbarButton('icon-off', _.identity, 'temp')
+            new ToolbarButton('icon-off', _.identity, 'Off is not implemented')
         ]);
     }
 
@@ -595,13 +624,36 @@ var Folders=new function(){
         filesWrapper.height(window.innerHeight - filesWrapper.offset().top);
         $(window).on('resize',function(){filesWrapper.height(window.innerHeight - filesWrapper.offset().top);})
         sideBarNav.append(filesWrapper);
+        var pref = JSON.parse(localStorage.getItem('6004folderspref'));
+        console.log(pref);
+        if(pref){
+            if(pref.collapsedFolders)
+                collapsedFolders = pref.collapsedFolders;
+            if(pref.openFiles)
+                openFiles = pref.openFiles;
+        }
 
-        var username = FileSystem.getUserName();
         
+        var username = FileSystem.getUserName();
         rootNode.append(buttonDiv);
         rootNode.append(sideBarNav);
 
-        refresh();
+        refresh(function(status){
+            if(status){
+                for(var i = 0; i <  openFiles.length; i++){
+                    var file = openFiles[i];
+                    FileSystem.getFile(file, function(data){
+                        displayFile(data);
+                        console.log(openFiles);
+                    }, function(){
+                        console.log('failed init openFiles')
+                    });
+                }
+            }
+            else
+                console.log('failed refresh');
+            
+        });
     }
     return {setup:setup, refresh:refresh};
 }();
