@@ -582,7 +582,8 @@ Parse
     **********************/
     function read_connect(line){
         var obj = {type:"connect",
-                   nodes:[]}
+                   connections:[],
+                   properties:{}}
         for (var i = 1; i < line.length; i += 1){
             if (line[i].type != "name"){
                 throw new CustomError("Node name expected.",line[i]);
