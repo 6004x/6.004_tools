@@ -1,5 +1,5 @@
 i.open_indicator{
-    margin: 2px 10px 2px 2px ;
+    margin: 2px 2px 2px 2px ;
 }
 li.file_name:hover{
     background-color: lightyellow;
@@ -7,9 +7,12 @@ li.file_name:hover{
 .folder_button_div span.btn{
     margin : 0;
 }
+.popover-title { display: none; }
+.popover .arrow {display:none;}
+
 .folder_name span{
-    margin-left : 5px;
-    font : bold sans-serif;
+    margin-left : 0px;
+    font-weight: bold;
     color : black;
 }
 .file_name .file_button{
@@ -103,6 +106,7 @@ div.input_file_name button.add-on{
 .file_paths{
     padding:0px;
     overflow-x : auto; 
+    overflow-y : auto;
 }	
 .folder_name {
     z-index:3;
@@ -126,4 +130,7 @@ div.input_file_name button.add-on{
 }
 .hover_drop{
     border-color: orangered;
+}
+.editor_div{
+    width: 100%;
 }
