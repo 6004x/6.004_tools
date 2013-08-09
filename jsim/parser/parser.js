@@ -717,15 +717,15 @@ Parse
                 dc_obj.parameters.sweep1.source = line[0].token;
             }
             for (var i = 1; i <= 3; i += 1){
-//                try {
-//                    dc_obj.parameters.sweep1[param_names[i]] = parse_number(line[i].token);
-//                } catch (err) {
-//                    throw new CustomError("Number expected.",line[i]);
-//                }
-                if (line[i].type != "number"){
-                    throw new CustomError("Number expectd.",line[i]);
+                try {
+                    dc_obj.parameters.sweep1[param_names[i]] = parse_number(line[i].token);
+                } catch (err) {
+                    throw new CustomError("Number expected.",line[i]);
                 }
-                dc_obj.parameters.sweep1[param_names[i]] = line[i].token;
+//                if (line[i].type != "number"){
+//                    throw new CustomError("Number expectd.",line[i]);
+//                }
+//                dc_obj.parameters.sweep1[param_names[i]] = line[i].token;
             }
         }
         
@@ -736,15 +736,15 @@ Parse
                 dc_obj.parameters.sweep2.source = line[4].token;
             }
             for (var i = 1; i <= 3; i += 1){
-//                try {
-//                    dc_obj.parameters.sweep2[param_names[i]] = parse_number(line[i+4].token);
-//                } catch (err) {
-//                    throw new CustomError("Number expected.",line[i+4]);
-//                }
-                if (line[i+4].type != "number"){
-                    throw new CustomError("Number expectd.",line[i+4]);
+                try {
+                    dc_obj.parameters.sweep2[param_names[i]] = parse_number(line[i+4].token);
+                } catch (err) {
+                    throw new CustomError("Number expected.",line[i+4]);
                 }
-                dc_obj.parameters.sweep2[param_names[i]] = line[i+4].token;
+//                if (line[i+4].type != "number"){
+//                    throw new CustomError("Number expectd.",line[i+4]);
+//                }
+//                dc_obj.parameters.sweep2[param_names[i]] = line[i+4].token;
             }
         }
         
@@ -1243,18 +1243,39 @@ Device readers: each takes a line of tokens and returns a device object,
         obj.connections.push(line[1].token);
         obj.connections.push(line[2].token);
         
-        /*if (line[3].type == "number"){
+        if (line[3].type == "number"){
             try{
                 obj.properties.value = parse_number(line[3].token);
             } catch (err) {
                 throw new CustomError("Number Expected",line[3].line,line[3].column);
             }
-        } else*/ if (line[3].type != "function" /* test */ &&
-                     line[3].type != "number"){
-            throw new CustomError("Number or function expected", line[3]);
-        } else {
-            obj.properties.value = line[3].token;   
+        } else if (line[3].type == "function"){
+            var fn_pttn = /(\w+)\((.+)\)/;
+            var fn_matched = line[3].token.match(fn_pttn);
+            var fn_name = fn_matched[1];
+            var fn_args = fn_matched[2];
+            fn_args = fn_args.split(/[,\s]\s*/);
+            
+            console.log("args:",fn_args);
+            
+            var final_fn_args = [];
+            for (var i = 0; i < fn_args.length; i += 1){
+                try{
+                    final_fn_args.push(parse_number(fn_args[i]));
+                } catch (err) {
+                    throw new CustomError("Number expected",line[3]);
+                }
+            }
+            
+            obj.properties.value = fn_name+"("+final_fn_args.join(",")+")";
+            console.log("object:",obj);
         }
+//        } else 
+//        if (line[3].type != "function" && line[3].type != "number"){
+//            throw new CustomError("Number or function expected", line[3]);
+//        } else {
+//            obj.properties.value = line[3].token;   
+//        }
         return obj;
     }
     
@@ -1316,7 +1337,7 @@ Device readers: each takes a line of tokens and returns a device object,
         var fn_pttn = /(\w+)\((.+)\)/;
         var fn_matched = fn.token.match(fn_pttn);
         var fn_name = fn_matched[1];
-        var fn_args = fn_matched[2]
+        var fn_args = fn_matched[2];
         fn_args = fn_args.split(/[,\s]\s*/);
         
         if (fn_name == "nrz"){

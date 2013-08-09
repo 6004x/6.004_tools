@@ -187,7 +187,7 @@ var Checkoff = (function(){
                     // three binary digits equal one octal digit
                     // break into threes from the end
                     while (nodeVals.length > 0){
-                        valAtTime.push(nodeVals.splice(-3,3))
+                        valAtTime.unshift(nodeVals.splice(-3,3))
                     }
                     for (var j = 0; j < valAtTime.length; j += 1){
                         valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(8);
@@ -197,7 +197,7 @@ var Checkoff = (function(){
                     // four binary digits equal one hexadecimal digit
                     // break into fours from the end
                     while (nodeVals.length > 0){
-                        valAtTime.push(nodeVals.splice(-4,4))
+                        valAtTime.unshift(nodeVals.splice(-4,4))
                     }
                     for (var j = 0; j < valAtTime.length; j += 1){
                         valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(16);
