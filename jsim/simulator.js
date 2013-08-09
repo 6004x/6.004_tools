@@ -971,17 +971,23 @@ min-height:'+minHeight+'px"></div>');
             case 'tran':
                 tranProgress.show();
                 var progressTxt = tranProgress.find('span');
-                cktsim.transient_analysis(netlist, current_analysis.parameters.tstop,
-                                          [], function(pct_complete, results) {
-                    progressTxt.text("Performing Transient Analysis... "+pct_complete+"%");
-                    if (results){
-                        tranProgress.hide();
-                        current_results = results;
-                        $('#results').data("current",results);
-                        tran_plot(div, current_results, plots);
-                    }
-                    return tranHalt;
-                });
+                try{
+                    cktsim.transient_analysis(netlist, current_analysis.parameters.tstop,
+                                              [], function(pct_complete, results) {
+                        progressTxt.text("Performing Transient Analysis... "+pct_complete+"%");
+                        if (results){
+                            tranProgress.hide();
+                            current_results = results;
+                            $('#results').data("current",results);
+                            tran_plot(div, current_results, plots);
+                        }
+                        return tranHalt;
+                    });
+                } catch (err) {
+                    tranProgress.hide();
+                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                '.\<button class="close" data-dismiss="alert">&times;</button></div>')
+                }
                 break;
             case 'ac':
                 current_results = cktsim.ac_analysis(netlist, current_analysis.parameters.fstart,
