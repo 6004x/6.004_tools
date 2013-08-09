@@ -146,7 +146,7 @@ var FileSystem= function(){
     }
     function getFileFromTree(fileName){
         var finalTree = traverseTree(fileName, function(i, tree){return true;} );
-        console.log(finalTree);
+        // console.log(finalTree);
         //TODO fix, length does not work for objects
         if(finalTree.length == 0)
             return false;
@@ -173,7 +173,7 @@ var FileSystem= function(){
     //SERVER FUNCTIONS
     this.getFile = function(fileName, callback, callbackFailed){
         //username or some sort of authentication
-        console.log(fileName);
+        console.log('getting '+fileName);
         var file = null;
         if(Object.keys(fileTree).length > 0)
             file = getFileFromTree(fileName);
@@ -333,7 +333,8 @@ var FileSystem= function(){
         if(!fileData)
             fileData='';
 
-
+        if(filePath.substring(0,1)!=='/')
+            filePath = '/'+filePath;
         url=mServer+filePath;
         var data={query:query, name:filePath, data:fileData}
         var req=$.ajax({
@@ -373,10 +374,14 @@ var FileSystem= function(){
     };
     this.isFile = function(fileName){
         // console.log(fileName+' check if in allfiles');
+        if(fileName.substring(0,1)!=='/')
+            fileName = '/'+fileName;
         return allFiles.indexOf(fileName) !== -1;
     }
     this.isFolder = function(folderName){
         // console.log(folderName+' check if in allFolders');
+        if(folderName.substring(0,1)!=='/')
+            folderName = '/'+folderName;
         return allFolders.indexOf(folderName) !== -1;
     }
     this.setup = function(server){

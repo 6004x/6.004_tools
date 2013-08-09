@@ -8,7 +8,8 @@ var Folders=new function(){
     var textInputOn = false;
     //attaches file list to the default node
     function refresh(callback){
-        getFileList(callback);
+        getFileList(callback); 
+        $('.hover_button').tooltip('hide');
     }
 
     var isLoadingFileList = false;
@@ -176,15 +177,19 @@ var Folders=new function(){
 
                     //collapser area will hold the folder name and will 
                     //allow user to hide and expand folderContents
+                    var totalPath =  parentPath+name+'/';
+                    if(level == 1){
+                        totalPath = '';
+                    }
                     var folderContentsDiv = addDiv('folder_contents')
                         .attr({
-                            'data-path': parentPath+name+'/',
+                            'data-path':totalPath,
                         });
                     var collapser = $('<li>').addClass('folder_name')
                         .attr({
                             'data-toggle':'collapse',
                             'href':'#'+collapseName,
-                            'data-path': parentPath+name+'/',
+                            'data-path': totalPath,
                         });
                     if(level === 1)//keep track of the root
                         collapser.addClass('root_folder_name');
@@ -232,7 +237,6 @@ var Folders=new function(){
 
                     collapser.append(newButtonDiv);
                     if(collapsedFolders[collapseName] === undefined){
-                        console.log(collapseName + ' does not exist, default close')
                         collapsedFolders[collapseName] = level > 1;
                     }
 
@@ -266,7 +270,7 @@ var Folders=new function(){
                     if(Object.keys(subList).length > 1){
                         //if the subfolder has files inside
                         //recursively fill the tree out
-                        addFiles(subList, subListUL, parentPath+name+'/');
+                        addFiles(subList, subListUL, totalPath);
                     }
                     else{
                         //the subfolder has no files inside, it's an empty folder
@@ -348,7 +352,7 @@ var Folders=new function(){
             openFiles : openFiles,
             collapsedFolders:collapsedFolders,
         }
-        localStorage.setItem('6004folderspref', JSON.stringify(object))
+        localStorage.setItem('6004folderspref'+editMode, JSON.stringify(object))
     }
     
     function isValidName(regExp, name){
@@ -359,7 +363,8 @@ var Folders=new function(){
         var title = title || 'Warning';
         var validateFunction = validateFunction || function(text){return text.length > 0};
         var defaultText = defaultText || 'type here';
-        var valid = false, canceled = false;;
+        var valid = false, canceled = true;
+        var shown = false;
         if(textInputOn){
             return false;
         }
@@ -379,18 +384,32 @@ var Folders=new function(){
         });
         var cancelButton = $('<button>').addClass('add-on btn btn-danger')
             .append('&times;')
+        //wrapper for error reporting toolip        
+        var tooltipContent = $('<div>').attr('id', 'tooltip_content')
         //adding actions for external
+        
         var actions = {
             showError : function(message){
-                input.attr('data-content', message);
+                tooltipContent.text(message);
+                input.attr('data-content', String(tooltipContent[0].outerHTML));
                 inputLi.addClass('error');
-                if(valid)
+                if(!shown){
                     input.popover('show');
+                    $('#tooltip_content').on('click', function(e){
+                        console.log('click popover')
+                        clearTimeout(focustimeOut)
+                        
+                        input.popover('hide');
+                        input.focus();
+                        e.stopPropagation();
+                    })
+                }
                 valid = false;
             }, 
             hideError : function(){
                 inputLi.removeClass('error');
-                input.popover('hide');
+                if(shown)
+                    input.popover('hide');
             },
             destroy : function(){
                 console.log('destroy');
@@ -403,12 +422,14 @@ var Folders=new function(){
         }
         //adding listener actions
         cancelButton.on('click', function(e){
+                clearTimeout(focustimeOut)
                 actions.destroy();
             });
         
         input.on('keyup', function(e) {
                 var key = e.which || e.keyCode;
                 var text = input.val();
+                canceled = true;
                 if (key == 13) { // 13 is enter
                     submitTextAction(text,  actions); //submit action
                     e.preventDefault();
@@ -423,30 +444,41 @@ var Folders=new function(){
                     valid = true;
                 }
             });
+        var focustimeOut;
         input.on('focusout', function(){
             console.log('unfocused newfile');
+            focustimeOut = setTimeout(function(){
+                console.log('focusout')
+                if(!canceled && validateFunction(input.val(), actions))
+                    submitTextAction(input.val(), actions);
+            }, 100);
             
-            if(!canceled && valid)
-                submitTextAction(untitled, actions);
-            else
-                actions.destroy();
         })
 
         input.popover({
             'placement' : 'bottom',
             'trigger' : 'manual',
-            'title' : title,
             'container'  : 'body',
+            'html' : true,
         })
-        
+        input.popover().on('show', function(e){
+            shown = true;
+            e.stopPropagation();
+        })
+        input.popover().on('hide', function(e){
+            shown = false;
+            e.stopPropagation();
+        })
+
         //filling in text box with default value
         var count = 0;
         var untitled = defaultText;
         while(!validateFunction(untitled, actions)){
             count++;
-            untitled = defaultText+count;
+            untitled = defaultText + count;
         }
         input.val(untitled);
+        actions.hideError();
         inputLi.append(input, cancelButton);
         $(parent).prepend(inputLi);
 
@@ -455,23 +487,23 @@ var Folders=new function(){
         
 
     }
-    function newFSObject(parent, validName, action, title, defaultText){
+    function newFSObject(parent, validateName, action, title, defaultText){
         var handleCreate = function(fileName, actions) {
-            validName = validName(fileName, actions);
+            validName = validateName(fileName, actions);
             if(validName){
                 action(validName, actions);
             } else {
                 console.log(validName + ' is invalid, oops')
-                actions.destroy();
             }
         }
         //attaches the input to the collapsable value of 
         var childDiv = $($(parent).attr('href'));
+        //in case you hit new in a closed folder, it opens it. 
         if(!childDiv.hasClass('in')){
             childDiv.collapse('show');
-            console.log('not shown after new')
+
         }
-        textInput(handleCreate, childDiv, validName, title, defaultText);
+        textInput(handleCreate, childDiv, validateName, title, defaultText);
     }
     function newFile(file_path, parent) {
         function newFileAction(validName, actions){
@@ -487,15 +519,13 @@ var Folders=new function(){
             });
         }
         function validNewFileName(fileName, actions){
-            var valid = false;
+           
             console.log(fileName)
             if(!isValidName(fileRegexp, fileName)){
                 actions.showError('File names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~');
-                valid = false;
+               
                 return false;
-            } else {
-                valid = true;
-            }
+            } 
             var newFileName = '';
             if(fileName.indexOf('.') < 0)
                 newFileName=file_path+fileName+'.'+editMode;
@@ -504,11 +534,9 @@ var Folders=new function(){
             //checks that there is not already another file with that name.
             if (FileSystem.isFile(newFileName)){
                 actions.showError('file already exists ');
-                valid = false;
+                
                 return false;
-            } else {
-                valid = true;
-            }
+            } 
             return newFileName;
         }
 
@@ -614,17 +642,20 @@ var Folders=new function(){
 
     function setup(root, editorN, mode){
         rootNode = $(root);
+        console.log(root);
         editor = editorN;
         editMode = mode;
-        var buttonDiv = addDiv('buttonDiv');
-        addButtons(buttonDiv);
 
-        sideBarNav = addDiv('sidebar-nav');
+        var buttonDiv = addDiv('buttonDiv');
+        addButtons(rootNode);
+
+        var sideBarNav = addDiv('sidebar-nav');
         var filesWrapper = $('<ul>').addClass('file_paths nav nav-list nav-stacked');
+
         filesWrapper.height(window.innerHeight - filesWrapper.offset().top);
         $(window).on('resize',function(){filesWrapper.height(window.innerHeight - filesWrapper.offset().top);})
         sideBarNav.append(filesWrapper);
-        var pref = JSON.parse(localStorage.getItem('6004folderspref'));
+        var pref = JSON.parse(localStorage.getItem('6004folderspref'+editMode));
         console.log(pref);
         if(pref){
             if(pref.collapsedFolders)
@@ -644,7 +675,6 @@ var Folders=new function(){
                     var file = openFiles[i];
                     FileSystem.getFile(file, function(data){
                         displayFile(data);
-                        console.log(openFiles);
                     }, function(){
                         console.log('failed init openFiles')
                     });
