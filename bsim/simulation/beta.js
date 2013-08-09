@@ -89,7 +89,7 @@ BSim.Beta = function() {
         // This trigger is redundant to the reset performed by this.reset()
         // this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
         var r = _.range(0, mMemory.size(), 4);
-        this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
+        this.trigger('change:bulk:word', _.object(r, _.map(r, function(i) { return self.readWord(i); } )));
 
         this.clearBreakpoints();
         this.setLabels({});
