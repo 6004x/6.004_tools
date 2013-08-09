@@ -1,0 +1,128 @@
+// .include "nominal.jsim" 
+.include "/foo/stdcell.jsim" 
+.include "/lab3/lab3checkoff10.jsim"
+// .include "/lab3/lab3_test_mult.jsim"
+.include "/lab3/mult.jsim"
+
+//Boolean operations
+.subckt BOOL alufn[3:0] A[31:0] B[31:0] OUT[31:0] 
+Xboolean mux4 A[31:0] B[31:0] alufn[0]#32 alufn[1]#32 alufn[2]#32 alufn[3]#32 OUT[31:0]
+.ends
+
+
+/************************************************************************************
+*Addition/subtraction/multiplication */
+
+//Full adder, copied from lab 2:
+.subckt FA a b ci s co
+Xxor1 xor2 a b n1
+Xxor2 xor2 n1 ci s
+
+Xnand2_1 nand2 a b n2
+Xnand2_2 nand2 a ci n3
+Xnand2_3 nand2 b ci n4
+
+Xnand3 nand3 n2 n3 n4 co
+.ends
+
+//32-bit adder
+.subckt ADDER32 a[31:0] b[31:0] ci s[31:0]
+Xbit0 FA a0 b0 ci s0 co0
+Xbits1_31 FA a[1:31] b[1:31] co[0:30] s[1:31] co[1:31] 
+.ends
+
+/*32-input NOR -- unused
+/*.subckt NOR32 a[0:31]  z
+Xnor4s a[0:31] b[0:7] nor4
+Xand4s b[0:7] c[0:1] and4
+Xand2 c0 c1 z and2
+.ends*/
+
+.subckt ARITH alufn[1:0] A[31:0] B[31:0] OUT[31:0] Z V N
+//*computing S:
+Xxor2s xor2 B[31:0] alufn0#32 B2_[31:0]
+Xadder ADDER32 A[31:0] B2_[31:0] alufn0 add[31:0]
+
+//*computing Z: Z=0 when all S==0
+Xor2_1 or2 add0 add1 n1
+Xor2_2_30 or2 n[1:29] add[2:30] n[2:30]
+Xnor2_Z nor2 n30 add31 Z
+
+//*computing N: N=1 when S_31=1:
+.connect add31 N
+
+//*computing V: V=1 when there is overflow, e.g., when sign(A) = sign(B) and sign(S) != sign(A)
+XinvS inverter add31 notS31
+XinvA inverter A31 notA31
+XinvB inverter B2_31 notB31
+Xnand3_1 nand3 A31 B2_31 notS31 z1 
+Xnand3_2 nand3 notA31 notB31 OUT31 z2 
+Xnand2 nand2 z1 z2 V
+
+
+//*Multiplication:
+Xmultiplier mult32 A[31:0] B[31:0] mult[31:0]
+
+//*add/mult mux
+Xaddmult mux2 alufn1#32 add[31:0] mult[31:0] OUT[31:0]
+
+.ends
+
+/************************************************************************************/
+.subckt SHIFT alufn[1:0] A[31:0] B[31:0] OUT[31:0] 
+
+//*left shift
+XLshift16s mux2 B4#32 A[31:0] A[15:0] gnd#16 m1[31:0]
+XLshift8s mux2 B3#32 m1[31:0] m1[23:0] gnd#8 m2[31:0]
+XLshift4s mux2 B2#32 m2[31:0] m2[27:0] gnd#4 m3[31:0]
+XLshift2s mux2 B1#32 m3[31:0] m3[29:0] gnd#2 m4[31:0]
+XLshift1s mux2 B0#32 m4[31:0] m4[30:0] gnd left[31:0]
+
+//*right shift
+Xshiftin mux2 alufn1 gnd A31 ext
+
+XRshift16s mux2 B4#32 A[31:0] ext#16 A[31:16] n1[31:0] 
+XRshift8s mux2 B3#32 n1[31:0] ext#8 n1[31:8] n2[31:0] 
+XRshift4s mux2 B2#32 n2[31:0] ext#4 n2[31:4] n3[31:0] 
+XRshift2s mux2 B1#32 n3[31:0] ext#2 n3[31:2] n4[31:0] 
+XRshift1s mux2 B0#32 n4[31:0] ext n4[31:1] right[31:0]
+
+XLorRs mux2 alufn0#32 left[31:0] right[31:0] OUT[31:0]
+.ends
+
+
+
+/************************************************************************************/
+
+.subckt CMP alufn3 alufn1 Z V N OUT[31:0] 
+Xzeros constant0 OUT[31:1] 
+
+//*instead of using XOR, use muxes to pick the right value of Z
+XinvN inverter N notN
+XinvZ inverter Z notZ
+Xnand2_1 nand2 notZ notN mux1_in0 
+Xnand2_2 nand2 notZ N mux1_in1 
+Xmux2_1 mux2 V mux1_in0 mux1_in1 mux1out 
+Xmux2_2 mux2 V N notN mux2out 
+
+//*pick the right comparison
+Xmux4 mux4 alufn3 alufn1 Z mux1out mux2out gnd OUT0 
+
+.ends
+
+
+
+/************************************************************************************/
+.subckt alu alufn[4:0] a[31:0] b[31:0] out[31:0] z v n
+
+//*** Generate outputs from each of BOOL, SHIFT, ARITH, CMP subcircuits: 
+xbool BOOL alufn[3:0] a[31:0] b[31:0] boolout[31:0]
+xshift SHIFT alufn[1:0] a[31:0] b[31:0] shiftout[31:0]
+xarith ARITH alufn[1:0] a[31:0] b[31:0] arithout[31:0] z v n 
+xcmp CMP alufn[3] alufn[1] z v n cmpout[31:0]
+
+//*** Combine them, using three multiplexors:
+xmux1 mux2 alufn[4]#32 nonbool[31:0] boolout[31:0] out[31:0]
+xmux2 mux2 alufn[2]#32 arithshift[31:0] cmpout[31:0] nonbool[31:0]
+xmux3 mux2 alufn[3]#32 arithout[31:0] shiftout[31:0] arithshift[31:0]
+.ends

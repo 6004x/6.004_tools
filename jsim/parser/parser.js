@@ -189,7 +189,8 @@ var Parser = (function(){
                                             end_string,
                                              line:current.line,
                                              type:'name',
-                                             column:current.column
+                                             column:current.column,
+                                             origin_file:current.origin_file
                                             }
                         new_token_array.push(new_token_obj);
                     }
@@ -985,6 +986,10 @@ Parse
             i += 1;
         }
         
+        if (raw_values.length === 0){
+            return;
+        }
+        
         // picks out the name of the function and its args, if any
         // fn_array[1] is the name
         // fn_array[2] is the entire contents of the parentheses
@@ -1513,7 +1518,7 @@ Flattening
             if (!(dev_obj.properties.instanceOf in subcircuits)){
                 throw new CustomError("Can't find definition for subcircuit "+
                                       dev_obj.properties.instanceOf + ".", 
-                                      {line:dev_obj.line,column:0,file:dev_obj.file});
+                                      {line:dev_obj.line,column:0,origin_file:dev_obj.file});
             }
             
             dev_obj.ports = subcircuits[dev_obj.properties.instanceOf].ports;
