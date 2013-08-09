@@ -11,6 +11,46 @@
 
 gatesim = (function() {
     
+	function dc_analysis(netlist,sweep1,sweep2) {
+	    throw "Sorry, no DC analysis with gate-level simulation"
+	}
+
+	function ac_analysis(netlist, fstart, fstop, ac_source_name) {
+	    throw "Sorry, no AC analysis with gate-level simulation"
+	}
+
+	// Transient analysis
+	//   netlist: JSON description of the circuit
+	//   tstop: stop time of simulation in seconds
+	//   probe_names: optional list of node names to be checked during LTE calculations
+	//   progress_callback(percent_complete,results)
+	//      function called periodically, return true to halt simulation
+	//      until simulation is complete, results are undefined
+	// results are associative array mapping node name -> array of voltages/currents
+	//   includes _time_ -> array of simulation times at which values were measured
+	function transient_analysis(netlist, tstop, probe_names, progress_callback) {
+	    if ((typeof tstop) == 'string') tstop = parse_number_alert(tstop);
+	    
+	    if (netlist.length > 0 && tstop !== undefined) {
+		var ckt = new Circuit(netlist);
+
+		var progress = {};
+		progress.probe_names = probe_names; // node names for LTE check
+		progress.update_interval = 250; // in milliseconds
+		progress.finish = function(results) {
+		    progress_callback(undefined, results);
+		}
+		progress.stop_requested = false;
+		progress.update = function(percent_complete) { // 0 - 100
+		    // invoke the callback which will return true if the
+		    // simulation should halt.
+		    if (progress_callback(percent_complete, undefined)) progress.stop_requested = true;
+		}
+
+		ckt.tran_start(progress, 100, 0, tstop);
+	    }
+	}
+
 	// handler for gate simulation tool
 	function gate_sim(diagram) {
 	    // use modules in the gates library as the leafs
@@ -74,6 +114,7 @@ gatesim = (function() {
 		    diagram.window('Progress',progress);   // display progress bar
 
 		    // off to do the heavy lifting...
+
 		    network.sim_init(progress,tstop);
 		    try {
 			network.simulate(new Date().getTime()+network.progress.update_interval);
@@ -119,6 +160,7 @@ gatesim = (function() {
 	    this.node_map = {};
 	    this.devices = [];  // list of devices
 	    this.device_map = {}  // name -> device
+	    this.event_queue = new Heap();
 	}
 
 	// return Node object for specified name, create if necessary
@@ -215,7 +257,7 @@ gatesim = (function() {
 	Network.prototype.sim_init = function(progress,tstop) {
 	    this.progress = progress;
 	    this.tstop = tstop;
-	    this.event_queue = null;
+	    this.event_queue.clear();
 	    this.time = 0;
 
 	    // queue initial events
@@ -228,9 +270,8 @@ gatesim = (function() {
 	Network.prototype.simulate = function(tupdate) {
 	    var ecount = 0;
 	    if (!this.progress.stop_requested)   // halt when user clicks stop
-		while (this.time < this.tstop && this.event_queue != null) {
-		    var event = this.event_queue;
-		    this.event_queue = event.remove_event(this.event_queue);
+		while (this.time < this.tstop && !this.event_queue.empty()) {
+		    var event = this.event_queue.pop();
 		    event.node.process_event(event,false);
 
 		    // check for coffee break every 1000 events
@@ -268,17 +309,17 @@ gatesim = (function() {
 
 	Network.prototype.add_event = function(t,type,node,v) {
 	    var event = new Event(t,type,node,v);
-	    this.event_queue = merge_with_queue(this.event_queue,event);
+	    this.event_queue.push(event);
 	    return event;
 	}
 
 	Network.prototype.remove_event = function(event) {
-	    this.event_queue = event.remove(this.event_queue);
+	    this.event_queue.remove(event);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
 	//
-	//  Events
+	//  Events & the event heap
 	//
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -290,94 +331,138 @@ gatesim = (function() {
 	    this.type = type;	// CONTAMINATE, PROPAGATE
 	    this.node = node;
 	    this.v = v;
-
-	    this.parent = null;	// left-ist tree from Knuth
-	    this.left = null;
-	    this.right = null;
-	    this.distance = 1;
 	}
 
-	// keeps events on the queue ordered by time.  Events at the same time are ordered
-	// by C events before P events, then in order of addition to the queue.
-	Event.prototype.before = function(ev2) {
-	    if (this.t < ev2.t) return true;
-	    else if (this.t == ev2.t) return this.type < ev2.type;  // C events before P events
-	    else return false;
+	// Heaps are arrays for which a[k] <= a[2*k+1] and a[k] <=
+	// a[2*k+2] for all k, counting elements from 0.  For the sake
+	// of comparison, non-existing elements are considered to be
+	// infinite.  The interesting property of a heap is that a[0]
+	// is always its smallest element.
+	// stolen from Python's heapq.py
+	function Heap() {
+	    this.nodes = [];
 	}
 
-	Event.prototype.remove = function(queue) {
-	    if (this.parent == null) queue = this.left;
-	    else {
-		// patch ourselves out of tree hierarchy, update distances
-		if (this.parent.left == this) this.parent.left = this.left;
-		else this.parent.right = this.left;
-		update_distance(this.parent);
-	    }
-
-	    // take care of newly-orphaned children
-	    if (this.left != null) this.left.parent = this.parent;
-	    if (this.right != null) queue = merge_with_queue(queue,this.right);
-
-	    return queue;
+	// specialized for events...
+	Heap.prototype.cmplt = function(e1,e2) {
+	    return e1.t < e2.t;
 	}
 
-	// adjust distance from leafs all the way up the tree, rearranging
-	// children to keep the shortest path on the right branch
-	function update_distance(e) {
-	    while (e != null) {
-		var ldist = (e.left == null) ? 0 : e.left.distance;
-		var rdist = (e.right == null) ? 0 : e.right.distance;
-		// maintain right child as having minimum distance
-		if (ldist < rdist) {
-		    var temp = e.left;
-		    e.left = e.right;
-		    e.right = temp;
-		    rdist = ldist;
+	// 'heap' is a heap at all indices >= startpos, except possibly for pos.  pos
+	// is the index of a leaf with a possibly out-of-order value.  Restore the
+	// heap invariant.
+	Heap.prototype._siftdown = function(startpos, pos) {
+	    var newitem, parent, parentpos;
+	    newitem = this.nodes[pos];
+	    // follow th epath to the root
+	    while (pos > startpos) {
+		parentpos = (pos - 1) >> 1;
+		parent = this.nodes[parentpos];
+		if (this.cmplt(newitem, parent)) {
+		    this.nodes[pos] = parent;
+		    pos = parentpos;
+		    continue;
 		}
-		e.distance = 1 + rdist;
-		e = e.parent;
+		break;
+	    }
+	    this.nodes[pos] = newitem;
+	};
+
+	// The child indices of heap index pos are already heaps, and we want to make
+	// a heap at index pos too.  We do this by bubbling the smaller child of
+	// pos up (and so on with that child's children, etc) until hitting a leaf,
+	// then using _siftdown to move the oddball originally at index pos into place.
+	Heap.prototype._siftup = function(pos) {
+	    var childpos, endpos, newitem, rightpos, startpos;
+	    endpos = this.nodes.length;
+	    startpos = pos;
+	    newitem = this.nodes[pos];
+	    // bubble up the smaller child until hitting a leaf
+	    childpos = 2 * pos + 1;
+	    while (childpos < endpos) {
+		// set childpos to index of smaller child
+		rightpos = childpos + 1;
+		if (rightpos < endpos && !(this.cmplt(array[childpos], array[rightpos]))) {
+		    childpos = rightpos;
+		}
+		// move the smaller child up
+		this.nodes[pos] = this.nodes[childpos];
+		pos = childpos;
+		childpos = 2 * pos + 1;
+	    }
+	    // the leaf at pos is empty now.  Put newitem there and bubble it up
+	    // to its final resitng place (by sifting its parents down)
+	    this.nodes[pos] = newitem;
+	    this._siftdown(startpos, pos);
+	};
+
+	// add new item to the heap
+	Heap.prototype.push = function(item) {
+	    this.nodes.push(item);
+	    this._siftdown(0, this.nodes.length - 1);
+	};
+
+	// remove smallest item from the head
+	Heap.prototype.pop = function() {
+	    var lastelt, returnitem;
+	    lastelt = this.nodes.pop();
+	    if (array.length) {
+		returnitem = this.nodes[0];
+		this.nodes[0] = lastelt;
+		this._siftup(0);
+	    } else {
+		returnitem = lastelt;
+	    }
+	    return returnitem;
+	};
+
+	// see what smallest item is without removing it
+	Heap.prototype.peek = function() {
+	    return this.nodes[0];
+	};
+
+	// is item on the heap?
+	Heap.prototype.contains = function(item) {
+	    return this.nodes.indexOf(item) !== -1;
+	};
+
+	// rebuild heap after changing an item in the heap
+	Heap.prototype.updateItem = function(item) {
+	    var pos = this.nodes.indexOf(item);
+	    if (pos != -1) {
+		this._siftdown(0, pos);
+		this._siftup(pos);
+	    }
+	};
+
+	// remove an item from the head
+	Heap.prototype.removeItem = function(item) {
+	    var pos = this.nodes.indexOf(item);
+	    if (pos != -1) {
+		// replace item to be removed with last element of heap
+		// then sift it up to where it belongs
+		lastelt = this.nodes.pop();
+		if (array.length) {
+		    this.nodes[pos] = lastelt;
+		    this._siftup(pos);
+		}
 	    }
 	}
 
-	// queue is earliest event, children are later events.
-	// put event q in its place
-	function merge_with_queue(queue,q) {
-	    if (queue == null) {
-		q.parent = null;
-		return q;
-	    }
+	// clear the heap
+	Heap.prototype.clear = function() {
+	    return this.nodes = [];
+	};
 
-	    var p = queue;
-	    var parent = null;
+	// is the heap empty?
+	Heap.prototype.empty = function() {
+	    return this.nodes.length === 0;
+	};
 
-	    // merge this Q into tree.  If P has a later time
-	    // Q will take its place and we'll continue the merge with
-	    // this event.  Otherwise just keep passing Q down the tree,
-	    // using the right branch since it's guaranteed to be the
-	    // shortest.
-	    while (true) {
-		// Q is earlier, so swap places with current node
-		if (q.before(p)) {
-		    var temp = p;
-		    p = q;
-		    q = temp;
-		    p.parent = parent;
-		    if (parent == null) queue = p;
-		    else parent.right = p;
-		}
-		// got to a leaf node so add Q as right child and
-		// then update distances on the way back up
-		if (p.right == null) {
-		    p.right = q;
-		    q.parent = p;
-		    update_distance(p);
-		    return queue;
-		}
-		// keep descending
-		parent = p;
-		p = p.right;
-	    }
-	}
+	// how many items on the heap?
+	Heap.prototype.size = function() {
+	    return this.nodes.length;
+	};
 
 	///////////////////////////////////////////////////////////////////////////////
 	//
