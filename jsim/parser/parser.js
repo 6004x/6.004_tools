@@ -189,7 +189,8 @@ var Parser = (function(){
                                             end_string,
                                              line:current.line,
                                              type:'name',
-                                             column:current.column
+                                             column:current.column,
+                                             origin_file:current.origin_file
                                             }
                         new_token_array.push(new_token_obj);
                     }
@@ -392,6 +393,7 @@ Parse
     var subcircuits;
     var current_subckt;
     var used_names;
+    var netlist;
     var plotdefs;
     
     /********************
@@ -449,7 +451,7 @@ Parse
         analyses = [];
         used_names = [];
         plotdefs = {};
-        var netlist = [];
+        netlist = [];
         subcircuits = {_top_level_:{name:"_top_level_",
                                     ports:[],
                                     properties:{},
@@ -459,7 +461,7 @@ Parse
         current_subckt = subcircuits["_top_level_"];
         
         var toParse = [];
-        token_array = move_instances(token_array);
+//        token_array = move_instances(token_array);
         
         // go through tokens one line at a time, and pass the line to the 
         // appropriate handler
@@ -511,7 +513,8 @@ Parse
     function parse_control(line){
         switch (line[0].token.toLowerCase()){
             case ".connect":
-                throw new CustomError("Connect not implemented yet",line[0]);
+//                throw new CustomError("Connect not implemented yet",line[0]);
+                read_connect(line);
                 break;
             case ".global":
                 read_global(line);
@@ -573,6 +576,21 @@ Parse
     /************************************************
     Control statement readers
     ************************************************/
+    
+    /*********************
+    Read connect
+    **********************/
+    function read_connect(line){
+        var obj = {type:"connect",
+                   nodes:[]}
+        for (var i = 1; i < line.length; i += 1){
+            if (line[i].type != "name"){
+                throw new CustomError("Node name expected.",line[i]);
+            }
+            obj.nodes.push(line[i].token);
+        }
+        netlist.push(obj)
+    }
     
     /*********************
     Read global: for global nodes
@@ -966,6 +984,10 @@ Parse
                 nodes.push(line[i].token);
             }
             i += 1;
+        }
+        
+        if (raw_values.length === 0){
+            return;
         }
         
         // picks out the name of the function and its args, if any
@@ -1396,23 +1418,23 @@ Device readers: each takes a line of tokens and returns a device object,
         }
 
         var inst = line[1];
-        if (!(inst.token in subcircuits)){
-            throw new CustomError("Can't find definition for subcircuit "+inst.token, inst);
-        }
+//        if (!(inst.token in subcircuits)){
+//            throw new CustomError("Can't find definition for subcircuit "+inst.token, inst);
+//        }
         
         var obj = {type:"instance",
                    connections:[],
-                   ports:subcircuits[inst.token].ports,
+                   ports:[],//subcircuits[inst.token].ports,
                    properties:{instanceOf:inst.token, name:line[0].token}
                   }
         line.shift();
-        
-        var parent_props = subcircuits[inst.token].properties;
-        for (var item in parent_props){
-            if (item != "name"){
-                obj.properties[item] = parent_props[item];
-            }
-        }
+//        
+//        var parent_props = subcircuits[inst.token].properties;
+//        for (var item in parent_props){
+//            if (item != "name"){
+//                obj.properties[item] = parent_props[item];
+//            }
+//        }
         
         for (var i = 1; i < line.length; i += 1){
             if (line[i].type != "name"){
@@ -1492,6 +1514,25 @@ Flattening
     Netlist Device
     ************************/
     function netlist_device(prefix, dev_obj, parent_obj, JSON_netlist){
+        if (dev_obj.type == "instance"){
+            if (!(dev_obj.properties.instanceOf in subcircuits)){
+                throw new CustomError("Can't find definition for subcircuit "+
+                                      dev_obj.properties.instanceOf + ".", 
+                                      {line:dev_obj.line,column:0,origin_file:dev_obj.file});
+            }
+            
+            dev_obj.ports = subcircuits[dev_obj.properties.instanceOf].ports;
+            
+            var parent_props = subcircuits[dev_obj.properties.instanceOf].properties;
+            for (var item in parent_props){
+                if (!(item in dev_obj.properties)){
+                    dev_obj.properties[item] = parent_props[item];
+                }
+            }
+        }
+        
+        
+        
         var nports = dev_obj.ports.length;
         var nknex = dev_obj.connections.length;
         if (nknex % nports !== 0){
@@ -1570,6 +1611,7 @@ Flattening
                 // recursive call
                 new_obj.connections = local_connections.slice(0);
                 new_obj.ports = dev_obj.ports.slice(0);
+//                new_obj.ports = subcircuits[dev_obj.properties.instanceOf].ports;
                 netlist_instance(new_obj.properties.name, new_obj,
                                  JSON_netlist);                  
             }
@@ -1585,11 +1627,11 @@ Flattening
     
     
     
-    function moveInstTest(input_string){
-        var tokens = split(analyze(input_string),"test_file");
-        console.log("old tokens:",tokens);
-        move_instances(tokens);
-    }
+//    function moveInstTest(input_string){
+//        var tokens = split(analyze(input_string),"test_file");
+//        console.log("old tokens:",tokens);
+//        move_instances(tokens);
+//    }
        
 /***************************
 Exports
@@ -1597,6 +1639,6 @@ Exports
     return {parse:tokenize,
             CustomError:CustomError,
 //            move_instances:move_instances
-            moveInstTest:moveInstTest
+//            moveInstTest:moveInstTest
            }
 }());

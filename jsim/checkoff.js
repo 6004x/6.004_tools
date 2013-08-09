@@ -69,17 +69,22 @@ var Checkoff = (function(){
             passedModal.addButton("Dismiss",'dismiss');
             passedModal.show();
         } else {
-            var failedModal = new ModalDialog()
-            failedModal.setTitle("Checkoff Failed!");
-            failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
-<p><table class='table'><tr><td>Node(s):</td><td>"+mistake.nodes+"</tr>\
-<tr><td>Time:</td><td>"+Simulator.engineering_notation(mistake.time,2)+"s</td></tr>\
-<tr><td>Expected Logic Value:</td><td>"+mistake.exp+"</td></tr>\
-<tr><td>Actual Logic Value:</td><td>"+mistake.given+"</td></tr></table></p>");
-
-            failedModal.addButton("Dismiss",'dismiss');
-            
-            failedModal.show();
+            if (mistake.verifyError){
+                var failedModal = new FailedModal(mistake.msg);
+                failedModal.show();
+            } else {
+                var failedModal = new ModalDialog();
+                failedModal.setTitle("Checkoff Failed!");
+                failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
+    <p><table class='table'><tr><td>Node(s):</td><td>"+mistake.nodes+"</tr>\
+    <tr><td>Time:</td><td>"+Simulator.engineering_notation(mistake.time,2)+"s</td></tr>\
+    <tr><td>Expected Logic Value:</td><td>"+mistake.exp+"</td></tr>\
+    <tr><td>Actual Logic Value:</td><td>"+mistake.given+"</td></tr></table></p>");
+    
+                failedModal.addButton("Dismiss",'dismiss');
+                
+                failedModal.show();
+            }
         }
     }
     
@@ -120,6 +125,11 @@ var Checkoff = (function(){
                 var index = findTimeIndex(vobj.tstart,0)
                 time_indices.push(index);
                 for (node in results){
+                    if (!(node in mResults)){
+                        return {verifyError:true,
+                                msg:"Verify error: No results for node "+node+
+                                ". (This indicates an error in the checkoff file)."};
+                    }
                     results[node].push(mResults[node][index]);
                 }
                 for (var i = 1; i < vobj.values.length; i += 1){
@@ -181,7 +191,7 @@ var Checkoff = (function(){
                     }
                     for (var j = 0; j < valAtTime.length; j += 1){
                         valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(8);
-                        if (valAtTime[j] === NaN) valAtTime[j] = "X";
+                        if (_.isNaN(valAtTime[j])) valAtTime[j] = "X";
                     }
                 } else if (base == 16){
                     // four binary digits equal one hexadecimal digit
@@ -191,7 +201,7 @@ var Checkoff = (function(){
                     }
                     for (var j = 0; j < valAtTime.length; j += 1){
                         valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(16);
-                        if (valAtTime[j] === NaN) valAtTime[j] = "X";
+                        if (_.isNaN(valAtTime[j])) valAtTime[j] = "X";
                     }
                 }
                     
