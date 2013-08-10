@@ -4,7 +4,7 @@
 	border-radius : 5px;
 	font : monospace;
 	background-color : whitesmoke	;
-	width : 100%;
+	overflow: auto;
 }
 .test_radio_buttons{
 	
@@ -16,6 +16,9 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+.machine_div{
+	margin:auto;
 }
 .tape_segment{
 	border-style: solid;
@@ -49,19 +52,24 @@
 .prev_segment{
 	color : blue;
 }
-
+/*
 .pull-center {
-    margin : 0 auto;
     position : relative;
-    display : block;
-    /*left : ;*/
-}
+    text-align: center;
+    display: block;
+    margin-left: auto;
+    margin-right: auto 
+}*/
 .arrow-up {
 	width: 0; 
 	height: 0; 
 	border-left: 10px solid transparent;
 	border-right: 10px solid transparent;
 	border-bottom: 20px solid black;
+	margin :auto;
+}
+.machine_label{
+	margin:auto;
 }
 .transition_div{
 	font : large monospace;

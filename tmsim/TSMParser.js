@@ -16,13 +16,7 @@ function TSMparser(){
 	
 	//our TSM instance, we compile it with parse, 
 	// instantiate it with flattenMachine, and run it with getResults 
-	var tsm = new TSM();
-
-	// corresponding lists of test tapes and results, and checkoff requirements
-	var list_of_tapes={};
-	var list_of_results={};
-	var list_of_results1={};
-	var checkoff = {};
+	
 
 	/*
 	takes in a string in the TMSIM language, and returns a parsed dictionary
@@ -83,11 +77,10 @@ function TSMparser(){
 			}
 			if(parseState == 'none'){
 				//expecting a keyword or comment
-
 				if(type == 'keyword'){
 					parseState = token;
 				}
-				else if (type!='newline'){
+				else if (type != 'newline'){
 					var message="expecting a keyword or comment, " + token + " is not a keyword";
 					
 					exceptions.push({
@@ -192,6 +185,14 @@ function TSMparser(){
 		
 	}
 	function flattenMachine(dict){
+		var tsm = new TSM();
+
+		// corresponding lists of test tapes and results, and checkoff requirements
+		var list_of_tapes={};
+		var list_of_results={};
+		var list_of_results1={};
+		var checkoff = {};
+
 		var keys = Object.keys(dict);
 		//console.log(keys);
 		var exceptions = [];
@@ -327,35 +328,38 @@ function TSMparser(){
 		tsm.setup(tsmDict, validSymbols);
 		if(exceptions.length > 0)
 			throw exceptions;
-		return tsmDict;
+		return {
+			tsm:tsm,
+			lists: {
+				list_of_tapes:list_of_tapes,
+				list_of_results:list_of_results,
+				list_of_results1:list_of_results1,
+			},
+			checkoff : checkoff,
+		};
 	}
-	function getTSM(){
-		return tsm;
-	}
-	function getLists(){
-		return {list_of_tapes:list_of_tapes, list_of_results:list_of_results, list_of_results1:list_of_results1};
-	}
-	function getResults(){
-		var results = '';
-		for(key in list_of_tapes){
-			results +=key+': ';
-			var list = list_of_tapes[key].cloneTape();
-			results += list.toString()+'\n';
+
+	// function getResults(){
+	// 	var results = '';
+	// 	for(key in list_of_tapes){
+	// 		results +=key+': ';
+	// 		var list = list_of_tapes[key].cloneTape();
+	// 		results += list.toString()+'\n';
 			
-			tsm.start(list);
-			results+='results: '+list.toString()+'\n';
-			if (list_of_results[key]){
-				results+='desired: '+(list_of_results[key])+'\t';
-				results+='equal?: '+String(list.equals(list_of_results[key]))+'\n';
-			} 
-			if (list_of_results1[key]){
-				results+='desired current value: '+(list_of_results1[key]);
-				results+=', result1: '+String(list.peek()==(list_of_results1[key]))+'\n';
-			}
-			results+='\n\n';
-		}
-		return results;
-	}
+	// 		tsm.start(list);
+	// 		results+='results: '+list.toString()+'\n';
+	// 		if (list_of_results[key]){
+	// 			results+='desired: '+(list_of_results[key])+'\t';
+	// 			results+='equal?: '+String(list.equals(list_of_results[key]))+'\n';
+	// 		} 
+	// 		if (list_of_results1[key]){
+	// 			results+='desired current value: '+(list_of_results1[key]);
+	// 			results+=', result1: '+String(list.peek()==(list_of_results1[key]))+'\n';
+	// 		}
+	// 		results+='\n\n';
+	// 	}
+	// 	return results;
+	// }
 	//HELPER FUNCTIONS
 	
 	function keyCompare(a,b){
@@ -414,11 +418,8 @@ function TSMparser(){
 		return (new TapeList()).init(tapeName, tapeContents, selectedIndex);
 	}
 
-	return {parse:parse, flattenMachine:flattenMachine, getResults:getResults, getTSM:getTSM, getLists:getLists}
+	return {parse:parse, flattenMachine:flattenMachine}
 };
-
-// var dict = TMSIM.parse('states A B C .  action  A   -      B  1 r\naction  A   1      C  1 l')
-// console.log(dict);
 
 
 function stringContains(string, value){
