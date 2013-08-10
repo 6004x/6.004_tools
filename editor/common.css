@@ -6,7 +6,7 @@ body {
 
 /* Prevent bouncing on OS X/iOS */
 html {
-    overflow: hidden;
+    overflow: auto;
 }
 
 /* Thin-ish yellow header with centred title */

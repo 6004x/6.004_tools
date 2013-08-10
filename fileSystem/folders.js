@@ -396,7 +396,6 @@ var Folders=new function(){
                 if(!shown){
                     input.popover('show');
                     $('#tooltip_content').on('click', function(e){
-                        console.log('click popover')
                         clearTimeout(focustimeOut)
                         
                         input.popover('hide');
@@ -412,7 +411,6 @@ var Folders=new function(){
                     input.popover('hide');
             },
             destroy : function(){
-                console.log('destroy');
                 canceled = true;
                 input.popover('destroy');
                 inputLi.detach();
@@ -446,9 +444,7 @@ var Folders=new function(){
             });
         var focustimeOut;
         input.on('focusout', function(){
-            console.log('unfocused newfile');
             focustimeOut = setTimeout(function(){
-                console.log('focusout')
                 if(!canceled && validateFunction(input.val(), actions))
                     submitTextAction(input.val(), actions);
             }, 100);
@@ -576,6 +572,8 @@ var Folders=new function(){
         modal.addButton('Cancel', 'dismiss');
         modal.addButton('Delete', function() {
             FileSystem.deleteFile(path, function() {
+                editor.closeTab(path);
+                updatePrefs();
                 refresh();
                 modal.dismiss();
             });
@@ -656,7 +654,7 @@ var Folders=new function(){
         $(window).on('resize',function(){filesWrapper.height(window.innerHeight - filesWrapper.offset().top);})
         sideBarNav.append(filesWrapper);
         var pref = JSON.parse(localStorage.getItem('6004folderspref'+editMode));
-        console.log(pref);
+       
         if(pref){
             if(pref.collapsedFolders)
                 collapsedFolders = pref.collapsedFolders;
