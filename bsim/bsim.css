@@ -18,6 +18,9 @@ button.btn {
 .regfile .register {
     color: gray;
     text-align: right;
+}
+
+#programmer-view .regfile .register {
     padding-left: 10px;
     padding-right: 5px;
 }
@@ -218,8 +221,16 @@ div.disassembly {
     max-width: 100px;
     text-overflow: ellipsis;
 }
+.disassembly td:nth-child(1),
+.disassembly td:nth-child(3) {
+    color: gray;
+}
+.disassembly .current-instruction td:nth-child(1),
+.disassembly .current-instruction td:nth-child(3) {
+    color: #ddd;
+}
 
-/* Disassembeld instruction */
+/* Disassembled instruction */
 .disassembly  td:nth-child(4) {
     width: 240px;
 }
