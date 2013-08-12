@@ -27,99 +27,99 @@ var cktsim = (function() {
     //    "pfet"		ports: D, G, S, B; properties: W, L, name
     //    "voltage source"	ports: nplus, nminus; properties: value, name
     //    "current source"	ports: nplus, nminus; properties: value, name
+    //    "connect"     ports are all aliases for the same electrical node
     // signals are just strings
-    // property values -- see parse_number below
-    // source values -- see parse_source below
 
     // DC Analysis
     //   netlist: JSON description of the circuit
     //   returns associative array mapping node names -> DC value
     //   throws a string to report errors
-    function dc_analysis(netlist,sweep1,sweep2) {
+    function dc_analysis(netlist, sweep1, sweep2) {
         if (netlist.length > 0) {
             var ckt = new Circuit(netlist);
 
-	    var source1,start1,stop1,step1,source1_saved_src;
-	    var source2,start2,stop2,step2,source2_saved_src;
+            var source1, start1, stop1, step1, source1_saved_src;
+            var source2, start2, stop2, step2, source2_saved_src;
 
-	    if (sweep1 !== undefined) {
-		source1 = ckt.device_map[sweep1.source];
-		if (!(source1 instanceof VSource) && !(source1 instanceof ISource))
-		    throw "Device not independent source in DC sweep: "+sweep1.source;
-		start1 = parse_number_alert(sweep1.start);
-		stop1 = parse_number_alert(sweep1.stop);
-		step1 = parse_number_alert(sweep1.step);
-		// make sure sign of step is compatible with bounds
-		if (start1 <= stop1) step1 = Math.abs(step1);
-		else step1 = -Math.abs(step1);
-		// save source function user specified
-		source1_saved_src = source1.src;
-	    }
+            if (sweep1 !== undefined) {
+                source1 = ckt.device_map[sweep1.source];
+                if (!(source1 instanceof VSource) && !(source1 instanceof ISource)) throw "Device not independent source in DC sweep: " + sweep1.source;
+                start1 = sweep1.start;
+                stop1 = sweep1.stop;
+                step1 = sweep1.step;
+                // make sure sign of step is compatible with bounds
+                if (start1 <= stop1) step1 = Math.abs(step1);
+                else step1 = -Math.abs(step1);
+                // save source function user specified
+                source1_saved_src = source1.src;
+            }
 
-	    if (sweep2 !== undefined) {
-		source2 = ckt.device_map[sweep2.source];
-		if (!(source2 instanceof VSource) && !(source2 instanceof ISource))
-		    throw "Device not independent source in DC sweep: "+sweep2.source;
-		start2 = parse_number_alert(sweep2.start);
-		stop2 = parse_number_alert(sweep2.stop);
-		step2 = parse_number_alert(sweep2.step);
-		// make sure sign of step is compatible with bounds
-		if (start2 <= stop2) step2 = Math.abs(step2);
-		else step2 = -Math.abs(step2);
-		// save source function user specified
-		source2_saved_src = source2.src;
-	    }
+            if (sweep2 !== undefined) {
+                source2 = ckt.device_map[sweep2.source];
+                if (!(source2 instanceof VSource) && !(source2 instanceof ISource)) throw "Device not independent source in DC sweep: " + sweep2.source;
+                start2 = sweep2.start;
+                stop2 = sweep2.stop;
+                step2 = sweep2.step;
+                // make sure sign of step is compatible with bounds
+                if (start2 <= stop2) step2 = Math.abs(step2);
+                else step2 = -Math.abs(step2);
+                // save source function user specified
+                source2_saved_src = source2.src;
+            }
 
-	    // do the sweeps
-	    var val1 = start1;
-	    var val2 = start2;
-	    var results = {_sweep1_: []};   // remember sweep1 values as one of the"results
-	    var results2 = [];
-	    while (true) {
-		// start by setting source values
-		if (source1 !== undefined) source1.src = parse_source(val1.toString());
-		if (source2 !== undefined) source2.src = parse_source(val2.toString());
+            // do the sweeps
+            var val1 = start1;
+            var val2 = start2;
+            var results = {
+                _sweep1_: []
+            }; // remember sweep1 values as one of the"results
+            var results2 = [];
+            while (true) {
+                // start by setting source values
+                if (source1 !== undefined) source1.src = parse_source(val1.toString());
+                if (source2 !== undefined) source2.src = parse_source(val2.toString());
 
-		// do DC analysis, add result to accumulated results for each node and branch
-		var result = ckt.dc();
-		for (var n in result) {
-		    if (results[n] === undefined) results[n] = [];
-		    results[n].push(result[n]);
-		}
-		results['_sweep1_'].push(val1);   // keep track of sweep settings
-		results['_sweep2_'] = val2;	// remember sweep2 value as one of the results
+                // do DC analysis, add result to accumulated results for each node and branch
+                var result = ckt.dc();
+                for (var n in result) {
+                    if (results[n] === undefined) results[n] = [];
+                    results[n].push(result[n]);
+                }
+                results._sweep1_.push(val1); // keep track of sweep settings
+                results._sweep2_ = val2; // remember sweep2 value as one of the results
 
-		if (val1 == undefined) break;
-		else if (val1 == stop1) {
-		    // end of sweep for first source
-		    if (val2 === undefined) break;
-		    results2.push(results);  // accumulate results from first sweep
-		    if (val2 == stop2) {
-			results = results2;   // use accumlated results when there are two sweeps
-			break;
-		    }
-		    // start first source over again
-		    results = {_sweep1_: []};
-		    val1 = start1;
-		    // increment second sweep value, make sure we stop at specified end point
-		    val2 += step2;
-		    if ((step2 > 0 && val2 > stop2) || (step2 < 0 && val2 < stop2))
-			val2 = stop2;
-		} else {
-		    // increment first sweep value, make sure we stop at specified end point
-		    val1 += step1;
-		    if ((step1 > 0 && val1 > stop1) || (step1 < 0 && val1 < stop1))
-			val1 = stop1;
-		}
-	    }
-	    // all done, restore saved source functions
-	    if (source1_saved_src !== undefined) source1.src = source1_saved_src;
-	    if (source2_saved_src !== undefined) source2.src = source2_saved_src;
+                if (val1 === undefined) break;
+                else if (val1 == stop1) {
+                    // end of sweep for first source
+                    if (val2 === undefined) break;
+                    results2.push(results); // accumulate results from first sweep
+                    if (val2 == stop2) {
+                        results = results2; // use accumlated results when there are two sweeps
+                        break;
+                    }
+                    // start first source over again
+                    results = {
+                        _sweep1_: []
+                    };
+                    val1 = start1;
+                    // increment second sweep value, make sure we stop at specified end point
+                    val2 += step2;
+                    if ((step2 > 0 && val2 > stop2) || (step2 < 0 && val2 < stop2)) val2 = stop2;
+                }
+                else {
+                    // increment first sweep value, make sure we stop at specified end point
+                    val1 += step1;
+                    if ((step1 > 0 && val1 > stop1) || (step1 < 0 && val1 < stop1)) val1 = stop1;
+                }
+            }
+            // all done, restore saved source functions
+            if (source1_saved_src !== undefined) source1.src = source1_saved_src;
+            if (source2_saved_src !== undefined) source2.src = source2_saved_src;
 
-	    // for no sweep or one sweep: results is dictionary of arrays giving DC results
-	    // for two sweeps: results is an array containing the first sweep results for each
-	    //   sweep value of the second source
-	    return results;
+            // for no sweep or one sweep: results is dictionary of arrays giving DC results
+            // for two sweeps: results is an array containing the first sweep results for each
+            //   sweep value of the second source
+            return results;
         }
     }
 
@@ -132,10 +132,6 @@ var cktsim = (function() {
     //   returns associative array mapping <node name> -> {magnitude: val, phase: val}
     function ac_analysis(netlist, fstart, fstop, ac_source_name) {
         var npts = 50;
-        if ((typeof fstart) == 'string') fstart = parse_number_alert(fstart);
-        if ((typeof fstop) == 'string') fstop = parse_number_alert(fstop);
-
-        //console.log(fstart,fstop,ac_source_name);
 
         if (netlist.length > 0) {
             var ckt = new Circuit(netlist);
@@ -153,8 +149,6 @@ var cktsim = (function() {
     // results are associative array mapping node name -> array of voltages/currents
     //   includes _time_ -> array of simulation times at which values were measured
     function transient_analysis(netlist, tstop, probe_names, progress_callback) {
-        if ((typeof tstop) == 'string') tstop = parse_number_alert(tstop);
-
         if (netlist.length > 0 && tstop !== undefined) {
             var ckt = new Circuit(netlist);
 
@@ -163,13 +157,13 @@ var cktsim = (function() {
             progress.update_interval = 250; // in milliseconds
             progress.finish = function(results) {
                 progress_callback(undefined, results);
-            }
+            };
             progress.stop_requested = false;
             progress.update = function(percent_complete) { // 0 - 100
                 // invoke the callback which will return true if the
                 // simulation should halt.
                 if (progress_callback(percent_complete, undefined)) progress.stop_requested = true;
-            }
+            };
 
             ckt.tran_start(progress, 100, 0, tstop);
         }
@@ -286,10 +280,28 @@ var cktsim = (function() {
 
     // load circuit from JSON netlist: [[device,[connections,...],{prop: value,...}]...]
     Circuit.prototype.load_netlist = function(netlist) {
-        var i, component, connections;
+        var i, j, c, component, connections, node;
 
         // set up mapping for all ground connections
-        this.node_map['gnd'] = this.gnd_node();
+        this.node_map.gnd = this.gnd_node();
+        
+        // "connect a b ..." makes a, b, ... aliases for the same node
+        var aliases = {};   // keep track of canonical name for a node
+        for (i = netlist.length - 1; i >= 0; i -= 1) {
+            if (netlist[i].type == 'connect') {
+                connections = netlist[i].connections;
+                if (connections.length === 0) continue;
+                // connections[0] is arbitrarily chosen as canonical name, other are aliases.
+                // handle the case where some of the connections may already be aliases!
+                var cname = connections[0];
+                while (aliases[cname] !== undefined) cname = aliases[cname];  // follow alias chain
+                for (j = 1; j < connections.length; j += 1) {
+                    c = connections[j];
+                    while (aliases[c] !== undefined) c = aliases[c];  // follow alias chain
+                    aliases[c] = cname;
+                }
+            }
+        }
 
         // process each component in the JSON netlist (see schematic.js for format)
         var found_ground = false; // is some component hooked to gnd?
@@ -303,8 +315,9 @@ var cktsim = (function() {
             counts[type] = (counts[type] || 0) + 1;
 
             // convert node names to circuit indicies
-            for (var c in connections) {
-                var node = connections[c];
+            for (c in connections) {
+                node = connections[c];
+                while (aliases[node] !== undefined) node = aliases[node];  // follow alias chain
                 var index = this.node_map[node];
                 if (index === undefined) index = this.node(node, T_VOLTAGE);
                 else if (index == this.gnd_node()) found_ground = true;
@@ -340,6 +353,8 @@ var cktsim = (function() {
             case 'pfet':
                 this.p(connections.D, connections.G, connections.S, properties.W, properties.L, name);
                 break;
+            case 'connect':
+                break;  
             default:
                 throw 'Unrecognized device type ' + type;
             }
@@ -348,6 +363,15 @@ var cktsim = (function() {
         if (!found_ground) { // No ground connection from some device
             throw 'Please make at least one connection to ground (node gnd)';
         }
+        
+        // finally, update node_map to reflect aliases created by .connect
+        for (node in aliases) {
+            c = node;
+            while (aliases[c] !== undefined) c = aliases[c];  // follow alias chain
+            // if there's an node index for the canonical node add an entry in node_map for node -> index
+            i = this.node_map[c];
+            if (i !== undefined) this.node_map[node] = i;
+        }
 
         // report circuit stats
         var msg = (this.node_index + 1).toString() + ' nodes';
@@ -355,7 +379,7 @@ var cktsim = (function() {
             msg += ', ' + counts[d].toString() + ' ' + d;
         }
         //console.log(msg);
-    };
+    };  
 
     // if converges: updates this.solution, this.soln_max, returns iter count
     // otherwise: return undefined and set this.problem_node
@@ -504,7 +528,6 @@ var cktsim = (function() {
 
         // Standard to do a dc analysis before transient
         // Otherwise, do the setup also done in dc.
-        var no_dc = false;
         if (this.diddc === false) {
             if (this.dc() === undefined) { // DC failed, realloc mats and vects.
                 //throw 'DC failed, trying transient analysis from zero.';
@@ -896,11 +919,6 @@ var cktsim = (function() {
     };
 
     Circuit.prototype.r = function(n1, n2, v, name) {
-        // try to convert string value into numeric value, barf if we can't
-        if ((typeof v) == 'string') {
-            v = parse_number_alert(v);
-        }
-
         if (v !== 0) {
             var d = new Resistor(n1, n2, v);
             return this.add_device(d, name);
@@ -909,11 +927,6 @@ var cktsim = (function() {
     };
 
     Circuit.prototype.d = function(n1, n2, area, type, name) {
-        // try to convert string value into numeric value, barf if we can't
-        if ((typeof area) == 'string') {
-            area = parse_number_alert(area);
-        }
-
         if (area !== 0) {
             var d = new Diode(n1, n2, area, type);
             return this.add_device(d, name);
@@ -922,19 +935,11 @@ var cktsim = (function() {
 
 
     Circuit.prototype.c = function(n1, n2, v, name) {
-        // try to convert string value into numeric value, barf if we can't
-        if ((typeof v) == 'string') {
-            v = parse_number_alert(v);
-        }
         var d = new Capacitor(n1, n2, v);
         return this.add_device(d, name);
     };
 
     Circuit.prototype.l = function(n1, n2, v, name) {
-        // try to convert string value into numeric value, barf if we can't
-        if ((typeof v) == 'string') {
-            v = parse_number_alert(v);
-        }
         var branch = this.node(undefined, T_CURRENT);
         var d = new Inductor(n1, n2, branch, v);
         return this.add_device(d, name);
@@ -954,35 +959,17 @@ var cktsim = (function() {
     };
 
     Circuit.prototype.opamp = function(np, nn, no, ng, A, name) {
-        // try to convert string value into numeric value, barf if we can't
-        if ((typeof A) == 'string') {
-            A = parse_number_alert(A);
-        }
         var branch = this.node(undefined, T_CURRENT);
         var d = new Opamp(np, nn, no, ng, branch, A, name);
         return this.add_device(d, name);
     };
 
     Circuit.prototype.n = function(d, g, s, W, L, name) {
-        // try to convert string value into numeric value, barf if we can't
-        if ((typeof W) == 'string') {
-            W = parse_number_alert(W);
-        }
-        if ((typeof L) == 'string') {
-            L = parse_number_alert(L);
-        }
         var f = new Fet(d, g, s, W, L, name, 'n');
         return this.add_device(f, name);
     };
 
     Circuit.prototype.p = function(d, g, s, W, L, name) {
-        // try to convert string value into numeric value, barf if we can't
-        if ((typeof W) == 'string') {
-            W = parse_number_alert(W);
-        }
-        if ((typeof L) == 'string') {
-            L = parse_number_alert(L);
-        }
         var f = new Fet(d, g, s, W, L, name, 'p');
         return this.add_device(f, name);
     };
@@ -1762,7 +1749,7 @@ var cktsim = (function() {
                 gmgs *= vds;
             }
             ckt.add_to_rhs(this.d, - ids, rhs); // current flows into the drain
-            ckt.add_to_rhs(this.s, ids, rhs); // and out the source	    
+            ckt.add_to_rhs(this.s, ids, rhs);   // and out the source
             ckt.add_conductance(this.d, this.s, gds);
             ckt.add_to_G(this.s, this.s, gmgs);
             ckt.add_to_G(this.d, this.s, - gmgs);
@@ -1776,61 +1763,6 @@ var cktsim = (function() {
     };
 
     Fet.prototype.load_ac = function(ckt) {};
-
-    ///////////////////////////////////////////////////////////////////////////////
-    //
-    //  Number parsing
-    //
-    ///////////////////////////////////////////////////////////////////////////////
-
-    // convert string argument to a number, accepting usual notations
-    // (hex, octal, binary, decimal, floating point) plus engineering
-    // scale factors (eg, 1k = 1000.0 = 1e3).
-    // return default if argument couldn't be interpreted as a number
-    function parse_number(x, default_v) {
-        var m;
-
-        m = x.match(/^\s*([\-+]?)0x([0-9a-fA-F]+)\s*$/); // hex
-        if (m) return parseInt(m[1] + m[2], 16);
-
-        m = x.match(/^\s*([\-+]?)0b([0-1]+)\s*$/); // binary
-        if (m) return parseInt(m[1] + m[2], 2);
-
-        m = x.match(/^\s*([\-+]?)0([0-7]+)\s*$/); // octal
-        if (m) return parseInt(m[1] + m[2], 8);
-
-        m = x.match(/^\s*[\-+]?[0-9]*(\.([0-9]+)?)?([eE][\-+]?[0-9]+)?\s*$/); // decimal, float
-        if (m) return parseFloat(m[0]);
-
-        m = x.match(/^\s*([\-+]?[0-9]*(\.([0-9]+)?)?)(a|A|f|F|g|G|k|K|m|M|n|N|p|P|t|T|u|U)?/); // decimal, float
-        if (m) {
-            var result = parseFloat(m[1]);
-            var scale = m[4];
-            if (scale == 'P') result *= 1e15; // peta
-            else if (scale == 't' || scale == 'T') result *= 1e12; // tera
-            else if (scale == 'g' || scale == 'G') result *= 1e9; // giga
-            else if (scale == 'M') result *= 1e6; // mega
-            else if (scale == 'k' || scale == 'K') result *= 1e3; // kilo
-            else if (scale == 'm') result *= 1e-3; // milli
-            else if (scale == 'u' || scale == 'U') result *= 1e-6; // micro
-            else if (scale == 'n' || scale == 'N') result *= 1e-9; // nano
-            else if (scale == 'p') result *= 1e-12; // pico
-            else if (scale == 'f' || scale == 'F') result *= 1e-15; // femto
-            else if (scale == 'a' || scale == 'A') result *= 1e-18; // atto
-            return result;
-        }
-
-        return (default_v === undefined ? NaN : default_v);
-    }
-
-    // try to parse a number and generate an alert if there was a syntax error
-    function parse_number_alert(s) {
-        var v = parse_number(s, undefined);
-
-        if (v === undefined) throw 'Unrecognized number \"' + s + '\".';
-
-        return v;
-    }
 
     ///////////////////////////////////////////////////////////////////////////////
     //
@@ -1862,14 +1794,16 @@ var cktsim = (function() {
         var m = v.match(/^\s*(\w+)\s*\(([^\)]*)\)\s*$/); // parse f(arg,arg,...)
         if (m) {
             src.fun = m[1];
-            if (m[2] == '') src.args = [];
-            else src.args = m[2].split(/\s*,\s*/).map(parse_number_alert);
+            if (m[2] === '') src.args = [];
+            else src.args = m[2].split(/\s*,\s*/).map(parseFloat);
         }
         else {
             src.fun = 'dc';
-            src.args = [parse_number_alert(v)];
+            src.args = [parseFloat(v)];
         }
         //console.log(src.fun + ': ' + src.args);
+        
+        var v1,v2,freq,per,td,tr,tf;
 
         // post-processing for constant sources
         // dc(v)
@@ -1893,10 +1827,10 @@ var cktsim = (function() {
         // post-processing for step sources
         // step(v_init,v_plateau,t_delay,t_rise)
         else if (src.fun == 'step') {
-            var v1 = arg_value(src.args, 0, 0); // default init value: 0V
-            var v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
-            var td = Math.max(0, arg_value(src.args, 2, 0)); // time step starts
-            var tr = Math.abs(arg_value(src.args, 3, 1e-9)); // default rise time: 1ns
+            v1 = arg_value(src.args, 0, 0); // default init value: 0V
+            v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
+            td = Math.max(0, arg_value(src.args, 2, 0)); // time step starts
+            tr = Math.abs(arg_value(src.args, 3, 1e-9)); // default rise time: 1ns
             src.args = [v1, v2, td, tr]; // remember any defaulted values
             pwl_source(src, [td, v1, td + tr, v2], false);
         }
@@ -1904,13 +1838,13 @@ var cktsim = (function() {
         // post-processing for square wave
         // square(v_init,v_plateau,freq,duty_cycle)
         else if (src.fun == 'square') {
-            var v1 = arg_value(src.args, 0, 0); // default init value: 0V
-            var v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
-            var freq = Math.abs(arg_value(src.args, 2, 1)); // default frequency: 1Hz
+            v1 = arg_value(src.args, 0, 0); // default init value: 0V
+            v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
+            freq = Math.abs(arg_value(src.args, 2, 1)); // default frequency: 1Hz
             var duty_cycle = Math.min(100, Math.abs(arg_value(src.args, 3, 50))); // default duty cycle: 0.5
             src.args = [v1, v2, freq, duty_cycle]; // remember any defaulted values
 
-            var per = freq === 0 ? Infinity : 1 / freq;
+            per = freq === 0 ? Infinity : 1 / freq;
             var t_change = 0.01 * per; // rise and fall time
             var t_pw = 0.01 * duty_cycle * 0.98 * per; // fraction of cycle minus rise and fall time
             pwl_source(src, [0, v1, t_change, v2, t_change + t_pw,
@@ -1920,12 +1854,12 @@ var cktsim = (function() {
         // post-processing for triangle
         // triangle(v_init,v_plateua,t_period)
         else if (src.fun == 'triangle') {
-            var v1 = arg_value(src.args, 0, 0); // default init value: 0V
-            var v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
-            var freq = Math.abs(arg_value(src.args, 2, 1)); // default frequency: 1s
+            v1 = arg_value(src.args, 0, 0); // default init value: 0V
+            v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
+            freq = Math.abs(arg_value(src.args, 2, 1)); // default frequency: 1s
             src.args = [v1, v2, freq]; // remember any defaulted values
 
-            var per = freq === 0 ? Infinity : 1 / freq;
+            per = freq === 0 ? Infinity : 1 / freq;
             pwl_source(src, [0, v1, per / 2, v2, per, v1], true);
         }
 
@@ -1938,13 +1872,13 @@ var cktsim = (function() {
         // post-processing for pulsed sources
         // pulse(v_init,v_plateau,t_delay,t_width,t_rise,t_fall,t_period)
         else if (src.fun == 'pulse') {
-            var v1 = arg_value(src.args, 0, 0); // default init value: 0V
-            var v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
-            var td = Math.max(0, arg_value(src.args, 2, 0)); // time pulse starts
+            v1 = arg_value(src.args, 0, 0); // default init value: 0V
+            v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
+            td = Math.max(0, arg_value(src.args, 2, 0)); // time pulse starts
             var pw = Math.abs(arg_value(src.args, 3, 1e9)); // default pulse width: "infinite"
-            var tr = Math.abs(arg_value(src.args, 4, .1e-9)); // default rise time: .1ns
-            var tf = Math.abs(arg_value(src.args, 5, .1e-9)); // default rise time: .1ns
-            var per = Math.abs(arg_value(src.args, 6, 1e9)); // default period: "infinite"
+            tr = Math.abs(arg_value(src.args, 4, 0.1e-9)); // default rise time: .1ns
+            tf = Math.abs(arg_value(src.args, 5, 0.1e-9)); // default rise time: .1ns
+            per = Math.abs(arg_value(src.args, 6, 1e9)); // default period: "infinite"
             src.args = [v1, v2, td, tr, tf, pw, per];
 
             var t1 = td; // time when v1 -> v2 transition starts
@@ -1958,11 +1892,11 @@ var cktsim = (function() {
         // post-processing for sinusoidal sources
         // sin(freq_hz,v_offset,v_amplitude,t_delay,phase_offset_degrees)
         else if (src.fun == 'sin') {
-            var freq = Math.abs(arg_value(src.args, 0, 1)); // default frequency: 1Hz
+            freq = Math.abs(arg_value(src.args, 0, 1)); // default frequency: 1Hz
             src.period = 1.0 / freq;
             var voffset = arg_value(src.args, 1, 0); // default offset voltage: 0V
             var va = arg_value(src.args, 2, 1); // default amplitude: -1V to 1V
-            var td = Math.max(0, arg_value(src.args, 3, 0)); // default time delay: 0sec
+            td = Math.max(0, arg_value(src.args, 3, 0)); // default time delay: 0sec
             var phase = arg_value(src.args, 4, 0); // default phase offset: 0 degrees
             src.args = [voffset, va, freq, td, phase];
 

@@ -35,7 +35,6 @@ $(function() {
         }
     });
 
-
     // Make an editor
     var editor = new Editor('#editor', 'uasm');
 
@@ -125,7 +124,9 @@ $(function() {
     });
 
     new BSim.Beta.ErrorHandler(beta);
-    new BSim.SchematicView($('svg.schematic'), beta);
+    var schematic = new BSim.SchematicView($('svg.schematic'), beta);
+    split.on('resize', BSim.SchematicView.Scale);
+    $(window).resize(BSim.SchematicView.Scale);
 
     // Work around weird sizing bug.
     _.delay(function() {
