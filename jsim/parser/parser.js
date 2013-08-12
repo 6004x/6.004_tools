@@ -620,9 +620,13 @@ Parse
             
             if (line[i].type == "function"){
                 // get the node name in the parentheses
-                var node = /\((.+)\)/.exec(line[i].token)[1];
-                if (!(/(^[A-Za-z][\w$:\[\]\.]*)/.test(node))){
-                    throw new CustomError("Node name expected",line[i]);
+                var nodes = /\((.+)\)/.exec(line[i].token)[1];
+                nodes = nodes.split(/[,\s]\s*/);
+                
+                for (var n = 0; n < nodes.length; n += 1){
+                    if (!(/(^[A-Za-z][\w$:\[\]\.]*)/.test(nodes[n]))){
+                        throw new CustomError("Node name expected",line[i]);
+                    }
                 }
             } else if (line[i].type != "name"){
                 throw new CustomError("Node name expected",line[i]);
@@ -630,6 +634,7 @@ Parse
             plot_list.push(line[i].token);
             
         }
+        
         if (plot_list.length > 0){
             plots.push(plot_list);
         } else {
@@ -1256,7 +1261,7 @@ Device readers: each takes a line of tokens and returns a device object,
             var fn_args = fn_matched[2];
             fn_args = fn_args.split(/[,\s]\s*/);
             
-            console.log("args:",fn_args);
+//            console.log("args:",fn_args);
             
             var final_fn_args = [];
             for (var i = 0; i < fn_args.length; i += 1){

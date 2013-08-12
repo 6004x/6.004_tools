@@ -841,6 +841,7 @@ min-height:'+minHeight+'px"></div>');
             graph_setup(div2, plotObj);
         }
     }
+    
     /**************************
     DC plot
     **************************/
@@ -992,17 +993,27 @@ min-height:'+minHeight+'px"></div>');
                 }
                 break;
             case 'ac':
-                current_results = cktsim.ac_analysis(netlist, current_analysis.parameters.fstart,
-                                                 current_analysis.parameters.fstop,
-                                                 current_analysis.parameters.ac_source_name);
-                $('#results').data("current",current_results);
-                ac_plot(div, current_results, plots);
+                try {
+                    current_results = cktsim.ac_analysis(netlist, current_analysis.parameters.fstart,
+                                                     current_analysis.parameters.fstop,
+                                                     current_analysis.parameters.ac_source_name);
+                    $('#results').data("current",current_results);
+                    ac_plot(div, current_results, plots);
+                } catch (err) {
+                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                '.\<button class="close" data-dismiss="alert">&times;</button></div>');
+                }
                 break;
             case 'dc':
-                current_results = cktsim.dc_analysis(netlist,current_analysis.parameters.sweep1,
-                                                     current_analysis.parameters.sweep2);
-                dc_plot(div, current_results, plots, current_analysis.parameters.sweep1,
-                       current_analysis.parameters.sweep2);
+                try {
+                    current_results = cktsim.dc_analysis(netlist,current_analysis.parameters.sweep1,
+                                                         current_analysis.parameters.sweep2);
+                    dc_plot(div, current_results, plots, current_analysis.parameters.sweep1,
+                           current_analysis.parameters.sweep2);
+                } catch (err) {
+                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                '.\<button class="close" data-dismiss="alert">&times;</button></div>');
+                }
 //                console.log("dc results:",current_results);
                 break;
             }

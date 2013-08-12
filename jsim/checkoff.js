@@ -17,7 +17,7 @@ var Checkoff = (function(){
     **************************/
     function addVerify(obj){
         mVerify_statements.push(obj);
-        console.log('adding verify: ',obj);
+//        console.log('adding verify: ',obj);
     }
     
     /**************************
@@ -25,7 +25,7 @@ var Checkoff = (function(){
     **************************/
     function setCheckoffStatement(checkoff_obj){
         mCheckoff_statement = checkoff_obj;
-        console.log("checkoff statement:",mCheckoff_statement);
+//        console.log("checkoff statement:",mCheckoff_statement);
     }
     
     /**************************
@@ -33,6 +33,13 @@ var Checkoff = (function(){
     **************************/
     function getResults(){
         mResults = $('#results').data("current"); 
+    }
+    
+    /************************
+    Set results to the given results
+    *************************/
+    function setResults(data){
+        mResults = results;
     }
     
     /**************************
@@ -246,6 +253,7 @@ var Checkoff = (function(){
     **************************/
     return {reset:reset,
             getResults:getResults,
+            setResults:setResults,
             testResults:testResults,
             addVerify:addVerify,
             setCheckoffStatement:setCheckoffStatement,
