@@ -198,7 +198,7 @@ var Checkoff = (function(){
                     }
                     for (var j = 0; j < valAtTime.length; j += 1){
                         valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(8);
-                        if (_.isNaN(valAtTime[j])) valAtTime[j] = "X";
+                        if (valAtTime[j] == "NaN") valAtTime[j] = "X";
                     }
                 } else if (base == 16){
                     // four binary digits equal one hexadecimal digit
@@ -208,7 +208,7 @@ var Checkoff = (function(){
                     }
                     for (var j = 0; j < valAtTime.length; j += 1){
                         valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(16);
-                        if (_.isNaN(valAtTime[j])) valAtTime[j] = "X";
+                        if (valAtTime[j] == "NaN") valAtTime[j] = "X";
                     }
                 }
                     

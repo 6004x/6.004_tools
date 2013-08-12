@@ -27,7 +27,7 @@ var Simulator = (function(){
                         '.\<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
-        if (analyses.length === 0) {
+        if (mAnalyses.length === 0) {
             div.prepend('<div class="alert alert-danger"> No analyses requested.'+
                         '.\<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
@@ -58,9 +58,9 @@ var Simulator = (function(){
         
         // run the simulation and prepare data
         try {
-            $('#addPlotButton').data('button').enable();
+//            $('#addPlotButton').data('button').enable();
             
-            mCurrent_analysis = analyses[0];
+            mCurrent_analysis = mAnalyses[0];
             switch (mCurrent_analysis.type) {
                 case 'tran':
                     tranProgress.show();
@@ -156,6 +156,41 @@ var Simulator = (function(){
                  minHeight+'px"></div>');
     }
     
+    
+    function logic(value, vil, vih){
+        if (!vil) vil = 0.6;
+        if (!vih) vih = 2.7;
+        console.log("vil:",vil,"vih:",vih);
+        
+        if (value < vil) return "0";
+        else if (value > vih) return "1";
+        else return "X";
+    }
+    
+    function hex_logic(values, vil, vih){
+        for (var v = 0; v < values.length; v += 1){
+            values[v] = logic(values[v], vil, vih);
+        }
+        
+        var new_vals = [];
+        // break into fours from the right end
+        while (values.length > 0){
+            new_vals.unshift(values.splice(-4,4));
+        }
+        
+        for (var i = 0; i < new_vals.length; i += 1){
+            console.log("new vals:",new_vals[i]);
+            var digit = new_vals[i].join('');
+            digit = parseInt(digit,2)
+            digit = digit.toString(16);
+            console.log("digit:",digit);
+            if (digit == "NaN") new_vals[i] = "X";
+            else new_vals[i] = digit;
+        }
+        
+        return "0x"+new_vals.join('').toUpperCase();
+    }
+    
     /***********************
     Prepare data functions
     ************************/
@@ -165,6 +200,7 @@ var Simulator = (function(){
     ***************/
     function prepare_tran_data(plots){
         var results = mCurrent_results;
+//        var analysis = 
         
         if (results === undefined) {
             div.prepend('<div class="alert alert-danger">No results from the simulation.'+
@@ -191,6 +227,8 @@ var Simulator = (function(){
             for (var i = 0; i < plot_nodes.length; i += 1) {
                 var node = plot_nodes[i];
                 
+                var values;
+                
                 var fn_pttn = /([^\(]+)\((.+)\)$/;
                 var matched_array = node.match(fn_pttn);
                 if (matched_array){
@@ -198,10 +236,17 @@ var Simulator = (function(){
                     var fn_args = matched_array[2].split(/[,\s]\s*/);
                     
                     console.log('fn:',fn_name,"args:",fn_args);
+                    
+                    if (fn_name == 'I'){
+                        // continue on
+                        values = results[node];
+                    } else if (fn_name == 'L') {
+                        
+                    }
                 }
                 
                 // get the results for the given node
-                var values = results[node];
+//                var values = results[node];
                 if (values === undefined) {
                     var novaldiv = get_novaldiv(node);
                     mDiv.prepend(novaldiv);
@@ -456,7 +501,9 @@ var Simulator = (function(){
     /*********************
     Exports 
     **********************/
-    return {simulate:simulate};
+    return {simulate:simulate,
+            hex_logic:hex_logic
+           };
 }());
 
 
