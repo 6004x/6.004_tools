@@ -248,7 +248,6 @@ function TapeList(){
 			if(equalArray)
 				equalArray = (mArray[i] === tArray[i]);
 		}
-		console.log(equalArray);
 		if (equalArray){
 			//now we must traverse and see if current is the same in both.
 			var tempMCurr = self.getCurrentNode();

@@ -1,6 +1,7 @@
 (function (){
 	var root = this;
 
+	//Default values, and external storage
 	var TAPE_HEIGHT = 50;
 	var DIV_HEIGHT = 50;
 	var TAPE_WIDTH = 30;
@@ -8,25 +9,55 @@
 	var ANIMATION_SPEED = 10;
 	var old_speed = 300;
 
-	var TMSIM = function( filename, container, tsm, testLists){
-		//pass in tsm and 
+	var TMSIM = function(container){
 		var mContainer = $(container);
-		var mTSM = tsm;
-		var mFileName = filename;
+		
 		//max of either the default tape width or the max length of the longest symbol
-		var mTAPE_WIDTH = (mTSM.longestSymbolLength * 10 > TAPE_WIDTH) ? mTSM.longestSymbolLength * 10 : TAPE_WIDTH;
+		
+
+		// the tsm and tape that the simulator will display
+		var mTSM;
+		var mTAPE_WIDTH = TAPE_WIDTH;
 		var mCurrentTape;
-		var mTapeList = testLists.list_of_tapes;
-		var mResultList = testLists.list_of_results;
-		var mResult1List = testLists.list_of_results1;
+		var mTapeLists;
+		var mResultList ;
+		var mResult1List ;
+		//corresponding file name 
+		var mFileName;
+
+		//for self calls
 		var self = this;
 
+		//variables of state and persistent storage. 
+		var undoStack = [];
 		var slider_speed = old_speed;
 		var pauseSimulation = false;
 		var simulation_done = false;
 		var steps = 0;
 		var preventAnimate = false;
 
+		//readjusts the variable elements in the TSMSIM area to a new instance of tsm and tapes
+		//or if you pass in no variables it resets the current simulation to default values. 
+		this.restartTSM = function(filename, container, tsm, testLists){
+			mFileName = filename || mFileName;
+			mContainer = $(container) || mContainer;
+			mTSM = tsm || mTSM;
+			mTapeList =  testLists.list_of_tapes ? testLists.list_of_tapes : mTapeList;
+			mResultList = testLists.list_of_results ? testLists.list_of_results : mResultList;
+			mResult1List = testLists.list_of_results1 ? testLists.list_of_results1 : mResult1List;
+
+			mTAPE_WIDTH = (mTSM.longestSymbolLength * 10 > TAPE_WIDTH) ? mTSM.longestSymbolLength * 10 : TAPE_WIDTH;
+
+			$('.machine_label').css('width', 2*TAPE_WIDTH)
+			pauseSimulation = true;
+			mTSM.restart();
+			self.initTapeButtons();
+			self.toggleTape();
+
+		}
+
+		//will display the list of tapes to the pills in the botttom of display
+		//takes in the holder of the buttons, optional it will use the default otherwise. 
 		this.initTapeButtons = function(testRadioButtons){
 			testRadioButtons = testRadioButtons || mContainer.find('.test_radio_buttons');
 			testRadioButtons.html('');
@@ -62,27 +93,15 @@
 				i++;
 			}
 		}
-		//readjusts the variable elements in the TSMSIM area to fit to a new instance of tsm and tapes
-		this.restartTSM = function(filename, container, tsm, testLists){
-			mFileName = filename || mFileName;
-			mContainer = $(container) || mContainer;
-			mTSM = tsm || mTSM;
-			mTapeList =  testLists.list_of_tapes ? testLists.list_of_tapes : mTapeList;
-			mResultList = testLists.list_of_results ? testLists.list_of_results : mResultList;
-			mResult1List = testLists.list_of_results1 ? testLists.list_of_results1 : mResult1List;
 
-			self.initTapeButtons();
-			self.toggleTape();
 
-		}
 		this.initialise=function(){
 			console.log('initalise TMSIM');
 			//make the radio buttons for the different tests
 			var testRadioButtons = $('<ul>').addClass('test_radio_buttons pull-center nav nav-pills');
 
-			self.initTapeButtons(testRadioButtons);
-
-			var stepsDiv = $('<div>').addClass('steps_div pull-center').append('Steps: <span class="steps_span"></span>');
+			// div to show the number of steps when playing/stepping
+			var stepsDiv = $('<div>').addClass('steps_div pull-right').append('Steps: <span class="steps_span"></span>');
 			
 			//add the visual tape wrapper
 			var tapeWrapper = $('<div>').addClass('tape_wrapper');
@@ -149,7 +168,7 @@
 				.append('<i class = "icon-step-forward">');
 			var prevStepButton = $('<button>').addClass('btn btn-info prev_step_button tape_button')
 				.attr('title', 'Step Backward')
-				.append('<i class = "icon-step-backward>"');
+				.append('<i class = "icon-step-backward">');
 			var resetButton = $('<button>').addClass('btn btn-warning reset_button tape_button')
 				.attr('title', 'Reset')
 				.append('<i class = "icon-fast-backward">');
@@ -166,8 +185,8 @@
 			stepButton.on('click', function(){
 				console.log('step forward')
 				if(!$(this).hasClass('disabled')){
-					// mContainer.find('.tape_div').stop(true, true);
-					// mContainer.find('.transition_div').stop(true, true);
+					//fastclicking on the step button will ignore animation. 
+					// but still step thruogh the machine
 					var d = new Date();
 			        var t = d.getTime();
 			        if(t - lastClick < 1000) {
@@ -179,16 +198,24 @@
 			        	preventAnimate = false;
 			        }
 			        lastClick = t;
-					
+					stepButton.addClass('disabled')
 					self.listToTape();
 					self.stepAction(function(arg){
 						self.listToTape();
+						stepButton.removeClass('disabled');
 					});
 				}
 			});
 			prevStepButton.on('click', function(){
-				if(!$(this).hasClass('disabled'))
-					self.animateTape('l');
+				if(!$(this).hasClass('disabled')){
+					var undoAction = undoStack.pop();
+					mTSM.setCurrentState(undoAction.stepObject.old_state.name);
+					mCurrentTape = undoAction.tape;
+					var peekStepObject = mTSM.stepPeek(mCurrentTape);
+					console.log(peekStepObject)
+					updateGUI(peekStepObject, mCurrentTape.peek());
+					self.listToTape();
+				}	
 			});
 			playButton.on('click', function(){
 				if(!$(this).hasClass('disabled')){
@@ -305,58 +332,66 @@
 				old_speed = slider_speed;
 			});
 
-			actionButtonDiv.append(resetButton, /*prevStepButton,*/ playButton, pauseButton, stepButton);
+			actionButtonDiv.append(resetButton, prevStepButton, playButton, pauseButton, stepButton);
 			actionDiv.append(allTestsButton, actionButtonDiv, nextButton);
 
 			var feedbackDiv = $('<div>').addClass('feedback_div').css({
-				'position' : 'absolute',
-				'left' : 5,
-				'top' : (TOTAL_HEIGHT - TAPE_HEIGHT) / 2 ,
+				'position' : 'relative',
 				'margin' : '5px',
 			})
 			var legendDiv = $('<div>').addClass('legend_div').css({
 				'position' : 'absolute',
-				'right' : 5,
-				'top' : (TOTAL_HEIGHT - TAPE_HEIGHT) / 2 ,
+				'right': 0,
 				'margin' : '5px',
+				'font-family' : 'sans-serif',
+				'font-size' : 'smaller',
 			})
 			var greenDiv = $('<div>').append('<span class = "curr_state">GREEN</span> marks the current state');
 			var redDiv = $('<div>').append('<span class = "read_symbol">RED</span> marks the current read symbol');
-			var blueDiv = $('<div>').append('<span class = "write_symbol">BLUE</span> marks the previous written symbol');
+			var blueDiv = $('<div>').append('<span class = "old_write_symbol">BLUE</span> marks the previous written symbol');
 			legendDiv.append(greenDiv, redDiv, blueDiv)
 
 			mContainer.append(stepsDiv, speedDiv, actionDiv, tapeWrapper, machineDiv, speedDiv,  testRadioButtons, feedbackDiv, legendDiv);
-			self.toggleTape();
+			
 		}
-		var oldLineClassDelete;
+		var oldHighlightObject;
 		function markLine(lineNumber){
-			if(oldLineClassDelete)
-					oldLineClassDelete.clear();
-				oldLineClassDelete = editor.addLineClass(mFileName, lineNumber, 'highlight-line');
+			if(oldHighlightObject)
+					oldHighlightObject.clear();
+				oldHighlightObject = editor.addLineClass(mFileName, lineNumber, 'highlight-line');
+		}
+		function updateGUI(stepObject, readObject){
+			mContainer.find('.transition_div .curr_state').text(stepObject.old_state.name);
+			mContainer.find('.transition_div .read_symbol').text(readObject);
+			mContainer.find('.transition_div .new_state').text(stepObject.transition.new_state);
+			mContainer.find('.transition_div .write_symbol').text(stepObject.transition.write);
+			mContainer.find('.transition_div .move_dir').text(stepObject.transition.move);
+			mContainer.find('.machine_label .move_dir').text(stepObject.transition.move);
 		}
 		this.stepAction = function(callback){
 			var callback = callback || _.identity;
-			mContainer.find('.transition_div .read_symbol').text(mCurrentTape.peek());
 			try{
+				var readObject = mCurrentTape.peek();
 				var stepObject = mTSM.step(mCurrentTape);
+				var undoAction = {}
+				undoAction.stepObject = stepObject;
+				undoAction.tape = mCurrentTape.cloneTape();
+				undoStack.push(undoAction);
+
 				var state_transition = stepObject.transition;
 				mCurrentTape.traverse(state_transition.write, state_transition.move);
+				
 				steps++;
 			
-				mContainer.find('.transition_div .curr_state').text(stepObject.old_state.name);
-				//oops
-				mContainer.find('.transition_div .new_state').text(stepObject.transition.new_state);
-				mContainer.find('.transition_div .write_symbol').text(stepObject.transition.write);
-				mContainer.find('.transition_div .move_dir').text(stepObject.transition.move);
+				updateGUI(stepObject, readObject);
+				markLine( state_transition.lineNumber-1)
 
-				mContainer.find('.machine_label .move_dir').text(stepObject.transition.move);
+				
 				mContainer.find('.tape_div .current_segment').text(stepObject.transition.write);
-
 				mContainer.find('.tape_div .prev_segment').removeClass('prev_segment');
 				mContainer.find('.tape_div .read_symbol').removeClass('read_symbol');
 				mContainer.find('.tape_div .current_segment').addClass('prev_segment');
-				// if(!preventAnimate)
-				markLine( state_transition.lineNumber-1)
+				
 				function updateTransitionDiv(){
 					mContainer.find('.transition_div').css({
 						'top' : 0,
@@ -365,7 +400,7 @@
 					});
 					mContainer.find('.machine_label .curr_state').text(stepObject.transition.new_state);
 					mContainer.find('.old_transition_div .old_curr_state').text(stepObject.old_state.name)
-					mContainer.find('.old_transition_div .old_read_symbol').text(mContainer.find('.transition_div .read_symbol').text())
+					mContainer.find('.old_transition_div .old_read_symbol').text(readObject)
 					mContainer.find('.old_transition_div .old_new_state').text(stepObject.transition.new_state)
 					mContainer.find('.old_transition_div .old_write_symbol').text(stepObject.transition.write)
 					mContainer.find('.old_transition_div .old_move_dir').text(stepObject.transition.move)
@@ -397,6 +432,7 @@
 
 					if(stepObject.transition.new_state === '*halt*'){
 						console.log('halt');
+						halt(_.identity);
 					}
 					self.listToTape();
 					callback(stepObject.new_state);	
@@ -432,6 +468,7 @@
 			var count = 0;
 			var results = [];
 			nextTest();
+
 			function nextTest(){
 				var tapeButton = $('#tape'+count);
 				if(count < Object.keys(mTapeList).length){
@@ -441,7 +478,7 @@
 						results.push(passed);
 						if(passed){
 							setTimeout(function(){
-
+								//do the next test. 
 								nextTest();
 							}, 0)
 						}
@@ -464,7 +501,7 @@
 		this.play = function(callback){
 
 			pauseSimulation = false;
-			var new_state = tsm.getCurrentState();
+			var new_state = mTSM.getCurrentState();
 			nextStep(new_state.name);
 			function nextStep(new_state_name){
 				if(pauseSimulation){
@@ -519,36 +556,38 @@
 			mContainer.find('.step_button').addClass('disabled');
 			mContainer.find('.pause_button').addClass('disabled');
 			$('.steps_span').text(steps)
-			self.listToTape();
+			pauseSimulation = true;
+			if(mCurrentTape){
+				self.listToTape();
 			
-			var name = mCurrentTape.name;
-			var result = mResultList[name] ? mResultList[name] : mResult1List[name];
-			
-			if(result){
-				console.log(result)
-				var feedback  = '';
-				var color = '';
-				var passedTest = false;
-				if(result instanceof TapeList){
-					passedTest = result.equals(mCurrentTape);
+				var name = mCurrentTape.name;
+				var result = mResultList[name] ? mResultList[name] : mResult1List[name];
+				
+				if(result){
+					console.log(result)
+					var feedback  = '';
+					var color = '';
+					var passedTest = false;
+					if(result instanceof TapeList){
+						passedTest = result.equals(mCurrentTape);
+					}
+					else{
+						passedTest = result === mCurrentTape.peek();
+					}
+					console.log(passedTest)
+					console.log(result.toString());
+					console.log(mCurrentTape.toString());
+					feedback = passedTest ? 'pass' : 'fail';
+					color = passedTest ? 'green' : 'red';
+					mContainer.find('.result_div').text(feedback).css('color', color);
+					var testNumber = parseInt(mContainer.find('.test_radio_buttons .active').attr('id').slice(4));
+					//check if there is another test after this one, if so, then show the next button
+					//shows only if it passes
+					if(passedTest && mContainer.find('.test_radio_buttons #tape' + (testNumber+ 1)).length > 0)
+						mContainer.find('.next_button').css('visibility', 'visible');
+					callback(passedTest);
 				}
-				else{
-					passedTest = result === mCurrentTape.peek();
-				}
-				console.log(passedTest)
-				console.log(result.toString());
-				console.log(mCurrentTape.toString());
-				feedback = passedTest ? 'pass' : 'fail';
-				color = passedTest ? 'green' : 'red';
-				mContainer.find('.result_div').text(feedback).css('color', color);
-				var testNumber = parseInt(mContainer.find('.test_radio_buttons .active').attr('id').slice(4));
-				//check if there is another test after this one, if so, then show the next button
-				//shows only if it passes
-				if(passedTest && mContainer.find('.test_radio_buttons #tape' + (testNumber+ 1)).length > 0)
-					mContainer.find('.next_button').css('visibility', 'visible');
-				callback(passedTest);
 			}
-			
 
 		}
 		
@@ -557,14 +596,15 @@
 			var name = tapeButton.data('tape-name');
 			mCurrentTape = mTapeList[name].cloneTape();
 			mTSM.restart();
-			pauseSimulation = true	;
+			pauseSimulation = true;
 			simulation_done = false;
 			steps = 0;
+			undoStack = [];
 			console.log('toggle tape ' + mCurrentTape.toString());
 			self.listToTape();
 			mContainer.find('.test_radio_buttons .active').toggleClass('active')
 			tapeButton.toggleClass('active');
-			mContainer.find('.machine_label .curr_state').text(tsm.getCurrentState().name);
+			mContainer.find('.machine_label .curr_state').text(mTSM.getCurrentState().name);
 			mContainer.find('.machine_label .move_dir').text('');
 			mContainer.find('.transition_div .curr_state').text(mTSM.getCurrentState().name);
 			mContainer.find('.transition_div .read_symbol').text(mCurrentTape.peek());
@@ -586,7 +626,8 @@
 		this.listToTape = function(tapeList){
 			var tapeDiv = $('.tape_div');
 			var tape = tapeList || mCurrentTape;
-
+			if(!tape)
+				return;
 			tapeDiv.html('');
 			tapeDiv.css('left', 0);
 			

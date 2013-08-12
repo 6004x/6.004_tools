@@ -39,7 +39,7 @@ function TSM(){
 	this.start=function(tape){
 		// console.log('beginning turing machine');
 		
-		var new_state=start_state;
+		var new_state = start_state;
 		var valid = true;
 		var stepCount=0;
 		while(valid){
@@ -93,6 +93,10 @@ function TSM(){
 	}
 	this.getCurrentState = function(){
 		return current_state;
+	}
+	this.setCurrentState = function(state){
+		console.log(list_of_states)
+		current_state = list_of_states[state];
 	}
 	return this;
 }

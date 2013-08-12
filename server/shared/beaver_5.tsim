@@ -1,0 +1,30 @@
+// 5-state busy beaver Turing Machine example
+
+// See how many 1's we can write on a blank tape using
+// only a five-state Turing Machine
+// action states
+states A B C D E  // list of state names, first is starting state
+symbols 1         // list of symbols (- is blank cell)
+tape test -      // initial tape contents, blank in this case
+
+// Using's 5-state machine: writes 1915 1s in 2,133,492 steps before halting.
+// Note that the best known 5-state writes 4098 1s...
+// See http://grail.cba.csuohio.edu/~somos/busy.html
+
+// specify transistions: action state symbol state' write move
+//    state = the current state of the FSM
+//    symbol = the symbol read from the current cell
+//    state' = state on the next cycle 
+//    write = symbol to be written into the current cell
+//    move = tape movement ("l" = left, "r" = right, "-"=stay put)
+//    old  R     new  W M
+action  A   -      B  1 r
+action  A   1      C  1 l
+action  B   -      A  - l
+action  B   1      D  - l
+action  C   -      A  1 l
+action  C   1 *halt*  1 l
+action  D   -      B  1 l
+action  D   1      E  1 r
+action  E   -      D  - r
+action  E   1      B  - r
