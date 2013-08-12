@@ -29,6 +29,9 @@
 
 		this.initTapeButtons = function(testRadioButtons){
 			testRadioButtons = testRadioButtons || mContainer.find('.test_radio_buttons');
+			testRadioButtons.html('');
+			console.log(testRadioButtons);
+			console.log(mTapeList);
 			var first = true;
 			//attach each test button to the nav-pills div
 			var i = 0;
@@ -52,7 +55,7 @@
 				radioButton.on('click', function(e){
 					// toggle tape of the div, uses the dom element data
 					// to gather the name of the list. 
-					toggleTape($(this));
+					self.toggleTape($(this));
 				});
 
 				testRadioButtons.append(radioButton);
@@ -64,21 +67,22 @@
 			mFileName = filename || mFileName;
 			mContainer = $(container) || mContainer;
 			mTSM = tsm || mTSM;
-			mTapeList = testLists.list_of_tapes || mTapeList;
-			mResultList = testLists.list_of_results || mTapeList;
-			mResult1List = testLists.list_of_results1 || mTapeList;
+			mTapeList =  testLists.list_of_tapes ? testLists.list_of_tapes : mTapeList;
+			mResultList = testLists.list_of_results ? testLists.list_of_results : mResultList;
+			mResult1List = testLists.list_of_results1 ? testLists.list_of_results1 : mResult1List;
 
 			self.initTapeButtons();
+			self.toggleTape();
 
 		}
 		this.initialise=function(){
 			console.log('initalise TMSIM');
 			//make the radio buttons for the different tests
-			var testRadioButtons = $('<ul>').addClass('test_radio_buttons nav nav-pills');
+			var testRadioButtons = $('<ul>').addClass('test_radio_buttons pull-center nav nav-pills');
 
 			self.initTapeButtons(testRadioButtons);
 
-			var stepsDiv = $('<div>').addClass('steps_div').append('Steps: <span class="steps_span"></span>');
+			var stepsDiv = $('<div>').addClass('steps_div pull-center').append('Steps: <span class="steps_span"></span>');
 			
 			//add the visual tape wrapper
 			var tapeWrapper = $('<div>').addClass('tape_wrapper');
@@ -99,11 +103,10 @@
 			var machineDiv = $('<div>').addClass('pull-center machine_div').css({
 					'position':'relative',
 					top:-10,
-					height:DIV_HEIGHT,
 			});
-			machineDiv.append($('<div>').addClass('arrow-up pull-center'));
+			machineDiv.append($('<div>').addClass('arrow-up'));
 			//label will have spot for current state and direction
-			var labelDiv = $('<div>').addClass('machine_label pull-center')
+			var labelDiv = $('<div>').addClass('machine_label')
 				.css({
 					height:DIV_HEIGHT,
 					width:2*mTAPE_WIDTH,
@@ -134,10 +137,7 @@
 			//appending control buttons
 			var actionDiv = $('<div>').addClass('pull-center btn-toolbar action_button_div');
 			var actionButtonDiv = $('<div>').addClass('btn-group');
-			actionDiv.css({
-				'position' : 'relative',
-				top : 0,
-			})
+		
 			var playButton = $('<button>').addClass('btn btn-success play_button tape_button')
 				.attr('title', 'Run')
 				.append('<i class = "icon-play">');
@@ -180,9 +180,9 @@
 			        }
 			        lastClick = t;
 					
-					listToTape();
+					self.listToTape();
 					self.stepAction(function(arg){
-						listToTape();
+						self.listToTape();
 					});
 				}
 			});
@@ -207,7 +207,7 @@
 					stepButton.removeClass('disabled');
 					pauseButton.removeClass('disabled');
 					prevStepButton.removeClass('disabled');
-					toggleTape();
+					self.toggleTape();
 				}
 			});
 			pauseButton.on('click', function(){
@@ -232,8 +232,7 @@
 			var nextButton = $('<button>').addClass('btn btn-warning next_button tape_button')
 				.attr('title', 'Next Tape')
 				.append('<i class = "icon-arrow-right">')
-				.css('visibility', 'hidden')
-			;
+				.css('visibility', 'hidden');
 
 			nextButton.on('click', function(){
 				if(!$(this).hasClass('disabled')){
@@ -241,15 +240,15 @@
 					console.log(nextTape);
 					var nextNum = parseInt(nextTape.slice(4)) +1;
 					if(mContainer.find('.test_radio_buttons #tape'+nextNum).length > 0)
-						toggleTape(mContainer.find('.test_radio_buttons #tape'+nextNum));
+						self.toggleTape(mContainer.find('.test_radio_buttons #tape'+nextNum));
 					else
 						console.log('no next tape');
 				}
 			})
 
 			//speed radio button indicators
-			var speedDiv = $('<div>').addClass('speed_div span5').css({
-				'margin': '8px',
+			var speedDiv = $('<div>').addClass('speed_div').css({
+				'margin': 'auto',
 			});
 			var label1 = $('<label>').addClass('speed_options radio inline radio-inline').append('Slow');
 			var label2 = $('<label>').addClass('speed_options radio inline radio-inline').append('Medium');
@@ -326,8 +325,8 @@
 			var blueDiv = $('<div>').append('<span class = "write_symbol">BLUE</span> marks the previous written symbol');
 			legendDiv.append(greenDiv, redDiv, blueDiv)
 
-			mContainer.append(stepsDiv, speedDiv, testRadioButtons, tapeWrapper, machineDiv, speedDiv, actionDiv, feedbackDiv, legendDiv);
-			toggleTape();
+			mContainer.append(stepsDiv, speedDiv, actionDiv, tapeWrapper, machineDiv, speedDiv,  testRadioButtons, feedbackDiv, legendDiv);
+			self.toggleTape();
 		}
 		var oldLineClassDelete;
 		function markLine(lineNumber){
@@ -357,7 +356,7 @@
 				mContainer.find('.tape_div .read_symbol').removeClass('read_symbol');
 				mContainer.find('.tape_div .current_segment').addClass('prev_segment');
 				// if(!preventAnimate)
-				oldLineClassDelete(	)
+				markLine( state_transition.lineNumber-1)
 				function updateTransitionDiv(){
 					mContainer.find('.transition_div').css({
 						'top' : 0,
@@ -399,7 +398,7 @@
 					if(stepObject.transition.new_state === '*halt*'){
 						console.log('halt');
 					}
-					listToTape();
+					self.listToTape();
 					callback(stepObject.new_state);	
 				}
 				//timeout needed for pause button to interrupt, i don't know why though.
@@ -436,7 +435,7 @@
 			function nextTest(){
 				var tapeButton = $('#tape'+count);
 				if(count < Object.keys(mTapeList).length){
-					toggleTape(tapeButton);
+					self.toggleTape(tapeButton);
 					self.play(function(passed){
 						count++;
 						results.push(passed);
@@ -486,7 +485,7 @@
 								if(stepObject.transition.new_state == '*halt*' || stepObject.transition.new_state == '*error*'){
 									console.log('return '+ stepObject.transition.new_state)
 									halt(callback);
-									listToTape();
+									self.listToTape();
 									simulation_done = true;
 									break;
 								}
@@ -504,7 +503,7 @@
 				else {
 					console.log('return '+new_state_name);
 					halt(callback);
-					listToTape();
+					self.listToTape();
 					simulation_done = true;
 				}
 					
@@ -520,7 +519,7 @@
 			mContainer.find('.step_button').addClass('disabled');
 			mContainer.find('.pause_button').addClass('disabled');
 			$('.steps_span').text(steps)
-			listToTape();
+			self.listToTape();
 			
 			var name = mCurrentTape.name;
 			var result = mResultList[name] ? mResultList[name] : mResult1List[name];
@@ -553,7 +552,7 @@
 
 		}
 		
-		function toggleTape(tapeButton){
+		this.toggleTape = function(tapeButton){
 			tapeButton = tapeButton||$('.test_radio_buttons .active');
 			var name = tapeButton.data('tape-name');
 			mCurrentTape = mTapeList[name].cloneTape();
@@ -562,7 +561,7 @@
 			simulation_done = false;
 			steps = 0;
 			console.log('toggle tape ' + mCurrentTape.toString());
-			listToTape();
+			self.listToTape();
 			mContainer.find('.test_radio_buttons .active').toggleClass('active')
 			tapeButton.toggleClass('active');
 			mContainer.find('.machine_label .curr_state').text(tsm.getCurrentState().name);
@@ -584,7 +583,7 @@
 
 			$('.tape_button').removeClass('disabled');
 		}
-		function listToTape(tapeList){
+		this.listToTape = function(tapeList){
 			var tapeDiv = $('.tape_div');
 			var tape = tapeList || mCurrentTape;
 
@@ -649,6 +648,8 @@
 				callback();
 			}
 		}
+
+		// this.toggleTape = toggleTape;
 
 		self.initialise();
 	};

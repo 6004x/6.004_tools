@@ -41,7 +41,7 @@
     $(document).ready(function(){
         FileSystem.setup('https://18.62.29.122:6004');
 
-        var split = new SplitPane('#main_wrapper', ['#folders_div', '#editor_div', '#tsim_div'])
+        var split = new SplitPane('#main_wrapper', ['#folders_div', '#editor_div', '#tmsim_div'])
         split.setPaneWidth(0, 200);
         split.setPaneWidth(1, $(window).width() - 220);
         split.setPaneWidth(2, 0);
@@ -64,8 +64,7 @@
             split.setPaneWidth(1, 0);
             split.setPaneWidth(2, width);
         });
-        // split.on('resize', _.throttle(editor.redraw, 50));
-
+        var timer;
         split.on('resize', function(widths) {
             if(widths[2] == 0) {
                 $('#maximise_editor').addClass('active').siblings().removeClass('active');
@@ -74,33 +73,45 @@
             } else {
                 $('#split_pane').addClass('active').siblings().removeClass('active');
             }
+            clearTimeout(timer);
+            if(tmsim){
+                timer = setTimeout(tmsim.listToTape, 100);
+            }
+        });
+        $(window).resize(function() {
+            clearTimeout(timer);
+            if(tmsim)
+                timer = setTimeout(tmsim.listToTape, 100);
         });
         var mode = 'tsim';
         editor = new Editor('#editor',mode);
-        Folders.setup('#folders_div', editor, mode);
-        
         var set_height = function() {
-            editor.setHeight(window.clientHeight - 70); // Set height to window height minus title.
+            editor.setHeight(document.documentElement.clientHeight - 90); // Set height to window height minus title.
         }
         set_height();
-        $(window).resize(set_height);
+        $(window).resize(set_height); // Update the height whenever the browser window changes size.
+        split.on('resize', _.throttle(editor.redraw, 50));
+
+        Folders.setup('#folders_div', editor, mode);
         Folders.refresh();
         editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')]) 
 
-
+        var tmsim;
+        var tsmparse = new TSMparser();
         function tmsimAssemble(){
             var file = new Object();
             file.name=editor.currentTab();
             file.data=editor.content();
-            var tsmparse = new TSMparser();
-            var tmsim;
+            
+            
             var valid = true;
+            var tmsimObj;
             if(file.name.split('.').pop() === 'tsim'){
                 try{
                     var parsedDict = tsmparse.parse(file.data);
                     editor.clearErrors();
                     // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
-                    tsmparse.flattenMachine(parsedDict);
+                    tmsimObj = tsmparse.flattenMachine(parsedDict);
                     // editor.openTab(file.name+'done', tsmparse.getResults(), true);
                 } catch(e){
                     console.log(e.stack );
@@ -109,11 +120,14 @@
                     valid = false;
                 }
                 if(valid){
-                    $('#tmsim_div').html('');
-                    if(tmsim)
-                        tmsim.pause()
                     $('#split_pane').click();
-                    tmsim = new TMSIM(file.name, '#tmsim_div', tsmparse.getTSM(), tsmparse.getLists() );
+                    console.log(tmsim)
+                    if(tmsim){
+                        tmsim.restartTSM(file.name, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists )
+                        console.log(tmsim);
+                    }
+                    else 
+                        tmsim = new TMSIM(file.name, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists );
                     
                 }
             }
@@ -140,7 +154,7 @@
                 <div id="editor_div">
                     <div id="editor"></div>
                 </div>
-                <div id='tmsim_div'></div>
+                <div id='tmsim_div' style = 'width:calc(100%-5px);'></div>
             </div>
       
     </body>

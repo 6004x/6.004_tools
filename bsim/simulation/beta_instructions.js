@@ -89,7 +89,7 @@ BSim.Beta.Opcodes = {};
         name: 'ADD',
         alufn: '+',
         exec: function ADD(a, b, c) {
-            this.writeRegister(c, this.readRegister(a) + this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) + this.realReadRegister(b));
         },
         disassemble: function(op) {
             if(op.rb == 31) return "MOVE(" + name_register(op.ra) + ", " + name_register(op.rc) + ")";
@@ -103,7 +103,7 @@ BSim.Beta.Opcodes = {};
         has_literal: true,
         alufn: '+',
         exec: function ADDC(a, literal, c) {
-            this.writeRegister(c, this.readRegister(a) + literal);
+            this.realWriteRegister(c, this.realReadRegister(a) + literal);
         },
         disassemble: function(op) {
             if(op.ra == 31) return "CMOVE(" + op.literal + ", " + name_register(op.rc) + ")";
@@ -116,7 +116,7 @@ BSim.Beta.Opcodes = {};
         name: 'AND',
         alufn: '&',
         exec: function AND(a, b, c) {
-            this.writeRegister(c, this.readRegister(a) & this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) & this.realReadRegister(b));
         }
     });
 
@@ -126,7 +126,7 @@ BSim.Beta.Opcodes = {};
         alufn: '&',
         has_literal: true,
         exec: function ANDC(a, literal, c) {
-            this.writeRegister(c, this.readRegister(a) & literal);
+            this.realWriteRegister(c, this.realReadRegister(a) & literal);
         }
     });
 
@@ -144,10 +144,10 @@ BSim.Beta.Opcodes = {};
         has_literal: true,
         exec: function BEQ(a, literal, c) {
             var pc = this.getPC();
-            if(this.readRegister(a) === 0) {
+            if(this.realReadRegister(a) === 0) {
                 this.setPC(pc + 4*literal, false);
             }
-            this.writeRegister(c, pc);
+            this.realWriteRegister(c, pc);
         },
         disassemble: function(op, pc) {
             var target = ((op.literal * 4) + (pc + 4)) & ~0x80000000;
@@ -178,10 +178,10 @@ BSim.Beta.Opcodes = {};
         },
         exec: function BNE(a, literal, c) {
             var pc = this.getPC();
-            if(this.readRegister(a) !== 0) {
+            if(this.realReadRegister(a) !== 0) {
                 this.setPC(pc + 4*literal, false);
             }
-            this.writeRegister(c, pc);
+            this.realWriteRegister(c, pc);
         },
         disassemble: function(op, pc) {
             var target = ((op.literal * 4) + (pc + 4)) & ~0x80000000;
@@ -195,7 +195,7 @@ BSim.Beta.Opcodes = {};
         name: 'CMPEQ',
         alufn: '=',
         exec: function CMPEQ(a, b, c) {
-            this.writeRegister(c, this.readRegister(a) == this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) == this.realReadRegister(b));
         }
     });
 
@@ -205,7 +205,7 @@ BSim.Beta.Opcodes = {};
         has_literal: true,
         alufn: '=',
         exec: function CMPEQC(a, literal, c) {
-            this.writeRegister(c, this.readRegister(a) == literal);
+            this.realWriteRegister(c, this.realReadRegister(a) == literal);
         }
     });
 
@@ -214,7 +214,7 @@ BSim.Beta.Opcodes = {};
         name: 'CMPLE',
         alufn: '<=',
         exec: function CMPLE(a, b, c) {
-            this.writeRegister(c, this.readRegister(a) <= this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) <= this.realReadRegister(b));
         }
     });
 
@@ -224,7 +224,7 @@ BSim.Beta.Opcodes = {};
         alufn: '<=',
         has_literal: true,
         exec: function CMPLEC(a, literal, c) {
-            this.writeRegister(c, this.readRegister(a) <= literal);
+            this.realWriteRegister(c, this.realReadRegister(a) <= literal);
         }
     });
 
@@ -233,7 +233,7 @@ BSim.Beta.Opcodes = {};
         name: 'CMPLT',
         alufn: '<',
         exec: function CMPLT(a, b, c) {
-            this.writeRegister(c, this.readRegister(a) < this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) < this.realReadRegister(b));
         }
     });
 
@@ -243,7 +243,7 @@ BSim.Beta.Opcodes = {};
         alufn: '<',
         has_literal: true,
         exec: function CMPLTC(a, literal, c) {
-            this.writeRegister(c, this.readRegister(a) < literal);
+            this.realWriteRegister(c, this.realReadRegister(a) < literal);
         }
     });
 
@@ -256,7 +256,7 @@ BSim.Beta.Opcodes = {};
             if(this.readRegister(b) === 0) {
                 throw new BSim.Beta.RuntimeError("Division of " + this.readRegister(a) + " by zero");
             }
-            this.writeRegister(c, (this.readRegister(a) / this.readRegister(b))|0);
+            this.realWriteRegister(c, (this.realReadRegister(a) / this.realReadRegister(b))|0);
         }
     });
 
@@ -270,7 +270,7 @@ BSim.Beta.Opcodes = {};
             if(literal === 0) {
                 throw new BSim.Beta.RuntimeError("Division of " + this.readRegister(a) + " by zero");
             }
-            this.writeRegister(c, (this.readRegister(a) / literal)|0);
+            this.realWriteRegister(c, (this.realReadRegister(a) / literal)|0);
         }
     });
 
@@ -285,8 +285,8 @@ BSim.Beta.Opcodes = {};
             wasel: 0
         },
         exec: function JMP(a, b, c) {
-            this.writeRegister(c, this.getPC());
-            this.setPC(this.readRegister(a));
+            this.realWriteRegister(c, this.getPC());
+            this.setPC(this.realReadRegister(a));
         },
         disassemble: function(op) {
             if(op.rc == 31) return "JMP(" + name_register(op.ra) + ")";
@@ -309,7 +309,7 @@ BSim.Beta.Opcodes = {};
         },
         has_literal: true,
         exec: function LD(a, literal, c) {
-            this.writeRegister(c, this.readWord(this.readRegister(a) + literal, true));
+            this.realWriteRegister(c, this.readWord(this.realReadRegister(a) + literal, true));
         }
     });
 
@@ -327,7 +327,7 @@ BSim.Beta.Opcodes = {};
         },
         has_literal: true,
         exec: function LDR(a, literal, c) {
-            this.writeRegister(c, this.readWord(this.getPC() + 4*literal, true));
+            this.realWriteRegister(c, this.readWord(this.getPC() + 4*literal, true));
         },
         disassemble: function(op, pc) {
             var target = op.literal*4 + pc;
@@ -342,7 +342,7 @@ BSim.Beta.Opcodes = {};
         alufn: '*',
         exec: function MUL(a, b, c) {
             if(!this.isOptionSet('mul')) return this.handleIllegalInstruction();
-            this.writeRegister(c, this.readRegister(a) * this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) * this.realReadRegister(b));
         }
     });
 
@@ -353,7 +353,7 @@ BSim.Beta.Opcodes = {};
         has_literal: true,
         exec: function MULC(a, literal, c) {
             if(!this.isOptionSet('mul')) return this.handleIllegalInstruction();
-            this.writeRegister(c, this.readRegister(a) * literal);
+            this.realWriteRegister(c, this.realReadRegister(a) * literal);
         }
     });
 
@@ -362,7 +362,7 @@ BSim.Beta.Opcodes = {};
         name: 'OR',
         alufn: '|',
         exec: function OR(a, b, c) {
-            this.writeRegister(c, this.readRegister(a) | this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) | this.realReadRegister(b));
         }
     });
 
@@ -372,7 +372,7 @@ BSim.Beta.Opcodes = {};
         alufn: '|',
         has_literal: true,
         exec: function ORC(a, literal, c) {
-            this.writeRegister(c, this.readRegister(a) | literal);
+            this.realWriteRegister(c, this.realReadRegister(a) | literal);
         }
     });
 
@@ -381,7 +381,7 @@ BSim.Beta.Opcodes = {};
         name: 'SHL',
         alufn: '<<',
         exec: function SHL(a, b, c) {
-            this.writeRegister(c, this.readRegister(a) << this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) << this.realReadRegister(b));
         }
     });
 
@@ -391,7 +391,7 @@ BSim.Beta.Opcodes = {};
         alufn: '<<',
         has_literal: true,
         exec: function SHLC(a, literal, c) {
-            this.writeRegister(c, this.readRegister(a) << literal);
+            this.realWriteRegister(c, this.realReadRegister(a) << literal);
         }
     });
 
@@ -400,7 +400,7 @@ BSim.Beta.Opcodes = {};
         name: 'SHR',
         alufn: '>>>',
         exec: function SHR(a, b, c) {
-            this.writeRegister(c, this.readRegister(a) >>> this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) >>> this.realReadRegister(b));
         }
     });
 
@@ -410,7 +410,7 @@ BSim.Beta.Opcodes = {};
         alufn: '>>>',
         has_literal: true,
         exec: function SHRC(a, literal, c) {
-            this.writeRegister(c, this.readRegister(a) >>> literal);
+            this.realWriteRegister(c, this.realReadRegister(a) >>> literal);
         }
     });
 
@@ -419,7 +419,7 @@ BSim.Beta.Opcodes = {};
         name: 'SRA',
         alufn: '>>',
         exec: function SRA(a, b, c) {
-            this.writeRegister(c, this.readRegister(a) >> this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) >> this.realReadRegister(b));
         }
     });
 
@@ -429,7 +429,7 @@ BSim.Beta.Opcodes = {};
         alufn: '>>',
         has_literal: true,
         exec: function SRAC(a, literal, c) {
-            this.writeRegister(c, this.readRegister(a) >> literal);
+            this.realWriteRegister(c, this.realReadRegister(a) >> literal);
         }
     });
 
@@ -438,7 +438,7 @@ BSim.Beta.Opcodes = {};
         name: 'SUB',
         alufn: '-',
         exec: function SUB(a, b, c) {
-            this.writeRegister(c, this.readRegister(a) - this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) - this.realReadRegister(b));
         }
     });
 
@@ -448,7 +448,7 @@ BSim.Beta.Opcodes = {};
         alufn: '-',
         has_literal: true,
         exec: function SUBC(a, literal, c) {
-            this.writeRegister(c, this.readRegister(a) - literal);
+            this.realWriteRegister(c, this.realReadRegister(a) - literal);
         }
     });
 
@@ -466,7 +466,7 @@ BSim.Beta.Opcodes = {};
         },
         has_literal: true,
         exec: function ST(a, literal, c) {
-            this.writeWord(this.readRegister(a) + literal, this.readRegister(c), true);
+            this.writeWord(this.realReadRegister(a) + literal, this.realReadRegister(c), true);
         }
     });
 
@@ -475,7 +475,7 @@ BSim.Beta.Opcodes = {};
         name: 'XOR',
         alufn: '^',
         exec: function XOR(a, b, c) {
-            this.writeRegister(c, this.readRegister(a) ^ this.readRegister(b));
+            this.realWriteRegister(c, this.realReadRegister(a) ^ this.realReadRegister(b));
         }
     });
 
@@ -485,7 +485,7 @@ BSim.Beta.Opcodes = {};
         alufn: '^',
         has_literal: true,
         exec: function XORC(a, literal, c) {
-            this.writeRegister(c, this.readRegister(a) ^ literal);
+            this.realWriteRegister(c, this.realReadRegister(a) ^ literal);
         }
     });
 
@@ -494,7 +494,7 @@ BSim.Beta.Opcodes = {};
         name: 'XNOR',
         alufn: '~^',
         exec: function XNOR(a, b, c) {
-            this.writeRegister(c, ~(this.readRegister(a) ^ this.readRegister(b)));
+            this.realWriteRegister(c, ~(this.realReadRegister(a) ^ this.realReadRegister(b)));
         }
     });
 
@@ -503,7 +503,7 @@ BSim.Beta.Opcodes = {};
         name: 'XNORC',
         alufn: '~^',
         exec: function XNORC(a, literal, c) {
-            this.writeRegister(c, ~(this.readRegister(a) ^ literal));
+            this.realWriteRegister(c, ~(this.realReadRegister(a) ^ literal));
         }
     });
 
@@ -523,28 +523,28 @@ BSim.Beta.Opcodes = {};
                         this.setPC(this.getPC() - 4); // loop
                     } else {
                         if(this.mKeyboardInput == 13) this.mKeyboardInput = 10; // Use the expected newline.
-                        this.writeRegister(0, this.mKeyboardInput);
+                        this.realWriteRegister(0, this.mKeyboardInput);
                         this.mKeyboardInput = null;
                     }
                     break;
                 case 2: // WRCHAR
                     if(!this.isOptionSet('tty')) return this.handleIllegalInstruction();
-                    var chr = String.fromCharCode(this.readRegister(a));
+                    var chr = String.fromCharCode(this.realReadRegister(a));
                     this.ttyOut(chr);
                     break;
                 case 3: // CYCLE
-                    this.writeRegister(0, this.getCycleCount());
+                    this.realWriteRegister(0, this.getCycleCount());
                     break;
                 case 4: // TIME
-                    this.writeRegister(0, Date.now());
+                    this.realWriteRegister(0, Date.now());
                     break;
                 case 5: // MOUSE
                     if(!this.isOptionSet('tty')) return this.handleIllegalInstruction();
-                    this.writeRegister(0, this.mMouseCoords);
+                    this.realWriteRegister(0, this.mMouseCoords);
                     this.mMouseCoords = -1;
                     break;
                 case 6: // RANDOM
-                    this.writeRegister(c, _.random(0xFFFFFFFF));
+                    this.realWriteRegister(c, _.random(0xFFFFFFFF));
                     break;
                 case 7: // SEED
                     throw new BSim.Beta.RuntimeError("SEED() is unimplemented. To implement, you must provide your own RNG (Math.random is unseedable)");

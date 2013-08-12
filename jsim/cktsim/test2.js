@@ -1,3 +1,43 @@
+// convert string argument to a number, accepting usual notations
+// (hex, octal, binary, decimal, floating point) plus engineering
+// scale factors (eg, 1k = 1000.0 = 1e3).
+// return default if argument couldn't be interpreted as a number
+function parse_number(x) {
+    var m;
+
+    m = x.match(/^\s*([\-+]?)0x([0-9a-fA-F]+)\s*$/); // hex
+    if (m) return parseInt(m[1] + m[2], 16);
+
+    m = x.match(/^\s*([\-+]?)0b([0-1]+)\s*$/); // binary
+    if (m) return parseInt(m[1] + m[2], 2);
+
+    m = x.match(/^\s*([\-+]?)0([0-7]+)\s*$/); // octal
+    if (m) return parseInt(m[1] + m[2], 8);
+
+    m = x.match(/^\s*[\-+]?[0-9]*(\.([0-9]+)?)?([eE][\-+]?[0-9]+)?\s*$/); // decimal, float, exponential
+    if (m) return parseFloat(m[0]);
+
+    m = x.match(/^\s*([\-+]?[0-9]*(\.?([0-9]+)))([A-Za-z]+)/); // decimal, float
+    if (m) {
+        var result = parseFloat(m[1]);
+        var scale = m[4][0];
+        if (scale == 'P') result *= 1e15; // peta
+        else if (scale == 't' || scale == 'T') result *= 1e12; // tera
+        else if (scale == 'g' || scale == 'G') result *= 1e9; // giga
+        else if (scale == 'M') result *= 1e6; // mega
+        else if (scale == 'k' || scale == 'K') result *= 1e3; // kilo
+        else if (scale == 'm') result *= 1e-3; // milli
+        else if (scale == 'u' || scale == 'U') result *= 1e-6; // micro
+        else if (scale == 'n' || scale == 'N') result *= 1e-9; // nano
+        else if (scale == 'p') result *= 1e-12; // pico
+        else if (scale == 'f' || scale == 'F') result *= 1e-15; // femto
+        else if (scale == 'a' || scale == 'A') result *= 1e-18; // atto
+        return result;
+    }
+
+    throw "Number expected";
+}
+
 function engineering_notation(n, nplaces, trim) {
     if (n === 0) return '0';
     if (n === undefined) return 'undefined';
@@ -57,42 +97,43 @@ function dc_plot(div, results, plots, sweep1, sweep2) {
     if (sweep1 === undefined) return;
 
     for (var p = 0; p < plots.length; p += 1) {
-        var node = plots[p][0];  // for now: only one value per plot
+        var node = plots[p][0]; // for now: only one value per plot
         var series = [];
-	var index2 = 0;
-	while (true) {
-	    var values;
-	    var x,x2;
-	    if (sweep2 === undefined) {
-		values = results[node];
-		x = results['_sweep1_'];
-	    } else {
-		values = results[index2][node];
-		x = results[index2]['_sweep1_'];
-		x2 = results[index2]['_sweep2_'];
-		index2 += 1;
-	    }
+        var index2 = 0;
+        while (true) {
+            var values;
+            var x, x2;
+            if (sweep2 === undefined) {
+                values = results[node];
+                x = results['_sweep1_'];
+            }
+            else {
+                values = results[index2][node];
+                x = results[index2]['_sweep1_'];
+                x2 = results[index2]['_sweep2_'];
+                index2 += 1;
+            }
 
             if (values === undefined) {
-                div.text("No values to plot for node "+node);
+                div.text("No values to plot for node " + node);
                 return;
             }
             var plot = [];
             for (var j = 0; j < values.length; j += 1) {
-                plot.push([x[j],values[j]]);
+                plot.push([x[j], values[j]]);
             }
-            var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
-	    var name = current ? node : "Node " + node; 
-	    if (sweep2 !== undefined) name += " with " + sweep2.source + "=" + x2;
+            var current = (node.length > 2 && node[0] == 'I' && node[1] == '(');
+            var name = current ? node : "Node " + node;
+            if (sweep2 !== undefined) name += " with " + sweep2.source + "=" + x2;
             series.push({
-	        name: name,
+                name: name,
                 data: plot,
                 lineWidth: 5,
                 units: current ? 'Amps (A)' : 'Volts (V)'
             });
 
-	    if (sweep2 === undefined || index2 >= results.length) break;
-	}
+            if (sweep2 === undefined || index2 >= results.length) break;
+        }
         var plotdiv = $('<div style="width:600px;height:300px"></div>');
         div.append(plotdiv);
         var options = {
@@ -139,7 +180,7 @@ function tran_plot(div, results, plots) {
         div.text("No results!");
         return;
     }
-    
+
     for (var p = 0; p < plots.length; p += 1) {
         var plot_nodes = plots[p];
         var series = [];
@@ -147,14 +188,14 @@ function tran_plot(div, results, plots) {
             var node = plot_nodes[i];
             var values = results[node];
             if (values === undefined) {
-                div.text("No values to plot for node "+node);
+                div.text("No values to plot for node " + node);
                 return;
             }
             var plot = [];
             for (var j = 0; j < values.length; j += 1) {
                 plot.push([results._time_[j], values[j]]);
             }
-            var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
+            var current = (node.length > 2 && node[0] == 'I' && node[1] == '(');
             series.push({
                 name: current ? node : "Node " + node,
                 data: plot,
@@ -208,7 +249,7 @@ function ac_plot(div, results, plots) {
         div.text("No results!");
         return;
     }
-    
+
     for (var p = 0; p < plots.length; p += 1) {
         var plot_nodes = plots[p];
         var mplots = [];
@@ -216,7 +257,7 @@ function ac_plot(div, results, plots) {
         for (var i = 0; i < plot_nodes.length; i += 1) {
             var node = plot_nodes[i];
             if (results[node] === undefined) {
-                div.text('No values to plot for node '+node);
+                div.text('No values to plot for node ' + node);
                 return;
             }
             var magnitudes = results[node].magnitude;
@@ -319,13 +360,26 @@ function ac_plot(div, results, plots) {
     }
 }
 
+// parse number or f(number,...)
+function parse_source(s) {
+    var m = s.match(/^\s*(\w+)\s*\(([^\)]*)\)\s*$/); // parse f(arg,arg,...)
+    if (m) {
+        var fun = m[1];
+        var args;
+        if (m[2] === '') args = [];
+        else args = m[2].split(/\s*,\s*/).map(parse_number);
+        return fun + '(' + args.join() + ')';
+    } else {
+        return 'dc(' + parse_number(s) + ')';
+    }
+}
 
 // parse "prop=value" tokens
-function parse_properties(tokens,properties) {
+function parse_properties(tokens, properties) {
     for (var i = 0; i < tokens.length; i += 1) {
         var parts = tokens[i].split('=');
-        if (parts.length != 2 || parts[0].length===0 || parts[1].length===0) throw "Malformed parameter: " + tokens[i];
-        properties[parts[0]] = parts[1];
+        if (parts.length != 2 || parts[0].length === 0 || parts[1].length === 0) throw "Malformed parameter: " + tokens[i];
+        properties[parts[0]] = parse_number(parts[1]);
     }
 }
 
@@ -337,119 +391,176 @@ var device_types = {
     'I': "current source",
     'N': "nfet",
     'P': "pfet"
-}
+};
 
 function parse_netlist(text) {
     var netlist = [];
     var analyses = [];
     var plots = [];
     var lines = text.split('\n');
-    var properties,j;
+    var properties;
     for (var i = 0; i < lines.length; i += 1) {
         var tokens = lines[i].split(/\s+/);
         if (tokens[0].length === 0) continue;
         var device = tokens[0][0].toUpperCase();
         switch (device) {
-            case '*':   // comment!
-                break;
-            case 'R':   // resistor: Rname n1 n2 value
-            case 'C':   // capacitor: Cname n1 n2 value
-            case 'L':   // inductor: Lname n1 n2 value
-                if (tokens.length != 4) return "Malformed device statement: " + lines[i];
-                netlist.push({
-                    type: device_types[device],
-                    connections: {n1: tokens[1], n2: tokens[2]},
-                    properties: {name: tokens[0], value: tokens[3]}
-                });
-                break;
-            case 'V':   // voltage source: Vname nplus nminus source_function
-            case 'I':   // current source: Iname nplus nminus source_function
-                if (tokens.length != 4) return "Malformed source statement:" + lines[i];
-                netlist.push({
-                    type: device_types[device],
-                    connections: {nplus: tokens[1], nminus: tokens[2]},
-                    properties: {name: tokens[0], value: tokens[3]}
-                });
-                break;
-            case 'N':   // nfet: Nname drain gate source W=number L=number
-            case 'P':   // pfet: Pname drain gate source W=number L=number
-                if (tokens.length < 4) return "Malformed fet statement: " + lines[i];
-                properties = {name: tokens[0]};
-                try {
-                    parse_properties(tokens.slice(4),properties);
-                } catch (e) {
-                    return e;
+        case '*':
+            // comment!
+            break;
+        case 'R':
+            // resistor: Rname n1 n2 value
+        case 'C':
+            // capacitor: Cname n1 n2 value
+        case 'L':
+            // inductor: Lname n1 n2 value
+            if (tokens.length != 4) return "Malformed device statement: " + lines[i];
+            netlist.push({
+                type: device_types[device],
+                connections: {
+                    n1: tokens[1],
+                    n2: tokens[2]
+                },
+                properties: {
+                    name: tokens[0],
+                    value: parse_number(tokens[3])
                 }
-                if (properties.W === undefined)
-                    return "fet missing W parameterL: "+ lines[i];
-                if (properties.L === undefined) properties.L = 1;
-                netlist.push({
-                    type: device_types[device],
-                    connections: {D: tokens[1], G: tokens[2], S: tokens[3]},
-                    properties: properties
-                });
-                break;
-            case 'O':   // opamp: Oname nplus nminus output gnd A
-                if (tokens.length != 6) return "Malformed opamp statement: " + lines[i];
-                netlist.push({
-                    type: "opamp",
-                    connections: {nplus: tokens[1], nminus: tokens[2], output: tokens[3], ground: tokens[4]},
-                    properties: {name: tokens[0], A: tokens[5]}
-                });
-                netlist.push
-                break;
-            case '.':
-                switch (tokens[0]) {
-                    case '.tran':   // .tran 10u
-                        if (tokens.length != 2) return "Malformed .tran statement";
-                        analyses.push({type: 'tran', tstop: tokens[1]});
-                        break;
-                    case '.ac':     // .ac source fstart fstop
-                        if (tokens.length != 4) return "Malformed .ac statement";
-                        analyses.push({type: 'ac', source: tokens[1], fstart: tokens[2], fstop: tokens[3]});
-                        break;
-    		    case '.dc':     // .dc [src1 start1 stop1 step1 [src2 start2 stop2 step2]]
-			if (tokens.length == 1)
-			    analyses.push({type: 'dc'});
-			else if (tokens.length == 5) analyses.push({
-				type: 'dc',
-				sweep1: {source: tokens[1],
-					 start: tokens[2],
-					 stop: tokens[3],
-					 step: tokens[4]}
-			    });
-			else if (tokens.length == 9) analyses.push({
-				type: 'dc',
-				sweep1: {source: tokens[1],
-					 start: tokens[2],
-					 stop: tokens[3],
-					step: tokens[4]},
-				sweep2: {source: tokens[5],
-					 start: tokens[6],
-					 stop: tokens[7],
-					 step: tokens[8]}
-			    });
-			else return "Malformed .dc statement";
-			break;
-                    case '.plot':
-                        if (tokens.length <= 1) return "Malformed .plot statement";
-                        plots.push(tokens.slice(1));
-                        break;
-                    default:
-                        return 'Unrecognized control card: ' + tokens[0];
+            });
+            break;
+        case 'V':
+            // voltage source: Vname nplus nminus source_function
+        case 'I':
+            // current source: Iname nplus nminus source_function
+            if (tokens.length != 4) return "Malformed source statement:" + lines[i];
+            netlist.push({
+                type: device_types[device],
+                connections: {
+                    nplus: tokens[1],
+                    nminus: tokens[2]
+                },
+                properties: {
+                    name: tokens[0],
+                    value: parse_source(tokens[3])   // parse numbers....
                 }
+            });
+            break;
+        case 'N':
+            // nfet: Nname drain gate source W=number L=number
+        case 'P':
+            // pfet: Pname drain gate source W=number L=number
+            if (tokens.length < 4) return "Malformed fet statement: " + lines[i];
+            properties = {
+                name: tokens[0]
+            };
+            try {
+                parse_properties(tokens.slice(4), properties);
+            }
+            catch (e) {
+                return e;
+            }
+            if (properties.W === undefined) return "fet missing W parameterL: " + lines[i];
+            if (properties.L === undefined) properties.L = 1;
+            netlist.push({
+                type: device_types[device],
+                connections: {
+                    D: tokens[1],
+                    G: tokens[2],
+                    S: tokens[3]
+                },
+                properties: properties
+            });
+            break;
+        case 'O':
+            // opamp: Oname nplus nminus output gnd A
+            if (tokens.length != 6) return "Malformed opamp statement: " + lines[i];
+            netlist.push({
+                type: "opamp",
+                connections: {
+                    nplus: tokens[1],
+                    nminus: tokens[2],
+                    output: tokens[3],
+                    ground: tokens[4]
+                },
+                properties: {
+                    name: tokens[0],
+                    A: parse_number(tokens[5])
+                }
+            });
+            netlist.push
+            break;
+        case '.':
+            switch (tokens[0]) {
+            case '.tran':
+                // .tran 10u
+                if (tokens.length != 2) return "Malformed .tran statement";
+                analyses.push({
+                    type: 'tran',
+                    tstop: parse_number(tokens[1])
+                });
+                break;
+            case '.ac':
+                // .ac source fstart fstop
+                if (tokens.length != 4) return "Malformed .ac statement";
+                analyses.push({
+                    type: 'ac',
+                    source: tokens[1],
+                    fstart: parse_number(tokens[2]),
+                    fstop: parse_number(tokens[3])
+                });
+                break;
+            case '.dc':
+                // .dc [src1 start1 stop1 step1 [src2 start2 stop2 step2]]
+                if (tokens.length == 1) analyses.push({
+                    type: 'dc'
+                });
+                else if (tokens.length == 5) analyses.push({
+                    type: 'dc',
+                    sweep1: {
+                        source: tokens[1],
+                        start: parse_number(tokens[2]),
+                        stop: parse_number(tokens[3]),
+                        step: parse_number(tokens[4])
+                    }
+                });
+                else if (tokens.length == 9) analyses.push({
+                    type: 'dc',
+                    sweep1: {
+                        source: tokens[1],
+                        start: parse_number(tokens[2]),
+                        stop: parse_number(tokens[3]),
+                        step: parse_number(tokens[4])
+                    },
+                    sweep2: {
+                        source: tokens[5],
+                        start: parse_number(tokens[6]),
+                        stop: parse_number(tokens[7]),
+                        step: parse_number(tokens[8])
+                    }
+                });
+                else return "Malformed .dc statement";
+                break;
+            case '.plot':
+                if (tokens.length <= 1) return "Malformed .plot statement";
+                plots.push(tokens.slice(1));
                 break;
             default:
-                return 'Unrecognized device: ' + tokens[0];
+                return 'Unrecognized control card: ' + tokens[0];
+            }
+            break;
+        default:
+            return 'Unrecognized device: ' + tokens[0];
         }
-        
+
     }
     console.log(JSON.stringify(netlist));
-    return {netlist: netlist, analyses: analyses, plots: plots};
-} 
+    return {
+        netlist: netlist,
+        analyses: analyses,
+        plots: plots
+    };
+}
 
-function simulate(text,div) {
-    div.empty();  // we'll fill this with results
+function simulate(text, div) {
+    div.empty(); // we'll fill this with results
     var parse = parse_netlist(text);
     if ((typeof parse) === 'string') {
         div.text(parse);
@@ -458,7 +569,7 @@ function simulate(text,div) {
     var netlist = parse.netlist;
     var analyses = parse.analyses;
     var plots = parse.plots;
-    
+
     if (netlist.length === 0) return;
     if (analyses.length === 0) return;
 
@@ -476,7 +587,7 @@ function simulate(text,div) {
             break;
         case 'dc':
             var results = cktsim.dc_analysis(netlist, analysis.sweep1, analysis.sweep2);
-	    dc_plot(div, results, plots, analysis.sweep1, analysis.sweep2);
+            dc_plot(div, results, plots, analysis.sweep1, analysis.sweep2);
             break;
         }
     }
@@ -492,12 +603,12 @@ function setup_test(div) {
     var textarea = div.find('textarea');
     var plotdiv = div.find('.results');
 
-    div.find('button').on('click',function () {
-        simulate(textarea.val(),plotdiv)
-    })
+    div.find('button').on('click', function() {
+        simulate(textarea.val(), plotdiv);
+    });
 
     textarea.val(text);
-    simulate(text,plotdiv);
+    simulate(text, plotdiv);
 }
 
 $(document).ready(function() {
