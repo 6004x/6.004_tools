@@ -23,96 +23,26 @@ var gatesim = (function() {
     //   netlist: JSON description of the circuit
     //   tstop: stop time of simulation in seconds
     //   probe_names: optional list of node names to be checked during LTE calculations
-    //   progress_callback(percent_complete,results)
+    //   progress_callback(percent_complete,network,mag)
     //      function called periodically, return true to halt simulation
-    //      until simulation is complete, results are undefined
-    // results are associative array mapping node name -> array of voltages/currents
-    //   includes _time_ -> array of simulation times at which values were measured
+    //      until simulation is complete, network and msg are undefined
+    // The network is returned at completeion so UI can get node histories
     function transient_analysis(netlist, tstop, probe_names, progress_callback) {
         if (netlist.length > 0 && tstop !== undefined) {
             var network = new Network(netlist);
 
             var progress = {};
-            progress.probe_names = probe_names; // node names for LTE check
             progress.update_interval = 250; // in milliseconds
-            progress.finish = function(results) {
-                progress_callback(undefined, results);
+            progress.finish = function(msg,results) {
+                // when done, return pointer to network so UI can get node histories
+                progress_callback(undefined, network, msg);
             };
             progress.stop_requested = false;
             progress.update = function(percent_complete) { // 0 - 100
                 // invoke the callback which will return true if the
                 // simulation should halt.
-                if (progress_callback(percent_complete, undefined)) progress.stop_requested = true;
+                if (progress_callback(percent_complete, undefined, undefined)) progress.stop_requested = true;
             };
-
-            network.tran_start(progress, 100, 0, tstop);
-        }
-    }
-
-    // handler for gate simulation tool
-    function gate_sim(diagram) {
-        // use modules in the gates library as the leafs
-        var mlist = [];
-        for (m in jade.libraries.gates.modules) mlist.push('gates:' + m);
-        // plus some standard analog parts used in all schematics
-        mlist.push('analog:port-in');
-        mlist.push('analog:port-out');
-        mlist.push('analog:s');
-        mlist.push('analog:g');
-        mlist.push('analog:vdd');
-        mlist.push('analog:v');
-
-        var netlist = diagram.netlist(mlist);
-        if (netlist.length == 0) return;
-
-        var network = new Network();
-        try {
-            network.load_netlist(netlist);
-        }
-        catch (e) {
-            if (typeof e != 'string') throw e;
-            alert("Error while loading netlist:\n\n" + e);
-            return;
-        }
-
-        var tstop_lbl = 'Stop Time (seconds)';
-        var module = diagram.aspect.module;
-        var fields = {};
-        fields[tstop_lbl] = jade.build_input('text', 10, module.properties.gatesim_tstop);
-        var content = jade.build_table(fields);
-
-        diagram.dialog('Gate-level Simulation', content, function() {
-            // retrieve parameters, remember for next time
-            module.set_property('gatesim_tstop', fields[tstop_lbl].value);
-            var tstop = jade.parse_number_alert(module.properties.gatesim_tstop);
-            if (tstop == undefined) return;
-
-            var progress = document.createElement('div');
-            progress.className = 'jade-progress';
-
-            // set up progress bar
-            var d = document.createElement('div');
-            d.className = 'jade-progress-wrapper';
-            progress.appendChild(d);
-            progress.bar = document.createElement('div');
-            progress.bar.className = 'jade-progress-bar';
-            $(progress.bar).width('0%');
-            d.appendChild(progress.bar);
-
-            // allow user to stop simulation
-            var stop = jade.build_button('Stop', function(event) {
-                event.target.progress.stop_requested = true;
-            });
-            stop.progress = progress;
-            progress.appendChild(stop);
-
-            progress.update_interval = 250; // ms between progress bar updates
-            progress.stop_requested = false;
-            progress.finish = simulation_results; // what to do when done!
-
-            diagram.window('Progress', progress); // display progress bar
-
-            // off to do the heavy lifting...
 
             network.sim_init(progress, tstop);
             try {
@@ -122,22 +52,7 @@ var gatesim = (function() {
                 if (typeof e == 'string') progress.finish(e, progress);
                 else throw e;
             }
-        });
-    }
-
-    function simulation_results(netlist, progress) {
-        var diagram = progress.win.diagram;
-        var probes = progress.probes;
-        var probe_names = progress.probe_names;
-
-        jade.window_close(progress.win); // all done with progress bar
-
-        if (typeof results == 'string') alert("Error during simulation:\n\n" + results);
-        /*
-	    else if (results == undefined)
-		alert("Sorry, no results from simulation to plot!");
-	    */
-        else {}
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -194,31 +109,32 @@ var gatesim = (function() {
                 // build input and output lists using terminal names
                 // in info array
                 var inputs = [];
-                for (var j = 0; j < info[0].length; j += 1)
-                inputs.push(connections[info[0][j]]);
+                for (var j = 0; j < info[0].length; j += 1) inputs.push(connections[info[0][j]]);
                 // create a new device
                 d = new LogicGate(this, type, name, info[2], inputs, connections[info[1]], properties, true);
                 this.devices.push(d);
                 this.device_map[name] = d;
             }
-            else if (type == 'gates:dlatch') {}
-            else if (type == 'gates:dlatchn') {}
-            else if (type == 'gates:dreg') {}
-            else if (type == 'analog:g') {
+            else if (type == 'dlatch') {
+                throw "Device "+type+" not handled yet!";
+            }
+            else if (type == 'dlatchn') {
+                throw "Device "+type+" not handled yet!";                
+            }
+            else if (type == 'dreg') {
+                throw "Device "+type+" not handled yet!";
+            }
+            else if (type == 'memory') {
+                throw "Device "+type+" not handled yet!";                
+            }
+            else if (type == 'g') {
                 // gnd node -- drive with a 0-input OR gate (output = 0)
                 n = connections.gnd;
                 if (n.drivers.length > 0) continue; // already handled this one
                 n.v = V0;
                 this.devices.push(new LogicGate(this, type, name, OrTable, [], n, properties, true));
             }
-            else if (type == 'analog:vdd') {
-                // power supply node -- drive with a 0-input AND gate (output = 1)
-                n = connections.vdd;
-                if (n.drivers.length > 0) continue; // already handled this one
-                n.v = V1;
-                this.devices.push(new LogicGate(this, type, name, AndTable, [], n, properties, true));
-            }
-            else if (type == 'analog:v') {
+            else if (type == 'v') {
                 n = connections.nplus; // hmmm.
                 if (n.drivers.length > 0) continue; // already handled this one
 
@@ -287,7 +203,7 @@ var gatesim = (function() {
         }
 
         // simulation complete or interrupted
-        this.progress.finish(this, this.progress);
+        this.progress.finish(undefined, this);
     };
 
     Network.prototype.add_event = function(t, type, node, v) {
@@ -298,6 +214,19 @@ var gatesim = (function() {
 
     Network.prototype.remove_event = function(event) {
         this.event_queue.remove(event);
+    };
+    
+    // return event list for specified node.  Each event has the following
+    // attributes:
+    //   time: time of the event in seconds
+    //   type: 0=contaminate event, 1 = propagate event
+    //   v: value of node after event
+    //   old_v: value of node before event
+    //   node: Node object
+    Network.prototype.history = function(node) {
+        var n = this.node_map[node];
+        if (n === undefined) return undefined;
+        else return n.history;
     };
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -310,7 +239,7 @@ var gatesim = (function() {
     var PROPAGATE = 1;
 
     function Event(t, type, node, v) {
-        this.t = t; // time of event
+        this.time = t; // time of event
         this.type = type; // CONTAMINATE, PROPAGATE
         this.node = node;
         this.v = v;
@@ -328,7 +257,7 @@ var gatesim = (function() {
 
     // specialized for events...
     Heap.prototype.cmplt = function(e1, e2) {
-        return e1.t < e2.t;
+        return e1.time < e2.time;
     };
 
     // 'heap' is a heap at all indices >= startpos, except possibly for pos.  pos
@@ -557,7 +486,7 @@ var gatesim = (function() {
 
         // now add the BUS device to drive the current node
         this.driver = new LogicGate(this.network, 'BUS', this.name + '%bus', BusTable, inputs, this, {}, true);
-        this.drivers = null; // finalization complete
+        this.drivers = undefined; // finalization complete
         this.network.devices.push(this.driver);
     };
 
@@ -566,7 +495,7 @@ var gatesim = (function() {
         var t = this.network.time + tcd;
 
         // remove any pending propagation event that happens after tcd
-        if (this.pd_event && this.pd_event.t >= t) {
+        if (this.pd_event && this.pd_event.time >= t) {
             this.network.remove_event(this.pd_event);
             this.pd_event = undefined;
         }
@@ -576,7 +505,7 @@ var gatesim = (function() {
         // contaminated at the earlier possible time, i.e., keep the
         // earlier of the two contamination events
         if (this.cd_event) {
-            if (this.cd_event.t <= t) return;
+            if (this.cd_event.time <= t) return;
             this.network.remove_event(this.cd_event);
         }
 
@@ -588,7 +517,7 @@ var gatesim = (function() {
         var t = this.network.time + tpd + drive * this.capacitance;
 
         if (this.pd_event) {
-            if (lenient && this.pd_event.v == v && t >= this.pd_event.t) return;
+            if (lenient && this.pd_event.v == v && t >= this.pd_event.time) return;
             this.network.remove_event(this.pd_event);
         }
 
@@ -681,44 +610,25 @@ var gatesim = (function() {
 
     // for each logic gate provide [input-terminal-list,output-terminal,table]
     var logic_gates = {
-        'gates:and2': [
-            ['A', 'B'], 'Z', AndTable],
-        'gates:and3': [
-            ['A', 'B', 'C'], 'Z', AndTable],
-        'gates:and4': [
-            ['A', 'B', 'C', 'D'], 'Z', AndTable],
-        'gates:buffer': [
-            ['A'], 'Z', AndTable],
-        'gates:inv': [
-            ['A'], 'Z', NandTable],
-        'gates:mux2': [
-            ['S', 'D0', 'D1'], 'Y', Mux2Table],
-        'gates:mux4': [
-            ['S0', 'S1', 'D0', 'D1', 'D2', 'D3'], 'Y', Mux4Table],
-        'gates:nand2': [
-            ['A', 'B'], 'Z', NandTable],
-        'gates:nand3': [
-            ['A', 'B', 'C'], 'Z', NandTable],
-        'gates:nand4': [
-            ['A', 'B', 'C', 'D'], 'Z', NandTable],
-        'gates:nor2': [
-            ['A', 'B'], 'Z', NorTable],
-        'gates:nor3': [
-            ['A', 'B', 'C'], 'Z', NorTable],
-        'gates:nor4': [
-            ['A', 'B', 'C', 'D'], 'Z', NorTable],
-        'gates:or2': [
-            ['A', 'B'], 'Z', OrTable],
-        'gates:or3': [
-            ['A', 'B', 'C'], 'Z', OrTable],
-        'gates:or4': [
-            ['A', 'B', 'C', 'D'], 'Z', OrTable],
-        'gates:tristate': [
-            ['E', 'A'], 'Z', TristateBufferTable],
-        'gates:xor2': [
-            ['A', 'B'], 'Z', XorTable],
-        'gates:xnor2': [
-            ['A', 'B'], 'Z', XnorTable]
+        'and2': [['a', 'b'], 'z', AndTable],
+        'and3': [['a', 'b', 'c'], 'z', AndTable],
+        'and4': [['a', 'b', 'c', 'd'], 'z', AndTable],
+        'buffer': [['a'], 'z', AndTable],
+        'inv': [['a'], 'z', NandTable],
+        'mux2': [['s', 'd0', 'd1'], 'y', Mux2Table],
+        'mux4': [['s0', 's1', 'd0', 'd1', 'd2', 'd3'], 'y', Mux4Table],
+        'nand2': [['a', 'b'], 'z', NandTable],
+        'nand3': [['a', 'b', 'c'], 'z', NandTable],
+        'nand4': [['a', 'b', 'c', 'd'], 'z', NandTable],
+        'nor2': [['a', 'b'], 'z', NorTable],
+        'nor3': [['a', 'b', 'c'], 'z', NorTable],
+        'nor4': [['a', 'b', 'c', 'd'], 'z', NorTable],
+        'or2': [['a', 'b'], 'z', OrTable],
+        'or3': [['a', 'b', 'c'], 'z', OrTable],
+        'or4': [['a', 'b', 'c', 'd'], 'z', OrTable],
+        'tristate': [['e', 'a'], 'z', TristateBufferTable],
+        'xor2': [['a', 'b'], 'z', XorTable],
+        'xnor2': [['a', 'b'], 'z', XnorTable]
     };
 
     function LogicGate(network, type, name, table, inputs, output, properties, lenient) {
@@ -731,8 +641,9 @@ var gatesim = (function() {
         this.properties = properties;
         this.lenient = lenient;
 
-        for (var i = inputs.length - 1; i >= 0; i -= 1)
-        inputs[i].add_fanout(this);
+        for (var i = inputs.length - 1; i >= 0; i -= 1) {
+            inputs[i].add_fanout(this);
+        }
         output.add_driver(this);
 
         if (this.properties.cout === undefined) this.properties.cout = 0;
@@ -770,7 +681,12 @@ var gatesim = (function() {
         else if (inputs.length == 6) this.logic_eval = function() {
             return table[in0.v][in1.v][in2.v][in3.v][in4.v][in5.v][4];
         };
-        else throw name + ' is a LogicGate with more than 6 inputs!'; // shouldn't happen
+        else this.logic_eval = function() {
+            // handle gates with more than 6 inputs (like Bus)
+            var t = table;
+            for (var i = 0; i < inputs.length; i += 1) t = t[inputs[i].v];
+            return t[4];
+        };
     }
 
     LogicGate.prototype.initialize = function() {
