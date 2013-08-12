@@ -7,16 +7,22 @@ var Simulator = (function(){
     var mAllPlots = [];
     var mOptions;
     
+    /********************
+    Called when the device-level simulation button is pressed
+    ********************/
     function simulate(text, filename, div, error_callback){
         // input string, filename, callback
         Parser.parse(text, filename, function(data){run_simulation(data,div);},
                      error_callback, true); // reset = true
     }
     
+    /*********************
+    Run simulation: Take parsed data and extract all the useful bits, then run the simulation
+    *********************/
     function run_simulation(parsed,div) {
         div.empty();  // we'll fill this with results
         mDiv = div;
-        $('#graphScrollInner').width($('#graphScrollOuter').width());
+//        $('#graphScrollInner').width($('#graphScrollOuter').width());
         
         var netlist = parsed.netlist;
         var plots = parsed.plots;
@@ -24,7 +30,7 @@ var Simulator = (function(){
         mOptions = parsed.options;
         mPlotDefs = parsed.plotdefs;
         
-        mAllPlots = [];
+//        mAllPlots = [];
         
         if (netlist.length === 0) {
             div.prepend('<div class="alert alert-danger"> Empty netlist.'+
@@ -42,11 +48,11 @@ var Simulator = (function(){
             return;
         }
         
-        if (plots.length >= 4){
-            compactPlot = true;
-        } else {
-            compactPlot = false;
-        }
+//        if (plots.length >= 4){
+//            compactPlot = true;
+//        } else {
+//            compactPlot = false;
+//        }
         
         // set up the progress indicator and halt button for transient analysis
         var tranProgress = $('<div><span></span></br></div>');
@@ -159,12 +165,12 @@ var Simulator = (function(){
     
     // returns a generic plot placeholder div
     function get_plotdiv(){
-        var minHeight;
-        if (compactPlot){
-            minHeight = 80;
-        } else {
-            minHeight = 130;
-        }
+        var minHeight = 100;
+//        if (compactPlot){
+//            minHeight = 80;
+//        } else {
+//            minHeight = 130;
+//        }
         return $('<div class="placeholder" style="width:100%;height:90%;min-height:'+
                  minHeight+'px"></div>');
     }
@@ -180,21 +186,22 @@ var Simulator = (function(){
         else return "X";
     }
     
-    // turn a sequence of numbers into a hex number representing the logic values of each, in order
+    // turn a sequence of numbers into the hex value that represents each number's logic value in sequence
     function hex_logic(values, vil, vih){
         for (var v = 0; v < values.length; v += 1){
             values[v] = logic(values[v], vil, vih);
         }
         
         var new_vals = [];
-        // break into fours from the right end
+        // break into fours from the right end, since one hex digit is four binary digits
         while (values.length > 0){
             new_vals.unshift(values.splice(-4,4));
         }
         
         for (var i = 0; i < new_vals.length; i += 1){
+            // if any of the four digits is invalid, the current hex digit is invalid
             if (new_vals[i].indexOf("X") != -1) {
-                return "XXXX";
+                new_vals[i] = "X";
             } else {
                 var digit = new_vals[i].join('');
                 digit = parseInt(digit,2).toString(16);
@@ -214,13 +221,13 @@ var Simulator = (function(){
     ***************/
     function prepare_tran_data(plots){
         var results = mCurrent_results;
-//        var analysis = 
         
-        if (results === undefined) {
-            div.prepend('<div class="alert alert-danger">No results from the simulation.'+
-                        '.\<button class="close" data-dismiss="alert">&times;</button></div>');
-            return;
-        }
+        // this should never come up because this function is only called if results are defined
+//        if (results === undefined) {
+//            div.prepend('<div class="alert alert-danger">No results from the simulation.'+
+//                        '\<button class="close" data-dismiss="alert">&times;</button></div>');
+//            return;
+//        }
         
         // repeat for every set of plots
         for (var p = 0; p < plots.length; p += 1) {
@@ -243,6 +250,7 @@ var Simulator = (function(){
                 
                 var values = [];
                 
+                // check of it's a function, e.g. if something like L() or betaop() was asked for
                 var fn_pttn = /([^\(]+)\((.+)\)$/;
                 var matched_array = node.match(fn_pttn);
                 if (matched_array){
@@ -269,6 +277,8 @@ var Simulator = (function(){
                             if (fn_name == "L") {
                                 return lval;
                             } else {
+                                // look up the definition of the plot function and return the
+                                // appropriate string; if the index is out of range return "???"
                                 var nval = parseInt(lval,16);
                                 if (mPlotDefs[fn_name][nval]) return mPlotDefs[fn_name][nval];
                                 else return "???";
@@ -279,18 +289,17 @@ var Simulator = (function(){
                         
                     }
                 } else {
+                    // if no function was asked for, just get node values
                     values = results[node];
                 }
                 
-                // get the results for the given node
-//                var values = results[node];
+                // no values to plot for any given node
                 if (values === undefined) {
                     var novaldiv = get_novaldiv(node);
                     mDiv.prepend(novaldiv);
                     continue;
                 }
                 
-                // 'plot' will be filled with data
                 var plotdata = [];
                 for (var j = 0; j < values.length; j += 1) {
                     plotdata.push([results._time_[j], values[j]]);
@@ -299,6 +308,7 @@ var Simulator = (function(){
                 // boolean that records if the analysis asked for current through a node
                 var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
                 
+                /***************************** series object ************************************/
                 // add a series object to 'dataseries'
                 dataseries.push({
                     label: node,
@@ -306,18 +316,19 @@ var Simulator = (function(){
                     xUnits: 's',
                     yUnits: current ? 'A' : 'V'
                 });
+                /***************************** series object ************************************/
             }
             
-            if (dataseries.length == 0 /*|| (p == 0 && dataseries.length == 1)*/) {
+            if (dataseries.length == 0) {
                 continue;
             }
             
             var xmin = results._time_[0];
             var xmax = results._time_[plotdata.length-1];
             
-            // prepare a div
-            var wdiv = $('<div class="plot-wrapper"></div>');
-            addCloseBtn(wdiv);
+//            // prepare a div
+//            var wdiv = $('<div class="plot-wrapper"></div>');
+//            addCloseBtn(wdiv);
 //            if (compactPlot){
 //                wdiv.css("margin-bottom",'-10px');
 //            }
@@ -326,12 +337,12 @@ var Simulator = (function(){
 //                ldiv = $('<div class="plot-legend"></div>');
 //                wdiv.append(ldiv);
 //            }
-            var plotdiv = get_plotdiv();
-            wdiv.append(plotdiv);
-            div.append(wdiv);
+//            var plotdiv = get_plotdiv();
+//            wdiv.append(plotdiv);
+//            div.append(wdiv);
             
             /************************ Plot function **********************************/
-            tran_plot(plotdiv,dataseries); 
+            tran_plot(dataseries /* ... */); 
             /************************ Plot function **********************************/
             
 //            // customize options
@@ -388,8 +399,7 @@ var Simulator = (function(){
                 var magnitudes = results[node].magnitude;
                 var phases = results[node].phase;
                 
-                // 'mplot' will be filled with magnitude data; 'pplot' will be filled with
-                // phase data
+                // 'm' for magnitude, 'p' for phase
                 var mplotdata = [];
                 var pplotdata = [];
                 for (var j = 0; j < magnitudes.length; j += 1) {
@@ -398,6 +408,7 @@ var Simulator = (function(){
                     pplotdata.push([log_freq, phases[j]]);
                 }
                 
+                /***************************** series object ************************************/
                 // push both series objects into their respective lists
                 mag_plots.push({
                     label: "Node " + node,
@@ -411,18 +422,19 @@ var Simulator = (function(){
                     xUnits: ' log Hz',
                     yUnits: ' deg'
                 });
+                /***************************** series object ************************************/
             }
             
             var xmin = mag_plots[0].data[0][0];
             var len = mag_plots[0].data.length;
             var xmax = mag_plots[0].data[len-1][0];
             
-            // prepare divs for magnitude graph
-            var div1 = $('<div class="plot-wrapper"></div>');
-            addCloseBtn(div1);
-            var magplotdiv = get_plotdiv();
-            div.append(div1);
-            div1.append(magplotdiv);
+//            // prepare divs for magnitude graph
+//            var div1 = $('<div class="plot-wrapper"></div>');
+//            addCloseBtn(div1);
+//            var magplotdiv = get_plotdiv();
+//            div.append(div1);
+//            div1.append(magplotdiv);
             
 //            // customize options for magnitude graph
 //            var options = $.extend(true, {}, default_options);
@@ -435,15 +447,15 @@ var Simulator = (function(){
 //            var plotObj = $.plot(plotDiv, mag_plots, options);
 //            graph_setup(div1, plotObj);
 //            
-            // prepare divs for phase graphs
-            var div2 = $('<div class="plot-wrapper"></div>');
-            addCloseBtn(div2);
-            phaseplotdiv = get_plotdiv();
-            div.append(div2);
-            div2.append(phaseplotdiv);
+//            // prepare divs for phase graphs
+//            var div2 = $('<div class="plot-wrapper"></div>');
+//            addCloseBtn(div2);
+//            phaseplotdiv = get_plotdiv();
+//            div.append(div2);
+//            div2.append(phaseplotdiv);
             
             /************************ Plot function **********************************/
-            ac_plot(magplotdiv, phaseplotdiv, mag_plots, phase_plots);
+            ac_plot(mag_plots, phase_plots /* ... */);
             /************************ Plot function **********************************/
 //            
 //            // customize options for phase graph
@@ -485,6 +497,7 @@ var Simulator = (function(){
                     index2 += 1;
                 }
         
+                // no values to plot for the given node
                 if (values === undefined) {
                     var novaldiv = get_novaldiv(node);
                     div.prepend(novaldiv);
@@ -500,11 +513,13 @@ var Simulator = (function(){
                 var name = current ? node : "Node " + node; 
                 if (sweep2 !== undefined) name += " with " + sweep2.source + "=" + x2;
                 
+                /***************************** series object ************************************/
                 dataseries.push({label: name,
                                  data: plotdata,
                                  lineWidth: 5,
                                  yUnits: current ? 'A' : 'V'
                                 });
+                /***************************** series object ************************************/
                 if (sweep2 === undefined || index2 >= results.length) break;
             }
         }
@@ -512,14 +527,14 @@ var Simulator = (function(){
         var xmin = x[0];
         var xmax = x[values.length-1];
         
-        var wdiv = $('<div class="plot-wrapper"></div>');
-        addCloseBtn(wdiv);
-        var plotdiv = get_plotdiv();
-        wdiv.append(plotdiv);
-        div.append(wdiv);
+//        var wdiv = $('<div class="plot-wrapper"></div>');
+//        addCloseBtn(wdiv);
+//        var plotdiv = get_plotdiv();
+//        wdiv.append(plotdiv);
+//        div.append(wdiv);
         
         /************************ Plot function **********************************/
-        dc_plot(plotdiv,dataseries);
+        dc_plot(dataseries, /* ... */);
         /************************ Plot function **********************************/
         
         
@@ -535,15 +550,15 @@ var Simulator = (function(){
 //        graph_setup(wdiv, plotObj);
     }
     
-    function tran_plot(plotdiv,dataseries){
+    function tran_plot(dataseries){
         console.log("data:",dataseries);
     }
     
-    function ac_plot(mdiv,pdiv,mdata,pdata){
+    function ac_plot(mdata,pdata){
         console.log("mdata:",mdata,"pdata:",pdata);
     }
     
-    function dc_plot(plotdiv,dataseries){
+    function dc_plot(dataseries){
         console.log("data:",dataseries);
     }
     
