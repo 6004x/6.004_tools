@@ -451,10 +451,10 @@ Parse
         analyses = [];
         used_names = [];
         plotdefs = {};
-        netlist = [/*{type:'ground',
+        netlist = [{type:'ground',
                     ports:['gnd'],
                     connections:['gnd'],
-                    properties:{}}*/];
+                    properties:{}}];
         subcircuits = {_top_level_:{name:"_top_level_",
                                     ports:[],
                                     properties:{},
