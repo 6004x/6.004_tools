@@ -2,8 +2,10 @@ var Simulator = (function(){
     var mAnalyses;
     var mCurrent_analysis;
     var mCurrent_results;
+    var mPlotDefs;
     var mDiv;
     var mAllPlots = [];
+    var mOptions;
     
     function simulate(text, filename, div, error_callback){
         // input string, filename, callback
@@ -17,24 +19,26 @@ var Simulator = (function(){
         $('#graphScrollInner').width($('#graphScrollOuter').width());
         
         var netlist = parsed.netlist;
-        mAnalyses = parsed.analyses;
         var plots = parsed.plots;
+        mAnalyses = parsed.analyses;
+        mOptions = parsed.options;
+        mPlotDefs = parsed.plotdefs;
         
         mAllPlots = [];
         
         if (netlist.length === 0) {
             div.prepend('<div class="alert alert-danger"> Empty netlist.'+
-                        '.\<button class="close" data-dismiss="alert">&times;</button></div>');
+                        '\<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         if (mAnalyses.length === 0) {
             div.prepend('<div class="alert alert-danger"> No analyses requested.'+
-                        '.\<button class="close" data-dismiss="alert">&times;</button></div>');
+                        '\<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         if (plots.length === 0) {
             div.prepend('<div class="alert alert-danger"> No plots requested.'+
-                        '.\<button class="close" data-dismiss="alert">&times;</button></div>');
+                        '\<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         
@@ -76,14 +80,21 @@ var Simulator = (function(){
 //                                $('#results').data("current",results);
                                 Checkoff.setResults(mCurrent_results);
                                 
-                                prepare_tran_data(plots);
+                                try{
+                                    prepare_tran_data(plots);
+                                } catch (err) {
+                                    tranProgress.hide();
+                                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                                '.\<button class="close" data-dismiss="alert">&times;'+
+                                                '</button></div>');
+                                }
                             }
                             return tranHalt;
-                        });
+                        }, mOptions);
                     } catch (err) {
                         tranProgress.hide();
                         div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                    '.\<button class="close" data-dismiss="alert">&times;</button></div>')
+                                    '.\<button class="close" data-dismiss="alert">&times;</button></div>');
                     }
                     break;
                     
@@ -91,7 +102,8 @@ var Simulator = (function(){
                     try {
                         mCurrent_results = cktsim.ac_analysis(netlist, mCurrent_analysis.parameters.fstart,
                                                          mCurrent_analysis.parameters.fstop,
-                                                         mCurrent_analysis.parameters.ac_source_name);
+                                                         mCurrent_analysis.parameters.ac_source_name,
+                                                         mOptions);
 //                        $('#results').data("current",mCurrent_results);
                         Checkoff.setResults(mCurrent_results);
                         
@@ -105,7 +117,8 @@ var Simulator = (function(){
                 case 'dc':
                     try {
                         mCurrent_results = cktsim.dc_analysis(netlist,mCurrent_analysis.parameters.sweep1,
-                                                             mCurrent_analysis.parameters.sweep2);
+                                                             mCurrent_analysis.parameters.sweep2,
+                                                             mOptions);
                         Checkoff.setResults(mCurrent_results);
                         
                         prepare_dc_data(plots);
@@ -118,7 +131,7 @@ var Simulator = (function(){
             }
         }
         catch (err) {
-            throw new Parser.CustomError(err,mCurrent_analysis.line,0);
+            throw new Parser.CustomError(err,mCurrent_analysis.token);
         }
     }
     
@@ -156,17 +169,18 @@ var Simulator = (function(){
                  minHeight+'px"></div>');
     }
     
-    
+    // return "0", "1", or "X" based on the given thresholds, or default if none.
     function logic(value, vil, vih){
         if (!vil) vil = 0.6;
         if (!vih) vih = 2.7;
-        console.log("vil:",vil,"vih:",vih);
+//        console.log("vil:",vil,"vih:",vih);
         
         if (value < vil) return "0";
         else if (value > vih) return "1";
         else return "X";
     }
     
+    // turn a sequence of numbers into a hex number representing the logic values of each, in order
     function hex_logic(values, vil, vih){
         for (var v = 0; v < values.length; v += 1){
             values[v] = logic(values[v], vil, vih);
@@ -179,13 +193,13 @@ var Simulator = (function(){
         }
         
         for (var i = 0; i < new_vals.length; i += 1){
-            console.log("new vals:",new_vals[i]);
-            var digit = new_vals[i].join('');
-            digit = parseInt(digit,2)
-            digit = digit.toString(16);
-            console.log("digit:",digit);
-            if (digit == "NaN") new_vals[i] = "X";
-            else new_vals[i] = digit;
+            if (new_vals[i].indexOf("X") != -1) {
+                return "XXXX";
+            } else {
+                var digit = new_vals[i].join('');
+                digit = parseInt(digit,2).toString(16);
+                new_vals[i] = digit;
+            }
         }
         
         return "0x"+new_vals.join('').toUpperCase();
@@ -227,22 +241,45 @@ var Simulator = (function(){
             for (var i = 0; i < plot_nodes.length; i += 1) {
                 var node = plot_nodes[i];
                 
-                var values;
+                var values = [];
                 
                 var fn_pttn = /([^\(]+)\((.+)\)$/;
                 var matched_array = node.match(fn_pttn);
                 if (matched_array){
                     var fn_name = matched_array[1];
-                    var fn_args = matched_array[2].split(/[,\s]\s*/);
+                    var arg_nodes = matched_array[2].split(/[,\s]\s*/);
                     
-                    console.log('fn:',fn_name,"args:",fn_args);
+                    console.log('fn:',fn_name,"args:",arg_nodes);
                     
                     if (fn_name == 'I'){
                         // continue on
                         values = results[node];
-                    } else if (fn_name == 'L') {
+                    } else {
+                        if (fn_name.toUpperCase() != 'L' && !(fn_name in mPlotDefs)) {
+                            throw "No definition for plot function "+fn_name;
+                        } 
+                        values = results[arg_nodes[0]].slice(0);
+                        values = values.map(function(val,index){
+                            var tempval = [];
+                            for (var j = 0; j < arg_nodes.length; j += 1){
+                                tempval.push(results[arg_nodes[j]][index]);
+                            }
+                            var lval = hex_logic(tempval, mOptions.vil, mOptions.vih);
+                            
+                            if (fn_name == "L") {
+                                return lval;
+                            } else {
+                                var nval = parseInt(lval,16);
+                                if (mPlotDefs[fn_name][nval]) return mPlotDefs[fn_name][nval];
+                                else return "???";
+                            }
+                        });
+                        
+                        
                         
                     }
+                } else {
+                    values = results[node];
                 }
                 
                 // get the results for the given node
@@ -496,6 +533,18 @@ var Simulator = (function(){
 //        
 //        var plotObj = $.plot(plotdiv, dataseries, options);
 //        graph_setup(wdiv, plotObj);
+    }
+    
+    function tran_plot(plotdiv,dataseries){
+        console.log("data:",dataseries);
+    }
+    
+    function ac_plot(mdiv,pdiv,mdata,pdata){
+        console.log("mdata:",mdata,"pdata:",pdata);
+    }
+    
+    function dc_plot(plotdiv,dataseries){
+        console.log("data:",dataseries);
     }
     
     /*********************

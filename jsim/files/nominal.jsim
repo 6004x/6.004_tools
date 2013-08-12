@@ -1,0 +1,6 @@
+.global gnd vdd
+VDD vdd gnd 3.3v
+
+.options vil=0.6 vih=2.7
+
+// Three very important lines of code :)

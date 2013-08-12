@@ -451,7 +451,10 @@ Parse
         analyses = [];
         used_names = [];
         plotdefs = {};
-        netlist = [];
+        netlist = [/*{type:'ground',
+                    ports:['gnd'],
+                    connections:['gnd'],
+                    properties:{}}*/];
         subcircuits = {_top_level_:{name:"_top_level_",
                                     ports:[],
                                     properties:{},
@@ -682,7 +685,7 @@ Parse
     Read tran: transient analyses
     *********************/
     function read_tran(line){
-        var tran_obj = {type:'tran',parameters:{},line:line[0].line};
+        var tran_obj = {type:'tran',parameters:{},token:line[0]};
         if (line.length != 2){
             throw new CustomError("One argument expected: .tran tstop", line[1]);
         }
@@ -705,7 +708,7 @@ Parse
     *********************/
     function read_dc(line){
         line.shift();
-        var dc_obj = {type:'dc',parameters:{sweep1:{},sweep2:{}},line:line[0].line};
+        var dc_obj = {type:'dc',parameters:{sweep1:{},sweep2:{}},token:line[0]};
 //        var param_names = ["source1","start1","stop1","step1",
 //                           "source2","start2","stop2","step2"];
         var param_names = ["source","start","stop","step"]
@@ -810,7 +813,7 @@ Parse
     Read AC: AC analysis
     ************************/
     function read_ac(line){
-        var ac_obj = {type:'ac',parameters:{},line:line[0].line};
+        var ac_obj = {type:'ac',parameters:{},token:line[0]};
         
         if (line.length != 4){
             throw new CustomError("Three arguments expected: "+
@@ -1250,7 +1253,7 @@ Device readers: each takes a line of tokens and returns a device object,
         
         if (line[3].type == "number"){
             try{
-                obj.properties.value = parse_number(line[3].token);
+                obj.properties.value = String(parse_number(line[3].token));
             } catch (err) {
                 throw new CustomError("Number Expected",line[3].line,line[3].column);
             }
@@ -1273,7 +1276,7 @@ Device readers: each takes a line of tokens and returns a device object,
             }
             
             obj.properties.value = fn_name+"("+final_fn_args.join(",")+")";
-            console.log("object:",obj);
+//            console.log("object:",obj);
         }
 //        } else 
 //        if (line[3].type != "function" && line[3].type != "number"){
