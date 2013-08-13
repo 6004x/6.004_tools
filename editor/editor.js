@@ -351,7 +351,7 @@ var Editor = function(container, mode) {
         mToolbar = new Toolbar(mToolbarHolder);
         // Add some basic button groups
         self.addButtonGroup([
-            new ToolbarButton('icon-hdd', save_current_document, "Save current file"),
+            new ToolbarButton('Save', save_current_document, "Save current file"),
             new ToolbarButton('Save All', save_all_documents, "Save all open buffers")
         ]);
         mContainer.append(mToolbarHolder);
@@ -365,7 +365,7 @@ var Editor = function(container, mode) {
 
         // Do some one-time setup.
         if(!Editor.IsSetUp) {
-            CodeMirror.commands.save = do_save;
+            CodeMirror.commands.save = function() { do_save(); };
             CodeMirror.commands.autocomplete = function(cm) {
                 CodeMirror.showHint(cm, mAutocompleter.complete, {completeSingle: false});
             };
@@ -382,7 +382,7 @@ var Editor = function(container, mode) {
     };
 
     var do_save = function(document) {
-        document = document || mCurrentDocument;
+        if(!document) document = mCurrentDocument;
         if(!document) return false;
         FileSystem.saveFile(document.name, document.cm.getValue(), function() {
             // Mark the file as clean.
