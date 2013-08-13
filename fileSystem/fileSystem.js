@@ -53,6 +53,7 @@ var FileSystem= function(){
                         fileTree = data.data;
                         allFiles=[];
                         allFolders=[];
+                        // console.log(fileTree);
                         console.log(fileTree);
                         makeListOfFiles(fileTree,'');
 
@@ -75,18 +76,20 @@ var FileSystem= function(){
             //callback will return with a file object
         }
     }
-    function makeListOfFiles(currTree, path){
+    function makeListOfFiles(currTree){
         
-        for(key in currTree){
+        for(key in currTree.folders){
+            var folder = currTree.folders[key]
             if(key.indexOf('~') > -1){
-                // console.log(key)
-            } else if(isFile(key, currTree[key])){
-                allFiles.push(path+'/'+key);
+                console.log(key + 'metadata')
+            } else {
+                allFolders.push(folder.path);
+                makeListOfFiles(folder);
             }
-            else{
-                allFolders.push(path+'/'+key);
-                makeListOfFiles(currTree[key], path+'/'+key);
-            }
+        }
+        for (key in currTree.files){
+            var file = currTree.files[key]
+            allFiles.push(file.path);
         }
     }
     function isFile(name, contents){
@@ -98,13 +101,12 @@ var FileSystem= function(){
         // console.log('writing tree to local storage');
 
         //todo, divide up the data, make it asynchronous
-        //indexedDB?
         //var savedTree=traverseTree()
-        for(var i=0; i<openFiles.length; i++){
+        for(var i=0; i < openFiles.length; i++){
             var file = traverseTree(openFiles[i], function(i, file, pathname, pathlength){
                 
                 //localStorage.setItem('6004file'+pathname, JSON.stringify(fileTree));    
-
+                console.log(pathname);
                 return true;
             });
             localStorage.setItem('6004file'+openFiles[i], JSON.stringify(file));
@@ -146,7 +148,8 @@ var FileSystem= function(){
     }
     function getFileFromTree(fileName){
         var finalTree = traverseTree(fileName, function(i, tree){return true;} );
-        console.log(finalTree);
+        // console.log(finalTree);
+        //TODO fix, length does not work for objects
         if(finalTree.length == 0)
             return false;
         //else there is a file
@@ -172,12 +175,10 @@ var FileSystem= function(){
     //SERVER FUNCTIONS
     this.getFile = function(fileName, callback, callbackFailed){
         //username or some sort of authentication
-        console.log(fileName);
+        console.log('getting '+fileName);
         var file = null;
-        console.log(fileTree);
         if(Object.keys(fileTree).length > 0)
             file = getFileFromTree(fileName);
-        
         if(online){
             sendAjaxRequest(fileName,null, 'json', 'getFile', function(data, status){
                 if(status=='success'){
@@ -205,7 +206,8 @@ var FileSystem= function(){
             sendAjaxRequest(fileName, relativeFile, 'json', 'getRelative', function(data, status){
                 console.log(data);
                 callback(data);
-            }, function(data, status){
+            });
+            function getRelativeLocal(){
                 console.log('failure');
                 var pathArray = fileName.match(delimRegExp);
                 var relPathArray = relativeFile.match(delimRegExp);
@@ -266,7 +268,7 @@ var FileSystem= function(){
                 //     }
                 // }, callbackFailed);
 
-            });
+            }
         }
     }
     this.saveFile = function(fileName, fileData, callback, callbackFailed){
@@ -333,7 +335,8 @@ var FileSystem= function(){
         if(!fileData)
             fileData='';
 
-
+        if(filePath.substring(0,1)!=='/')
+            filePath = '/'+filePath;
         url=mServer+filePath;
         var data={query:query, name:filePath, data:fileData}
         var req=$.ajax({
@@ -365,6 +368,7 @@ var FileSystem= function(){
             sendAjaxRequest('/', null, "json", "getUser", function(data){
                 mUsername = data.user;
                 console.log(data);
+                online = true;
                 return mUsername;
             })
         else
@@ -372,10 +376,14 @@ var FileSystem= function(){
     };
     this.isFile = function(fileName){
         // console.log(fileName+' check if in allfiles');
+        if(fileName.substring(0,1)!=='/')
+            fileName = '/'+fileName;
         return allFiles.indexOf(fileName) !== -1;
     }
     this.isFolder = function(folderName){
         // console.log(folderName+' check if in allFolders');
+        if(folderName.substring(0,1)!=='/')
+            folderName = '/'+folderName;
         return allFolders.indexOf(folderName) !== -1;
     }
     this.setup = function(server){

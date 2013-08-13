@@ -1,6 +1,6 @@
 
 i.open_indicator{
-    margin: 2px 10px 2px 2px ;
+    margin: 2px 2px 2px 2px ;
 }
 li.file_name:hover{
     background-color: lightyellow;
@@ -8,31 +8,40 @@ li.file_name:hover{
 .folder_button_div span.btn{
     margin : 0;
 }
-.folderName span{
-    margin-left : 5px;
-    font : bold sans-serif;
+.popover-title { display: none; }
+.popover .arrow {display:none;}
+
+.folder_name span{
+    margin-left : 0px;
+    font-weight: bold;
     color : black;
 }
 .file_name .file_button{
     border: 0px;
 }
-input.input_file_name[type="text"], li.input_file_name button{
-   height: 20px;
-   font-size: 14px;
-   line-height: 20px;
-   padding : 2px;
-   min-height : 10px;
-   
-}
-li.input_file_name button{
-    border-width : 0px;
-    padding: 2px;
-    padding-top: 0px;
-}
-button{
 
-    border : 0px;
+input.input_file_name[type="text"]{
+   height: 20px;
+   font-size: 12px;
+   line-height: 20px;
+   padding : initial;
+   min-height : 10px;
+   border : solid 1px black;
+   margin : initial;
+   border-radius : 3px 0px 0px 3px ;
+   border : solid 1px gray;
 }
+div.input_file_name button.add-on{
+    padding-top : 1px;
+    padding-bottom : 7px;
+    border : initial;
+    border : solid 1px red;
+    margin : initial;
+    font-size: 12px;
+    border-radius : 0px 3px 3px 0px ;
+    height: 22px;
+}
+
 .file_button_div,
 .folder_button_div{
 	text-align:right;
@@ -41,8 +50,8 @@ button{
     right : 0;
 	display : inline;
     vertical-align : center;
+    background-color: inherit;
 }
-/*=======*/
 .file_button_div{
 	text-align:right;
     float:none;
@@ -51,12 +60,10 @@ button{
     top:0;
 	display:inline-block;
     vertical-align: center;
-    background-color: lightyellow;
 }
 .file_name:hover .file_button_div{
    display:block;
    position:absolute;
-/*>>>>>>> 0d558828b0431ce61bac1dbdd1a0482d190bcf81*/
 }
 .file_button, .folder_button {
     padding: 0px;
@@ -65,37 +72,24 @@ button{
     display: none;
 }
 .file_name:hover .file_button,
-.folderName:hover .folder_button {
+.folder_name:hover .folder_button {
     display: inline;
 }
 .file_name,
-.folderName {
+.folder_name {
     cursor: pointer;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     position: relative;
-}
-
-li.rootFolderName{
-    background-color:rgba(255, 192, 0, .8);
-    position : relative;
-   /* right : 0;*/
-}
-.folderContents:first-child li.rootFolderName{
-    position:relative;
-    right:0;
-}
-li.rootFolderName:hover{
-    background-color:rgba(50, 101, 255, .8);
-}
+}   
 .file_name{
     vertical-align: center;
     position : relative;
 }
 .file_name:hover {
-    background-color: lightblue;
+    /*background-color: lightblue;*/
 }
 .sidebar-nav li{
 	list-style-type: none;
@@ -111,16 +105,18 @@ li.rootFolderName:hover{
     text-align: center;
     width: 100%;
 }
-.filePaths{
+.file_paths{
     padding:0px;
+    overflow-x : auto; 
+    overflow-y : auto;
 }	
-.folderName {
+.folder_name {
     z-index:3;
 }
-.folderName:hover{
+.folder_name:hover{
     background-color:lightblue;
 }
-.folderContents{
+.folder_contents{
     border:none;
     border-radius: 4px;
     z-index: 2;
@@ -136,4 +132,7 @@ li.rootFolderName:hover{
 }
 .hover_drop{
     border-color: orangered;
+}
+.editor_div{
+    width: 100%;
 }

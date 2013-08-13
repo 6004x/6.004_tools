@@ -9,9 +9,42 @@ html {
     overflow: hidden;
 }
 
-/* This fixes the several pixel jump when toggling split screen caused by the right buttons being too tall. */
+/* Thin-ish yellow header with centred title */
 .masthead {
-    height: 55px;
+    height: 40px;
+    margin-bottom:0px;
+    background-color: #FED881; /* A paler shade of the official colour. */
+    margin-top:0px;
+    padding-top:0px;
+    text-align:center;
+}
+
+.masthead h1 {
+    margin-top:0px;
+    padding-top: 0px;
+    line-height: 40px;
+}
+
+.masthead .nav {
+    margin-bottom:5px;
+}
+
+/* Nav pills should be black because blue on yellow is ugly. */
+.masthead .nav-pills {
+    padding-top: 2px;
+    margin-bottom: 0;
+}
+.masthead .nav-pills > li > a:hover {
+    background-color: white;
+}
+
+.masthead .nav-pills > li > a {
+    color: #444;
+}
+
+.masthead .nav-pills > li.active > a {
+    background-color: #444;
+    color: white;
 }
 
 /* Sidebar sizing */
@@ -43,22 +76,22 @@ html {
 .split-holder {
     float: left;
     overflow: hidden;
-    border-top: 1px solid #aaa;
 }
 
 .split-splitter {
     float: left;
     width: 10px;
     cursor: col-resize;
-    border-top: 1px solid #aaa;
 }
 
 .split-splitter > div {
     margin-left: auto;
     margin-right: auto;
-    width: 1px;
+    width: 2px;
     background-color: #aaa;
     height: 100%;
+/*    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;*/
 }
 
 /* Wrapping toolbars is bad. */

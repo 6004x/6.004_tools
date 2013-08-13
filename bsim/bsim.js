@@ -35,12 +35,11 @@ $(function() {
         }
     });
 
-
     // Make an editor
     var editor = new Editor('#editor', 'uasm');
 
     // Filesystem tree thing
-    FileSystem.setup('mattpf', 'https://6004.mattpf.net:6004/');
+    FileSystem.setup('https://6004.mattpf.net:6004/');
     Folders.setup('#filetree', editor, 'uasm');
 
     var do_assemble = function() {
@@ -88,8 +87,7 @@ $(function() {
 
     // Add some buttons to it
     editor.addButtonGroup([new ToolbarButton('Assemble', do_assemble, 'Runs your program!')]);
-    // And a couple of tabs.
-    editor.openTab(null, '');
+
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 90); // Set height to window height minus title.
     }
@@ -126,7 +124,9 @@ $(function() {
     });
 
     new BSim.Beta.ErrorHandler(beta);
-    new BSim.SchematicView($('svg.schematic'), beta);
+    var schematic = new BSim.SchematicView($('svg.schematic'), beta);
+    split.on('resize', BSim.SchematicView.Scale);
+    $(window).resize(BSim.SchematicView.Scale);
 
     // Work around weird sizing bug.
     _.delay(function() {

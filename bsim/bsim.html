@@ -6,6 +6,7 @@
         <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script src="../fileSystem/external/jquery-ui.js"></script>
         <script src="../editor/external/codemirror.js"></script>
         <script src="../editor/external/radix.js"></script>
         <script src="../editor/toolbar.js"></script>
@@ -37,6 +38,7 @@
         <script src="verify.js"></script>
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
         <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
         <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
         <link rel="stylesheet" type="text/css" href="../editor/common.css">
         <link rel="stylesheet" type="text/css" href="bsim.css">
@@ -51,6 +53,7 @@
                     <li id="split_pane"><a>Split</a></li>
                     <li id="maximise_simulation"><a>Simulation</a></li>
                 </ul>
+                <a href="http://6004.mit.edu"><img src="../editor/title.gif" width=250 class="pull-left"></a>
                 <h1>BSim</h1>
             </div>
             <div id="split-container">
@@ -72,21 +75,33 @@
                                 <div class="memory-key">
                                     <ul>
                                         <li><span class="read"></span> Recent reads</li>
-                                        <li><span class="write"></span> Recent writes</li>
                                     </ul>
                                 </div>
                             </div>
                             <div class="stack-holder">
                                 Stack
                                 <div class="stack" data-height="398"></div>
+                                <div class="memory-key">
+                                    <ul>
+                                        <li><span class="write"></span> Recent writes</li>
+                                    </ul>
+                                </div>
                             </div>
                             <div class="tty"></div>
                         </div>
                     </div>
                     <div id="schematic-view" style="display: none;">
                         <div class="program-controls"></div>
-                        <div style="position: relative">
-                            <svg height="700" width="1000" class="schematic">
+                        <div style="position: relative" id="schematic-holder">
+                            <svg height="600" width="940" class="schematic">
+                                <g class="mux pcsel permanent" transform="translate(10, 25)">
+                                    <g class="mux-selector">
+                                        <text style="text-anchor: end;" x="50" y="11">PCSEL=<tspan id="pcsel-value">3</tspan></text>
+                                        <polyline points="50,7 60,7" />
+                                        <polyline points="53,3 60,7 53,11" />
+                                    </g>
+                                    <polygon points="60,0 180,0 175,15 65,15" />
+                                </g>
                                 <g class="pcsel4 path" transform="translate(15)">
                                     <text x="65" y="10" class="path-target">8</text>
                                     <polyline points="65,10 65,25" />
@@ -118,21 +133,13 @@
                                     <polyline points="61,18 65,25 69,18" />
                                     <text x="65" y="37" class="path-target">0</text>
                                 </g>
-                                <g class="mux pcsel permanent" transform="translate(10, 25)">
-                                    <g class="mux-selector">
-                                        <text style="text-anchor: end;" x="50" y="11">PCSEL=<tspan id="pcsel-value">3</tspan></text>
-                                        <polyline points="50,7 60,7" />
-                                        <polyline points="53,3 60,7 53,11" />
-                                    </g>
-                                    <polygon points="60,0 190,0 185,15 65,15" />
-                                </g>
                                 <g class="pc permanent" transform="translate(90, 40)">
                                     <polyline points="45,0 45,15" />
                                     <polyline points="41,8 45,15 49,8" />
-                                    <foreignObject x="-5" y="15" width="100" height="20">
-                                        <p style="text-align: center;"><span class="pc-label">PC:</span><span class="pc-value"></span></p>
-                                    </foreignObject>
                                     <rect x="-5" y="15" width="100" height="20" class="border" />
+                                    <foreignObject x="-5" y="15" width="100" height="20">
+                                        <p style="text-align: center;"><span class="pc-label">PC:</span><span class="pc-value">00000000</span></p>
+                                    </foreignObject>
                                     <text x="50" y="12" class="path-value pcsel-out-value">80000010</text>
                                 </g>
                                 <g class="instructions permanent" transform="translate(135,55)">
@@ -152,14 +159,6 @@
                                 </g>
                                 <g class="path asel1 bsel1 wasel0" transform="translate(135,55)">
                                     <polyline points="235,140 235,150" />
-                                </g>
-                                <g class="path bsel1" transform="translate(135,55)">
-                                    <polyline points="235,150 235,352 442,352" />
-                                    <polyline points="448,352 570,352 570,374" />
-                                    <polyline points="566,367 570,374 574,367" />
-                                    <text x="570" y="387">1</text>
-                                    <text x="565" y="347" class="path-value bsel1-value" style="text-anchor: end;">hello</text>
-                                    <text x="240" y="348" style="text-anchor: start;">C:[15:0]</text>
                                 </g>
                                 <g class="mux ra2sel1 ra2sel0 ra2sel" transform="translate(710, 160)">
                                     <g class="mux-selector">
@@ -187,6 +186,17 @@
                                 <g class="path ra2sel0 ra2sel1" transform="translate(570,141)">
                                     <polyline points="0,0 150,0" />
                                 </g>
+                                <g class="mux wasel werf1" transform="translate(435,200)">
+                                    <polygon points="0,0 20,10 20,50 0,60" />
+                                    <g class="mux-selector">
+                                        <text x="10" y="77" style="text-anchor: middle;">WASEL=<tspan id="wasel-value">1</tspan></text>
+                                        <polyline points="10,56 10,66" />
+                                        <polyline points="6,63 10,56 14,63" />
+                                    </g>
+                                    <polyline points="20,30 45,30" />
+                                    <polyline points="37,26 45,30 37,34" />
+                                    <text x="21" y="28" class="path-value raw-value">1F</text>
+                                </g>
                                 <g class="path wasel0" transform="translate(370,205)">
                                     <polyline points="0,0 10,10 65,10" />
                                     <polyline points="58,6 65,10 58,14" />
@@ -198,17 +208,6 @@
                                     <polyline points="15,8 25,8" />
                                     <polyline points="18,4 25,8 18,12" />
                                     <text x="32" y="12">1</text>
-                                </g>
-                                <g class="mux wasel werf1" transform="translate(435,200)">
-                                    <polygon points="0,0 20,10 20,50 0,60" />
-                                    <g class="mux-selector">
-                                        <text x="10" y="77" style="text-anchor: middle;">WASEL=<tspan id="wasel-value">1</tspan></text>
-                                        <polyline points="10,56 10,66" />
-                                        <polyline points="6,63 10,56 14,63" />
-                                    </g>
-                                    <polyline points="20,30 45,30" />
-                                    <polyline points="37,26 45,30 37,34" />
-                                    <text x="21" y="28" class="path-value raw-value">1F</text>
                                 </g>
                                 <g class="address-adder asel1 pcsel1 process" transform="translate(250, 150)">
                                     <polyline points="-35,0 55,0 55,37 36,37" />
@@ -234,12 +233,6 @@
                                 <g class="path pcsel0 pcsel1 asel1" transform="translate(135,150)">
                                     <polyline points="0,0 80,0" />
                                 </g>
-                                <g class="wdsel0 path" transform="translate(135,235)">
-                                    <polyline points="0,-86 0,310 470,310 470,325" />
-                                    <polyline points="466,318 470,325 474,318" />
-                                    <text x="468" y="306" class="path-value pc-plus4-value" style="text-anchor: end;">80000004</text>
-                                    <text x="470" y="338" class="path-target">0</text>
-                                </g>
                                 <g class="mux wdsel werf1" transform="translate(585,561)">
                                     <g class="mux-selector">
                                         <text style="text-anchor: end;" x="0" y="11">WDSEL=<tspan id="wdsel-value">0</tspan></text>
@@ -248,11 +241,17 @@
                                     </g>
                                     <polygon points="10,0 90,0 85,15 15,15" />
                                 </g>
+                                <g class="wdsel0 path" transform="translate(135,235)">
+                                    <polyline points="0,-86 0,310 470,310 470,325" />
+                                    <polyline points="466,318 470,325 474,318" />
+                                    <text x="468" y="306" class="path-value pc-plus4-value" style="text-anchor: end;">80000004</text>
+                                    <text x="470" y="338" class="path-target">0</text>
+                                </g>
                                 <g class="regfile permanent" transform="translate(481,190)">
+                                    <rect x="0" y="0" width="358" height="178" />
                                     <foreignObject x="0" y="0" width="358" height="178">
                                         <div class="regfile"></div>
                                     </foreignObject>
-                                    <rect x="0" y="0" width="358" height="178" />
                                     <!-- WERF input -->
                                     <g class="mux-selector">
                                         <polyline points="359,100 370,100" />
@@ -260,7 +259,36 @@
                                         <text x="371" y="104" style="text-anchor: start;">WERF=<tspan id="werf-value">1</tspan></text>
                                     </g>
                                 </g>
+                                <g class="alu wdsel1 wdsel2 wr1" transform="translate(545,480)">
+                                    <polygon points="0,0 80,0 90,10 100,0 180,0 160,30 20,30" />
+                                    <text x="90" y="25">ALU</text>
+                                    <text x="85" y="42" class="path-value alu-out-value" style="text-anchor: end;">hello</text>
+                                    <polyline points="90,30 90,40" />
+                                    <g class="mux-selector">
+                                        <text x="7" y="20" style="text-anchor: end;">ALUFN="<tspan id="alufn-value"></tspan>"</text>
+                                    </g>
+                                </g>
                                 <!-- Regfile output B -->
+                                <g class="mux wdsel1 wdsel2 wr1 bsel" transform="translate(685, 430)">
+                                    <g class="mux-selector">
+                                        <text style="text-anchor: end;" x="0" y="11">BSEL=<tspan id="bsel-value">1</tspan></text>
+                                        <polyline points="0,7 10,7" />
+                                        <polyline points="4,3 10,7 4,11" />
+                                    </g>
+                                    <polygon points="10,0 70,0 65,15 15,15" />
+                                    <polyline points="40,15 40,30 0,30 0,50" />
+                                    <polyline points="-4,43 0,50 4,43" />
+                                    <text x="5" y="47" class="path-value alub-value" style="text-anchor: start;">hello</text>
+                                    <text x="0" y="62">B</text>
+                                </g>
+                                <g class="path bsel1" transform="translate(135,55)">
+                                    <polyline points="235,150 235,352 442,352" />
+                                    <polyline points="448,352 570,352 570,374" />
+                                    <polyline points="566,367 570,374 574,367" />
+                                    <text x="570" y="387">1</text>
+                                    <text x="565" y="347" class="path-value bsel1-value" style="text-anchor: end;">hello</text>
+                                    <text x="240" y="348" style="text-anchor: start;">C:[15:0]</text>
+                                </g>
                                 <g class="path bsel0 wr1" transform="translate(745, 369)">
                                     <polyline points="0,0 0,38" />
                                     <text class="path-value rdb-value" x="2" y="12" style="text-anchor: start;">hello</text>
@@ -276,6 +304,18 @@
                                     <text x="85" y="88" style="text-anchor: end;">MWD</text>
                                 </g>
                                 <!-- Regfile output A -->
+                                <g class="mux wdsel1 wdsel2 wr1 asel" transform="translate(520, 430)">
+                                    <g class="mux-selector">
+                                        <text style="text-anchor: end;" x="0" y="11">ASEL=<tspan id="asel-value">0</tspan></text>
+                                        <polyline points="0,7 10,7" />
+                                        <polyline points="4,3 10,7 4,11" />
+                                    </g>
+                                    <polygon points="10,0 70,0 65,15 15,15" />
+                                    <polyline points="40,15 40,30 65,30 65,50" />
+                                    <polyline points="61,43 65,50 69,43" />
+                                    <text x="60" y="47" class="path-value alua-value" style="text-anchor: end;">hello</text>
+                                    <text x="65" y="62">A</text>
+                                </g>
                                 <g class="path pcsel2 z asel0" transform="translate(580, 369)">
                                     <polyline points="0,0 0,8" />
                                     <text class="path-value rda-value" x="2" y="12" style="text-anchor: start;">hello</text>
@@ -307,39 +347,6 @@
                                     <polyline points="100,150 100,375 410,375 410,384" />
                                     <polyline points="406,377 410,384 414,377" />
                                     <text x="410" y="397">1</text>
-                                </g>
-                                <g class="mux wdsel1 wdsel2 wr1 asel" transform="translate(520, 430)">
-                                    <g class="mux-selector">
-                                        <text style="text-anchor: end;" x="0" y="11">ASEL=<tspan id="asel-value">0</tspan></text>
-                                        <polyline points="0,7 10,7" />
-                                        <polyline points="4,3 10,7 4,11" />
-                                    </g>
-                                    <polygon points="10,0 70,0 65,15 15,15" />
-                                    <polyline points="40,15 40,30 65,30 65,50" />
-                                    <polyline points="61,43 65,50 69,43" />
-                                    <text x="60" y="47" class="path-value alua-value" style="text-anchor: end;">hello</text>
-                                    <text x="65" y="62">A</text>
-                                </g>
-                                <g class="mux wdsel1 wdsel2 wr1 asel" transform="translate(685, 430)">
-                                    <g class="mux-selector">
-                                        <text style="text-anchor: end;" x="0" y="11">BSEL=<tspan id="bsel-value">1</tspan></text>
-                                        <polyline points="0,7 10,7" />
-                                        <polyline points="4,3 10,7 4,11" />
-                                    </g>
-                                    <polygon points="10,0 70,0 65,15 15,15" />
-                                    <polyline points="40,15 40,30 0,30 0,50" />
-                                    <polyline points="-4,43 0,50 4,43" />
-                                    <text x="5" y="47" class="path-value alub-value" style="text-anchor: start;">hello</text>
-                                    <text x="0" y="62">B</text>
-                                </g>
-                                <g class="alu wdsel1 wdsel2 wr1" transform="translate(545,480)">
-                                    <polygon points="0,0 80,0 90,10 100,0 180,0 160,30 20,30" />
-                                    <text x="90" y="25">ALU</text>
-                                    <text x="85" y="42" class="path-value alu-out-value" style="text-anchor: end;">hello</text>
-                                    <polyline points="90,30 90,40" />
-                                    <g class="mux-selector">
-                                        <text x="7" y="20" style="text-anchor: end;">alufn="<tspan id="alufn-value"></tspan>"</text>
-                                    </g>
                                 </g>
                                 <g class="alu wdsel1" transform="translate(545,480)">
                                     <polyline points="90,40 90,80" />

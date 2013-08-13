@@ -1,15 +1,31 @@
-.tape_wrapper{
-	background-color : white;
-	text-align : center ;
-	vertical-align: center;
+#tmsim_div{
+	text-align : center;
+	position : relative;
+	border-radius : 5px;
+	font : monospace;
+	background-color : whitesmoke;
+	overflow: auto;
+	width : calc(100% - 5px);
+	height : 100%;
 }
-.nav-pills li a{
-	background-color: azure;
+.test_radio_buttons{
+	margin: auto;
+	display: inline-block;
+}
+#tmsim_div .nav-pills li a{
+	background-color: #E9EBED;
+	color:black;
 	cursor: pointer;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+#tmsim_div .nav-pills li.active a{
+	background-color: #C9CBCD;
+}
+.machine_div{
+	margin:auto;
 }
 .tape_segment{
 	border-style: solid;
@@ -19,11 +35,16 @@
 	margin:0px;
 	padding:0px;
 	top:0;
-	bottom:0;
 	text-align: center;
 	vertical-align: middle;
 	display : inline-block;
-	position : absolute
+	position : absolute;
+	font-family: monospace;
+}
+.tape_wrapper{
+	background-color : white;
+	text-align : center ;
+	vertical-align: center;
 }
 .left_segment{
 	/*background-color: lightyellow;*/
@@ -37,27 +58,17 @@
 .prev_segment{
 	color : blue;
 }
-.sim_split{
-	text-align : center;
-	max-width : 900px;
-	min-width : 690px;
-	height : 300px;
-	position : relative;
-	border-radius : 5px;
-	font : monospace;
-	background-color : whitesmoke	;
-}
-.pull-center {
-    display: table;
-    margin: 0 auto;
-    position:relative;
-}
 .arrow-up {
 	width: 0; 
 	height: 0; 
 	border-left: 10px solid transparent;
 	border-right: 10px solid transparent;
 	border-bottom: 20px solid black;
+	margin :auto;
+}
+.machine_label{
+	margin : auto;
+	font-family: monospace;
 }
 .transition_div{
 	font : large monospace;
@@ -82,4 +93,8 @@
 }
 .highlight-line{
 	background-color : yellow; 
+}
+.steps_div{
+	position:absolute;
+	right:0;
 }

@@ -21,8 +21,14 @@ BSim.Beta = function() {
     // changes are signalled immediately and these are not used.
     var mChangedRegisters = {};
     var mChangedWords = {};
+
+    // These track last reads/writes to registers and memory, used for highlighting them in the
+    // UI.
+    // Memory tracks the last five accesses; registers track whatever happened in the current cycle.
     var mLastReads = [];
     var mLastWrites = [];
+    var mCurrentRegisterReads = [];
+    var mCurrentRegisterWrites = []; 
 
     // Used for 'step back'
     var mHistory = new Dequeue();
@@ -89,7 +95,7 @@ BSim.Beta = function() {
         // This trigger is redundant to the reset performed by this.reset()
         // this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
         var r = _.range(0, mMemory.size(), 4);
-        this.trigger('change:bulk:word', _.object(r, _.map(r, self.readWord)));
+        this.trigger('change:bulk:word', _.object(r, _.map(r, function(i) { return self.readWord(i); } )));
 
         this.clearBreakpoints();
         this.setLabels({});
@@ -206,6 +212,19 @@ BSim.Beta = function() {
 
         if(!mRunning) this.trigger('change:register', register, value);
         else mChangedRegisters[register] = value;
+    };
+
+    // This differs from readRegister in that it also logs the access.
+    // It should be used when the machine would actually read from the
+    // register.
+    this.realReadRegister = function(register) {
+        mCurrentRegisterReads.push(register);
+        return self.readRegister(register);
+    };
+
+    this.realWriteRegister = function(register, value) {
+        mCurrentRegisterWrites.push(register);
+        return self.writeRegister(register, value);
     };
 
     this.setPC = function(address, allow_supervisor) {
@@ -346,6 +365,11 @@ BSim.Beta = function() {
         if(mBreakpoints[mPC & ~SUPERVISOR_BIT] === false) {
             mBreakpoints[mPC & ~SUPERVISOR_BIT] = true;
         }
+
+        // Clean up records of read/written registers.
+        mCurrentRegisterReads = [];
+        mCurrentRegisterWrites = [];
+
         // Check if we should fire a clock exception first.
         if(++mClockCounter % CYCLES_PER_TICK === 0) {
             mClockCounter = 0;
@@ -401,6 +425,10 @@ BSim.Beta = function() {
             }
             if(ret === false) {
                 this.setPC(old_pc, true);
+            }
+            if(!mRunning) {
+                this.trigger('read:register', mCurrentRegisterReads);
+                this.trigger('write:register', mCurrentRegisterWrites);
             }
             mCurrentStep.registers = mCurrentStepRegisters;
             mCurrentStep.words = mCurrentStepWords;
@@ -482,6 +510,8 @@ BSim.Beta = function() {
             self.trigger('change:bulk:register', mChangedRegisters);
             self.trigger('read:bulk:word', mLastReads);
             self.trigger('write:bulk:word', mLastWrites);
+            self.trigger('read:register', mCurrentRegisterReads);
+            self.trigger('write:register', mCurrentRegisterWrites);
             self.trigger('change:pc', mPC);
             mChangedRegisters = {};
             mChangedWords = {};

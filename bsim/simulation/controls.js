@@ -73,6 +73,7 @@ BSim.Controls = function(container, beta) {
 
     var change_view = function() {
         $('#programmer-view, #schematic-view').toggle();
+        BSim.SchematicView.Scale();
     }
 
     var initialise = function() {

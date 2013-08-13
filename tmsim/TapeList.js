@@ -107,7 +107,7 @@ function TapeList(){
 			if(first === null)
 				self.append('-');
 			current = first;
-			// console.log('starting peek');
+			console.log('starting peek traverse');
 			return first.data;
 		}
 	}

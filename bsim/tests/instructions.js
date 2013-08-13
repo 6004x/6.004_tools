@@ -17,6 +17,9 @@ var FakeBeta = function() {
         return mRegisters[register];
     };
 
+    this.realWriteRegister = this.writeRegister;
+    this.realReadRegister = this.readRegister;
+
     this.readWord = function(address) {
         return mMemory[address >> 2];
     };

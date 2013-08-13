@@ -84,7 +84,7 @@
 #simulation-pane {
     position:relative;
 /*    overflow:scroll;*/
-    border: 1px solid #ddd;
+/*    border: 1px solid #ddd;*/
 }
 
 #results {

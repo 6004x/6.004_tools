@@ -70,7 +70,6 @@ Number formatting functions
     Suffix formatter: calls engineering_notation on a number with two decimal places specified
     ********************/
     function suffix_formatter(value,axis) {
-//        console.log("axis:",axis);
         var base = engineering_notation(value, 2);
         if (axis && axis.options.units){ return base+axis.options.units; }
         else { return base; }
@@ -146,11 +145,9 @@ Graph setup functions
             var margin_val;
             try{
                 margin_val = $('.plot-wrapper').css("margin-bottom").match(/-?\d+/)[0];
-//                margin_val /= 2;
             } catch (err) {
                 margin_val = 0;
             }
-//            var margin_allowance = margin_val * 2;
             var placeholder = item.getPlaceholder();
             
             // plot height = total height / number of plots - margin space,
@@ -174,8 +171,6 @@ Graph setup functions
                     item.clearSelection();
                     item.pan({left:-1*evt.originalEvent.wheelDeltaX});
                 });
-                
-//                $('#graphScrollInner').trigger("scroll");
             }
         });
         
@@ -202,19 +197,6 @@ Graph setup functions
     Hover setup: displays values when the graph is moused over
     **********************/
     function hover_setup(div,plotObj){
-        // create and position div to show hover tooltip -- DEPRECATED
-//        var posTextDiv = $("<div class='posText'><div class='xpos'></div></div>");
-//        var top = plotObj.getPlotOffset().top;
-//        var left = plotObj.getPlotOffset().left;
-//        posTextDiv.css("left",left + 5);
-//        posTextDiv.css("top",top);
-//        posTextDiv.hide();
-//        plotObj.getPlaceholder().append(posTextDiv);
-        
-//        var legend = plotObj.getPlaceholder().find('.legend').children('table');
-//        console.log("legend:",legend);
-//        legend.prepend('hi');
-        
         // on hover, set the crosshair position on all plots and call their showtooltip function
         var updateMouseTimeout;
         var latestPos;
@@ -243,7 +225,6 @@ Graph setup functions
         /*******************
         showMousePos: called when a hover event is received and updates displayed values
         ********************/
-        
         function showMousePos(){
             updateMouseTimeout = null;
             pos = latestPos;
@@ -284,8 +265,6 @@ Graph setup functions
         rangeTextDiv.css("left",plotObj.getPlotOffset().left + 5);
         rangeTextDiv.hide();
         
-//        plotObj.getPlaceholder().data("rangeDiv",rangeTextDiv);
-        
         // when a selection is being made, if it's a valid selection, call each plot's
         // showtooltip method
         var updateSelTimeout;
@@ -293,7 +272,6 @@ Graph setup functions
         var hasSel;
         
         plotObj.getPlaceholder().on("plotselecting", function(event,ranges){
-//            ztsButton.show()
             $.each(allPlots, function(index, value) {
                 if (value != plotObj){
                     if (ranges){
@@ -307,7 +285,6 @@ Graph setup functions
         
         // whenever one plot's selection is cleared, clear the others' as well
         plotObj.getPlaceholder().on("plotunselected",function(event,ranges){
-//            ztsButton.hide();
             $.each(allPlots, function(index, value){
                 value.clearSelection();
             });
@@ -318,9 +295,7 @@ Graph setup functions
         });
         
         plotObj.getPlaceholder().on("plothover",function(){
-//            console.log("hovered");
             if (hasSel && compactPlot){
-//                console.log("selection");
                 rangeTextDiv.show();
             }
         });
@@ -357,11 +332,6 @@ Graph setup functions
             }
             
             var xrange = ranges.xaxis.to - ranges.xaxis.from;
-            
-            // limit the length of the tooltip to avoid blocking the legend
-//            var divWidth = plotObj.width() - 
-//                plotObj.getPlaceholder().find('.legend div').width() - 20;
-//            rangeTextDiv.css("max-width",divWidth);
             
             // calculate the range for each series. Each series gets its own div in
             // innerRangeTextDivs
@@ -409,36 +379,17 @@ Graph setup functions
         var addPlotModal;
         var addPlotDropdown;
         var addPlotButton = new ToolbarButton('<i class="icon-plus"></i> Add Plot',function(){
-//            console.log("nodes:",current_results.contains);
-//            for (node in current_results){if(node!='contains') console.log(node)}
             
             addPlotModal = new ModalDialog();
             addPlotModal.setTitle("Add a New Plot");
-//            addPlotModal.setText("Enter one or more node names, separated by spaces or commas,\
-//    to plot on a single pair of axes.");
             var content =$("<div><p>Enter one or more node names, separated by spaces or commas,\
-    to plot on a single pair of axes.</p></div>")
-//            content.append($("<div class='btn-group'>\
-//<a class='btn dropdown-toggle' data-toggle='dropdown' href='#'>\
-//See Available Nodes <span class='caret'></span>\
-//</a>\
-//<ul class='dropdown-menu'>\
-//</ul>\
-//</div>"));
-//            addPlotDropdown = content.find('.dropdown-menu');
-//            console.log("dropdown:",addPlotDropdown);
-//            console.log("results:",current_results);
-            
-//            var nodeList = $('<div class="muted well"><strong>Available Nodes:\
-//</strong></div>').css({"max-height":"50px","overflow-y":"scroll"})
+    to plot on a single pair of axes.</p></div>");
             var nodeList = [];
             for (var item in current_results){
                 if (item != "contains" && item != "_time_") {
-//                    addPlotDropdown.append($('<li><a tabindex="-1">'+item+'</a></li>'));
-                    nodeList.push(/*append("</br>"+*/item);
+                    nodeList.push(item);
                 }
             }
-//            content.append(nodeList);
             addPlotModal.setContent(content);
             addPlotModal.addButton("Cancel",'dismiss');
             addPlotModal.addButton("Add Plot",addPlot,'btn-primary');
@@ -457,7 +408,6 @@ Graph setup functions
             var newPlotRaw = addPlotModal.inputContent();
             newPlot = [newPlotRaw.match(/[^,\s]+/g)];
             addPlotModal.dismiss();
-//            console.log(newPlot);
             if (newPlot[0] == null) return;
             
             switch (current_analysis.type){
@@ -468,20 +418,18 @@ Graph setup functions
                     ac_plot(bigDiv,current_results,newPlot);
                     break;
                 case 'dc':
+                    dc_plot(bigDiv, current_results, newPlot, current_analysis.parameters.sweep1,
+                       current_analysis.parameters.sweep2);
                     break;
             }
         }
         
-//        var btnGroup = $('<div class="btn-group"></div>').append(addPlotButton/*, closePlotButton*/);
         tlbar.addButtonGroup([addPlotButton]);
-//        addPlotButton.attr("disabled","disabled");
         addPlotButton.disable();
         addPlotButton.setID("addPlotButton");
-//    }
-//    
-//    /*******************
-//    Zoom/pan setup: sets up zooming and panning buttons
-//    ********************/
+
+        /**** set up zooming and panning buttons ****/
+        
         // generic button function
         function gbf(onclick_fn){
             $.each(allPlots, function(index,item){
@@ -495,7 +443,6 @@ Graph setup functions
                 item.zoom({amount:1e-10});
             });
         },"Reset Zoom");
-//        resetZoomBtn.addClass("reset-zoom");
         
         tlbar.addButtonGroup([
             new ToolbarButton('icon-zoom-in',function(){
@@ -520,7 +467,6 @@ Graph setup functions
         var selRanges;
         function zoomToSel(){
             ranges = selRanges;
-//            console.log("ranges:",ranges);
             if (ranges){
                 $.each(allPlots, function(index,item){
                     var opts = item.getAxes().xaxis.options;
@@ -555,26 +501,22 @@ Graph setup functions
             var max_range = xaxis.datamax - xaxis.datamin;
             
             var inv_fraction = max_range/new_range;
-//            console.log("fraction:",inv_fraction);
             $('#graphScrollInner').width($('#graphScrollOuter').width() * inv_fraction);
             
             var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
             var left_amt_px = $('#graphScrollInner').width() * left_fraction;
-//            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
             $('#graphScrollOuter').scrollLeft(left_amt_px);
             
         });
         
         var preventScroll = false;
         $('#results').on("plotpan",function(evt,plot,args){
-//            console.log("args:",args);
             var xaxis = plot.getAxes().xaxis;
             var max_range = xaxis.datamax - xaxis.datamin;
             
             var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
             
             var left_amt_px = $('#graphScrollInner').width() * left_fraction;
-//            console.log("xmin:",xaxis.min,"total min:",xaxis.datamin,"left frac:",left_fraction,"left amount:",left_amt_px);
             
             preventScroll = true;
             $('#graphScrollOuter').scrollLeft(left_amt_px);
@@ -582,41 +524,29 @@ Graph setup functions
         
         var updateScrollTimeout = null;
         $('#graphScrollOuter').on("scroll",function(evt){
-//            console.log("evt:",evt);
-//            console.log("'scroll left':",$(this).scrollLeft());
-//            console.log("hit1; timeout:",updateScrollTimeout);
             if (!updateScrollTimeout){
-//                console.log('hit2');
                 setTimeout(function(){syncScroll(evt);},1)
             }
         });
         
         function syncScroll(evt){
-//            console.log('evt:',evt)
             updateScrollTimeout = null;
-//            console.log('hit3');
             if (preventScroll){ 
                 preventScroll = false;
                 return; 
             } else {
-//                console.log("handler hit");
                 var left_amt_px = $('#graphScrollOuter').scrollLeft();
-//                console.log("left amt px:",left_amt_px);
                 var left_frac = left_amt_px / $('#graphScrollInner').width();
-//                console.log("left frac:",left_frac);
                 
                 var xaxis_sample = allPlots[0].getAxes().xaxis;
                 var xrange = xaxis_sample.max - xaxis_sample.min;
                 var max_range = xaxis_sample.datamax - xaxis_sample.datamin;
                 var left_amt_graph = max_range * left_frac;
-//                console.log("left amt graph:",left_amt_graph);
                 
                 $.each(allPlots,function(index,item){
                     var xaxis = item.getAxes().xaxis;
                     xaxis.options.min = left_amt_graph;
                     xaxis.options.max = left_amt_graph + xrange;
-                    
-//                    console.log("new xaxis min:",xaxis.min);
                     
                     item.setupGrid();
                     item.draw();
@@ -635,7 +565,8 @@ Graph setup functions
     }
     
     /*********************
-    Default graph options: each plot will need to specify axis labels and zoom and pan ranges
+    Default graph options: each plot will need to specify axis labels and zoom and pan ranges. 
+        NB: this is an OBJECT
     **********************/
     var default_options = {
         yaxis:{
@@ -707,7 +638,6 @@ min-height:'+minHeight+'px"></div>');
     
     function addCloseBtn(div){
         var closeBtn = $('<button class="close plot-close">\u00D7</button>');
-//        closeBtn.tooltip({title:"Close Plot",delay:100,container:'body'})
         closeBtn.on("click",function(){
             div.hide();
             allPlots.splice(allPlots.indexOf(div.find('.placeholder').data("plot")),1);
@@ -725,12 +655,10 @@ min-height:'+minHeight+'px"></div>');
     Preparing of data written by Chris Terman
     *********************/
     function tran_plot(div, results, plots) {
-//        compactPlot = true;
         if (results === undefined) {
             div.text("No results!");
             return;
         }
-//        console.log("results:",results);
         
         // repeat for every set of plots
         for (var p = 0; p < plots.length; p += 1) {
@@ -790,11 +718,11 @@ min-height:'+minHeight+'px"></div>');
             if (compactPlot){
                 wdiv.css("margin-bottom",'-10px');
             }
-            var ldiv;
-            if (compactPlot){
-                ldiv = $('<div class="plot-legend"></div>');
-                wdiv.append(ldiv);
-            }
+//            var ldiv;
+//            if (compactPlot){
+//                ldiv = $('<div class="plot-legend"></div>');
+//                wdiv.append(ldiv);
+//            }
             var plotdiv = get_plotdiv();
             wdiv.append(plotdiv);
             div.append(wdiv);
@@ -802,21 +730,14 @@ min-height:'+minHeight+'px"></div>');
             // customize options
             var options = $.extend(true,{},default_options);
             if (compactPlot) {
-//                options.xaxis.show = false;
-//                options.yaxis.show = false;
-//                console.log("compact");
                 options.xaxis.font = {color:'rgba(0,0,0,0)',
                                       size:1
                                      }
                 options.yaxis.font = {color:'rgba(0,0,0,0)',
                                       size:1
                                      }
-//                if (plot_nodes.length == 1){
-//                    options.legend = {show:false/*container:ldiv*/};
-//                }
             } else {
                 options.yaxis.axisLabel = current ? 'Amps (A)' : 'Volts (V)';
-//                options.xaxis.axisLabel = 'Time (s)';
             }
             options.xaxis.zoomRange = [null, (xmax-xmin)];
             options.xaxis.panRange = [xmin, xmax];
@@ -828,7 +749,6 @@ min-height:'+minHeight+'px"></div>');
             // graph the data
             var plotObj = $.plot(plotdiv,dataseries,options);
             graph_setup(wdiv,plotObj);
-//            console.log("data:",plotObj.getData());
         }
     }
     
@@ -836,7 +756,6 @@ min-height:'+minHeight+'px"></div>');
     AC plot: plot an AC analysis. Arguments same as above.
     *************************/
     function ac_plot(div, results, plots) {
-//        compactPlot = false;
         if (results === undefined) {
             div.text("No results!");
             return;
@@ -852,8 +771,9 @@ min-height:'+minHeight+'px"></div>');
             for (var i = 0; i < plot_nodes.length; i += 1) {
                 var node = plot_nodes[i];
                 if (results[node] === undefined) {
-                    div.text('No values to plot for node '+node);
-                    return;
+                    var novaldiv = get_novaldiv(node);
+                    div.prepend(novaldiv);
+                    continue;
                 }
                 var magnitudes = results[node].magnitude;
                 var phases = results[node].phase;
@@ -901,8 +821,6 @@ min-height:'+minHeight+'px"></div>');
             options.xaxis.zoomRange = [null,(xmax-xmin)];
             options.xaxis.panRange = [xmin, xmax];
             
-//            options.yaxis.units = ' dB';
-            
             // graph magnitude
             var plotObj = $.plot(plotDiv, mplots, options);
             graph_setup(div1, plotObj);
@@ -922,6 +840,72 @@ min-height:'+minHeight+'px"></div>');
             var plotObj = $.plot(plotDiv, pplots, options);
             graph_setup(div2, plotObj);
         }
+    }
+    /**************************
+    DC plot
+    **************************/
+    function dc_plot(div, results, plots, sweep1, sweep2){
+        if (sweep1 === undefined) return;
+    
+        console.log("results:",results);
+        for (var p = 0; p < plots.length; p += 1) {
+            var node = plots[p][0];  // for now: only one value per plot
+            var dataseries = [];
+            var index2 = 0;
+            while (true) {
+                var values;
+                var x,x2;
+                if (sweep2 === undefined) {
+                    values = results[node];
+                    x = results['_sweep1_'];
+                } else {
+                    values = results[index2][node];
+                    x = results[index2]['_sweep1_'];
+                    x2 = results[index2]['_sweep2_'];
+                    index2 += 1;
+                }
+        
+                if (values === undefined) {
+                    var novaldiv = get_novaldiv(node);
+                    div.prepend(novaldiv);
+                    continue;
+                }
+                var plot = [];
+                for (var j = 0; j < values.length; j += 1) {
+                    plot.push([x[j],values[j]]);
+                }
+                var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
+                var name = current ? node : "Node " + node; 
+                if (sweep2 !== undefined) name += " with " + sweep2.source + "=" + x2;
+                
+                dataseries.push({label: name,
+                                 data: plot,
+                                 lineWidth: 5,
+                                 yUnits: current ? 'A' : 'V'
+                                });
+                if (sweep2 === undefined || index2 >= results.length) break;
+            }
+        }
+        
+        var xmin = x[0];
+        var xmax = x[values.length-1];
+        
+        var wdiv = $('<div class="plot-wrapper"></div>');
+        addCloseBtn(wdiv);
+        var plotdiv = get_plotdiv();
+        wdiv.append(plotdiv);
+        div.append(wdiv);
+        
+        var options = $.extend(true, {}, default_options);
+        options.xaxis.axisLabel = 'Volts (V)';
+        options.xaxis.units = 'V';
+        options.xaxis.zoomRange = [null,(xmax-xmin)];
+        options.xaxis.panRange = [xmin, xmax];
+        options.yaxis.axisLabel = current? 'Amps (A)' : 'Volts (V)';
+        options.yaxis.units = current? 'A' : 'V';
+        
+        var plotObj = $.plot(plotdiv, dataseries, options);
+        graph_setup(wdiv, plotObj);
     }
     
     /******************************
@@ -945,16 +929,11 @@ min-height:'+minHeight+'px"></div>');
         bigDiv = div;
         $('#graphScrollInner').width($('#graphScrollOuter').width());
         
-//        var parsed = Parser.parse(text,filename);
-        
         var netlist = parsed.netlist;
         analyses = parsed.analyses;
         var plots = parsed.plots;
         
         allPlots = [];
-//        $('#graph-toolbar').empty();
-//        general_zoompan();
-//        general_setup();
         
         if (netlist.length === 0) {
             div.html("</br>Empty netlist!");
@@ -977,9 +956,6 @@ min-height:'+minHeight+'px"></div>');
         
         
         var tranProgress = $('<div><span></span></br></div>');
-//                             <span></span><div class="progress"><div class="bar"\
-//style="width:0%"></div></div></div>');
-//        var tranProgressBar = tranProgress.find('.bar');
         tranProgress.hide();
         div.append(tranProgress);
         var tranHalt = false;
@@ -997,19 +973,23 @@ min-height:'+minHeight+'px"></div>');
             case 'tran':
                 tranProgress.show();
                 var progressTxt = tranProgress.find('span');
-                cktsim.transient_analysis(netlist, current_analysis.parameters.tstop,
-                                          [], function(pct_complete, results) {
-//                    console.log("percent complete:",pct_complete);
-//                    tranProgressBar.css("width",pct_complete+"%");
-                    progressTxt.text("Performing Transient Analysis... "+pct_complete+"%");
-                    if (results){
-                        tranProgress.hide();
-                        current_results = results;
-                        $('#results').data("current",results);
-                        tran_plot(div, current_results, plots);
-                    }
-                    return tranHalt;
-                });
+                try{
+                    cktsim.transient_analysis(netlist, current_analysis.parameters.tstop,
+                                              [], function(pct_complete, results) {
+                        progressTxt.text("Performing Transient Analysis... "+pct_complete+"%");
+                        if (results){
+                            tranProgress.hide();
+                            current_results = results;
+                            $('#results').data("current",results);
+                            tran_plot(div, current_results, plots);
+                        }
+                        return tranHalt;
+                    });
+                } catch (err) {
+                    tranProgress.hide();
+                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                '.\<button class="close" data-dismiss="alert">&times;</button></div>')
+                }
                 break;
             case 'ac':
                 current_results = cktsim.ac_analysis(netlist, current_analysis.parameters.fstart,
@@ -1019,26 +999,23 @@ min-height:'+minHeight+'px"></div>');
                 ac_plot(div, current_results, plots);
                 break;
             case 'dc':
+                current_results = cktsim.dc_analysis(netlist,current_analysis.parameters.sweep1,
+                                                     current_analysis.parameters.sweep2);
+                dc_plot(div, current_results, plots, current_analysis.parameters.sweep1,
+                       current_analysis.parameters.sweep2);
+//                console.log("dc results:",current_results);
                 break;
             }
         }
         catch (err) {
             throw new Parser.CustomError(err,current_analysis.line,0);
         }
-//        console.log("current results:",current_results);
     }
 
     
     function setup(){
         general_setup();
-//        general_zoompan();
         scrollbar_setup();
-        
-//        $('#simulation-pane').on("resize",function(){
-////            console.log("width:",$('#graphScrollOuter').width());
-////            $('#graphScrollInner').width($('#graphScrollOuter').width());
-//            $('#results').triggerHandler("plotzoom",allPlots[0]);
-//        });
     }
 /*********************
 Exports
