@@ -97,7 +97,7 @@
         Folders.refresh();
         editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')]) 
 
-        var tmsim;
+        var tmsim = new TMSIM('#tmsim_div');
         var tsmparse = new TSMparser();
         function tmsimAssemble(){
             var file = new Object();
@@ -122,10 +122,6 @@
                 }
                 if(valid){
                     $('#split_pane').click();
-
-                    if(!tmsim){
-                        tmsim = new TMSIM('#tmsim_div');
-                    }
                     tmsim.restartTSM(file.name, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists )
                 }
             }

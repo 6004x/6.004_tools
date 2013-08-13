@@ -556,7 +556,6 @@
 			mContainer.find('.step_button').addClass('disabled');
 			mContainer.find('.pause_button').addClass('disabled');
 			$('.steps_span').text(steps)
-			pauseSimulation = true;
 			if(mCurrentTape){
 				self.listToTape();
 			
