@@ -104,3 +104,14 @@ html {
 .btn-toolbar {
     white-space: nowrap;
 }
+
+/* Alert area */
+#header-alert-holder > .alert {
+    max-width: -webkit-calc(100% - 300px);
+    max-width: calc(100% - 300px);
+    /*min-width: 300px;*/
+    position: absolute;
+    left: 250px;
+    top: 5px;
+    margin-right: 10px;
+}
