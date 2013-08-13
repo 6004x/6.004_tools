@@ -100,8 +100,8 @@ div.input_file_name button.add-on{
 .span2{
     min-width: 170px;
 }
-.buttonDiv{
-    float:none;
+.button_div{
+    margin:auto;
     text-align: center;
     width: 100%;
 }
@@ -132,7 +132,4 @@ div.input_file_name button.add-on{
 }
 .hover_drop{
     border-color: orangered;
-}
-.editor_div{
-    width: 100%;
 }

@@ -65,7 +65,6 @@ var path=require('path');
 					});
 				}
 				else{
-					console.log(m_full_path);
 					console.log('sendFile');
 					if(!fs.lstatSync(m_full_path).isDirectory())
 						sendFile(m_full_path, m_file_path);
@@ -168,7 +167,7 @@ var path=require('path');
 		function recurseThroughFolders(curr_path, user_path){
 			//console.log(curr_path);
 			var files = fs.readdirSync(curr_path);
-			var majorityType = {};
+			var contentType = {};
 			var fileList = {
 				'path' : user_path,
 				'type' : 'folder',
@@ -186,10 +185,10 @@ var path=require('path');
 						new_user_path += '\/';
 						fileList.folders[name] = (recurseThroughFolders(new_curr_path, new_user_path));
 						fileList.folders[name].name = name;
-						for(var type in fileList.folders[name].majority){
-							if(majorityType[type] == null)
-								majorityType[type] = 0;
-							majorityType[type] += fileList.folders[name].majority[type];
+						for(var type in fileList.folders[name].contentType){
+							if(contentType[type] == null)
+								contentType[type] = 0;
+							contentType[type] += fileList.folders[name].contentType[type];
 						}
 
 					} else {
@@ -199,16 +198,16 @@ var path=require('path');
 							'path' : new_user_path,
 							'name' : name,
 						});
-						if(majorityType[type] == null)
-							majorityType[type] = 1;
+						if(contentType[type] == null)
+							contentType[type] = 1;
 						else
-							majorityType[type]++;
+							contentType[type]++;
 					}
 				} else {
 					console.log(name +' is a deleted file, folder, or backed up');
 				}
 			}
-			fileList['majority'] = majorityType;
+			fileList['contentType'] = contentType;
 			return(fileList);
 		}
 
@@ -240,6 +239,9 @@ var path=require('path');
 					console.log(err);
 					errorResponse(err+' file could not be read');
 				}
+				if(file_path.substring(0,1) === '/')
+					file_path = file_path.substring(1);
+				console.log(file_path)
 				sendJSON({
 					name:file_path,
 					data:data,

@@ -121,7 +121,8 @@
                     valid = false;
                 }
                 if(valid){
-                    $('#split_pane').click();
+                    if(!$('#split_pane').hasClass('active'))
+                        $('#split_pane').click();
 
                     if(!tmsim){
                         // tmsim = new TMSIM('#tmsim_div');
