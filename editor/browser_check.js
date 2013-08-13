@@ -27,10 +27,6 @@ $(function() {
                     Safari versions should also work. You should not use Internet Explorer.</p>\
                     <p><strong>On Athena:</strong> press the Windows key and type "chromium".</p>\
                     <p><strong>On a personal machine: <a href="http://google.com/chrome">Get Chrome</p>\
-                    <div class="modal-input">\
-                    </div>\
-                </div>\
-                <div class="modal-footer">\
                 </div>\
             </div>').modal();
     };
