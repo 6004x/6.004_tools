@@ -258,7 +258,7 @@ var path=require('path');
 
 					fs.unlinkSync(hide_path)
 				}
-					fs.rename(hide_path, function (err) {
+					fs.rename(full_path, hide_path, function (err) {
 						if (err) {
 							errorResponse(err + ' file could not be renamed');
 							return;
