@@ -27,6 +27,9 @@ BSim.Controls = function(container, beta) {
     var handle_step = function() {
         mBeta.executeCycle();
         mUndoButton.enable();
+        if(mBeta.verifier()) {
+            mVerifyButton.enable();
+        }
     };
 
     var handle_reset = function() {
@@ -55,6 +58,9 @@ BSim.Controls = function(container, beta) {
         mStepButton.disable();
         mFastRunButton.disable();
         mUndoButton.disable();
+        if(mBeta.verifier()) {
+            mVerifyButton.enable();
+        }
     };
 
     var beta_run_stop = function() {
@@ -76,7 +82,6 @@ BSim.Controls = function(container, beta) {
             mRunButton.enable();
             mFastRunButton.enable();
             mStepButton.enable();
-            mVerifyButton.enable();
             mResetButton.enable();
         }
     }
