@@ -40,7 +40,7 @@
     <script>
     var editor;
     $(document).ready(function(){
-        FileSystem.setup('https://18.62.29.122:6004');
+        FileSystem.setup('https://localhost:6004');
 
         var split = new SplitPane('#main_wrapper', ['#folders_div', '#editor_div', '#tmsim_div'])
         split.setPaneWidth(0, 200);
@@ -122,14 +122,11 @@
                 }
                 if(valid){
                     $('#split_pane').click();
-                    console.log(tmsim)
-                    if(tmsim){
-                        tmsim.restartTSM(file.name, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists )
-                        console.log(tmsim);
+
+                    if(!tmsim){
+                        tmsim = new TMSIM('#tmsim_div');
                     }
-                    else 
-                        tmsim = new TMSIM(file.name, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists );
-                    
+                    tmsim.restartTSM(file.name, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists )
                 }
             }
             else {
