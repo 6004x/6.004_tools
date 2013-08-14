@@ -534,7 +534,7 @@ var Simulator = (function(){
 //        div.append(wdiv);
         
         /************************ Plot function **********************************/
-        dc_plot(dataseries, /* ... */);
+        dc_plot(dataseries /* ... */);
         /************************ Plot function **********************************/
         
         

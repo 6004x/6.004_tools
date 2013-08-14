@@ -60,7 +60,7 @@ var Parser = (function(){
     function split(input_string,filename){ 
         // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! will need to add ops
         
-        var pattern = /".*?"|\w+\s*\([^\)]*\)|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
+        var pattern = /".*?"|\w*\s*\([^\)]*\)|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
         // 'pattern' will match, in order:
         //      anything wrapped in quotes
         //      a hex number
@@ -74,7 +74,7 @@ var Parser = (function(){
         //      a newline
         //      a record separater (unicode character \u001e)
         
-        var fn_pattern = /^\w+\s*\([^\)]*\)$/;
+        var fn_pattern = /^\w*\s*\([^\)]*\)$/;
         // [^,\)]+(,\s*[^,\)]+)*
         var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)/;
         var control_pattern = /^\..+/;
@@ -308,7 +308,7 @@ var Parser = (function(){
     var included_contents = [];
     var includeCompleted = false;
     var parseCalled = false;
-    function filename_to_contents(file_token, callback, error_cb){
+    function filename_to_contents(file_token, callback){
         var filename = file_token.token;
         numPendingFiles += 1;
         FileSystem.getFile(filename, function(obj){
@@ -318,7 +318,7 @@ var Parser = (function(){
             
             if (numPendingFiles === 0 && includeCompleted && !parseCalled) {
                 /*************** completed callback****************/
-                return parse(callback, error_cb);
+                return parse(callback);
             }
             
         }, function(){
@@ -331,7 +331,7 @@ var Parser = (function(){
         --args: -token_array: an array of tokens
         --returns: a new array of tokens consisting of all the tokens from all files
     ***************************/
-    function include(token_array, callback, error_cb){
+    function include(token_array, callback){
         var included_files = [token_array[0].origin_file];
         // list of filenames that have already been included 
         var new_token_array = [];
@@ -348,7 +348,7 @@ var Parser = (function(){
                     if (included_files.indexOf(filename) == -1) {
                         included_files.push(filename);
                         
-                        filename_to_contents(file, callback, error_cb);
+                        filename_to_contents(file, callback);
                         token_array.shift();
                         token_array.shift();  
                     }
@@ -360,7 +360,7 @@ var Parser = (function(){
         includeCompleted = true;
         included_contents.push(new_token_array.slice(0));
         if (numPendingFiles === 0){
-            parse(callback, error_cb);
+            parse(callback);
         }
     }
     
@@ -371,13 +371,16 @@ var Parser = (function(){
                 -filename: a string representing the unique name of the file
         --returns: an array of strings (tokens)
     *********************************/
-    function tokenize(input_string, filename, callback, error_cb, reset){
+    var error_cb;
+    
+    function tokenize(input_string, filename, callback, error_callback, reset){
+        error_cb = error_callback;
         if (reset){
             included_contents = [];
             parseCalled = false;
             numPendingFiles = 0;
         }
-        return include(iter_expand(split(analyze(input_string),filename)),callback,error_cb);
+        return include(iter_expand(split(analyze(input_string),filename)),callback);
     }
     
 /******************************************************************************
@@ -400,7 +403,7 @@ Parse
     Parse: combines contents of all included files, interpets them (=turns into netlists), and runs the 
     callback
     ********************/
-    function parse(callback, error_cb){
+    function parse(callback){
         parseCalled = true;
         
         var token_array = [];
@@ -849,7 +852,7 @@ Parse
                    properties:{},
                    devices:[]
                   }
-        if (line[0].token == "_top_level_"){
+        if (line[0].token == "_top_level_" || line[0].token == "$memory"){
             throw new CustomError("Reserved name",line[0]);
         }
         line.shift();
@@ -1452,6 +1455,11 @@ Device readers: each takes a line of tokens and returns a device object,
 //            throw new CustomError("Can't find definition for subcircuit "+inst.token, inst);
 //        }
         
+        if (inst.token == "$memory"){
+            var mem = read_memory(line, props);
+            return mem;
+        }
+        
         var obj = {type:"instance",
                    connections:[],
                    ports:[],//subcircuits[inst.token].ports,
@@ -1488,6 +1496,136 @@ Device readers: each takes a line of tokens and returns a device object,
             }
         }
         return obj;
+    }
+    
+    /***********************
+    Memory: special case for memory devices
+    ************************/
+    function read_memory(line, prop_tokens){
+        var obj = {type:"memory",
+                   ports:[],
+                   connections:[],
+                   properties:{name:line[0].token}
+                  }
+        
+        // parse property values
+        for (var p = 0; p < prop_tokens.length; p += 1){
+            var prop = prop_tokens[p];
+            
+            if (prop[0].type != "name") {
+                throw new CustomError("Property name expected",prop[0]);
+            }
+            
+            switch (prop[0].token.toLowerCase()){
+                case "width":
+                    try {
+                        var w = parse_number(prop[2].token);
+                    } catch (err) {
+                        throw new CustomError("Number expected.",prop[2]);
+                    }
+                    
+                    if (w < 1 || w > 32) {
+                        throw new CustomError("Memory width must be between 1 and 32, inclusive.",prop[2]);
+                    }
+                    obj.properties.width = w;
+                    break;
+                case "nlocations":
+                    try {
+                        var nloc = parse_number(prop[2].token);
+                    } catch (err) {
+                        throw new CustomError("Number expected.",prop[2]);
+                    }
+                    
+                    if (nloc < 1 || nloc > Math.pow(2,20)) {
+                        throw new CustomError("Number of locations must be between 1 and 2^20.",prop[2]);
+                    }
+                    obj.properties.nlocations = nloc;
+                    break;
+                case "file":
+                    obj.properties.contents = [];
+                    var filename = prop[2].token;
+                    FileSystem.getFile(filename, 
+                        function(file_obj){
+                            // success callback
+                            set_memory_contents(obj, file_obj.data, prop[0]);
+                        }, 
+                        function(){
+                            // error callback
+                            error_cb(new CustomError("Could not get file "+filename, prop[2]));
+                        });
+                    break;
+                case "contents":
+                    obj.properties.contents = [];
+                    set_memory_contents(obj, prop[2].token.match(/\((.+)\)/)[1], prop[0]);
+                    break;
+                default:
+                    throw new CustomError("Invalid property name.",prop[0])
+            }
+        }
+        
+        if (obj.properties.width === undefined) throw new CustomError("Memory width must be specified.",
+                                                                      line[0]);
+        if (obj.properties.nlocations === undefined) throw new CustomError("Number of memory locations\
+must be specified.",line[0]);
+        if (obj.properties.contents === undefined) throw new CustomError("Memory contents must be specified.",
+                                                                      line[0]);
+        
+        // parse ports
+        var naddr = Math.ceil(Math.log(obj.properties.nlocations)/Math.LN2);
+//        console.log("number of addresses:",naddr);
+        var w = obj.properties.width;
+        
+        var ports = line.slice(2);
+        var port_size = 3 + naddr + w; // number of parameters in the port specifications:
+        // oe clk wen a(naddr-1) ... a(0) d(w-1) ... d(0)
+//        console.log("ports:",ports,"port size:",port_size);
+        if (ports.length % port_size !== 0){
+            throw new CustomError("Invalid memory port specification. Each port should have "+port_size+
+                                  " parameters: oe clk wen a(#addresses-1) ... a(0) d(width-1) ... d(0)",
+                                  ports[0]);
+        }
+        
+        function check_shift(tokens){
+            var t = tokens.shift();
+            if (t.type != "name") throw new CustomError("Node name expected.",t);
+            return t.token;
+        }
+        
+        obj.properties.ports = [];
+        while (ports.length > 0){
+            var new_port = {};
+            new_port.oe = check_shift(ports);
+            new_port.clk = check_shift(ports);
+            new_port.wen = check_shift(ports);
+            var address_inputs = [];
+            for (var a = 0; a < naddr; a += 1){
+                address_inputs.push(check_shift(ports));
+            }
+            new_port.address_inputs = address_inputs;
+            var data_inputs = [];
+            for (var d = 0; d < w; d += 1){
+                data_inputs.push(check_shift(ports));
+            }
+            new_port.data_inputs = data_inputs;
+            obj.properties.ports.push(new_port);
+        }
+        
+        return obj;
+    }
+    
+    function set_memory_contents(mem_obj, data, err_token){
+        // mem_obj is a device object for a memory instance. Data should be a string of a list of numbers
+        var values = data.split(/\s+/);
+        var contents = [];
+        for (var v = 0; v < values.length; v += 1){
+            try{
+                contents.push(parse_number(values[v]));
+            } catch (err) {
+                throw new CustomError("Number expected.",err_token);
+            }
+        }
+        mem_obj.properties.contents = contents.slice(0);
+        console.log("obj:",mem_obj);
     }
     
     /***********************
@@ -1565,7 +1703,7 @@ Flattening
         
         var nports = dev_obj.ports.length;
         var nknex = dev_obj.connections.length;
-        if (nknex % nports !== 0){
+        if (nknex % nports !== 0 && dev_obj.type != "memory"){
             throw new CustomError("Expected a multiple of "+nports+" connections",
                                   {line:dev_obj.line,column:0,origin_file:dev_obj.file});
         }
@@ -1668,6 +1806,7 @@ Exports
 ****************************/
     return {parse:tokenize,
             CustomError:CustomError,
+//            parse_number:parse_number
 //            move_instances:move_instances
 //            moveInstTest:moveInstTest
            }
