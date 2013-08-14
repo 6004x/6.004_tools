@@ -2,10 +2,11 @@
 <html>
     <head>
         <title>JSim</title>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <!-- build:js jsim-all.js -->
+        <script src="../libs/jquery.js"></script>
+        <script src="../libs/underscore.js"></script>
+        <script src="../libs/backbone.js"></script>
+        <script src="../libs/bootstrap.js"></script>
         <script src="../fileSystem/external/jquery-ui.js"></script>
         <script src="../editor/external/codemirror.js"></script>
         <script src="../editor/external/radix.js"></script>
@@ -26,7 +27,6 @@
         <script src='../fileSystem/folders.js'></script>
         
         
-<!--        <script src="cktsim/flot-master/jquery.js"></script>-->
         <script src="cktsim/flot-master/jquery.flot.js"></script>
         <script src="cktsim/flot-master/jquery.flot.axislabels_custom.js"></script>
         <script src="cktsim/flot-master/jquery.flot.navigate_custom.js"></script>
@@ -34,20 +34,21 @@
         <script src="cktsim/flot-master/jquery.flot.selection.js"></script>
         <script src="cktsim/flot-master/jquery.flot.resize.js"></script>
         
-<!--        <script src="../cktsim/flot-test.js"></script>-->
         
         <script src="checkoff.js"></script>
         <script src="simulator.js"></script>
         <script src="gatesimulator.js"></script>
         <script src="jsim.js"></script>
-        
-        <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
-        <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
+        <!-- endbuild -->
+        <!-- build:css jsim-all.css -->
+        <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
+        <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
         <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
         <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
         <link rel="stylesheet" type="text/css" href="../editor/common.css">
         <link rel="stylesheet" type="text/css" href="jsim.css">
         <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">
+        <!-- endbuild -->
         
     </head>
     <body>

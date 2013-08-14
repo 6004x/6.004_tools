@@ -73,10 +73,10 @@ $(function() {
                 beta.getMemory().setProtectedRegions(result.protection);
                 if(result.checkoff) {
                     if(result.checkoff.kind == 'tty') {
-                        var verifier = new BSim.TextVerifier(beta, result.checkoff.checksum);
+                        var verifier = new BSim.TextVerifier(beta, result.checkoff);
                         beta.setVerifier(verifier);
                     } else if(result.checkoff.kind == 'memory') {
-                        var verifier = new BSim.MemoryVerifier(beta, result.checkoff.addresses, result.checkoff.checksum, result.checkoff.running_checksum);
+                        var verifier = new BSim.MemoryVerifier(beta, result.checkoff);
                         beta.setVerifier(verifier);
                     }
                 } else {
@@ -108,7 +108,7 @@ $(function() {
     });
 
     $('.program-controls').each(function() {
-        new BSim.Controls(this, beta);
+        new BSim.Controls(this, beta, editor);
     });
 
     $('.tty').each(function() {
@@ -166,4 +166,5 @@ $(function() {
 
     // For debugging
     window.beta = beta;
+    window.editor = editor;
 });

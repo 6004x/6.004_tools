@@ -3,7 +3,7 @@ module("Verifiers");
 test("TextVerifier", function() {
     var beta = new FakeBeta();
 
-    var verifier = new BSim.TextVerifier(beta, -318887899);
+    var verifier = new BSim.TextVerifier(beta, {checksum: -318887899});
     ok(!verifier.verify(), "Verification fails on un-run beta.");
     ok(/no simulation results/i.test(verifier.getMessage()), "Failed with no simulation results message.");
     beta.setCycleCount(1);
@@ -18,11 +18,11 @@ test("TextVerifier", function() {
 test("MemoryVerifier", function() {
     var beta = new FakeBeta();
 
-    var bad_verifier = new BSim.MemoryVerifier(beta, {}, 42, -42);
+    var bad_verifier = new BSim.MemoryVerifier(beta, {addresses: {}, checksum: 42, running_checksum: -42});
     ok(!bad_verifier.verify(), "Invalid checksum doesn't verify.");
     ok(/invalid checksum/.test(bad_verifier.getMessage()), "Invalid checksum reports correct error.");
 
-    var verifier = new BSim.MemoryVerifier(beta, {0x8: 42, 0xC: 24}, -10, -10);
+    var verifier = new BSim.MemoryVerifier(beta, {addresses: {0x8: 42, 0xC: 24}, checksum: -10, running_checksum: -10});
     ok(!verifier.verify(), "Bad memory doesn't verify.");
     ok(/00000008/.test(verifier.getMessage()) && /0000002a/.test(verifier.getMessage()), "Bad memory value is reported.");
     beta.writeWord(0x8, 42);
