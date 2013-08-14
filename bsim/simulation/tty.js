@@ -2,7 +2,7 @@ BSim.TTY = function(container, beta) {
     var mContainer = $(container);
     var mBeta = beta;
     var mPendingText = '';
-    var mTextHolder = $('<pre class="tty-output" tabindex="0">');
+    var mTextHolder = $('<pre class="tty-output" tabindex="1">');
 
     var initialise = function() {
         mContainer.append(mTextHolder);

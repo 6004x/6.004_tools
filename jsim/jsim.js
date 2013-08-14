@@ -34,6 +34,9 @@ $(function() {
         } else {
             $('#split_pane').addClass('active').siblings().removeClass('active');
         }
+        if(widths[1] == 0) {
+            editor.blur();
+        }
     });
     
     // set up the results pane
