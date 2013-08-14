@@ -395,6 +395,7 @@ var device_types = {
 
 function parse_netlist(text) {
     var netlist = [];
+    netlist.push({type: 'ground', connections: ['gnd'], properties: {}});   // define ground node
     var analyses = [];
     var plots = [];
     var lines = text.split('\n');
