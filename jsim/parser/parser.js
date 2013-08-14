@@ -573,6 +573,9 @@ Parse
             case ".verify":
                 read_verify(line);
                 break;
+            case ".mverify":
+                read_mverify(line);
+                break;
             default:
                 throw new CustomError("Invalid control statement",line[0]);
                 break;
@@ -1066,6 +1069,39 @@ Parse
                      };
         Checkoff.addVerify(fn_obj);
     
+    }
+    
+    function read_mverify(line){
+        if (line[1].type != "name") throw new CustomError("Memory name expected.",line[1]);
+        
+        try {
+            obj.startaddress = parse_number(line[2].token);
+            if (obj.startaddress < 1) throw "Invalid memory start address."
+        } catch (err) {
+            throw new CustomError(err,line[2]);
+        }
+        
+        var contents = [];
+        for (var i = 3; i < line.length; i += 1) {
+            try{
+                contents.push(parse_number(line[i].token));
+            } catch (err) {
+                throw new CustomError("Number expected.",line[i]);
+            }
+        }
+        
+        var display_base;
+        if (/^0x/i.test(line[3].token)) display_base = 'hex';
+        else if (/^0b/i.test(line[3].token)) display_base = 'binary';
+        else if (/^0/i.test(line[3].token) && !(/^0$/.test(line[3].token))) display_base = 'octal';
+        else display_base = 'binary'
+        
+        var obj = {type:"memory",
+                   contents:contents,
+                   token:line[0],
+                   display_base:display_base
+                  }
+        Checkoff.addVerify(obj);
     }
     
 /******************************************************************

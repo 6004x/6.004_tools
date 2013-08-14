@@ -64,7 +64,7 @@ $(function() {
             return;
         }
         var filename = editor.currentTab();
-        Simulator.simulate(content,filename,div,error_catcher);
+        Simulator.simulate(content,filename,div,error_catcher,"device");
     }
     
     function gls(){
@@ -75,7 +75,7 @@ $(function() {
             return;
         }
         var filename = editor.currentTab();
-        GateSimulator.simulate(content,filename,div,error_catcher);
+        Simulator.simulate(content,filename,div,error_catcher,"gate");
     }
     
     function error_catcher(err){

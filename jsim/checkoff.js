@@ -58,7 +58,12 @@ var Checkoff = (function(){
     Test Results: called when the Checkoff button is pressed
     **************************/
     function testResults(){
-        getResults();
+//        getResults();
+        if (!mResults){
+            var failedModal = new FailedModal("No results to verify. Did you run the simulation?");
+            failedModal.show();
+            return;
+        }
         
         if (mCheckoff_statement === null){
             var failedModal = new FailedModal("No checkoff requested. Did you include the appropriate \
@@ -178,7 +183,12 @@ var Checkoff = (function(){
                 
             var mistake = false;
             for (var i = 0; i < vobj.values.length; i += 1){
-                var expectedVal = (vobj.type == "periodic") ? vobj.values[i] : vobj.values[i].value;
+                var expectedVal;
+                if (vobj.type == "periodic"){
+                    expectedVal = vobj.values[i];
+                } else if (vobj.type == "tvpairs"){
+                    expectedVal = vobj.values[i].value;
+                }
                 
                 expectedVal = expectedVal.toString(base).split("");
                     
