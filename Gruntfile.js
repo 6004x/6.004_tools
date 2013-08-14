@@ -38,6 +38,23 @@ module.exports = function(grunt) {
             options: {
                 dirs: ['built']
             }
+        },
+        connect: {
+            server: {
+                options: {
+                    port: '?',
+                    base: '.'
+                }
+            }
+        },
+        qunit: {
+            all: {
+                options: {
+                    urls: [
+                        'http://<%= connect.server.options.host %>:<%= connect.server.options.port %>/test/all.html'
+                    ]
+                }
+            }
         }
     });
 
@@ -47,6 +64,9 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-cssmin');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-contrib-qunit');
+    grunt.loadNpmTasks('grunt-contrib-connect');
 
-    grunt.registerTask('default', ['copy', 'useminPrepare', 'concat', 'uglify', 'cssmin', 'usemin'])    
+    grunt.registerTask('default', ['copy', 'useminPrepare', 'concat', 'uglify', 'cssmin', 'usemin'])
+    grunt.registerTask('test', ['connect', 'qunit:all'])
 }
