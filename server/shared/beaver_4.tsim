@@ -1,0 +1,19 @@
+states A B C D
+symbols 0 1
+
+action A - B 1 r
+action A 1 B 1 l
+action B - A 1 l
+action B 1 C - l
+action C - *halt* 1 r
+action C 1 D 1 l
+action D - D 1 r
+action D 1 A - r
+tape test -
+// action old_state read_symbol 	new_state write_symbol valid_move
+//the action keyword declares what the tsm should do at each step
+// they all need to be valid
+//valid moves are r', 'l', and '-'
+//example
+// action state1 0 	state2 1 r
+// action state2 1		*halt* 1 -
