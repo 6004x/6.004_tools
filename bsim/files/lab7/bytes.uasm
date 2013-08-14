@@ -1,0 +1,90 @@
+.include "/library/beta.uasm"
+.include "/library/lab7checkoff.uasm"
+.include "/library/lab7macros.uasm"
+
+regs: RESERVE(32)
+
+// r24, r25 and 26 are reserved for macro scratch space.
+scratch = r26
+scratch2 = r25
+scratch3 = r24
+
+.macro store_rc(instruction, value) {
+    extract_field(instruction, 25, 21, scratch)
+    MULC(scratch, 4, scratch)
+    ST(value, regs, scratch)
+}
+
+.macro load_ra(instruction, target) {
+    extract_field(instruction, 20, 16, scratch)
+    MULC(scratch, 4, scratch)
+    LD(scratch, regs, target)
+}
+
+.macro load_rc(instruction, target) {
+    extract_field(instruction, 25, 21, scratch)
+    MULC(scratch, 4, scratch)
+    LD(scratch, regs, target)
+}
+
+.macro extract_literal(instruction, target) {
+    extract_field(instruction, 15, 0, target)
+    SHLC(target, 16, target)
+    SRAC(target, 16, target)
+}
+
+.macro extract_byte(word, byte, target) {
+    MULC(byte, 8, scratch)
+    SHR(word, scratch, scratch)
+    ANDC(scratch, 0xFF, target)
+}
+
+.macro store_byte(address, byte, value) {
+    LD(address, 0, scratch)
+    MULC(byte, 8, scratch2)
+    CMOVE(0xFF, scratch3)
+    SHL(scratch3, scratch2, scratch3)
+    XORC(scratch3, 0xFFFFFFFF, scratch3) // i.e. NOT scratch3
+    AND(scratch3, scratch, scratch3)
+    SHL(value, scratch2, scratch2)
+    OR(scratch2, scratch3, scratch)
+    ST(scratch, 0, address)
+}
+
+UI:
+    save_all_regs(regs)
+    LD(xp, -4, r0)
+    extract_field(r0, 31, 26, r1)
+    CMPEQC(r1, 0x10, r2)
+    BT(r2, ldb)
+    CMPEQC(r1, 0x11, r2)
+    BT(r2, stb)
+    restore_all_regs(regs)
+    BR(_IllegalInstruction)
+
+ldb:
+    load_ra(r0, r2)
+    extract_literal(r0, r3)
+
+    ADD(r2, r3, r2)
+    ANDC(r2, 0x3, r3)
+    LD(r2, 0, r2)
+    extract_byte(r2, r3, r2)
+    store_rc(r0, r2)
+
+    restore_all_regs(regs)
+    JMP(xp)
+
+stb:
+    load_ra(r0, r2)
+    extract_literal(r0, r3)
+    ADD(r2, r3, r2)
+
+    load_rc(r0, r3)
+    ANDC(r3, 0xFF, r3)
+    ANDC(r2, 0x3, r4)
+
+    store_byte(r2, r4, r3)
+
+    restore_all_regs(regs)
+    JMP(xp)

@@ -255,7 +255,7 @@ var path=require('path');
 				
 				if(exists){
 					//TODO: what should we do in case we delete a file/folder twice
-					console.log('exists');
+
 					fs.unlinkSync(hide_path)
 				}
 					fs.rename(full_path, hide_path, function (err) {

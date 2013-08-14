@@ -27,6 +27,9 @@ BSim.Controls = function(container, beta) {
     var handle_step = function() {
         mBeta.executeCycle();
         mUndoButton.enable();
+        if(mBeta.verifier()) {
+            mVerifyButton.enable();
+        }
     };
 
     var handle_reset = function() {
@@ -55,6 +58,9 @@ BSim.Controls = function(container, beta) {
         mStepButton.disable();
         mFastRunButton.disable();
         mUndoButton.disable();
+        if(mBeta.verifier()) {
+            mVerifyButton.enable();
+        }
     };
 
     var beta_run_stop = function() {
@@ -63,6 +69,22 @@ BSim.Controls = function(container, beta) {
         mFastRunButton.enable();
         mUndoButton.enable();
     };
+
+    var beta_resize_memory = function(size) {
+        if(size === 0) {
+            mRunButton.disable();
+            mFastRunButton.disable();
+            mStepButton.disable();
+            mVerifyButton.disable();
+            mUndoButton.disable();
+            mResetButton.disable();
+        } else {
+            mRunButton.enable();
+            mFastRunButton.enable();
+            mStepButton.enable();
+            mResetButton.enable();
+        }
+    }
 
     var handle_undo = function() {
         mBeta.undoCycle();
@@ -73,6 +95,7 @@ BSim.Controls = function(container, beta) {
 
     var change_view = function() {
         $('#programmer-view, #schematic-view').toggle();
+        BSim.SchematicView.Scale();
     }
 
     var initialise = function() {
@@ -92,6 +115,8 @@ BSim.Controls = function(container, beta) {
 
         mBeta.on('run:start', beta_run_start);
         mBeta.on('run:stop', beta_run_stop);
+        mBeta.on('resize:memory', beta_resize_memory);
+        beta_resize_memory(0); // There is no content on initial load.
     };
 
     initialise();

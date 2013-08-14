@@ -1,19 +1,21 @@
 /* The official background colour */
 body {
-    background-color: #E9EBED;
+    background-color: #EEEEEE;
+    /*background-image: linear-gradient(to bottom, rgb(255, 255, 255) 0%, hsl(42,98%,67%) 80%); */
+    /*background-image: linear-gradient(to bottom, rgb(223, 223, 223) 0%, rgb(178, 178, 178) 40%);*/
+    /*background-image: linear-gradient(to bottom, #EEEEEE, #E1E1E1);*/
     padding-right: 0;
 }
 
 /* Prevent bouncing on OS X/iOS */
 html {
-    overflow: auto;
+    overflow: hidden;
 }
 
 /* Thin-ish yellow header with centred title */
 .masthead {
     height: 40px;
     margin-bottom:0px;
-    background-color: #FED881; /* A paler shade of the official colour. */
     margin-top:0px;
     padding-top:0px;
     text-align:center;
@@ -45,6 +47,10 @@ html {
 .masthead .nav-pills > li.active > a {
     background-color: #444;
     color: white;
+}
+
+.split-controls {
+    padding-left: 10px;
 }
 
 /* Sidebar sizing */
@@ -87,14 +93,25 @@ html {
 .split-splitter > div {
     margin-left: auto;
     margin-right: auto;
-    width: 2px;
-    background-color: #aaa;
+    width: 3px;
+    background-color: #555;
     height: 100%;
-/*    border-top-left-radius: 2px;
-    border-top-right-radius: 2px;*/
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
 }
 
 /* Wrapping toolbars is bad. */
 .btn-toolbar {
     white-space: nowrap;
+}
+
+/* Alert area */
+#header-alert-holder > .alert {
+    max-width: -webkit-calc(100% - 300px);
+    max-width: calc(100% - 300px);
+    /*min-width: 300px;*/
+    position: absolute;
+    left: 250px;
+    top: 5px;
+    margin-right: 10px;
 }

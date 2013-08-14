@@ -204,6 +204,13 @@ var Editor = function(container, mode) {
         });
     };
 
+    // Removes focus from the editor.
+    this.blur = function() {
+        if(!mCurrentDocument) return; // If we don't have a current document we can't be focused anyway.
+
+        mCurrentDocument.cm.getInputField().blur();
+    };
+
     // The below methods are private.
     var focusTab = function(doc) {
         doc.tab.find('a').tab('show');
@@ -275,6 +282,7 @@ var Editor = function(container, mode) {
             indentWithTabs: true,
             styleActiveLine: true,
             value: content,
+            tabindex: -1,
             mode: mSyntaxMode,
             extraKeys: {
                 Tab: function() {
@@ -329,6 +337,14 @@ var Editor = function(container, mode) {
         do_save();
     };
 
+    var save_all_documents = function() {
+        _.each(mOpenDocuments, function(document) {
+            if(!document.cm.isClean(document.generation)) {
+                do_save(document);
+            }
+        });
+    }
+
     var try_get_document = function(filename) {
         var document;
         if(filename) document = mOpenDocuments[filename];
@@ -343,7 +359,8 @@ var Editor = function(container, mode) {
         mToolbar = new Toolbar(mToolbarHolder);
         // Add some basic button groups
         self.addButtonGroup([
-            new ToolbarButton('icon-hdd', save_current_document, "Save current file")
+            new ToolbarButton('Save', save_current_document, "Save current file"),
+            new ToolbarButton('Save All', save_all_documents, "Save all open buffers")
         ]);
         mContainer.append(mToolbarHolder);
         mContainer.css('position', 'relative');
@@ -356,7 +373,7 @@ var Editor = function(container, mode) {
 
         // Do some one-time setup.
         if(!Editor.IsSetUp) {
-            CodeMirror.commands.save = do_save;
+            CodeMirror.commands.save = function() { do_save(); };
             CodeMirror.commands.autocomplete = function(cm) {
                 CodeMirror.showHint(cm, mAutocompleter.complete, {completeSingle: false});
             };
@@ -372,13 +389,13 @@ var Editor = function(container, mode) {
         }
     };
 
-    var do_save = function() {
-        if(!mCurrentDocument) return false;
-        var current_document = mCurrentDocument; // Keep this around so we don't get confused if user changes tab.
-        FileSystem.saveFile(current_document.name, current_document.cm.getValue(), function() {
+    var do_save = function(document) {
+        if(!document) document = mCurrentDocument;
+        if(!document) return false;
+        FileSystem.saveFile(document.name, document.cm.getValue(), function() {
             // Mark the file as clean.
-            current_document.generation = current_document.cm.changeGeneration();
-            handle_change_tab_icon(current_document);
+            document.generation = document.cm.changeGeneration();
+            handle_change_tab_icon(document);
         });
     };
 

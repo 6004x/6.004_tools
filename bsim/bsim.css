@@ -18,6 +18,9 @@ button.btn {
 .regfile .register {
     color: gray;
     text-align: right;
+}
+
+#programmer-view .regfile .register {
     padding-left: 10px;
     padding-right: 5px;
 }
@@ -41,9 +44,7 @@ pre.tty-output {
     height: 100px;
     overflow-y: auto;
     background-color: #fafafa;
-    border: thin solid #eaeaea;
-    border-radius: 5px;
-    margin-top: 10px;
+    border-radius: 0px;
 }
 
 .tty {
@@ -112,58 +113,58 @@ div.memory {
 }
 
 /* Highlight the last-written entries */
-.memory .last-write.a4 td {
+/*.memory*/ .last-write.a4 td {
     background-color: hsl(217, 67%, 95%);
 }
 
-.memory .last-write.a3 td {
+/*.memory*/ .last-write.a3 td {
     background-color: hsl(217, 67%, 90%);
 }
 
-.memory .last-write.a2 td {
+/*.memory*/ .last-write.a2 td {
     background-color: hsl(217, 67%, 85%);
 }
 
-.memory .last-write.a1 td {
+/*.memory*/ .last-write.a1 td {
     background-color: hsl(217, 67%, 80%);
 }
 
-.memory .last-write.a0 td {
+/*.memory*/ .last-write.a0 td {
     background-color: hsl(217, 67%, 75%);
 }
 
 /* Highlight the last-read entries */
-.memory .last-read.b4 td {
+/*.memory*/ .last-read.b4 td {
     background-color: hsl(120, 60%, 95%);
 }
 
-.memory .last-read.b3 td {
+/*.memory*/ .last-read.b3 td {
     background-color: hsl(120, 60%, 90%);
 }
 
-.memory .last-read.b2 td {
+/*.memory*/ .last-read.b2 td {
     background-color: hsl(120, 60%, 85%);
 }
 
-.memory .last-read.b1 td {
+/*.memory*/ .last-read.b1 td {
     background-color: hsl(120, 60%, 80%);
 }
 
-.memory .last-read.b0 td {
+/*.memory*/ .last-read.b0 td {
     background-color: hsl(120, 60%, 75%);
 }
 
 /* Deal with something being on both lists. */
-.memory .last-read.last-write td {
+/*.memory*/ .last-read.last-write td {
     background-color: hsl(169, 60%, 85%);
 }
 
 /* If it's first in either list, it should be darker. */
-.memory .last-read.last-write.a0 td {
+/*.memory*/ .last-read.last-write.a0 td {
     background-color: hsl(169, 60%, 75%);
 }
 
-.memory .last-read.last-write.b0 td {
+/*.memory*/ .last-read.last-write.b0 td {
     background-color: hsl(169, 60%, 75%);
 }
 
@@ -218,8 +219,16 @@ div.disassembly {
     max-width: 100px;
     text-overflow: ellipsis;
 }
+.disassembly td:nth-child(1),
+.disassembly td:nth-child(3) {
+    color: gray;
+}
+.disassembly .current-instruction td:nth-child(1),
+.disassembly .current-instruction td:nth-child(3) {
+    color: #ddd;
+}
 
-/* Disassembeld instruction */
+/* Disassembled instruction */
 .disassembly  td:nth-child(4) {
     width: 240px;
 }

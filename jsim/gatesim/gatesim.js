@@ -33,7 +33,6 @@ var gatesim = (function() {
             var network = new Network(netlist, options);
 
             var progress = {};
-            progress.probe_names = probe_names; // node names for LTE check
             progress.update_interval = 250; // in milliseconds
             progress.finish = function(msg) {
                 progress_callback(undefined, network, msg);
@@ -86,9 +85,6 @@ var gatesim = (function() {
         return n;
     };
 
-    // these components are extracted but don't represent a gatesim device
-    var ignored_components = ["analog:port-in", "analog:port-out", "analog:port-inout", "analog:s"];
-
     // load circuit from JSON netlist: [[device,[connections,...],{prop: value,...}]...]
     Network.prototype.load_netlist = function(netlist) {
         // process each component in the JSON netlist (see schematic.js for format)
@@ -99,10 +95,6 @@ var gatesim = (function() {
             var type = component[0];
             var connections = component[1];
             var properties = component[2];
-
-            // ignore components not relevant to creating simulation devices
-            if (ignored_components.indexOf(type) != -1) continue;
-            counts[type] = (counts[type] || 0) + 1;
 
             // convert node names to Nodes
             for (var c in connections)
@@ -115,8 +107,7 @@ var gatesim = (function() {
                 // build input and output lists using terminal names
                 // in info array
                 var inputs = [];
-                for (var j = 0; j < info[0].length; j += 1)
-                inputs.push(connections[info[0][j]]);
+                for (var j = 0; j < info[0].length; j += 1) inputs.push(connections[info[0][j]]);
                 // create a new device
                 d = new LogicGate(this, type, name, info[2], inputs, connections[info[1]], properties);
                 this.devices.push(d);
@@ -134,11 +125,10 @@ var gatesim = (function() {
             else if (type == 'memory') {
 		throw "Device "+type+" not yet implemented in gatesim";
 	    }
-            else if (type == 'g') {
+            else if (type == 'ground') {
                 // gnd node -- drive with a 0-input OR gate (output = 0)
                 n = connections.gnd;
                 if (n.drivers.length > 0) continue; // already handled this one
-
 		n.v = V0;   // should be set by initialization of LogicGate that drives this node
                 this.devices.push(new LogicGate(this, type, name, OrTable, [], n, properties));
             }
@@ -224,6 +214,19 @@ var gatesim = (function() {
 
     Network.prototype.remove_event = function(event) {
         this.event_queue.remove(event);
+    };
+    
+    // return event list for specified node.  Each event has the following
+    // attributes:
+    //   time: time of the event in seconds
+    //   type: 0=contaminate event, 1 = propagate event
+    //   v: value of node after event
+    //   old_v: value of node before event
+    //   node: Node object
+    Network.prototype.history = function(node) {
+        var n = this.node_map[node];
+        if (n === undefined) return undefined;
+        else return n.history;
     };
 
     // return list of node's events, undefined if node has no events.
@@ -498,7 +501,7 @@ var gatesim = (function() {
 
         // now add the BUS device to drive the current node
         this.driver = new LogicGate(this.network, 'BUS', this.name + '%bus', BusTable, inputs, this, {}, true);
-        this.drivers = null; // finalization complete
+        this.drivers = undefined; // finalization complete
         this.network.devices.push(this.driver);
     };
 

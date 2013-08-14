@@ -163,5 +163,20 @@ BSim.SchematicView = function(schematic, beta) {
         mStylesheet = $('<style>').appendTo('head')[0].sheet;
         mBeta.on('change:pc', beta_change_pc);
     };
+
+
     initialise();
-};
+};    
+// HACK: This really should use fewer random IDs.
+BSim.SchematicView.Scale = function() {
+    var scaleX = $('#schematic-view').width() / 940;
+    var scaleY = ($(window).height() - $('#schematic-holder').offset().top - 20) / 600;
+    var scale = Math.min(scaleX, scaleY);
+    var scale_prop = 'scale(' + scale + ')';
+    $('#schematic-holder').css({
+        '-webkit-transform': scale_prop,
+        '-moz-transform': scale_prop,
+        '-ms-transform': scale_prop,
+        'transform': scale_prop
+    });
+}

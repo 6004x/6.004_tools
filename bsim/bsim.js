@@ -33,8 +33,10 @@ $(function() {
         } else {
             $('#split_pane').addClass('active').siblings().removeClass('active');
         }
+        if(widths[1] == 0) {
+            editor.blur();
+        }
     });
-
 
     // Make an editor
     var editor = new Editor('#editor', 'uasm');
@@ -61,6 +63,7 @@ $(function() {
                     }
                 });
             } else {
+                PassiveAlert("Assembled successfully", "success");
                 beta.loadBytes(result.image);
                 beta.setBreakpoints(result.breakpoints);
                 beta.setLabels(result.labels);
@@ -125,7 +128,9 @@ $(function() {
     });
 
     new BSim.Beta.ErrorHandler(beta);
-    new BSim.SchematicView($('svg.schematic'), beta);
+    var schematic = new BSim.SchematicView($('svg.schematic'), beta);
+    split.on('resize', BSim.SchematicView.Scale);
+    $(window).resize(BSim.SchematicView.Scale);
 
     // Work around weird sizing bug.
     _.delay(function() {
