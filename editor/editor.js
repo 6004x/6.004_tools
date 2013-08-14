@@ -204,6 +204,13 @@ var Editor = function(container, mode) {
         });
     };
 
+    // Removes focus from the editor.
+    this.blur = function() {
+        if(!mCurrentDocument) return; // If we don't have a current document we can't be focused anyway.
+
+        mCurrentDocument.cm.getInputField().blur();
+    };
+
     // The below methods are private.
     var focusTab = function(doc) {
         doc.tab.find('a').tab('show');
@@ -275,6 +282,7 @@ var Editor = function(container, mode) {
             indentWithTabs: true,
             styleActiveLine: true,
             value: content,
+            tabindex: -1,
             mode: mSyntaxMode,
             extraKeys: {
                 Tab: function() {
