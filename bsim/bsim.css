@@ -44,9 +44,7 @@ pre.tty-output {
     height: 100px;
     overflow-y: auto;
     background-color: #fafafa;
-    border: thin solid #eaeaea;
-    border-radius: 5px;
-    margin-top: 10px;
+    border-radius: 0px;
 }
 
 .tty {
