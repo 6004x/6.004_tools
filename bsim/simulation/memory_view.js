@@ -80,6 +80,10 @@ BSim.MemoryView = function(container, beta) {
         mTable.endBatch();
     };
 
+    this.resize = function(height) {
+        mTable.resize(height);
+    };
+
     var initialise = function() {
         var height = mContainer.data('height') || 350;
         mTable = new BigTable(mContainer, 140, height, 22, 2);

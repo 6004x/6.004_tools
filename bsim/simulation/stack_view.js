@@ -154,6 +154,10 @@ BSim.StackView = function(container, beta) {
         mTable.endBatch();
     };
 
+    this.resize = function(height) {
+        mTable.resize(height);
+    };
+
     var initialise = function() {
         var height = mContainer.data('height') || 350;
         mTable = new BigTable(container, 170, height, 22, 3);

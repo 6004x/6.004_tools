@@ -108,6 +108,34 @@ var BigTable = function(container, width, height, row_height, column_count) {
             redraw();
     };
 
+    this.resize = function(height) {
+        mDisplayRowCount = Math.floor(height / mRowHeight);
+        mHeight = mDisplayRowCount * mRowHeight;
+        mContent.css({height: mHeight});
+        mScroller.css({height: mHeight});
+        console.log("setting height to " + mHeight);
+        create_rows();
+        redraw();
+    };
+
+    var create_rows = function() {
+        // Set up our display rows.
+        mContent.empty();
+        mTableRows = [];
+        for(var i = 0; i < mDisplayRowCount; ++i) {
+            var row = $('<tr>').css({height: mRowHeight});
+            var row_cells = [];
+            for(var j = 0; j < mColumnCount; ++j) {
+                var cell = $('<td>');
+                row.append(cell);
+                row_cells.push(cell[0]);
+            }
+            row_cells.row = row[0];
+            mTableRows.push(row_cells);
+            mContent.append(row);
+        }
+    }
+
     var redraw = function(row) {
         if(mBufferingDraws) return;
         // If we weren't given an argument, redraw everything visible.
@@ -155,19 +183,7 @@ var BigTable = function(container, width, height, row_height, column_count) {
         }
         mEmptyData.cls = '';
 
-        // Set up our display rows.
-        for(var i = 0; i < mDisplayRowCount; ++i) {
-            var row = $('<tr>').css({height: mRowHeight});
-            var row_cells = [];
-            for(var j = 0; j < mColumnCount; ++j) {
-                var cell = $('<td>');
-                row.append(cell);
-                row_cells.push(cell[0]);
-            }
-            row_cells.row = row[0];
-            mTableRows.push(row_cells);
-            mContent.append(row);
-        }
+        create_rows();
     };
 
     initialise();
