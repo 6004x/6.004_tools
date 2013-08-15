@@ -42,7 +42,6 @@ var BigTable = function(container, width, height, row_height, column_count) {
     // data's length must be equal to the table's column count.
     this.updateRow = function(row, data) {
         if(!mData[row]) {
-            console.warn("Update to nonexistent row " + data);
             return;
         }
         mData[row] = data;
@@ -52,7 +51,6 @@ var BigTable = function(container, width, height, row_height, column_count) {
     // Update's the given column of the given row with the given data, which should be a string.
     this.updateCell = function(row, column, data) {
         if(!mData[row]) {
-            console.warn("Update to nonexistent row " + row + " column " + column + " = " + data);
             return;
         }
         mData[row][column] = data;
@@ -113,7 +111,6 @@ var BigTable = function(container, width, height, row_height, column_count) {
         mHeight = mDisplayRowCount * mRowHeight;
         mContent.css({height: mHeight});
         mScroller.css({height: mHeight});
-        console.log("setting height to " + mHeight);
         create_rows();
         redraw();
     };

@@ -73,7 +73,6 @@ BSim.MemoryView = function(container, beta) {
             mCurrentLabelRows[i].updateCell(mCurrentLabelRows[i], 0, BSim.Common.FormatWord(mCurrentLabelRows[i]*4, 4));
         };
         for(var address in labels) {
-            console.log(address);
             var address = parseInt(address, 10);
             mTable.updateCell(address / 4, 0, labels[address]);
         }

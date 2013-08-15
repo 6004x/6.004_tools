@@ -154,7 +154,7 @@ BSim.SchematicView = function(schematic, beta) {
             case null:
                 return 0;
             default:
-                console.log("Unknown ALU operation: " + operation);
+                console.warn("Unknown ALU operation: " + operation);
                 return 0;
         };
     };
