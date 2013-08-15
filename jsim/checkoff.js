@@ -17,7 +17,7 @@ var Checkoff = (function(){
     **************************/
     function addVerify(obj){
         mVerify_statements.push(obj);
-//        console.log('adding verify: ',obj);
+        console.log('adding verify: ',obj);
     }
     
     /**************************
@@ -73,7 +73,7 @@ var Checkoff = (function(){
         }
         
         var mistake = runVerify();
-        console.log("mistake:",mistake);
+//        console.log("mistake:",mistake);
         if (!mistake){
             var passedModal = new ModalDialog();
             passedModal.setTitle("Checkoff Succeeded!");
@@ -121,6 +121,12 @@ var Checkoff = (function(){
     function runVerify(){
         for (var v = 0; v < mVerify_statements.length; v += 1){
             var vobj = mVerify_statements[v];
+            
+            if (vobj.type == "memory"){
+                var mem_mistake = verify_memory(vobj);
+                if (mem_mistake) return mem_mistake;
+                continue;
+            }
             
             var times = mResults._time_;
             var time_indices = [];
@@ -241,9 +247,20 @@ var Checkoff = (function(){
                 }
             }
         }
+        // if there are no mistakes, return null
         return null;
     }
     
+    
+    function verify_memory(vobj){
+        // vobj has attributes:
+        //      type: "memory"
+        //      mem_name: <the name of the memory instance>
+        //      startaddress: <the address to start verification at>
+        //      contents: <the expected contents of the memory>
+        //      display_base: 'hex', 'octal', or 'binary'
+        //      token: <the first token of the memory line for error throwing>
+    }
     
     /*************************
     Turn into a logic value: 
