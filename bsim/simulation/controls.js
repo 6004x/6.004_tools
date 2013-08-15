@@ -78,7 +78,9 @@ BSim.Controls = function(container, beta, editor) {
         }
         if(!verifier.verify()) {
             dialog.setContent(verifier.getMessage());
+            $('#checkoff-failure').html(verifier.getMessage());
         } else {
+            $('#checkoff-failure').empty();
             dialog.setText("Checkoff complete!");
             dialog.addButton("Submit", present_user_form, 'btn-primary'); // dummy button for now.
         }

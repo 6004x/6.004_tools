@@ -77,6 +77,14 @@ div.memory-holder {
     width: 140px;
 }
 
+#checkoff-failure {
+    position: absolute;
+    bottom: 0;
+    left: 500px;
+    height: 120px;
+    width: 340px;
+}
+
 .memory-key ul {
     list-style: none;
     margin-left: 0px;
