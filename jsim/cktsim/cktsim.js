@@ -1871,7 +1871,7 @@ var cktsim = (function() {
         }
 
         // post-processing for triangle
-        // triangle(v_init,v_plateua,t_period)
+        // triangle(v_init,v_plateau,freq)
         else if (src.fun == 'triangle') {
             v1 = arg_value(src.args, 0, 0); // default init value: 0V
             v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
