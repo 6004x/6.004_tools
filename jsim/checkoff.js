@@ -39,7 +39,7 @@ var Checkoff = (function(){
     Set results to the given results
     *************************/
     function setResults(data){
-        mResults = results;
+        mResults = data;
     }
     
     /**************************
@@ -58,15 +58,16 @@ var Checkoff = (function(){
     Test Results: called when the Checkoff button is pressed
     **************************/
     function testResults(){
+        var failedModal;
 //        getResults();
         if (!mResults){
-            var failedModal = new FailedModal("No results to verify. Did you run the simulation?");
+            failedModal = new FailedModal("No results to verify. Did you run the simulation?");
             failedModal.show();
             return;
         }
         
         if (mCheckoff_statement === null){
-            var failedModal = new FailedModal("No checkoff requested. Did you include the appropriate \
+            failedModal = new FailedModal("No checkoff requested. Did you include the appropriate \
 'labXcheckoff.jsim' file?");
             failedModal.show();
             return;
@@ -82,10 +83,10 @@ var Checkoff = (function(){
             passedModal.show();
         } else {
             if (mistake.verifyError){
-                var failedModal = new FailedModal(mistake.msg);
+                failedModal = new FailedModal(mistake.msg);
                 failedModal.show();
             } else {
-                var failedModal = new ModalDialog();
+                failedModal = new ModalDialog();
                 failedModal.setTitle("Checkoff Failed!");
                 failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
     <p><table class='table'><tr><td>Node(s):</td><td>"+mistake.nodes+"</tr>\
@@ -128,11 +129,12 @@ var Checkoff = (function(){
                 continue;
             }
             
-            var times = mResults._time_;
             var time_indices = [];
             var time_steps = [];
             var nodes = vobj.nodes.slice(0);
             var results = {};
+            var index;
+            var node;
             
             for (var i = 0; i < nodes.length; i += 1){
                 results[nodes[i]] = [];
@@ -140,7 +142,7 @@ var Checkoff = (function(){
             
             if (vobj.type == "periodic"){
                 time_steps.push(vobj.tstart);
-                var index = findTimeIndex(vobj.tstart,0)
+                index = findTimeIndex(vobj.tstart,0);
                 time_indices.push(index);
                 for (node in results){
                     if (!(node in mResults)){
@@ -150,9 +152,9 @@ var Checkoff = (function(){
                     }
                     results[node].push(mResults[node][index]);
                 }
-                for (var i = 1; i < vobj.values.length; i += 1){
+                for (i = 1; i < vobj.values.length; i += 1){
                     time_steps.push(vobj.tstart + vobj.tstep * i);
-                    index = findTimeIndex(vobj.tstart + vobj.tstep * i, time_indices[i-1])
+                    index = findTimeIndex(vobj.tstart + vobj.tstep * i, time_indices[i-1]);
                     time_indices.push(index);
                     for (node in results){
                         results[node].push(mResults[node][index]);
@@ -160,11 +162,11 @@ var Checkoff = (function(){
                 }
             }
             if (vobj.type == "tvpairs"){
-                for (var i = 0; i < vobj.values.length; i += 1){
+                for (i = 0; i < vobj.values.length; i += 1){
                     time_steps.push(vobj.values[i].time);
                     
-                    var temp_index = (i == 0) ? 0 : time_indices[i-1];
-                    var index = findTimeIndex(vobj.values[i].time,temp_index)
+                    var temp_index = (i === 0) ? 0 : time_indices[i-1];
+                    index = findTimeIndex(vobj.values[i].time,temp_index);
                     time_indices.push(index);
                     for (node in results){
                         results[node].push(mResults[node][index]);
@@ -176,19 +178,19 @@ var Checkoff = (function(){
             var base_prefix;
             if (vobj.display_base == 'hex') {
                 base = 16;
-                base_prefix = '0x'
+                base_prefix = '0x';
             }
             if (vobj.display_base == 'octal') {
                 base = 8;
-                base_prefix = '0'
+                base_prefix = '0';
             }
             if (vobj.display_base == 'binary') {
                 base = 2;
-                base_prefix = '0b'
+                base_prefix = '0b';
             }
                 
             var mistake = false;
-            for (var i = 0; i < vobj.values.length; i += 1){
+            for (i = 0; i < vobj.values.length; i += 1){
                 var expectedVal;
                 if (vobj.type == "periodic"){
                     expectedVal = vobj.values[i];
@@ -198,7 +200,7 @@ var Checkoff = (function(){
                 
                 expectedVal = expectedVal.toString(base).split("");
                     
-                var nodeVals = []
+                var nodeVals = [];
                 var valAtTime = [];
                 for (var j = 0; j < nodes.length; j += 1){
                     nodeVals.push(logic(results[nodes[j]][i]));
@@ -210,9 +212,9 @@ var Checkoff = (function(){
                     // three binary digits equal one octal digit
                     // break into threes from the end
                     while (nodeVals.length > 0){
-                        valAtTime.unshift(nodeVals.splice(-3,3))
+                        valAtTime.unshift(nodeVals.splice(-3,3));
                     }
-                    for (var j = 0; j < valAtTime.length; j += 1){
+                    for (j = 0; j < valAtTime.length; j += 1){
                         valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(8);
                         if (valAtTime[j] == "NaN") valAtTime[j] = "X";
                     }
@@ -220,9 +222,9 @@ var Checkoff = (function(){
                     // four binary digits equal one hexadecimal digit
                     // break into fours from the end
                     while (nodeVals.length > 0){
-                        valAtTime.unshift(nodeVals.splice(-4,4))
+                        valAtTime.unshift(nodeVals.splice(-4,4));
                     }
-                    for (var j = 0; j < valAtTime.length; j += 1){
+                    for (j = 0; j < valAtTime.length; j += 1){
                         valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(16);
                         if (valAtTime[j] == "NaN") valAtTime[j] = "X";
                     }

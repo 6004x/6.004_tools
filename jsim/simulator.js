@@ -4,7 +4,6 @@ var Simulator = (function(){
     var mCurrent_results;
     var mPlotDefs;
     var mDiv;
-    var mAllPlots = [];
     var mOptions;
     var mType;
     
@@ -35,17 +34,17 @@ var Simulator = (function(){
         
         if (netlist.length === 0) {
             div.prepend('<div class="alert alert-danger"> Empty netlist.'+
-                        '\<button class="close" data-dismiss="alert">&times;</button></div>');
+                        '<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         if (mAnalyses.length === 0) {
             div.prepend('<div class="alert alert-danger"> No analyses requested.'+
-                        '\<button class="close" data-dismiss="alert">&times;</button></div>');
+                        '<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         if (plots.length === 0) {
             div.prepend('<div class="alert alert-danger"> No plots requested.'+
-                        '\<button class="close" data-dismiss="alert">&times;</button></div>');
+                        '<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         
@@ -75,7 +74,7 @@ var Simulator = (function(){
                 } catch (err) {
                     tranProgress.hide();
                     div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                '.\<button class="close" data-dismiss="alert">&times;'+
+                                '.<button class="close" data-dismiss="alert">&times;'+
                                 '</button></div>');
                 }
             }
@@ -102,7 +101,7 @@ var Simulator = (function(){
                     } catch (err) {
                         tranProgress.hide();
                         div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                    '.\<button class="close" data-dismiss="alert">&times;</button></div>');
+                                    '.<button class="close" data-dismiss="alert">&times;</button></div>');
                     }
                     break;
                     
@@ -118,11 +117,11 @@ var Simulator = (function(){
                             prepare_ac_data(plots);
                         } catch (err) {
                             div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                        '.\<button class="close" data-dismiss="alert">&times;</button></div>');
+                                        '.<button class="close" data-dismiss="alert">&times;</button></div>');
                         }
                     } else {
                         div.prepend('<div class="alert alert-danger">No AC analysis in gate-level simulation.'+
-                                    '\<button class="close" data-dismiss="alert">&times;</button></div>');
+                                    '<button class="close" data-dismiss="alert">&times;</button></div>');
                     }
                     break;
                     
@@ -136,11 +135,11 @@ var Simulator = (function(){
                             prepare_dc_data(plots);
                         } catch (err) {
                             div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                        '.\<button class="close" data-dismiss="alert">&times;</button></div>');
+                                        '.<button class="close" data-dismiss="alert">&times;</button></div>');
                         }
                     } else {
                         div.prepend('<div class="alert alert-danger">No DC analysis in gate-level simulation.'+
-                                    '\<button class="close" data-dismiss="alert">&times;</button></div>');
+                                    '<button class="close" data-dismiss="alert">&times;</button></div>');
                     }
                     break;
             }
@@ -320,7 +319,7 @@ var Simulator = (function(){
                 /***************************** series object ************************************/
             }
             
-            if (dataseries.length == 0) {
+            if (dataseries.length === 0) {
                 continue;
             }
             
@@ -340,8 +339,8 @@ var Simulator = (function(){
         var results = mCurrent_results;
         
         if (results === undefined) {
-            div.prepend('<div class="alert alert-danger">No results from the simulation.'+
-                        '.\<button class="close" data-dismiss="alert">&times;</button></div>');
+            mDiv.prepend('<div class="alert alert-danger">No results from the simulation.'+
+                        '.<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         
@@ -356,7 +355,7 @@ var Simulator = (function(){
                 var node = plot_nodes[i];
                 if (results[node] === undefined) {
                     var novaldiv = get_novaldiv(node);
-                    div.prepend(novaldiv);
+                    mDiv.prepend(novaldiv);
                     continue;
                 }
                 var magnitudes = results[node].magnitude;
@@ -406,29 +405,30 @@ var Simulator = (function(){
         var analysis = mCurrent_analysis;
         var sweep1 = analysis.parameters.sweep1;
         var sweep2 = analysis.parameters.sweep2;
+        var dataseries;
         
         if (sweep1 === undefined) return;
         for (var p = 0; p < plots.length; p += 1) {
             var node = plots[p][0];  // for now: only one value per plot
-            var dataseries = [];
+            dataseries = [];
             var index2 = 0;
             while (true) {
                 var values;
                 var x,x2;
                 if (sweep2 === undefined) {
                     values = results[node];
-                    x = results['_sweep1_'];
+                    x = results._sweep1_;
                 } else {
                     values = results[index2][node];
-                    x = results[index2]['_sweep1_'];
-                    x2 = results[index2]['_sweep2_'];
+                    x = results[index2]._sweep1_;
+                    x2 = results[index2]._sweep2_;
                     index2 += 1;
                 }
         
                 // no values to plot for the given node
                 if (values === undefined) {
                     var novaldiv = get_novaldiv(node);
-                    div.prepend(novaldiv);
+                    mDiv.prepend(novaldiv);
                     continue;
                 }
                 var plotdata = [];
@@ -479,4 +479,3 @@ var Simulator = (function(){
             hex_logic:hex_logic
            };
 }());
-
