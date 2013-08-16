@@ -1307,15 +1307,29 @@ Device readers: each takes a line of tokens and returns a device object,
                   };
         
         line.shift();
-        for (var i = 0; i < line.length-1; i += 1){
-            if (line[i].type != "name"){
-                throw new CustomError("Node name expected", line[i]);
-            }
-            obj.connections.push(line[i].token);
-        }
         
-        var end = line.length;
-        obj.properties.value = line[end-1].token;
+        var i = 0;
+        while (i < line.length){
+            var expr_obj = eat_expression(line,i);
+            if (line[expr_obj.next_index]){
+                // if there's something after the "expression", it's actually just a node name
+                if (line[i].type != "name") throw new CustomError("Node name expected.",line[i]);
+                obj.connections.push(line[i].token);
+                i += 1;
+            } else {
+                obj.properties.value = expr_obj.expr;
+                break;
+            }
+        }
+//        for (var i = 0; i < line.length-1; i += 1){
+//            if (line[i].type != "name"){
+//                throw new CustomError("Node name expected", line[i]);
+//            }
+//            obj.connections.push(line[i].token);
+//        }
+        
+//        var end = line.length;
+//        obj.properties.value = line[end-1].token;
 //        try{
 //            obj.properties.value = parse_number(line[end-1].token);
 //        } catch (err) {
@@ -1325,7 +1339,7 @@ Device readers: each takes a line of tokens and returns a device object,
 //            throw new CustomError("Number expected",line[end-1].line,line[end-1].column);
 //        }
 //        obj.properties.value = line[3];
-        
+        console.log("obj:",obj);
         return obj;
     }
     
