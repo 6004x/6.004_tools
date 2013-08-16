@@ -119,6 +119,9 @@
                     if(stream.match(/^(?:[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?|0x[0-9a-f]+|0b[01]+|0[0-7]+)(?:[a-zA-Z]+)?/i)) {
                         return 'number';
                     }
+                    if(stream.match(/^[+*\/-]/)) {
+                        return 'operator';
+                    }
                     if(stream.match(/[a-z0-9_:\$\[\]\.#]+/i)) {
                         return 'variable-2';
                     }
