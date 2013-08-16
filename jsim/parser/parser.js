@@ -540,11 +540,12 @@ Parse
             }
         }
         
-//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-// Parse expressions somewhere in here: options, analysis parameters, subcircuit properties
-//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+/*>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+ Parse expressions somewhere in here: options, analysis parameters, subcircuit properties, source 
+    value functions
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<*/
         
         netlist_instance("",{type:"instance",
                              ports:[],
@@ -1392,7 +1393,7 @@ Device readers: each takes a line of tokens and returns a device object,
                 i += 1;
             }
         }
-        console.log("obj:",obj);
+//        console.log("obj:",obj);
 //        var end = line.length;
 //        var knex_end = line.length;
 //        
@@ -1483,41 +1484,68 @@ Device readers: each takes a line of tokens and returns a device object,
                 throw new CustomError("Node name expected", line[i]);
             }
         }
-        
         obj.connections.push(line[1].token);
         obj.connections.push(line[2].token);
         
-        if (line[3].type == "number"){
+        var fn = {args:[]};
+        var expr_obj;
+        if (line[4] && line[4].token == "("){
+            // source function
+            if (line[3].type != "name") throw new CustomError("Invalid source function name.",line[3]);
+            fn.name = line[3].token;
             
-            obj.properties.value = String(line[3].token);
+            var i = 5;
+            while (i < line.length){
+                if (line[i].token == ","){
+                    i += 1;
+                    continue;
+                }
+                if (line[i].token == ")") break;
+                
+                expr_obj = eat_expression(line,i);
+                fn.args.push(expr_obj.expr);
+                i = expr_obj.next_index;
+            }
+        } else {
+            fn.name = "dc";
+            expr_obj = eat_expression(line,3);
+            fn.args.push(expr_obj.expr);
+        }
+        
+        obj.properties.value = fn;
+//        console.log("obj:",obj);
+//        if (line[3].type == "number"){
+//            expr_obj = eat_expression(line, 3);
+//            obj.properties.value = expr_obj.expr;
+//            return obj;
 //            try{
 //                obj.properties.value = String(parse_number(line[3].token));
 //            } catch (err) {
 //                throw new CustomError("Number Expected",line[3].line,line[3].column);
 //            }
-        } else if (line[3].type == "function"){
-            var fn_pttn = /(\w+)\((.+)\)/;
-            var fn_matched = line[3].token.match(fn_pttn);
-            var fn_name = fn_matched[1];
-            var fn_args = fn_matched[2];
-            fn_args = fn_args.split(/[,\s]\s*/);
-            
-//            console.log("args:",fn_args);
-            
-            var final_fn_args = [];
-            for (i = 0; i < fn_args.length; i += 1){
-                
-                final_fn_args.push(fn_args[i]);
-//                try{
-//                    final_fn_args.push(parse_number(fn_args[i]));
-//                } catch (err) {
-//                    throw new CustomError("Number expected",line[3]);
-//                }
-            }
-            
-            obj.properties.value = fn_name+"("+final_fn_args.join(",")+")";
-//            console.log("object:",obj);
-        }
+//        } else if (line[3].type == "function"){
+//            var fn_pttn = /(\w+)\((.+)\)/;
+//            var fn_matched = line[3].token.match(fn_pttn);
+//            var fn_name = fn_matched[1];
+//            var fn_args = fn_matched[2];
+//            fn_args = fn_args.split(/[,\s]\s*/);
+//            
+////            console.log("args:",fn_args);
+//            
+//            var final_fn_args = [];
+//            for (i = 0; i < fn_args.length; i += 1){
+//                
+//                final_fn_args.push(fn_args[i]);
+////                try{
+////                    final_fn_args.push(parse_number(fn_args[i]));
+////                } catch (err) {
+////                    throw new CustomError("Number expected",line[3]);
+////                }
+//            }
+//            
+//            obj.properties.value = fn_name+"("+final_fn_args.join(",")+")";
+////            console.log("object:",obj);
+//        }
 //        } else 
 //        if (line[3].type != "function" && line[3].type != "number"){
 //            throw new CustomError("Number or function expected", line[3]);
