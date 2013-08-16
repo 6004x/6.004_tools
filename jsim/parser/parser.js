@@ -481,7 +481,8 @@ Parse
     }
     
     /***************************
-    Interpret: turns a token array into a hierarchal representation then calls the flattening functions
+    Interpret: turns a token array into a hierarchal representation then calls the flattening functions,
+                e.g., parses it
     ***************************/
     function interpret(token_array){
         globals = [];
@@ -532,6 +533,13 @@ Parse
                 continue;
             }
         }
+        
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+// Parse expressions somewhere in here, including in analyses!
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        
         netlist_instance("",{type:"instance",
                              ports:[],
                              connections:[],
@@ -758,12 +766,13 @@ Parse
     *********************/
     function read_tran(line){
         var tran_obj = {type:'tran',parameters:{},token:line[0]};
-        if (line.length != 2){
-            throw new CustomError("One argument expected: .tran tstop", line[1]);
-        }
-        if (line[1].type != "number"){
-            throw new CustomError("Number expected",line[1].line,line[1].column)
-        }
+        tran_obj.parameters.tstop = eat_expression(line, 1).expr;
+//        if (line.length != 2){
+//            throw new CustomError("One argument expected: .tran tstop", line[1]);
+//        }
+//        if (line[1].type != "number"){
+//            throw new CustomError("Number expected",line[1].line,line[1].column)
+//        }
 //        else{
 //            tran_obj.parameters.tstop = line[1];
 //        } 
@@ -772,8 +781,9 @@ Parse
 //        } catch(err){
 //            throw new CustomError("Number expected",line[1]);
 //        }
-        tran_obj.parameters.tstop = line[1].token;
+//        tran_obj.parameters.tstop = line[1].token;
         analyses.push(tran_obj);
+        console.log("analyses:",analyses);
     }
     
     /*********************
@@ -781,56 +791,84 @@ Parse
     *********************/
     function read_dc(line){
         line.shift();
-        var dc_obj = {type:'dc',parameters:{sweep1:{},sweep2:{}},token:line[0]};
+        var dc_obj = {type:'dc',parameters:{sweep1:{}},token:line[0]};
 //        var param_names = ["source1","start1","stop1","step1",
 //                           "source2","start2","stop2","step2"];
         var param_names = ["source","start","stop","step"];
-        if (line.length != 2 && line.length != 4 && line.length != 8){
-            throw new CustomError("Four or eight parameters expected: "+
-                                  "[src1, start1, stop1, step1], [src2, start2, "+
-                                  "stop2, step2]", line[0]);
+        
+        var sweep = "sweep1";
+        var i = 0;
+        while (i < line.length){
+            if (line[i].type != "name"){
+                throw new CustomError("Node name expected.",line[i]);
+            } else {
+                dc_obj.parameters[sweep].source = line[i].token;
+            }
+            i += 1;
+            
+            var expr_obj;
+            for (var j = 1; j <= 3; j += 1){
+                if (!line[i]) {
+                    throw new CustomError("Ill-formed DC statement: four or eight parameters expected.",
+                                          line[0]);
+                }
+                expr_obj = eat_expression(line, i);
+                dc_obj.parameters[sweep][param_names[j]] = expr_obj.expr;
+                i = expr_obj.next_index;
+            }
+            if (line[i]) {
+                sweep = "sweep2";
+                dc_obj.parameters.sweep2 = {};
+            }
         }
         
-        var i;
-        if (line.length >= 4) {
-            if (line[0].type != "name"){
-                throw new CustomError("Node name expected", line[0]);
-            } else {
-                dc_obj.parameters.sweep1.source = line[0].token;
-            }
-            for (i = 1; i <= 3; i += 1){
+//        console.log("dc_obj:",dc_obj);
+//        if (line.length != 2 && line.length != 4 && line.length != 8){
+//            throw new CustomError("Four or eight parameters expected: "+
+//                                  "[src1, start1, stop1, step1], [src2, start2, "+
+//                                  "stop2, step2]", line[0]);
+//        }
+//        
+//        var i;
+//        if (line.length >= 4) {
+//            if (line[0].type != "name"){
+//                throw new CustomError("Node name expected", line[0]);
+//            } else {
+//                dc_obj.parameters.sweep1.source = line[0].token;
+//            }
+//            for (i = 1; i <= 3; i += 1){
+////                dc_obj.parameters.sweep1[param_names[i]] = line[i].token;
+////                try {
+////                    dc_obj.parameters.sweep1[param_names[i]] = parse_number(line[i].token);
+////                } catch (err) {
+////                    throw new CustomError("Number expected.",line[i]);
+////                }
+//                if (line[i].type != "number"){
+//                    throw new CustomError("Number expectd.",line[i]);
+//                }
 //                dc_obj.parameters.sweep1[param_names[i]] = line[i].token;
-//                try {
-//                    dc_obj.parameters.sweep1[param_names[i]] = parse_number(line[i].token);
-//                } catch (err) {
-//                    throw new CustomError("Number expected.",line[i]);
+//            }
+//        }
+//        
+//        if (line.length == 8) {
+//            if (line[4].type != "name"){
+//                throw new CustomError("Node name expected", line[4]);
+//            } else {
+//                dc_obj.parameters.sweep2.source = line[4].token;
+//            }
+//            for (i = 1; i <= 3; i += 1){
+//                dc_obj.parameters.sweep2[param_names[i]] = line[i+4].token;
+////                try {
+////                    dc_obj.parameters.sweep2[param_names[i]] = parse_number(line[i+4].token);
+////                } catch (err) {
+////                    throw new CustomError("Number expected.",line[i+4]);
+////                }
+//                if (line[i+4].type != "number"){
+//                    throw new CustomError("Number expectd.",line[i+4]);
 //                }
-                if (line[i].type != "number"){
-                    throw new CustomError("Number expectd.",line[i]);
-                }
-                dc_obj.parameters.sweep1[param_names[i]] = line[i].token;
-            }
-        }
-        
-        if (line.length == 8) {
-            if (line[4].type != "name"){
-                throw new CustomError("Node name expected", line[4]);
-            } else {
-                dc_obj.parameters.sweep2.source = line[4].token;
-            }
-            for (i = 1; i <= 3; i += 1){
-                dc_obj.parameters.sweep2[param_names[i]] = line[i+4].token;
-//                try {
-//                    dc_obj.parameters.sweep2[param_names[i]] = parse_number(line[i+4].token);
-//                } catch (err) {
-//                    throw new CustomError("Number expected.",line[i+4]);
-//                }
-                if (line[i+4].type != "number"){
-                    throw new CustomError("Number expectd.",line[i+4]);
-                }
-                dc_obj.parameters.sweep2[param_names[i]] = line[i+4].token;
-            }
-        }
+//                dc_obj.parameters.sweep2[param_names[i]] = line[i+4].token;
+//            }
+//        }
         
 //        for (var i = 0; i < line.length; i += 1){
 //            switch (i) {
@@ -859,31 +897,11 @@ Parse
         analyses.push(dc_obj);
     }
     
-    /**********************
-    Parse DC: makes sure all parameters are valid
-    **********************/
-//    function parse_dc(dc_obj){
-//        var temp_ps = {};
-//        for (var param in dc_obj.parameters){
-//            temp_ps[param] = dc_obj.parameters[param].token;
-//            if (param != "source1" && param != "source2"){
-//                temp_ps[param] = parse_number(temp_ps[param]);
-//            }
-//        }
-//        
-//        for (var i=1; i<=2; i+=1){
-//            if (temp_ps["start"+i] >= temp_ps["stop"+i]){
-//                throw new CustomError("Stop time must be greater than start time",
-//                                dc_obj.parameters["start"+i]);
-//            }
-//            if (temp_ps["step"+i] <= 0) {
-//                throw new CustomError("Step interval must be a non-zero, positive number",
-//                                dc_obj.parameters["step"+i]);
-//            }
-//        }
-//        dc_obj.parameters = temp_ps;
-//        return dc_obj;
-//    }
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+// Things below this point not guaranteed to work!
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     /*********************
     Read AC: AC analysis
