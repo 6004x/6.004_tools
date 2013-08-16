@@ -86,9 +86,8 @@ var BigTable = function(container, width, height, row_height, column_count) {
         var height = (row * mRowHeight);
         if(where == 'middle') height -= (mHeight / 2) - (mRowHeight);
         else if(where == 'bottom') height -= mHeight - mRowHeight;
-        mScroller.scrollTop(height);
-        handleScroll(height);
-        // This should handle our scrolling on its callback, so we don't need to call handleScroll().
+        mScroller[0].scrollTop = height;
+        handleScroll(height); // Manually do this to make sure we are locked on where we intend to be.
     };
 
     // Returns the number of (logical) rows in the table.
@@ -155,7 +154,7 @@ var BigTable = function(container, width, height, row_height, column_count) {
     };
 
     var handleScroll = function(height) {
-        var top = (height === undefined) ? height : mScroller.scrollTop();
+        var top = (_.isNumber(height)) ? height : mScroller[0].scrollTop;
         if(top < 0) top = 0; // This can probably actually happen.
         var top_row = (top / mRowHeight)|0;
         // Don't do anything if we haven't actually moved.

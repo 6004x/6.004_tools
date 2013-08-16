@@ -3,6 +3,17 @@ BSim.SchematicView = function(schematic, beta) {
     var mSchematic = $(schematic);
     var mStylesheet = null;
     var mRules = {};
+    var mUpdating = false;
+    var mCurrentPC = 0;
+
+    this.startUpdating = function() {
+        mUpdating = true;
+        beta_change_pc(mCurrentPC);
+    };
+
+    this.stopUpdating = function() {
+        mUpdating = false;
+    };
 
     var setValue = function(signal, value) {
         if(value === null) {
@@ -32,6 +43,8 @@ BSim.SchematicView = function(schematic, beta) {
     }
 
     var beta_change_pc = function(pc) {
+        mCurrentPC = pc;
+        if(!mUpdating) return;
         try {
             var word = mBeta.readWord(pc);
         } catch(e) {

@@ -1,7 +1,8 @@
-BSim.Controls = function(container, beta, editor) {
+BSim.Controls = function(container, beta, editor, schematic) {
     var mContainer = $(container);
     var mBeta = beta;
     var mEditor = editor;
+    var mSchematic = schematic;
     var mGroup = $('<div class="btn-group">');
     var mResetButton = null;
     var mUndoButton = null;
@@ -129,6 +130,11 @@ BSim.Controls = function(container, beta, editor) {
 
     var change_view = function() {
         $('#programmer-view, #schematic-view').toggle();
+        if($('#schematic-view').filter(':hidden').length) {
+            mSchematic.stopUpdating();
+        } else {
+            mSchematic.startUpdating();
+        }
         BSim.SchematicView.Scale();
     }
 

@@ -116,10 +116,6 @@ $(function() {
         new BSim.RegfileView(this, beta);
     });
 
-    $('.program-controls').each(function() {
-        new BSim.Controls(this, beta, editor);
-    });
-
     $('.tty').each(function() {
         new BSim.TTY(this, beta);
     });
@@ -143,6 +139,10 @@ $(function() {
     var schematic = new BSim.SchematicView($('svg.schematic'), beta);
     split.on('resize', BSim.SchematicView.Scale);
     $(window).resize(BSim.SchematicView.Scale);
+
+    $('.program-controls').each(function() {
+        new BSim.Controls(this, beta, editor, schematic);
+    });
 
     // Work around weird sizing bug.
     _.delay(function() {
