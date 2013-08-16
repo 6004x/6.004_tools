@@ -414,7 +414,6 @@ BSim.Beta = function() {
             return this.handleIllegalInstruction(decoded);
         }
         if(op.privileged && !(mPC & SUPERVISOR_BIT)) {
-            console.log("Called privileged instruction " + op.name + " while not in supervisor mode.");
             return this.handleIllegalInstruction(decoded);
         }
         if(!mRunning) this.trigger('change:pc', mPC);

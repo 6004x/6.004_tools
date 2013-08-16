@@ -100,6 +100,15 @@ $(function() {
     split.on('resize', _.throttle(editor.redraw, 50));
 
     // Stuff for the simulator
+    var do_resize = function(holder, view, difference) {
+        if(holder.parents('#programmer-view').length) {
+            $(window).resize(function() {
+                var height = $(window).height() - difference;
+                view.resize(height);
+                holder.css({height: height});
+            });
+        }
+    }
 
     var beta = new BSim.Beta(80); // This starting number is basically irrelevant
 
@@ -107,30 +116,33 @@ $(function() {
         new BSim.RegfileView(this, beta);
     });
 
-    $('.program-controls').each(function() {
-        new BSim.Controls(this, beta, editor);
-    });
-
     $('.tty').each(function() {
         new BSim.TTY(this, beta);
     });
 
     $('.disassembly').each(function() {
-        new BSim.DisassembledView(this, beta);
+        var view = new BSim.DisassembledView(this, beta);
+        do_resize($(this), view, 470);
     });
 
     $('.memory').each(function() {
-        new BSim.MemoryView(this, beta);
+        var view = new BSim.MemoryView(this, beta);
+        do_resize($(this), view, 272);
     });
 
     $('.stack').each(function() {
-        new BSim.StackView(this, beta);
+        var view = new BSim.StackView(this, beta);
+        do_resize($(this), view, 272);
     });
 
     new BSim.Beta.ErrorHandler(beta);
     var schematic = new BSim.SchematicView($('svg.schematic'), beta);
     split.on('resize', BSim.SchematicView.Scale);
     $(window).resize(BSim.SchematicView.Scale);
+
+    $('.program-controls').each(function() {
+        new BSim.Controls(this, beta, editor, schematic);
+    });
 
     // Work around weird sizing bug.
     _.delay(function() {

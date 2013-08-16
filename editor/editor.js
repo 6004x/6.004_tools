@@ -60,7 +60,8 @@ var Editor = function(container, mode) {
         cm.addLineClass(line, 'background', 'cm-error-line');
         cm.addLineWidget(line, create_error_widget(message), {noHScroll: true, handleMouseEvents: true});
         focusTab(document);
-        cm.scrollIntoView({line: line, ch: column});
+        cm.scrollIntoView({line: line, ch: column}, 40); // Having the error hidden off-screen is unhelpful.
+        cm.setCursor({line: line, ch: column});
         var handle = cm.lineInfo(line).handle;
         mMarkedLines.push({filename: filename, handle: handle});
     };

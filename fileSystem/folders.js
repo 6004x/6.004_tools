@@ -8,13 +8,15 @@ var Folders=new function(){
     var textInputOn = false;
     //attaches file list to the default node
     function refresh(callback){
-        getFileList(callback); 
-        $('.hover_button').tooltip('hide');
+        callback = callback || function(f){return f;};
+        getFileList(function(done){
+            // $('.tooltip').detach();  
+            callback(done)
+        }); 
     }
 
     var isLoadingFileList = false;
     function getFileList(callback, parentNode){
-        callback = callback || _.identity
         parentNode = parentNode || rootNode.find('.file_paths');
         if(isLoadingFileList) return;
         isLoadingFileList = true;
@@ -24,13 +26,22 @@ var Folders=new function(){
         //FileSystem keeps track of the username
 
         //fetch the filelist from server, then add the files to the filesystem.
-        FileSystem.getFileList(
-            function(data){
+        FileSystem.getFileList( function(data){
                 parentNode.empty();
-                var username=FileSystem.getUserName();
-                fileList={};
-                fileList[username]=data;
-                addFiles(fileList, parentNode, '');
+                var username = FileSystem.getUserName();
+                var root = {
+                    'path' : '',
+                    'name' : username,
+                    'folders' : {
+                        'dontony' : {
+                            'name' : username,
+                            'path' : '',
+                            'folders' : data.folders,
+                            'files' : data.files,
+                        },
+                    }
+                }
+                addFiles(root, parentNode);
                 isLoadingFileList = false;
                 FileSystem.getUserName();
                 callback(true);
@@ -51,6 +62,7 @@ var Folders=new function(){
                 span.on('hide', function(e) { e.stopPropagation(); });
             }
             span.click(function(e) {
+                span.tooltip('hide');
                 e.stopPropagation();
                 var current_path = $(e.currentTarget).parents('li').attr('data-path'); 
                 if(callback) {
@@ -80,110 +92,68 @@ var Folders=new function(){
             if(!samePath){
                 if(type === 'move')
                     FileSystem.moveFile(filePath, folderDestination, function(data){
-                        console.log('moving ' + filePath )
-                        console.log('to ' + data );
+                        console.log('moved ' + filePath )
+                        console.log(data);
+                        console.log('to ' + data.name );
                         refresh();
                     })
                 else if (type === 'copy')
                     FileSystem.copyFile(filePath, folderDestination, function(data){
-                        console.log('moving ' + filePath )
-                        console.log('to ' + data );
+                        console.log('copied ' + filePath )
+                        console.log('to ' + data.name );
                         refresh();
                     })
             } else {
                 console.log('do nothing');
             }
         }
-        function addFiles(fileList, parentNode, parentPath){
+        function isInMode(type){
+            if(editMode === 'tsim')
+                return type === 'tsim' || type === 'tmsim';
+            else if(editMode === 'jsim')
+                return type === 'jsim' || type === 'uasm';
+            else if(editMode === 'bsim')
+                return type === 'bin' || type === 'uasm';
+            else
+                return type === editMode;
+        }
+        function addFiles(fileList, parentNode){
             //testing whether username chenged or not, to change data structure
             level++;
-            _.each(fileList, function(subList, name) {
-
-                var folderName = name;
-                var path = parentPath + name;
-                var collapseName='collapse'+(parentPath+name).replace(/(\/|\s)/g, '_');
+            parentPath = fileList.path;
+            var files = _.sortBy(fileList.files, function(file, name){
+                var fileType = name.split('.').pop()
+                return !isInMode(fileType);
+            })
+            var folders = _.sortBy(fileList.folders, function(folder, name){
+                var folder = fileList.folders[name];
+                var maxType = '';
+                var maxValue = 0;
+                _.each(folder.contentType, function(total, type){
+                    if(total > maxValue){
+                        maxValue = total;
+                        maxType = type;
+                    }
+                })
+                return !isInMode(maxType);
+            })
+            _.each(folders, function(folder){
+                var folderName = folder.name;
+                var path = folder.path;
+                var collapseName = 'collapse'+(path).replace(/(\/|\s)/g, '_');
                 if(level==1){
                     //we are in root folder, so we need to ignore username
                     name = '';
                 }
-                //collapseName is name without whitespace
-                if(name.indexOf('~') > -1){
-                    //metadata
-                    // console.log(name);
-                } else if(subList['~type'] === 'file') {
-                    //if the name does not have a period, then it is a file and not a folder
-                    var listVar=$('<li>').addClass('file_name')
-                        .attr('data-path', parentPath+name)
-                        .append($('<span>'+name+'</span>'));
-
-                    var deleteButton = buildListButton('icon-trash', deleteFile, 'file_button', 'Delete');
-                    var renameButton = buildListButton('icon-pencil', renameFile, 'file_button', 'Rename');
-                    var downloadButton = buildListButton('icon-download-alt', null, 'file_button', 'Download');
-
-                    var fileButtonDiv = addDiv('file_button_div');
-
-                    var timeOut;
-                    /*listVar.hover(function(e){
-                            var div = $(e.currentTarget);
-                            var fileButtons = div.find('.file_button');
-                            timeOut = setTimeout(function(){
-                                fileButtons.css({
-                                    display:'inline',
-                                });
-                                fileButtons.animate({'opacity' : 1,},150)
-                            }, 200);
-                        }, function(e){
-                            clearTimeout(timeOut);
-                            var div = $(e.currentTarget);
-                            var fileButtons = div.find('.file_button');
-
-                            fileButtons.animate({'opacity' : 0,},300, function(){
-                                fileButtons.css({
-                                   'display':'none',
-                                });
-                            });
-                    });*/
-                    fileButtonDiv.append(downloadButton, renameButton, deleteButton);
-
-                    listVar.append(fileButtonDiv);
-
-                    listVar.click(function(e){
-                        getFile(path);
-                    });
-                    
-                    parentNode.append(listVar);
-                    function cloneFileName(e){
-                        var current = $(e.currentTarget)
-                        var div = $('<div>').append(current.text()).addClass('dragging_div file_name');
-                        $('.file_paths').append(div)
-                        return div;
-                    }
-                    listVar.draggable({
-                        'containment' : '.file_paths',
-                        'cursor' : 'move',
-                        'delay' : 300,
-                        'helper' : cloneFileName,
-                        'distance' : 10,
-                        'revert' : 'invalid',
-                        'zIndex' : 100,
-                        'cursorAt' : {'left' : 20},
-                        'drag' : function(e, ui){
-
-                        }
-                    })
-                    
-                }
-                else {//it is a folder, we must go deeper
-
                     //collapser area will hold the folder name and will 
                     //allow user to hide and expand folderContents
-                    var totalPath =  parentPath+name+'/';
+                    var totalPath =  path;
                     if(level == 1){
                         totalPath = '';
                     }
                     var folderContentsDiv = addDiv('folder_contents')
                         .attr({
-                            'data-path':totalPath,
+                            'data-path' : totalPath,
                         });
                     var collapser = $('<li>').addClass('folder_name')
                         .attr({
@@ -206,27 +176,6 @@ var Folders=new function(){
 
                     var newButtonDiv = addDiv('folder_button_div');
                     newButtonDiv.append(newFileButton, newFolderButton);
-                    /*var timeOut;
-                    collapser.hover(function(e){
-                            var div = $(e.currentTarget);
-                            var folderButtons = div.find('.folder_button')
-                            timeOut =setTimeout(function(){
-                                folderButtons.css({
-                                    display:'block',
-                                });
-                                folderButtons.animate({'opacity' : 1,},150)
-                            }, 300);
-                        }, function(e){
-                            clearTimeout(timeOut);
-                            var div = $(e.currentTarget);
-                            var folderButtons = div.find('.folder_button');
-
-                            folderButtons.animate({'opacity' : 0,}, 200, function(){
-                                folderButtons.css({
-                                    'display':'none',
-                                });
-                            });
-                    });*/
 
                     collapser.on('click', function(){
                         subListUL.collapse('toggle');
@@ -265,12 +214,9 @@ var Folders=new function(){
                         updatePrefs();
                         e.stopPropagation();
                     });
+                    if(Object.keys(folder.folders).length > 0 || Object.keys(folder.files).length > 0){
 
-                    
-                    if(Object.keys(subList).length > 1){
-                        //if the subfolder has files inside
-                        //recursively fill the tree out
-                        addFiles(subList, subListUL, totalPath);
+                        addFiles(folder, subListUL);
                     }
                     else{
                         //the subfolder has no files inside, it's an empty folder
@@ -278,15 +224,6 @@ var Folders=new function(){
                     }
 
                     folderContentsDiv.append(subListUL);
-
-                    var copyDiv = $('<div>').addClass('copy_div').css({
-                        'position' : 'absolute',
-                        'right' : 0,
-                        'top' : 0,
-                        'height' : 40,
-                        'width' : 40,
-                        'z-index' : 0,
-                    })
 
                     parentNode.append(folderContentsDiv);
 
@@ -308,26 +245,61 @@ var Folders=new function(){
                             
                         },
                     });
-
-                    copyDiv.droppable({
-                        'accept' : '.file_name',
-                        'activeClass' : 'active_drop',
-                        'greedy' : true,
-                        'hoverClass' : 'hover_drop',
-                        'tolerance' : 'pointer',
-                        'activate' : function(e, ui){   
-                        },
-                        'drop' : function(e, ui){
-                            var filePath = ui.draggable.data('path');
-                            var folderDestination = $(e.target).data('path');
-                            dragFile(filePath, folderDestination, 'copy');
-                        },
-                    });
-
-                }
-
             });
-        
+            _.each(files, function(file) {
+                var fileName = file.name;
+                var path = file.path;
+                var collapseName = 'collapse'+(path).replace(/(\/|\s)/g, '_');
+                
+                //collapseName is name without whitespace
+                if(fileName.indexOf('~') > -1){
+                    //metadata, ignore
+                    // console.log(name);
+                } else {
+                    //if the name does not have a period, then it is a file and not a folder
+                    var listVar=$('<li>').addClass('file_name')
+                        .attr('data-path', path)
+                        .append($('<span>'+fileName+'</span>'));
+
+                    var deleteButton = buildListButton('icon-trash', deleteFile, 'file_button', 'Delete');
+                    var renameButton = buildListButton('icon-pencil', renameFile, 'file_button', 'Rename');
+                    var downloadButton = buildListButton('icon-download-alt', null, 'file_button', 'Download');
+
+                    var fileButtonDiv = addDiv('file_button_div');
+
+                    var timeOut;
+                    fileButtonDiv.append(downloadButton, renameButton, deleteButton);
+
+                    listVar.append(fileButtonDiv);
+
+                    listVar.click(function(e){
+                        getFile(path);
+                    });
+                    
+                    parentNode.append(listVar);
+
+                    function cloneFileName(e){
+                        var current = $(e.currentTarget)
+                        var div = $('<div>').append(current.text()).addClass('dragging_div file_name');
+                        $('.file_paths').append(div)
+                        return div;
+                    }
+                    listVar.draggable({
+                        'containment' : '.file_paths',
+                        'cursor' : 'move',
+                        'delay' : 300,
+                        'helper' : cloneFileName,
+                        'distance' : 10,
+                        'revert' : 'invalid',
+                        'zIndex' : 100,
+                        'cursorAt' : {'left' : 20},
+                        'drag' : function(e, ui){
+
+                        }
+                    });
+                        
+                }
+            });
         }
     }
     function noServer(){
@@ -359,13 +331,18 @@ var Folders=new function(){
         return (name.length > 0) && !regExp.test(name);
     }
 
-    function textInput(submitTextAction, parent, validateFunction, title, defaultText){
+    function textInput(submitTextAction, parent, validateFunction, defaultText, width, restore, title){
         var title = title || 'Warning';
         var validateFunction = validateFunction || function(text){return text.length > 0};
         var defaultText = defaultText || 'type here';
+
         var valid = false, canceled = true;
         var shown = false;
+        var width = width || parseInt(parent.width()-60)
+
         if(textInputOn){
+            //if there is another instance of text Input open, do nothing
+
             return false;
         }
         textInputOn = true;
@@ -376,7 +353,7 @@ var Folders=new function(){
                 });
 
         var input = $('<input>').addClass('new_text input_file_name')
-            .width(parseInt(parent.width())-60)
+            .width(width)
             .attr({
                 'type' : 'text', 
                 'placeholder' : defaultText,
@@ -414,8 +391,9 @@ var Folders=new function(){
                 canceled = true;
                 input.popover('destroy');
                 inputLi.detach();
-                collapsedFolders[$(parent).attr('id')] = false; 
                 textInputOn = false;
+                if(restore)
+                    restore();
             }
         }
         //adding listener actions
@@ -468,21 +446,95 @@ var Folders=new function(){
 
         //filling in text box with default value
         var count = 0;
-        var untitled = defaultText;
-        while(!validateFunction(untitled, actions)){
+        var defaultName = defaultText.substring(0, defaultText.lastIndexOf('.'));
+        var defaultType = defaultText.substring(defaultText.lastIndexOf('.'))
+        //loop to make sure that we don't overwrite an existing file
+        //still allows the user to copy the file, doesn't overwrite
+        //but names off the file
+        var newFileNameTemp = defaultText;
+        while(!validateFunction(newFileNameTemp, actions) && count <= 50){
+            newFileNameTemp = defaultName + '-' + count + defaultType;
             count++;
-            untitled = defaultText + count;
         }
-        input.val(untitled);
+
+       
+        input.val(newFileNameTemp);
         actions.hideError();
         inputLi.append(input, cancelButton);
         $(parent).prepend(inputLi);
-
+        $(parent).off('click')
         input.focus();
         input.select();
-        
 
     }
+    function renameFile(path, file_li){
+        var file_path = path.substring(0, path.lastIndexOf('/')+1);
+        var oldFileName = path.substring(path.lastIndexOf('/')+1);
+        console.log(file_path)
+        console.log(oldFileName)
+        var newFileName = '';
+
+        function validFileRename(fileName, actions){
+           
+            console.log(fileName)
+            if(!isValidName(fileRegexp, fileName)){
+                actions.showError('File names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~');
+               console.log('fails regexp')
+                return false;
+            } 
+            var newFileName = '';
+            if(fileName.indexOf('.') < 0)
+                newFileName = file_path + fileName+'.'+editMode;
+            else
+                newFileName = file_path + fileName;
+            //checks that there is not already another file with that name.
+            if (FileSystem.isFile(newFileName)){
+                console.log(newFileName.substring(newFileName.lastIndexOf('/')+1) )
+                console.log(oldFileName)
+                if(newFileName.substring(newFileName.lastIndexOf('/')+1) !== oldFileName){
+                    console.log('already exists')
+                    actions.showError('file already exists ');
+                    return false;
+                }
+                console.log('is the same')
+                return newFileName
+            } 
+            return newFileName;
+        }
+        var handleRename = function(fileName, actions) {
+            console.log(fileName + ' obtained from modal')
+            validName = validFileRename(fileName, actions);
+            if(validName){
+                // action(validName, actions)
+
+                console.log('rename file to ' + validName);
+                FileSystem.renameFile(path, validName , function(data){
+                    console.log(data.status + ' rename file');
+                    displayFile(data);
+                    actions.destroy();
+                    refresh();
+                    return true;
+                });
+            } else{
+                console.log('not a valid name')
+
+                return false;
+            }
+        }
+        console.log(file_li)
+        var oldDom = file_li.html();
+        console.log(oldDom)
+        var width = file_li.width()-30;
+        file_li.html('')
+        function restoreLi(){
+            console.log('restore');
+            file_li.html(oldDom)
+            refresh();
+        }
+        
+        textInput(handleRename, file_li, validFileRename, oldFileName, width, restoreLi)
+    }
+
     function newFSObject(parent, validateName, action, title, defaultText){
         var handleCreate = function(fileName, actions) {
             validName = validateName(fileName, actions);
@@ -499,7 +551,7 @@ var Folders=new function(){
             childDiv.collapse('show');
 
         }
-        textInput(handleCreate, childDiv, validateName, title, defaultText);
+        textInput(handleCreate, childDiv, validateName, defaultText);
     }
     function newFile(file_path, parent) {
         function newFileAction(validName, actions){
@@ -529,7 +581,7 @@ var Folders=new function(){
                 newFileName=file_path+fileName;
             //checks that there is not already another file with that name.
             if (FileSystem.isFile(newFileName)){
-                actions.showError('file already exists ');
+                actions.showError(' file already exists ');
                 
                 return false;
             } 
@@ -551,7 +603,7 @@ var Folders=new function(){
             
             //check hopefully there is not another folder already with that name. 
             if(FileSystem.isFolder(folderPath)) {
-                actions.showError(folderPath+' is already a folder; please choose another name.');
+                actions.showError(folderPath + ' is already a folder; please choose another name.');
                 return false;
             }
             return folderPath;
@@ -581,44 +633,7 @@ var Folders=new function(){
         modal.show();
     }
 
-    function renameFile(path){
-        var file_path = path.slice(0, path.lastIndexOf('/'));
-        var newFileName = '';
-
-
-        var handleRename = function() {
-            var fileName = modal.inputContent();
-            console.log(fileName + ' obtained from modal')
-            
-            if(!isValidName(fileRegexp, fileName)){
-                modal.showError('Names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~');
-                return;
-            }
-
-            if(fileName.indexOf('.') < 0)
-                newFileName=file_path+'/'+fileName+'.'+editMode;
-            else
-                newFileName=file_path+'/'+fileName;
-            if(FileSystem.isFile(newFileName)) {
-                modal.showError(fileName + '.' + editMode + ' is already a file, please choose another name');
-                return;
-            }
-
-            var new_file = {
-                name: newFileName,
-                data: '',
-            };
-
-            console.log('rename file to ' + newFileName);
-            FileSystem.renameFile(path, newFileName , function(data){
-                console.log(data.status + ' new file');
-                displayFile(data);
-                refresh();
-                modal.dismiss();
-            });
-        }
-    }
-
+    
     
     function commit() {
         // Todo.
@@ -633,8 +648,8 @@ var Folders=new function(){
     function addButtons(buttonDiv){
         var toolbar = new Toolbar(buttonDiv);
         toolbar.addButtonGroup([
-            new ToolbarButton('icon-refresh', refresh, 'Refresh'),
-            new ToolbarButton('icon-off', _.identity, 'Off is not implemented')
+            new ToolbarButton('icon-refresh', function(){refresh()}, 'Refresh')/*,
+            new ToolbarButton('icon-off', _.identity, 'Off is not implemented')*/
         ]);
     }
 
@@ -644,8 +659,8 @@ var Folders=new function(){
         editor = editorN;
         editMode = mode;
 
-        var buttonDiv = addDiv('buttonDiv');
-        addButtons(rootNode);
+        var buttonDiv = addDiv('button_div');
+        addButtons(buttonDiv);
 
         var sideBarNav = addDiv('sidebar-nav');
         var filesWrapper = $('<ul>').addClass('file_paths nav nav-list nav-stacked');

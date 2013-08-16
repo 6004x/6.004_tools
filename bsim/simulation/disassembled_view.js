@@ -97,6 +97,10 @@ BSim.DisassembledView = function(container, beta) {
         mTable.endBatch();
     };
 
+    this.resize = function(height) {
+        mTable.resize(height);
+    };
+
     var initialise = function() {
         mContainer.append(mTable);
 

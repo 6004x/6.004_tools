@@ -1,7 +1,8 @@
-BSim.Controls = function(container, beta, editor) {
+BSim.Controls = function(container, beta, editor, schematic) {
     var mContainer = $(container);
     var mBeta = beta;
     var mEditor = editor;
+    var mSchematic = schematic;
     var mGroup = $('<div class="btn-group">');
     var mResetButton = null;
     var mUndoButton = null;
@@ -78,7 +79,9 @@ BSim.Controls = function(container, beta, editor) {
         }
         if(!verifier.verify()) {
             dialog.setContent(verifier.getMessage());
+            $('#checkoff-failure').html(verifier.getMessage());
         } else {
+            $('#checkoff-failure').empty();
             dialog.setText("Checkoff complete!");
             dialog.addButton("Submit", present_user_form, 'btn-primary'); // dummy button for now.
         }
@@ -127,6 +130,11 @@ BSim.Controls = function(container, beta, editor) {
 
     var change_view = function() {
         $('#programmer-view, #schematic-view').toggle();
+        if($('#schematic-view').filter(':hidden').length) {
+            mSchematic.stopUpdating();
+        } else {
+            mSchematic.startUpdating();
+        }
         BSim.SchematicView.Scale();
     }
 

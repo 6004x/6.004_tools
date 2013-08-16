@@ -1,3 +1,4 @@
+
 i.open_indicator{
     margin: 2px 2px 2px 2px ;
 }
@@ -18,6 +19,7 @@ li.file_name:hover{
 .file_name .file_button{
     border: 0px;
 }
+
 input.input_file_name[type="text"]{
    height: 20px;
    font-size: 12px;
@@ -81,7 +83,7 @@ div.input_file_name button.add-on{
     -ms-user-select: none;
     user-select: none;
     position: relative;
-}
+}   
 .file_name{
     vertical-align: center;
     position : relative;
@@ -98,8 +100,8 @@ div.input_file_name button.add-on{
 .span2{
     min-width: 170px;
 }
-.buttonDiv{
-    float:none;
+.button_div{
+    margin:auto;
     text-align: center;
     width: 100%;
 }
@@ -130,7 +132,4 @@ div.input_file_name button.add-on{
 }
 .hover_drop{
     border-color: orangered;
-}
-.editor_div{
-    width: 100%;
 }

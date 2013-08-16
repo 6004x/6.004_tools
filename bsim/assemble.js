@@ -738,7 +738,6 @@
     var PCheckoff = function(url, name, checksum, file, line) {
         Checkoff.call(this, url, name, checksum, file, line);
         this.kind = 'memory';
-        this.running_checksum = 36038;
     };
     PCheckoff.prototype = Object.create(Checkoff.prototype, {constructor: {value: PCheckoff}});
     PCheckoff.parse = Checkoff.parse;

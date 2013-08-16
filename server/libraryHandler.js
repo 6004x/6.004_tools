@@ -57,9 +57,7 @@ var path=require('path');
 									console.log('and saving to the user folder')
 								}
 							});
-							
 						}
-							
 						else {
 						// library not found, send empty one
 							errorResponse('could not find the file');
@@ -67,7 +65,6 @@ var path=require('path');
 					});
 				}
 				else{
-					console.log(m_full_path);
 					console.log('sendFile');
 					if(!fs.lstatSync(m_full_path).isDirectory())
 						sendFile(m_full_path, m_file_path);
@@ -83,7 +80,7 @@ var path=require('path');
 					//should never really happen
 				}
 				else{
-					var fileList = recurseThroughFolders(m_full_path);
+					var fileList = recurseThroughFolders(m_full_path, '');
 					console.log('returned from fileList');
 					sendJSON({
 						user:user,
@@ -167,28 +164,50 @@ var path=require('path');
 			}
 		}
 
-		function recurseThroughFolders(curr_path){
+		function recurseThroughFolders(curr_path, user_path){
 			//console.log(curr_path);
 			var files = fs.readdirSync(curr_path);
+			var contentType = {};
 			var fileList = {
-				'~type' : 'folder',
+				'path' : user_path,
+				'type' : 'folder',
+				'folders' : {},
+				'files' : {},
+				'name' : user,
 			};
-			for(var i=0; i <files.length; i++){
+			for(var i=0; i < files.length; i++){
 				var name = files[i];
-				var new_path = path.join(curr_path, name);
+				var new_curr_path = path.join(curr_path, name);
+				var new_user_path = user_path + name;
 				if(name.indexOf('~') < 0){
-					if(fs.lstatSync(new_path).isDirectory()){
 
-						fileList[name] = recurseThroughFolders(new_path);
+					if(fs.lstatSync(new_curr_path).isDirectory()){
+						new_user_path += '\/';
+						fileList.folders[name] = (recurseThroughFolders(new_curr_path, new_user_path));
+						fileList.folders[name].name = name;
+						for(var type in fileList.folders[name].contentType){
+							if(contentType[type] == null)
+								contentType[type] = 0;
+							contentType[type] += fileList.folders[name].contentType[type];
+						}
+
 					} else {
-						fileList[name] = {
-							'~type' : 'file',
-						};
+						var type = name.split('.').pop();
+						fileList.files[name] = ({
+							'type' : 'file',
+							'path' : new_user_path,
+							'name' : name,
+						});
+						if(contentType[type] == null)
+							contentType[type] = 1;
+						else
+							contentType[type]++;
 					}
 				} else {
 					console.log(name +' is a deleted file, folder, or backed up');
 				}
 			}
+			fileList['contentType'] = contentType;
 			return(fileList);
 		}
 
@@ -220,10 +239,14 @@ var path=require('path');
 					console.log(err);
 					errorResponse(err+' file could not be read');
 				}
+				if(file_path.substring(0,1) === '/')
+					file_path = file_path.substring(1);
+				console.log(file_path)
 				sendJSON({
 					name:file_path,
 					data:data,
 					status:'success',
+					type:'file',
 				});
 			});
 		}
@@ -244,6 +267,7 @@ var path=require('path');
 							name:file_path,
 							status:'success',
 							data:fdata,
+							type:'file',
 						});
 					}
 			});
@@ -255,8 +279,8 @@ var path=require('path');
 				
 				if(exists){
 					//TODO: what should we do in case we delete a file/folder twice
-
 					fs.unlinkSync(hide_path)
+					console.log('exists');
 				}
 					fs.rename(full_path, hide_path, function (err) {
 						if (err) {

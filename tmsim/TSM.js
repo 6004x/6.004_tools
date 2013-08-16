@@ -16,7 +16,7 @@ function TSM(){
 
 
 	this.setup=function(states, symbols, startState){
-		// console.log(states);
+		 // console.log(states);
 		list_of_states = states;
 		list_of_symbols = symbols;
 		if(startState)
