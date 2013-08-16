@@ -20,14 +20,25 @@ var FileSystem= function(){
         the subfolder, recursively. 
         if it is a file, it might have a file, it if has been opened in the editor
     */
+    /* folder scheme
+        folder:
+            name: 'text'
+            path: path relative from root
+            date: date last edited
+            type: folder
+            folders :{} has folder elements for each subfolder
+            files : {} has file elements for each subfolder
+            contentType : list of file types in the folder. 
+        other metadata can be added as object elements
+    */
     /*
-    *   each file will have 2 attributes:
-        file.name (path of file relative to root user folder)       
-        file.data (String representation of file 'utf8')
-
-        TO IMPLEMENT:
-        file.isOpen
-        file.onServer
+    *   file scheme
+        file:
+            name: name of file 'text.type'
+            path: Path of file relative to root user folder
+            data: (String representation of file 'utf8')
+            type: folder
+        other metadata can be added as object elements
     *
     */
 
@@ -54,6 +65,7 @@ var FileSystem= function(){
                         allFiles=[];
                         allFolders=[];
                         // console.log(fileTree);
+                        // console.log(fileTree);
                         makeListOfFiles(fileTree,'');
 
                         // console.log(allFolders);
@@ -75,46 +87,44 @@ var FileSystem= function(){
             //callback will return with a file object
         }
     }
-    function makeListOfFiles(currTree, path){
+    function makeListOfFiles(currTree){
         
-        for(key in currTree){
+        for(key in currTree.folders){
+            var folder = currTree.folders[key]
             if(key.indexOf('~') > -1){
-                // console.log(key)
-            } else if(isFile(key, currTree[key])){
-                allFiles.push(path+'/'+key);
-            }
-            else{
-                allFolders.push(path+'/'+key);
-                makeListOfFiles(currTree[key], path+'/'+key);
+                console.log(key + 'metadata')
+            } else {
+                allFolders.push(folder.path);
+                makeListOfFiles(folder);
             }
         }
-    }
-    function isFile(name, contents){
-        // console.log(contents);
-        // console.log(contents['~type'] === 'file')
-        return contents['~type'] === 'file';
+        for (key in currTree.files){
+            var file = currTree.files[key]
+            allFiles.push(file.path);
+        }
     }
     function writeTreeToLocalStorage(){
         // console.log('writing tree to local storage');
 
         //todo, divide up the data, make it asynchronous
-        //indexedDB?
         //var savedTree=traverseTree()
-        for(var i=0; i<openFiles.length; i++){
-            var file = traverseTree(openFiles[i], function(i, file, pathname, pathlength){
-                
-                //localStorage.setItem('6004file'+pathname, JSON.stringify(fileTree));    
+        for(var i=0; i < openFiles.length; i++){
+            var filePath = openFiles[i];
+            var file = traverseTree(filePath, function(i, followPath, pathname, end){
 
+                if(end){
+                    var file = followPath.files[pathname]
+                    localStorage.setItem('6004file'+mUsername+'/'+filePath, JSON.stringify(file));    
+                }
                 return true;
             });
-            localStorage.setItem('6004file'+openFiles[i], JSON.stringify(file));
         }
         localStorage.setItem('6004data', JSON.stringify(fileTree));   
         
     }
     function readTreeFromLocalStorage(){
         //todo make it asynchronous
-        var x= JSON.parse(localStorage.getItem('6004data'));
+        var x = JSON.parse(localStorage.getItem('6004data'));
         return x;
     }
     function writeLocalStorageToServer(){
@@ -129,12 +139,17 @@ var FileSystem= function(){
         var followPath = fileTree;
         for(var i = 0; i < pathArray.length; i++){
             var pathName = pathArray[i]
-            // action function of 3 variables, the index, the current path, the current path name
+            // action function of 4 variables, the index, the current path, the current path name, and whether we're at the end or not
             //, and the length of the whole pathArray. 
             // returns true if we can continue
             try{
-                if(action(i, followPath, pathName, pathArray.length))
-                    followPath = followPath[pathName];//.slice(1)];
+                // console.log(followPath)
+                if(i < pathArray.length -1){                    
+                    if(action(i, followPath, pathName, false))
+                        followPath = followPath.folders[pathName];
+                } else {
+                    action(i, followPath, pathName, true)
+                }
             } catch(e) {
                 console.log(e.stack)
                 console.log(i)
@@ -145,7 +160,7 @@ var FileSystem= function(){
         return followPath || {}; // wtf?
     }
     function getFileFromTree(fileName){
-        var finalTree = traverseTree(fileName, function(i, tree){return true;} );
+        var finalTree = traverseTree(fileName, function(){return true;} );
         // console.log(finalTree);
         //TODO fix, length does not work for objects
         if(finalTree.length == 0)
@@ -155,11 +170,12 @@ var FileSystem= function(){
     }
  
     function writeFileToTree(fileName, fileData, onServer){
-        var finalTree=traverseTree(fileName, function(i, followPath, currentPath, length){
-            if(i==length-1){
-                // console.log(fileName+' being written');
-                followPath[currentPath] = {name:fileName, data:fileData, onServer:onServer};
-                
+        var finalTree=traverseTree(fileName, function(i, followPath, currentPath, end){
+            if(end){
+                console.log(fileName+' being written');
+                followPath.files[currentPath].data = fileData;
+                followPath.files[currentPath].onServer = onServer;
+                followPath.files[currentPath].localDate = (new Date()).getTime();
                 return false;
             }
             return true;
@@ -306,18 +322,30 @@ var FileSystem= function(){
         newFileName = folderDestination + newFileName;
         console.log(newFileName);
         self.getFile(fileName, function(oldFile){
-            self.saveFile(newFileName, oldFile.data, function(newFile){
-                if(newFile.status = 'success'){
-                    callback(newFile);
-                }
 
-            })
+        var count = 0;
+        var newFileFront = newFileName.substring(0, newFileName.lastIndexOf('.'));
+        var newFileType = newFileName.substring(newFileName.lastIndexOf('.'))
+        //loop to make sure that we don't overwrite an existing file
+        //still allows the user to copy the file, doesn't overwrite
+        //but names off the file
+        var newFileNameTemp = newFileName;
+        while(self.isFile(newFileNameTemp) && count <= 10){
+            newFileNameTemp = newFileFront + '-' + count + newFileType;
+            count++;
+        }
+        self.saveFile(newFileNameTemp, oldFile.data, function(newFile){
+            if(newFile.status = 'success'){
+                callback(newFile);
+            }
+
+        })
         }, callbackFailed)
     }
     this.moveFile = function(fileName, folderDestination, callback, callbackFailed){
         self.copyFile(fileName, folderDestination, function(newFile){
             self.deleteFile(fileName, function(data){
-                if(data)
+                if(data.status == 'success')
                     callback(newFile);
                 console.log(data)
                 console.log('from deleteFile');
@@ -346,6 +374,7 @@ var FileSystem= function(){
         req.done(function(data, status){
             //check if status is successful
             updated=true;
+            console.log(data)
             callbackFunction(data, status);
         });
         req.fail(failFunction);
@@ -374,14 +403,16 @@ var FileSystem= function(){
     };
     this.isFile = function(fileName){
         // console.log(fileName+' check if in allfiles');
-        if(fileName.substring(0,1)!=='/')
-            fileName = '/'+fileName;
+        if(fileName.substring(0,1) ==='/')
+            fileName = fileName.substring(1);
+        console.log(allFiles.indexOf(fileName));
         return allFiles.indexOf(fileName) !== -1;
     }
     this.isFolder = function(folderName){
         // console.log(folderName+' check if in allFolders');
-        if(folderName.substring(0,1)!=='/')
-            folderName = '/'+folderName;
+        if(folderName.substring(0,1) ==='/')
+            folderName = folderName.substring(1);
+        console.log(allFolders.indexOf(folderName))
         return allFolders.indexOf(folderName) !== -1;
     }
     this.setup = function(server){

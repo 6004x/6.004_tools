@@ -6,15 +6,14 @@ parseStates: actions,
 
 errors encounterd:
 multi line comment not recognize (comment*/)
-end of // comment not increase count
+x end of // comment not increase count
 
 check if result tape has valid symbols
-check for duplicate actions
+x check for duplicate actions
 
 checkoff checks the size of the table
-
-check for repetitions in state symbol pairs
+x check for repetitions in state symbol pairs
 check for many states at once
 check sizes again
 
-SPEED multiple steps in one time step, update GUI periodically
+x SPEED multiple steps in one time step, update GUI periodically

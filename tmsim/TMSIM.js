@@ -27,7 +27,6 @@
 
 		//for self calls
 		var self = this;
-
 		//variables of state and persistent storage. 
 		var undoStack = [];
 		var slider_speed = old_speed;
@@ -35,6 +34,7 @@
 		var simulation_done = false;
 		var steps = 0;
 		var preventAnimate = false;
+
 
 		//readjusts the variable elements in the TSMSIM area to a new instance of tsm and tapes
 		//or if you pass in no variables it resets the current simulation to default values. 

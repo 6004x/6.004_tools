@@ -95,7 +95,7 @@ function TapeList(){
 			if(first === null)
 				self.append('-');
 			current = first;
-			console.log('starting traverse');
+			// console.log('starting traverse');
 			return first.data;
 		}
 	}
@@ -196,7 +196,6 @@ function TapeList(){
 		while(tempNode != null){
 
 			if(tempNode.data === '-' && trimBeginning){
-				console.log('trimming')
 				tempNode=tempNode.next;
 			}
 			else {
@@ -219,7 +218,7 @@ function TapeList(){
 	this.toString = function (){
 		var tempNode=first;
 		var stringLL = '';
-		while(tempNode!=null){
+		while(tempNode != null){
 			if(tempNode == current)
 				stringLL += '['+tempNode.data+'], ';
 			else
@@ -282,6 +281,7 @@ function TapeList(){
 		var toCloneArray = self.toArray();
 		clone.init(self.name, toCloneArray.array, toCloneArray.currentIndex);
 		if(clone.equals(self)){
+			// console.log('clone: '+ clone.toString());
 			return clone;
 		}	
 			
