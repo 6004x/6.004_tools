@@ -27,12 +27,15 @@ $(function() {
     });
 
     split.on('resize', function(widths) {
-        if(widths[2] == 0) {
+        if(widths[2] === 0) {
             $('#maximise_editor').addClass('active').siblings().removeClass('active');
-        } else if(widths[0] == 0 && widths[1] == 0) {
+        } else if(widths[0] === 0 && widths[1] === 0) {
             $('#maximise_simulation').addClass('active').siblings().removeClass('active');
         } else {
             $('#split_pane').addClass('active').siblings().removeClass('active');
+        }
+        if(widths[1] === 0) {
+            editor.blur();
         }
     });
     
@@ -59,23 +62,23 @@ $(function() {
         editor.clearErrors();
         Checkoff.reset();
         var content = editor.content();
-        div = $('#results');
+        var div = $('#results');
         if (!content){
             return;
         }
         var filename = editor.currentTab();
-        Simulator.simulate(content,filename,div,error_catcher);
+        Simulator.simulate(content,filename,div,error_catcher,"device");
     }
     
     function gls(){
         var content = editor.content();
         editor.clearErrors();
-        div = $('#results');
+        var div = $('#results');
         if (!content){
             return;
         }
         var filename = editor.currentTab();
-        GateSimulator.simulate(content,filename,div,error_catcher);
+        Simulator.simulate(content,filename,div,error_catcher,"gate");
     }
     
     function error_catcher(err){
@@ -84,7 +87,7 @@ $(function() {
                 FileSystem.getFile(err.filename,function(obj){
                     editor.openTab(err.filename,obj.data,true);
                     editor.markErrorLine(err.filename, err.message, err.line-1, err.column);
-                })
+                });
             } else {
                 editor.markErrorLine(err.filename, err.message, err.line-1, err.column);
             }
@@ -105,12 +108,12 @@ $(function() {
         } catch (err) {
             error_catcher(err);
         }
-    },"Checkoff")])
+    },"Checkoff")]);
     
-    Simulator.setup();
+//    Simulator.setup();
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
-    }
+    };
     set_height();
     $(window).resize(set_height); // Update the height whenever the browser window changes size.
 

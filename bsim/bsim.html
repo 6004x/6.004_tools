@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>BSim</title>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <title>BSim 2.0.0</title>
+        <!-- build:js bsim-all.js -->
+        <script src="../libs/jquery.js"></script>
+        <script src="../libs/underscore.js"></script>
+        <script src="../libs/backbone.js"></script>
+        <script src="../libs/bootstrap.js"></script>
         <script src="../fileSystem/external/jquery-ui.js"></script>
         <script src="../editor/external/codemirror.js"></script>
         <script src="../editor/external/radix.js"></script>
@@ -13,6 +14,7 @@
         <script src="../editor/editor.js"></script>
         <script src="../editor/prompt.js"></script>
         <script src="../editor/split_pane.js"></script>
+        <script src="../editor/passive_alert.js"></script>
         <script src="../editor/autocomplete.js"></script>
         <script src="../editor/external/codemirror-extensions.js"></script>
         <script src="../editor/modes/uasm.js"></script>
@@ -37,25 +39,28 @@
         <script src="simulation/schematic_view.js"></script>
         <script src="verify.js"></script>
         <script src="../editor/browser_check.js"></script>
-        <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
-        <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
+        <!-- endbuild -->
+        <!-- build:css bsim-all.css -->
+        <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
+        <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
         <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
         <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
         <link rel="stylesheet" type="text/css" href="../editor/common.css">
         <link rel="stylesheet" type="text/css" href="bsim.css">
         <link rel="stylesheet" type="text/css" href="schematic.css">
         <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">
+        <!-- endbuild -->
     </head>
     <body>
         <div>
             <div class="masthead">
-                <ul class="pull-right nav nav-pills">
+                <ul class="pull-left nav nav-pills split-controls">
                     <li class="active" id="maximise_editor"><a>Editor</a></li>
                     <li id="split_pane"><a>Split</a></li>
                     <li id="maximise_simulation"><a>Simulation</a></li>
                 </ul>
-                <a href="http://6004.mit.edu"><img src="../editor/title.gif" width=250 class="pull-left"></a>
-                <h1>BSim</h1>
+                <div id="header-alert-holder">
+                </div>
             </div>
             <div id="split-container">
                 <div id="filetree"></div>
@@ -88,7 +93,9 @@
                                     </ul>
                                 </div>
                             </div>
+                            Console
                             <div class="tty"></div>
+                            <div id="checkoff-failure"></div>
                         </div>
                     </div>
                     <div id="schematic-view" style="display: none;">

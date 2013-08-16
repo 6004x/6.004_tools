@@ -1,6 +1,8 @@
-BSim.Controls = function(container, beta) {
+BSim.Controls = function(container, beta, editor, schematic) {
     var mContainer = $(container);
     var mBeta = beta;
+    var mEditor = editor;
+    var mSchematic = schematic;
     var mGroup = $('<div class="btn-group">');
     var mResetButton = null;
     var mUndoButton = null;
@@ -27,10 +29,44 @@ BSim.Controls = function(container, beta) {
     var handle_step = function() {
         mBeta.executeCycle();
         mUndoButton.enable();
+        if(mBeta.verifier()) {
+            mVerifyButton.enable();
+        }
     };
 
     var handle_reset = function() {
         mBeta.reset();
+    };
+
+    var complete_checkoff = function(old) {
+        var username = old.inputContent(0);
+        var password = old.inputContent(1);
+        var collaborators = old.inputContent(2);
+        old.dismiss();
+        BSim.SubmitVerification(mBeta, mEditor, username, password, collaborators, function(success, text) {
+            var dialog = new ModalDialog();
+            if(success) {
+                dialog.setTitle("Checkoff complete");
+                dialog.setContent(text);
+            } else {
+                dialog.setTitle("Checkoff failed");
+                dialog.setContent("There was an error communicating with the server.");
+            }
+            dialog.addButton('Dismiss', 'dismiss');
+            dialog.show();
+        });
+    };
+
+    var present_user_form = function(old) {
+        old.dismiss();
+        var dialog = new ModalDialog();
+        dialog.setTitle("Submit Lab");
+        dialog.inputBox({label: "Username", callback: complete_checkoff});
+        dialog.inputBox({label: "Password", type: 'password', callback: complete_checkoff});
+        dialog.inputBox({label: "Collaborators", callback: complete_checkoff});
+        dialog.addButton("Dismiss", "dismiss");
+        dialog.addButton("Submit", complete_checkoff, 'btn-primary');
+        dialog.show();
     };
 
     var handle_checkoff = function() {
@@ -43,9 +79,11 @@ BSim.Controls = function(container, beta) {
         }
         if(!verifier.verify()) {
             dialog.setContent(verifier.getMessage());
+            $('#checkoff-failure').html(verifier.getMessage());
         } else {
+            $('#checkoff-failure').empty();
             dialog.setText("Checkoff complete!");
-            dialog.addButton("Submit", _.identity, 'btn-primary'); // dummy button for now.
+            dialog.addButton("Submit", present_user_form, 'btn-primary'); // dummy button for now.
         }
         dialog.show();
     };
@@ -55,6 +93,9 @@ BSim.Controls = function(container, beta) {
         mStepButton.disable();
         mFastRunButton.disable();
         mUndoButton.disable();
+        if(mBeta.verifier()) {
+            mVerifyButton.enable();
+        }
     };
 
     var beta_run_stop = function() {
@@ -63,6 +104,22 @@ BSim.Controls = function(container, beta) {
         mFastRunButton.enable();
         mUndoButton.enable();
     };
+
+    var beta_resize_memory = function(size) {
+        if(size === 0) {
+            mRunButton.disable();
+            mFastRunButton.disable();
+            mStepButton.disable();
+            mVerifyButton.disable();
+            mUndoButton.disable();
+            mResetButton.disable();
+        } else {
+            mRunButton.enable();
+            mFastRunButton.enable();
+            mStepButton.enable();
+            mResetButton.enable();
+        }
+    }
 
     var handle_undo = function() {
         mBeta.undoCycle();
@@ -73,6 +130,11 @@ BSim.Controls = function(container, beta) {
 
     var change_view = function() {
         $('#programmer-view, #schematic-view').toggle();
+        if($('#schematic-view').filter(':hidden').length) {
+            mSchematic.stopUpdating();
+        } else {
+            mSchematic.startUpdating();
+        }
         BSim.SchematicView.Scale();
     }
 
@@ -93,6 +155,8 @@ BSim.Controls = function(container, beta) {
 
         mBeta.on('run:start', beta_run_start);
         mBeta.on('run:stop', beta_run_stop);
+        mBeta.on('resize:memory', beta_resize_memory);
+        beta_resize_memory(0); // There is no content on initial load.
     };
 
     initialise();

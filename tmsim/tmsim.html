@@ -2,16 +2,13 @@
 <html lang="en">
     <head>
         <title>TMSim</title>
-        <!-- importing external files -->
-        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/3.12.0/codemirror.min.css">
-        <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css">
-
+        <!-- build:js tmsim-all.js -->
+        <!-- external javascript -->
+        <script src="../libs/jquery.js"></script>
+        <script src="../libs/underscore.js"></script>
+        <script src="../libs/backbone.js"></script>
+        <script src="../libs/bootstrap.js"></script>
         <script src="../fileSystem/external/jquery-ui.js"></script>
-        <link href='../fileSystem/external/jquery-ui.css' rel='stylesheet' type='text/css'>
        
        
         <!-- importing editor by mattpf -->
@@ -25,7 +22,6 @@
         <script src="../editor/external/radix.js"></script>
         <script src="../editor/modes/tsim.js"></script>
         <script src="../editor/browser_check.js"></script>
-        <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
         <!-- other files -->
         <script src='../fileSystem/fileSystem.js'></script>
         <script src='../fileSystem/folders.js'></script>
@@ -33,9 +29,18 @@
         <script src='tsm.js'></script>
         <script src='tsmParser.js'></script>
         <script src='tmsim.js'></script>
+        <!-- endbuild -->
+        <!-- build:css tmsim-all.css -->
+        <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
+        <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
+
+        <link href='../fileSystem/external/jquery-ui.css' rel='stylesheet' type='text/css'>
+        <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+        
         <link rel="stylesheet" type="text/css" href="../editor/common.css">
         <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">    
         <link rel="stylesheet" type="text/css" href="TMSIM.css">   
+        <!-- endbuild -->
     </head>
     <script>
     var editor;
@@ -73,6 +78,9 @@
                 $('#maximise_simulation').addClass('active').siblings().removeClass('active');
             } else {
                 $('#split_pane').addClass('active').siblings().removeClass('active');
+            }
+            if(widths[1] == 0) {
+                editor.blur();
             }
             clearTimeout(timer);
             if(tmsim){
@@ -135,13 +143,12 @@
     <body>
 
             <div class="masthead">
-                <ul class="pull-right nav nav-pills">
+                <ul class="pull-left nav nav-pills split-controls">
                     <li class="active" id="maximise_editor"><a>Editor</a></li>
                     <li id="split_pane"><a>Split</a></li>
                     <li id="maximise_simulation"><a>Simulator</a></li>
                 </ul>
-                
-                <h1>TMSim</h1>
+                <div id="header-alert-holder"></div>
             </div>
             <div id="main_wrapper">
                 <div id="folders_div"></div>

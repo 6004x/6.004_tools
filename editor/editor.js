@@ -60,7 +60,8 @@ var Editor = function(container, mode) {
         cm.addLineClass(line, 'background', 'cm-error-line');
         cm.addLineWidget(line, create_error_widget(message), {noHScroll: true, handleMouseEvents: true});
         focusTab(document);
-        cm.scrollIntoView({line: line, ch: column});
+        cm.scrollIntoView({line: line, ch: column}, 40); // Having the error hidden off-screen is unhelpful.
+        cm.setCursor({line: line, ch: column});
         var handle = cm.lineInfo(line).handle;
         mMarkedLines.push({filename: filename, handle: handle});
     };
@@ -204,6 +205,13 @@ var Editor = function(container, mode) {
         });
     };
 
+    // Removes focus from the editor.
+    this.blur = function() {
+        if(!mCurrentDocument) return; // If we don't have a current document we can't be focused anyway.
+
+        mCurrentDocument.cm.getInputField().blur();
+    };
+
     // The below methods are private.
     var focusTab = function(doc) {
         doc.tab.find('a').tab('show');
@@ -275,6 +283,7 @@ var Editor = function(container, mode) {
             indentWithTabs: true,
             styleActiveLine: true,
             value: content,
+            tabindex: -1,
             mode: mSyntaxMode,
             extraKeys: {
                 Tab: function() {
@@ -351,7 +360,7 @@ var Editor = function(container, mode) {
         mToolbar = new Toolbar(mToolbarHolder);
         // Add some basic button groups
         self.addButtonGroup([
-            new ToolbarButton('icon-hdd', save_current_document, "Save current file"),
+            new ToolbarButton('Save', save_current_document, "Save current file"),
             new ToolbarButton('Save All', save_all_documents, "Save all open buffers")
         ]);
         mContainer.append(mToolbarHolder);
@@ -365,7 +374,7 @@ var Editor = function(container, mode) {
 
         // Do some one-time setup.
         if(!Editor.IsSetUp) {
-            CodeMirror.commands.save = do_save;
+            CodeMirror.commands.save = function() { do_save(); };
             CodeMirror.commands.autocomplete = function(cm) {
                 CodeMirror.showHint(cm, mAutocompleter.complete, {completeSingle: false});
             };
@@ -382,7 +391,7 @@ var Editor = function(container, mode) {
     };
 
     var do_save = function(document) {
-        document = document || mCurrentDocument;
+        if(!document) document = mCurrentDocument;
         if(!document) return false;
         FileSystem.saveFile(document.name, document.cm.getValue(), function() {
             // Mark the file as clean.

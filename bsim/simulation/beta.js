@@ -12,6 +12,7 @@ BSim.Beta = function() {
     // These need to be public for the instructions to look at.
     this.mMouseCoords = -1;
     this.mKeyboardInput = null;
+    this.mServerInfo = [];
 
     // We use these in the 'running' state so we can batch DOM updates,
     // on the theory that changing object properties is cheap but changing DOM
@@ -269,6 +270,7 @@ BSim.Beta = function() {
         mPendingInterrupts = 0;
         mCycleCount = 0;
         mClockCounter = 0;
+        this.mServerInfo = [];
         if(!no_update_memory) mMemory.reset();
         this.mMouseCoords = -1;
         this.mKeyboardInput = null;
@@ -412,7 +414,6 @@ BSim.Beta = function() {
             return this.handleIllegalInstruction(decoded);
         }
         if(op.privileged && !(mPC & SUPERVISOR_BIT)) {
-            console.log("Called privileged instruction " + op.name + " while not in supervisor mode.");
             return this.handleIllegalInstruction(decoded);
         }
         if(!mRunning) this.trigger('change:pc', mPC);

@@ -4,23 +4,22 @@ var Simulator = (function(){
     var mCurrent_results;
     var mPlotDefs;
     var mDiv;
+    var mAllPlots = [];
     var mOptions;
-    var mType;
     
     /********************
-    Called when either simulation button is pressed
+    Called when the device-level simulation button is pressed
     ********************/
-    function simulate(text, filename, div, error_callback, type){
-        // type is "gate" or "device"
-        // parse args: input string, filename, success callback, error callback, reset
-        Parser.parse(text, filename, function(data){run_simulation(data,div,type);},
-                     error_callback, true);
+    function simulate(text, filename, div, error_callback){
+        // input string, filename, callback
+        Parser.parse(text, filename, function(data){run_simulation(data,div);},
+                     error_callback, true); // reset = true
     }
     
     /*********************
     Run simulation: Take parsed data and extract all the useful bits, then run the simulation
     *********************/
-    function run_simulation(parsed,div,type) {
+    function run_simulation(parsed,div) {
         div.empty();  // we'll fill this with results
         mDiv = div;
 //        $('#graphScrollInner').width($('#graphScrollOuter').width());
@@ -30,25 +29,32 @@ var Simulator = (function(){
         mAnalyses = parsed.analyses;
         mOptions = parsed.options;
         mPlotDefs = parsed.plotdefs;
-        mType = type;
+        
+//        mAllPlots = [];
         
         if (netlist.length === 0) {
             div.prepend('<div class="alert alert-danger"> Empty netlist.'+
-                        '<button class="close" data-dismiss="alert">&times;</button></div>');
+                        '\<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         if (mAnalyses.length === 0) {
             div.prepend('<div class="alert alert-danger"> No analyses requested.'+
-                        '<button class="close" data-dismiss="alert">&times;</button></div>');
+                        '\<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         if (plots.length === 0) {
             div.prepend('<div class="alert alert-danger"> No plots requested.'+
-                        '<button class="close" data-dismiss="alert">&times;</button></div>');
+                        '\<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         
-        // transient analysis progress text and halt button
+//        if (plots.length >= 4){
+//            compactPlot = true;
+//        } else {
+//            compactPlot = false;
+//        }
+        
+        // set up the progress indicator and halt button for transient analysis
         var tranProgress = $('<div><span></span></br></div>');
         div.append(tranProgress);
         tranProgress.hide();
@@ -60,27 +66,6 @@ var Simulator = (function(){
         });
         tranProgress.append(haltButton);
         
-        // transient analysis callback function
-        function tranCB (pct_complete, results) {
-            progressTxt.text("Performing Transient Analysis... "+pct_complete+"%");
-            if (results){
-                tranProgress.hide();
-                mCurrent_results = results;
-//                $('#results').data("current",results);
-                Checkoff.setResults(mCurrent_results);
-                
-                try{
-                    prepare_tran_data(plots);
-                } catch (err) {
-                    tranProgress.hide();
-                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                '.<button class="close" data-dismiss="alert">&times;'+
-                                '</button></div>');
-                }
-            }
-            return tranHalt;
-        }
-        
         // run the simulation and prepare data
         try {
 //            $('#addPlotButton').data('button').enable();
@@ -89,58 +74,65 @@ var Simulator = (function(){
             switch (mCurrent_analysis.type) {
                 case 'tran':
                     tranProgress.show();
+                    
                     var progressTxt = tranProgress.find('span');
                     try{
-                        if (mType == "device"){
-                            cktsim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
-                                                      [], tranCB, mOptions);
-                        } else {
-                            gatesim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
-                                                      [], tranCB, mOptions);
-                        }
+                        cktsim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
+                                                  [], function(pct_complete, results) {
+                            progressTxt.text("Performing Transient Analysis... "+pct_complete+"%");
+                            if (results){
+                                tranProgress.hide();
+                                mCurrent_results = results;
+//                                $('#results').data("current",results);
+                                Checkoff.setResults(mCurrent_results);
+                                
+                                try{
+                                    prepare_tran_data(plots);
+                                } catch (err) {
+                                    tranProgress.hide();
+                                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                                '.\<button class="close" data-dismiss="alert">&times;'+
+                                                '</button></div>');
+                                }
+                            }
+                            return tranHalt;
+                        }, mOptions);
                     } catch (err) {
                         tranProgress.hide();
                         div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                    '.<button class="close" data-dismiss="alert">&times;</button></div>');
+                                    '.\<button class="close" data-dismiss="alert">&times;</button></div>');
                     }
                     break;
                     
                 case 'ac':
-                    if (mType == "device"){
-                        try {
-                            mCurrent_results = cktsim.ac_analysis(netlist, mCurrent_analysis.parameters.fstart,
-                                                             mCurrent_analysis.parameters.fstop,
-                                                             mCurrent_analysis.parameters.ac_source_name,
-                                                             mOptions);
-    //                        $('#results').data("current",mCurrent_results);
-                            
-                            prepare_ac_data(plots);
-                        } catch (err) {
-                            div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                        '.<button class="close" data-dismiss="alert">&times;</button></div>');
-                        }
-                    } else {
-                        div.prepend('<div class="alert alert-danger">No AC analysis in gate-level simulation.'+
-                                    '<button class="close" data-dismiss="alert">&times;</button></div>');
+                    try {
+                        mCurrent_results = cktsim.ac_analysis(netlist, mCurrent_analysis.parameters.fstart,
+                                                         mCurrent_analysis.parameters.fstop,
+                                                         mCurrent_analysis.parameters.ac_source_name,
+                                                         mOptions);
+//                        $('#results').data("current",mCurrent_results);
+                        Checkoff.setResults(mCurrent_results);
+                        
+                        prepare_ac_data(plots);
+                    } catch (err) {
+                        div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                    '.\<button class="close" data-dismiss="alert">&times;</button></div>');
                     }
                     break;
                     
                 case 'dc':
-                    if (mType == "device"){
-                        try {
-                            mCurrent_results = cktsim.dc_analysis(netlist,mCurrent_analysis.parameters.sweep1,
-                                                                 mCurrent_analysis.parameters.sweep2,
-                                                                 mOptions);
-                            
-                            prepare_dc_data(plots);
-                        } catch (err) {
-                            div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                        '.<button class="close" data-dismiss="alert">&times;</button></div>');
-                        }
-                    } else {
-                        div.prepend('<div class="alert alert-danger">No DC analysis in gate-level simulation.'+
-                                    '<button class="close" data-dismiss="alert">&times;</button></div>');
+                    try {
+                        mCurrent_results = cktsim.dc_analysis(netlist,mCurrent_analysis.parameters.sweep1,
+                                                             mCurrent_analysis.parameters.sweep2,
+                                                             mOptions);
+                        Checkoff.setResults(mCurrent_results);
+                        
+                        prepare_dc_data(plots);
+                    } catch (err) {
+                        div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                    '.\<button class="close" data-dismiss="alert">&times;</button></div>');
                     }
+    //                console.log("dc results:",mCurrent_results);
                     break;
             }
         }
@@ -166,7 +158,7 @@ var Simulator = (function(){
         var closeBtn = $('<button class="close plot-close">&times;</button>');
         closeBtn.on("click",function(){
             div.hide();
-//            allPlots.splice(allPlots.indexOf(div.find('.placeholder').data("plot")),1);
+            allPlots.splice(allPlots.indexOf(div.find('.placeholder').data("plot")),1);
         });
         div.prepend(closeBtn);
     }
@@ -240,11 +232,17 @@ var Simulator = (function(){
         // repeat for every set of plots
         for (var p = 0; p < plots.length; p += 1) {
             var plot_nodes = plots[p]; // the set of nodes that belong on one pair of axes
-            var dataseries = []; // 'dataseries' is the list of data objects to pass to a graph module
+            var dataseries = []; // 'dataseries' is the list of objects that represent the 
+                                 // data for the above set of nodes
             
-            if (mType == "gate" && plot_nodes.length > 1){
-                plot_nodes = "L("+plot_nodes.join(' ')+")";
-            }
+//            if (p == 0){
+//                dataseries.push({
+//                    label: 'time',
+//                    data: results._time_.map(function(val){return [val,val]}),
+//                    yUnits: 's',
+//                    color: 'rgba(0,0,0,0)'
+//                });
+//            }
             
             // repeat for each node
             for (var i = 0; i < plot_nodes.length; i += 1) {
@@ -258,6 +256,8 @@ var Simulator = (function(){
                 if (matched_array){
                     var fn_name = matched_array[1];
                     var arg_nodes = matched_array[2].split(/[,\s]\s*/);
+                    
+                    console.log('fn:',fn_name,"args:",arg_nodes);
                     
                     if (fn_name == 'I'){
                         // continue on
@@ -319,16 +319,54 @@ var Simulator = (function(){
                 /***************************** series object ************************************/
             }
             
-            if (dataseries.length === 0) {
+            if (dataseries.length == 0) {
                 continue;
             }
             
-//            var xmin = results._time_[0];
-//            var xmax = results._time_[plotdata.length-1];
+            var xmin = results._time_[0];
+            var xmax = results._time_[plotdata.length-1];
+            
+//            // prepare a div
+//            var wdiv = $('<div class="plot-wrapper"></div>');
+//            addCloseBtn(wdiv);
+//            if (compactPlot){
+//                wdiv.css("margin-bottom",'-10px');
+//            }
+//            var ldiv;
+//            if (compactPlot){
+//                ldiv = $('<div class="plot-legend"></div>');
+//                wdiv.append(ldiv);
+//            }
+//            var plotdiv = get_plotdiv();
+//            wdiv.append(plotdiv);
+//            div.append(wdiv);
             
             /************************ Plot function **********************************/
             tran_plot(dataseries /* ... */); 
             /************************ Plot function **********************************/
+            
+//            // customize options
+//            var options = $.extend(true,{},default_options);
+//            if (compactPlot) {
+//                options.xaxis.font = {color:'rgba(0,0,0,0)',
+//                                      size:1
+//                                     }
+//                options.yaxis.font = {color:'rgba(0,0,0,0)',
+//                                      size:1
+//                                     }
+//            } else {
+//                options.yaxis.axisLabel = current ? 'Amps (A)' : 'Volts (V)';
+//            }
+//            options.xaxis.zoomRange = [null, (xmax-xmin)];
+//            options.xaxis.panRange = [xmin, xmax];
+//            
+//            options.xaxis.units = 's';
+//            options.yaxis.units = current? 'A' : 'V';
+//            
+//        
+//            // graph the data
+//            var plotObj = $.plot(plotdiv,dataseries,options);
+//            graph_setup(wdiv,plotObj);
         }
     }
     
@@ -339,8 +377,8 @@ var Simulator = (function(){
         var results = mCurrent_results;
         
         if (results === undefined) {
-            mDiv.prepend('<div class="alert alert-danger">No results from the simulation.'+
-                        '.<button class="close" data-dismiss="alert">&times;</button></div>');
+            div.prepend('<div class="alert alert-danger">No results from the simulation.'+
+                        '.\<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         
@@ -355,7 +393,7 @@ var Simulator = (function(){
                 var node = plot_nodes[i];
                 if (results[node] === undefined) {
                     var novaldiv = get_novaldiv(node);
-                    mDiv.prepend(novaldiv);
+                    div.prepend(novaldiv);
                     continue;
                 }
                 var magnitudes = results[node].magnitude;
@@ -387,13 +425,46 @@ var Simulator = (function(){
                 /***************************** series object ************************************/
             }
             
-//            var xmin = mag_plots[0].data[0][0];
-//            var len = mag_plots[0].data.length;
-//            var xmax = mag_plots[0].data[len-1][0];
+            var xmin = mag_plots[0].data[0][0];
+            var len = mag_plots[0].data.length;
+            var xmax = mag_plots[0].data[len-1][0];
+            
+//            // prepare divs for magnitude graph
+//            var div1 = $('<div class="plot-wrapper"></div>');
+//            addCloseBtn(div1);
+//            var magplotdiv = get_plotdiv();
+//            div.append(div1);
+//            div1.append(magplotdiv);
+            
+//            // customize options for magnitude graph
+//            var options = $.extend(true, {}, default_options);
+//            options.yaxis.axisLabel = 'Magnitude (dB)';
+//            options.xaxis.axisLabel = 'Frequency (log Hz)';
+//            options.xaxis.zoomRange = [null,(xmax-xmin)];
+//            options.xaxis.panRange = [xmin, xmax];
+//            
+//            // graph magnitude
+//            var plotObj = $.plot(plotDiv, mag_plots, options);
+//            graph_setup(div1, plotObj);
+//            
+//            // prepare divs for phase graphs
+//            var div2 = $('<div class="plot-wrapper"></div>');
+//            addCloseBtn(div2);
+//            phaseplotdiv = get_plotdiv();
+//            div.append(div2);
+//            div2.append(phaseplotdiv);
             
             /************************ Plot function **********************************/
             ac_plot(mag_plots, phase_plots /* ... */);
             /************************ Plot function **********************************/
+//            
+//            // customize options for phase graph
+//            options.yaxis.axisLabel = "Phase (degrees)";
+//            options.yaxis.units = '\u00B0';
+//            
+//            // graph phase
+//            var plotObj = $.plot(plotDiv, phase_plots, options);
+//            graph_setup(div2, plotObj);
         }
     }
     
@@ -405,30 +476,31 @@ var Simulator = (function(){
         var analysis = mCurrent_analysis;
         var sweep1 = analysis.parameters.sweep1;
         var sweep2 = analysis.parameters.sweep2;
-        var dataseries;
         
         if (sweep1 === undefined) return;
+    
+//        console.log("results:",results);
         for (var p = 0; p < plots.length; p += 1) {
             var node = plots[p][0];  // for now: only one value per plot
-            dataseries = [];
+            var dataseries = [];
             var index2 = 0;
             while (true) {
                 var values;
                 var x,x2;
                 if (sweep2 === undefined) {
                     values = results[node];
-                    x = results._sweep1_;
+                    x = results['_sweep1_'];
                 } else {
                     values = results[index2][node];
-                    x = results[index2]._sweep1_;
-                    x2 = results[index2]._sweep2_;
+                    x = results[index2]['_sweep1_'];
+                    x2 = results[index2]['_sweep2_'];
                     index2 += 1;
                 }
         
                 // no values to plot for the given node
                 if (values === undefined) {
                     var novaldiv = get_novaldiv(node);
-                    mDiv.prepend(novaldiv);
+                    div.prepend(novaldiv);
                     continue;
                 }
                 var plotdata = [];
@@ -452,12 +524,30 @@ var Simulator = (function(){
             }
         }
         
-//        var xmin = x[0];
-//        var xmax = x[values.length-1];
+        var xmin = x[0];
+        var xmax = x[values.length-1];
+        
+//        var wdiv = $('<div class="plot-wrapper"></div>');
+//        addCloseBtn(wdiv);
+//        var plotdiv = get_plotdiv();
+//        wdiv.append(plotdiv);
+//        div.append(wdiv);
         
         /************************ Plot function **********************************/
         dc_plot(dataseries /* ... */);
         /************************ Plot function **********************************/
+        
+        
+//        var options = $.extend(true, {}, default_options);
+//        options.xaxis.axisLabel = 'Volts (V)';
+//        options.xaxis.units = 'V';
+//        options.xaxis.zoomRange = [null,(xmax-xmin)];
+//        options.xaxis.panRange = [xmin, xmax];
+//        options.yaxis.axisLabel = current? 'Amps (A)' : 'Volts (V)';
+//        options.yaxis.units = current? 'A' : 'V';
+//        
+//        var plotObj = $.plot(plotdiv, dataseries, options);
+//        graph_setup(wdiv, plotObj);
     }
     
     function tran_plot(dataseries){
@@ -479,3 +569,5 @@ var Simulator = (function(){
             hex_logic:hex_logic
            };
 }());
+
+

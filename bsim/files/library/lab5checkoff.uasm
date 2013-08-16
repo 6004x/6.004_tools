@@ -158,7 +158,7 @@ WrEnd:
 // source file "lab5checkoff_3.c"
 
 	.options tty annotate kalways
-	.tcheckoff "6004.mit.edu/currentsemester/6004assignment.doit" "Lab #5" 1404559175
+	.tcheckoff "http://6004.mit.edu/currentsemester/6004xassignment.doit" "Lab #5" 1404559175
 
 	.align 4
 LOUD:

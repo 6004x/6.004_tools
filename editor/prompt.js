@@ -42,11 +42,21 @@ var ModalDialog = function() {
     };
 
     this.inputBox = function(settings) {
-        mInputHolder.empty();
         var holder = $('<div>').appendTo(mInputHolder);
+        if(settings.label) {
+            mInputHolder.addClass('form-horizontal');
+            holder.addClass('control-group');
+        }
         var input = $('<input type="text">').appendTo(holder);
+        if(settings.label) {
+            $('<label>').addClass('control-label').text(settings.label).appendTo(holder);
+            var control_wrapper = $('<div>').addClass('controls').appendTo(holder).append(input);
+        }
         if(settings.placeholder) {
             input.attr('placeholder', settings.placeholder);
+        }
+        if(settings.type) {
+            input.attr('type', settings.type);
         }
         if(settings.prefix) {
             holder.addClass('input-prepend');
@@ -79,12 +89,17 @@ var ModalDialog = function() {
         }
     };
 
-    this.inputContent = function() {
-        if(mInputHolder.find('input')) {
-            return mInputHolder.find('input').val();
+    this.inputContent = function(index) {
+        if(!index) index = 0;
+        if(mInputHolder.find('input').eq(index)) {
+            return mInputHolder.find('input').eq(index).val();
         } else {
             return null;
         }
+    };
+
+    this.clearInput = function() {
+        mInputHolder.clear();
     };
 
     this.showError = function(message, is_html, cls) {
@@ -123,8 +138,8 @@ var ModalDialog = function() {
                     <div class="modal-error">\
                     </div>\
                     <div class="body-holder"></div>\
-                    <div class="modal-input">\
-                    </div>\
+                    <form class="modal-input">\
+                    </form>\
                 </div>\
                 <div class="modal-footer">\
                 </div>\
@@ -136,7 +151,7 @@ var ModalDialog = function() {
         mErrorHolder = mDialog.find('.modal-error');
 
         mDialog.on('shown', function() {
-            mInputHolder.find('input').focus();
+            mInputHolder.find('input').first().focus();
         });
     };
     initialise();
