@@ -246,6 +246,7 @@ var path=require('path');
 					name:file_path,
 					data:data,
 					status:'success',
+					type:'file',
 				});
 			});
 		}
@@ -266,6 +267,7 @@ var path=require('path');
 							name:file_path,
 							status:'success',
 							data:fdata,
+							type:'file',
 						});
 					}
 			});
@@ -277,8 +279,8 @@ var path=require('path');
 				
 				if(exists){
 					//TODO: what should we do in case we delete a file/folder twice
-					console.log('exists');
 					fs.unlinkSync(hide_path)
+					console.log('exists');
 				}
 					fs.rename(full_path, hide_path, function (err) {
 						if (err) {

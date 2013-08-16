@@ -8,13 +8,15 @@ var Folders=new function(){
     var textInputOn = false;
     //attaches file list to the default node
     function refresh(callback){
-        getFileList(callback); 
-        $('.hover_button').tooltip('hide');
+        callback = callback || function(f){return f;};
+        getFileList(function(done){
+            // $('.tooltip').detach();  
+            callback(done)
+        }); 
     }
 
     var isLoadingFileList = false;
     function getFileList(callback, parentNode){
-        callback = callback || _.identity;
         parentNode = parentNode || rootNode.find('.file_paths');
         if(isLoadingFileList) return;
         isLoadingFileList = true;
@@ -27,7 +29,19 @@ var Folders=new function(){
         FileSystem.getFileList( function(data){
                 parentNode.empty();
                 var username = FileSystem.getUserName();
-                addFiles(data, parentNode);
+                var root = {
+                    'path' : '',
+                    'name' : username,
+                    'folders' : {
+                        'dontony' : {
+                            'name' : username,
+                            'path' : '',
+                            'folders' : data.folders,
+                            'files' : data.files,
+                        },
+                    }
+                }
+                addFiles(root, parentNode);
                 isLoadingFileList = false;
                 FileSystem.getUserName();
                 callback(true);
@@ -48,6 +62,7 @@ var Folders=new function(){
                 span.on('hide', function(e) { e.stopPropagation(); });
             }
             span.click(function(e) {
+                span.tooltip('hide');
                 e.stopPropagation();
                 var current_path = $(e.currentTarget).parents('li').attr('data-path'); 
                 if(callback) {
@@ -77,14 +92,15 @@ var Folders=new function(){
             if(!samePath){
                 if(type === 'move')
                     FileSystem.moveFile(filePath, folderDestination, function(data){
-                        console.log('moving ' + filePath )
-                        console.log('to ' + data );
+                        console.log('moved ' + filePath )
+                        console.log(data);
+                        console.log('to ' + data.name );
                         refresh();
                     })
                 else if (type === 'copy')
                     FileSystem.copyFile(filePath, folderDestination, function(data){
-                        console.log('moving ' + filePath )
-                        console.log('to ' + data );
+                        console.log('copied ' + filePath )
+                        console.log('to ' + data.name );
                         refresh();
                     })
             } else {
@@ -315,10 +331,11 @@ var Folders=new function(){
         return (name.length > 0) && !regExp.test(name);
     }
 
-    function textInput(submitTextAction, parent, validateFunction, defaultText, width, title){
+    function textInput(submitTextAction, parent, validateFunction, defaultText, width, restore, title){
         var title = title || 'Warning';
         var validateFunction = validateFunction || function(text){return text.length > 0};
         var defaultText = defaultText || 'type here';
+
         var valid = false, canceled = true;
         var shown = false;
         var width = width || parseInt(parent.width()-60)
@@ -375,6 +392,8 @@ var Folders=new function(){
                 input.popover('destroy');
                 inputLi.detach();
                 textInputOn = false;
+                if(restore)
+                    restore();
             }
         }
         //adding listener actions
@@ -427,23 +446,31 @@ var Folders=new function(){
 
         //filling in text box with default value
         var count = 0;
-        var untitled = defaultText;
-        while(!validateFunction(untitled, actions)){
+        var defaultName = defaultText.substring(0, defaultText.lastIndexOf('.'));
+        var defaultType = defaultText.substring(defaultText.lastIndexOf('.'))
+        //loop to make sure that we don't overwrite an existing file
+        //still allows the user to copy the file, doesn't overwrite
+        //but names off the file
+        var newFileNameTemp = defaultText;
+        while(!validateFunction(newFileNameTemp, actions) && count <= 50){
+            newFileNameTemp = defaultName + '-' + count + defaultType;
             count++;
-            untitled = defaultText + count;
         }
-        input.val(untitled);
+
+       
+        input.val(newFileNameTemp);
         actions.hideError();
         inputLi.append(input, cancelButton);
         $(parent).prepend(inputLi);
-
+        $(parent).off('click')
         input.focus();
         input.select();
 
     }
     function renameFile(path, file_li){
-        var file_path = path.slice(0, path.lastIndexOf('/'));
-        var oldFileName = path.slice(path.lastIndexOf('/'));
+        var file_path = path.substring(0, path.lastIndexOf('/')+1);
+        var oldFileName = path.substring(path.lastIndexOf('/')+1);
+        console.log(file_path)
         console.log(oldFileName)
         var newFileName = '';
 
@@ -452,20 +479,25 @@ var Folders=new function(){
             console.log(fileName)
             if(!isValidName(fileRegexp, fileName)){
                 actions.showError('File names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~');
-               
+               console.log('fails regexp')
                 return false;
             } 
             var newFileName = '';
             if(fileName.indexOf('.') < 0)
-                newFileName=file_path+fileName+'.'+editMode;
+                newFileName = file_path + fileName+'.'+editMode;
             else
-                newFileName=file_path+fileName;
+                newFileName = file_path + fileName;
             //checks that there is not already another file with that name.
             if (FileSystem.isFile(newFileName)){
-                if(newFileName !== oldFileName){
+                console.log(newFileName.substring(newFileName.lastIndexOf('/')+1) )
+                console.log(oldFileName)
+                if(newFileName.substring(newFileName.lastIndexOf('/')+1) !== oldFileName){
+                    console.log('already exists')
                     actions.showError('file already exists ');
                     return false;
                 }
+                console.log('is the same')
+                return newFileName
             } 
             return newFileName;
         }
@@ -473,10 +505,10 @@ var Folders=new function(){
             console.log(fileName + ' obtained from modal')
             validName = validFileRename(fileName, actions);
             if(validName){
-                action(validName, actions)
+                // action(validName, actions)
 
-                console.log('rename file to ' + newFileName);
-                FileSystem.renameFile(path, newFileName , function(data){
+                console.log('rename file to ' + validName);
+                FileSystem.renameFile(path, validName , function(data){
                     console.log(data.status + ' rename file');
                     displayFile(data);
                     actions.destroy();
@@ -484,15 +516,23 @@ var Folders=new function(){
                     return true;
                 });
             } else{
+                console.log('not a valid name')
+
                 return false;
             }
         }
         console.log(file_li)
-        var oldDom = file_li[0].outerHTML;
+        var oldDom = file_li.html();
         console.log(oldDom)
         var width = file_li.width()-30;
         file_li.html('')
-        textInput(handleRename, file_li, validFileRename, oldFileName, width)
+        function restoreLi(){
+            console.log('restore');
+            file_li.html(oldDom)
+            refresh();
+        }
+        
+        textInput(handleRename, file_li, validFileRename, oldFileName, width, restoreLi)
     }
 
     function newFSObject(parent, validateName, action, title, defaultText){
@@ -608,7 +648,7 @@ var Folders=new function(){
     function addButtons(buttonDiv){
         var toolbar = new Toolbar(buttonDiv);
         toolbar.addButtonGroup([
-            new ToolbarButton('icon-refresh', refresh, 'Refresh')/*,
+            new ToolbarButton('icon-refresh', function(){refresh()}, 'Refresh')/*,
             new ToolbarButton('icon-off', _.identity, 'Off is not implemented')*/
         ]);
     }

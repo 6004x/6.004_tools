@@ -65,7 +65,7 @@ var FileSystem= function(){
                         allFiles=[];
                         allFolders=[];
                         // console.log(fileTree);
-                        console.log(fileTree);
+                        // console.log(fileTree);
                         makeListOfFiles(fileTree,'');
 
                         // console.log(allFolders);
@@ -103,11 +103,6 @@ var FileSystem= function(){
             allFiles.push(file.path);
         }
     }
-    function isFile(name, contents){
-        // console.log(contents);
-        // console.log(contents['~type'] === 'file')
-        return contents['~type'] === 'file';
-    }
     function writeTreeToLocalStorage(){
         // console.log('writing tree to local storage');
 
@@ -119,9 +114,7 @@ var FileSystem= function(){
 
                 if(end){
                     var file = followPath.files[pathname]
-                    console.log(file)
                     localStorage.setItem('6004file'+mUsername+'/'+filePath, JSON.stringify(file));    
-                    console.log(pathname);
                 }
                 return true;
             });
@@ -150,7 +143,7 @@ var FileSystem= function(){
             //, and the length of the whole pathArray. 
             // returns true if we can continue
             try{
-                console.log(followPath)
+                // console.log(followPath)
                 if(i < pathArray.length -1){                    
                     if(action(i, followPath, pathName, false))
                         followPath = followPath.folders[pathName];
@@ -329,12 +322,24 @@ var FileSystem= function(){
         newFileName = folderDestination + newFileName;
         console.log(newFileName);
         self.getFile(fileName, function(oldFile){
-            self.saveFile(newFileName, oldFile.data, function(newFile){
-                if(newFile.status = 'success'){
-                    callback(newFile);
-                }
 
-            })
+        var count = 0;
+        var newFileFront = newFileName.substring(0, newFileName.lastIndexOf('.'));
+        var newFileType = newFileName.substring(newFileName.lastIndexOf('.'))
+        //loop to make sure that we don't overwrite an existing file
+        //still allows the user to copy the file, doesn't overwrite
+        //but names off the file
+        var newFileNameTemp = newFileName;
+        while(self.isFile(newFileNameTemp) && count <= 10){
+            newFileNameTemp = newFileFront + '-' + count + newFileType;
+            count++;
+        }
+        self.saveFile(newFileNameTemp, oldFile.data, function(newFile){
+            if(newFile.status = 'success'){
+                callback(newFile);
+            }
+
+        })
         }, callbackFailed)
     }
     this.moveFile = function(fileName, folderDestination, callback, callbackFailed){
@@ -398,14 +403,16 @@ var FileSystem= function(){
     };
     this.isFile = function(fileName){
         // console.log(fileName+' check if in allfiles');
-        if(fileName.substring(0,1)!=='/')
-            fileName = '/'+fileName;
+        if(fileName.substring(0,1) ==='/')
+            fileName = fileName.substring(1);
+        console.log(allFiles.indexOf(fileName));
         return allFiles.indexOf(fileName) !== -1;
     }
     this.isFolder = function(folderName){
         // console.log(folderName+' check if in allFolders');
-        if(folderName.substring(0,1)!=='/')
-            folderName = '/'+folderName;
+        if(folderName.substring(0,1) ==='/')
+            folderName = folderName.substring(1);
+        console.log(allFolders.indexOf(folderName))
         return allFolders.indexOf(folderName) !== -1;
     }
     this.setup = function(server){
