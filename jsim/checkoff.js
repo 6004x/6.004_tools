@@ -176,18 +176,20 @@ var Checkoff = (function(){
                 
             var base;
             var base_prefix;
-            if (vobj.display_base == 'hex') {
+            // change decimal numbers to hex automatically because otherwise it's a huge pain
+            if (vobj.display_base == 'hex' || vobj.display_base == 'dec') {
                 base = 16;
                 base_prefix = '0x';
-            }
-            if (vobj.display_base == 'octal') {
+            } else if (vobj.display_base == 'oct') {
                 base = 8;
                 base_prefix = '0';
-            }
-            if (vobj.display_base == 'binary') {
+            } else if (vobj.display_base == 'bin') {
                 base = 2;
                 base_prefix = '0b';
-            }
+            }/* else {
+                base = 10;
+                base_prefix = '';
+            }*/
                 
             var mistake = false;
             for (i = 0; i < vobj.values.length; i += 1){
