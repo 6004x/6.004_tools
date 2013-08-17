@@ -89,19 +89,23 @@ var path=require('path');
 						} else {
 							fs.exists(asv_full_path, function(asv_exists){
 								if(asv_exists){
-									fs.readFile(asv_full_path, function(err, data){
-
+									fs.readFile(asv_full_path, 'utf8', function(err, data){
+										sendFile(m_full_path, m_file_path, data);
 									})
+								} else {
+									sendFile(m_full_path, m_file_path);
+									makeAutoSave(m_full_path, m_file_path);
 								}
 
 							})
 						}
 					})
-					if(!fs.lstatSync(m_full_path).isDirectory())
-						sendFile(m_full_path, m_file_path);
-					else{
-						errorResponse('the file that you are speaking of does not exist');
-					}   
+
+				// 	if(!fs.lstatSync(m_full_path).isDirectory())
+				// 		sendFile(m_full_path, m_file_path);
+				// 	else{
+				// 		errorResponse('the file that you are speaking of does not exist');
+				// 	}   
 				}
 			},
 			getFileList : function(exists){
@@ -284,7 +288,7 @@ var path=require('path');
 			response.end(sdata);
 			console.log('data sent');
 		}
-		function sendFile(full_path, file_path) {
+		function sendFile(full_path, file_path, autosave) {
 			fs.readFile(full_path, 'utf8', function(err,data) {
 				if (err){
 					console.log(err);
@@ -296,6 +300,7 @@ var path=require('path');
 				sendJSON({
 					name:file_path,
 					data:data,
+					autosave :autosave,
 					status:'success',
 					type:'file',
 				});

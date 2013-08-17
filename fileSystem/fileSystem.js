@@ -198,6 +198,7 @@ var FileSystem= function(){
         if(online){
             sendAjaxRequest(fileObj, null, 'getFile', function(data, status){
                 if(status == 'success'){
+                    console.log(data)
                     callback(data);
                     writeFileToTree(data.name, data.data, true);
                 }
