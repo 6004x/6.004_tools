@@ -215,6 +215,8 @@
 					console.log(peekStepObject)
 					updateGUI(peekStepObject, mCurrentTape.peek());
 					self.listToTape();
+					if(undoStack.length === 0)
+						$(this).addClass('disabled')
 				}	
 			});
 			playButton.on('click', function(){
@@ -364,12 +366,12 @@
 			mContainer.find('.transition_div .curr_state').text(stepObject.old_state.name);
 			mContainer.find('.transition_div .read_symbol').text(readObject);
 			mContainer.find('.transition_div .new_state').text(stepObject.transition.new_state);
-			mContainer.find('.transition_div .write_symbol').text(stepObject.transition.write);
+			mContainer.find('.transition_div .write_symbol').text(stepObject.transition.write).removeClass('current_write');
 			mContainer.find('.transition_div .move_dir').text(stepObject.transition.move);
 			mContainer.find('.machine_label .move_dir').text(stepObject.transition.move);
 		}
-		this.stepAction = function(callback){
-			var callback = callback || _.identity;
+		this.stepAction = function(callbackParam){
+			var callback = callbackParam || _.identity;
 			try{
 				var readObject = mCurrentTape.peek();
 				var stepObject = mTSM.step(mCurrentTape);
@@ -377,7 +379,7 @@
 				undoAction.stepObject = stepObject;
 				undoAction.tape = mCurrentTape.cloneTape();
 				undoStack.push(undoAction);
-
+				$('.prev_step_button').removeClass('disabled');
 				var state_transition = stepObject.transition;
 				mCurrentTape.traverse(state_transition.write, state_transition.move);
 				
@@ -387,11 +389,12 @@
 				markLine( state_transition.lineNumber-1)
 
 				
-				mContainer.find('.tape_div .current_segment').text(stepObject.transition.write);
+				mContainer.find('.tape_div .current_segment').text(stepObject.transition.write).addClass('current_write');
 				mContainer.find('.tape_div .prev_segment').removeClass('prev_segment');
-				mContainer.find('.tape_div .read_symbol').removeClass('read_symbol');
-				mContainer.find('.tape_div .current_segment').addClass('prev_segment');
-				
+				mContainer.find('.tape_div .read_segment').removeClass('read_segment');
+				mContainer.find('.tape_div .current_segment').addClass('current_write');
+				mContainer.find('.old_transition_div .old_write_symbol').removeClass('current_write')
+				mContainer.find('.transition_div .write_symbol').addClass('current_write')
 				function updateTransitionDiv(){
 					mContainer.find('.transition_div').css({
 						'top' : 0,
@@ -402,10 +405,12 @@
 					mContainer.find('.old_transition_div .old_curr_state').text(stepObject.old_state.name)
 					mContainer.find('.old_transition_div .old_read_symbol').text(readObject)
 					mContainer.find('.old_transition_div .old_new_state').text(stepObject.transition.new_state)
-					mContainer.find('.old_transition_div .old_write_symbol').text(stepObject.transition.write)
+					mContainer.find('.old_transition_div .old_write_symbol').text(stepObject.transition.write).addClass('current_write')
 					mContainer.find('.old_transition_div .old_move_dir').text(stepObject.transition.move)
 					mContainer.find('.transition_div .curr_state').text(stepObject.transition.new_state);
 					mContainer.find('.transition_div .read_symbol').text(mCurrentTape.peek());
+					mContainer.find('.transition_div .write_symbol').removeClass('current_write');
+
 					try{
 						if(!(mTSM.getCurrentState() === '*halt*' || mTSM.getCurrentState() === '*error*')){
 							var nextStepObject = mTSM.stepPeek(mCurrentTape);
@@ -509,7 +514,9 @@
 				}
 				else if(new_state_name != '*halt*' && new_state_name != '*error*'){
 					if(slider_speed >= 0){
-						self.stepAction(nextStep);
+						setTimeout(function(){
+							self.stepAction(nextStep);
+						}, slider_speed);
 					} else {
 						var i = -slider_speed;
 						while( i > 0){
@@ -622,12 +629,33 @@
 
 			$('.tape_button').removeClass('disabled');
 		}
+		var currentNumberOfSegments = 0;
+
+		function initTape(){
+			console.log('initTape')
+			var tapeDiv = $('.tape_div');
+			tapeDiv.html('')
+			tapeDiv.css('left',0);
+			var numberOfSegments = Math.floor(mContainer.width()/mTAPE_WIDTH) + 6; //3 segment on ech side for backup
+			currentNumberOfSegments = numberOfSegments;
+			for (var i = -Math.floor(numberOfSegments/2); i < Math.floor(numberOfSegments/2); i++){
+				var leftPos = (mContainer.width() - mTAPE_WIDTH)/2 + (i)*mTAPE_WIDTH;
+				var tape_segment = $('<div>').addClass('tape_segment')
+					.css({
+						'left' : leftPos,
+						'width' : mTAPE_WIDTH - 2,
+						'height' : TAPE_HEIGHT - 4
+					});
+				tapeDiv.append(tape_segment);
+			}
+
+		}
 		this.listToTape = function(tapeList){
 			var tapeDiv = $('.tape_div');
 			var tape = tapeList || mCurrentTape;
 			if(!tape)
 				return;
-			tapeDiv.html('');
+			// tapeDiv.html('');
 			tapeDiv.css('left', 0);
 			
 			var listToArray = tape.toArray(); 
@@ -636,34 +664,30 @@
 			var array = listToArray.array;
 
 			var numberOfSegments = Math.floor(mContainer.width() / mTAPE_WIDTH) + 6; //3 segment on ech side for backup
-		
+			if(numberOfSegments !== currentNumberOfSegments)
+				initTape();
 			var startIndex = currentIndex - Math.floor((numberOfSegments / 2));
 			var endIndex = currentIndex + Math.floor((numberOfSegments / 2));
 
 			for (var i = startIndex, k = 0; i < endIndex; i++, k++){
 				var leftPos = (mContainer.width() - mTAPE_WIDTH) / 2 + (i - currentIndex) * mTAPE_WIDTH;
-				var tape_segment = $('<div>').addClass('tape_segment')
-					.css({
-						'left' : leftPos,
-						'width' : mTAPE_WIDTH - 2,
-						'height' : TAPE_HEIGHT - 4
-					})
+				var tape_segment = $('.tape_segment').eq(k);
 				if(i < 0 || i >= array.length){
 					tape_segment.text('-')
 				} else if(i < array.length) {
 					//in tape, so we can add the tape_segment data
 					tape_segment.text(array[i]);
+					tape_segment.removeClass('read_segment write_segment prev_segment current_segment current_write')
 					if(i == currentIndex)
-						tape_segment.addClass('current_segment read_symbol');
+						tape_segment.addClass('current_segment read_segment');
 					else if (i == previousIndex)
 						tape_segment.addClass('prev_segment');
 					else if(i - 1 == currentIndex )
 						tape_segment.addClass('right_segment');
 					else if(i + 1 == currentIndex )
-						tape_segment.addClass('segment_segment');
+						tape_segment.addClass('left_segment');
 					
 				}
-				tapeDiv.append(tape_segment);
 			}
 		}
 		this.animateTape = function(dir, callback){

@@ -30,7 +30,6 @@ function serverFunction(request, response, next){
 		console.log(data);
 		next();
 	} else if (request.method == 'POST'){
-		console.log('post');
 		//pull the data from the POST body requestuest
 		console.log('post method');
 		var body = '';
@@ -43,11 +42,9 @@ function serverFunction(request, response, next){
 			}
 		});
 		request.on('end', function () {
-
 			var POST = qs.parse(body);
 			// use POST
 			console.log(POST);
-			console.log('use post');
 			libraryHandler.getLibraryHandler(request, response, POST);
 		});	
 		console.log(body);
