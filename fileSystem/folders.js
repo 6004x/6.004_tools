@@ -633,7 +633,15 @@ var Folders=new function(){
         modal.show();
     }
 
-    
+    function autoSaveCurrent(){
+        var file = {};
+        file.name = editor.currentTab();
+        file.data = editor.content();
+        FileSystem.makeAutoSave(file.name, file.data, function(data){
+            console.log(data)
+            PassiveAlert(file.name + 'autosaved', 'success');
+        })
+    }
     
     function commit() {
         // Todo.
@@ -651,6 +659,8 @@ var Folders=new function(){
             new ToolbarButton('icon-refresh', function(){refresh()}, 'Refresh')/*,
             new ToolbarButton('icon-off', _.identity, 'Off is not implemented')*/
         ]);
+        editor.addButtonGroup([new ToolbarButton('Autosave current Test', autoSaveCurrent, '')]) 
+
     }
 
     function setup(root, editorN, mode){
