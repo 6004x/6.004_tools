@@ -263,7 +263,7 @@ var Simulator = (function(){
                     
                     if (fn.type == 'I'){
                         // continue on
-                        values = results[node];
+                        values = results[fn.args[0]];
                     } else {
                         if (fn.type.toUpperCase() != 'L' && !(fn.type in mPlotDefs)) {
                             throw "No definition for plot function "+fn.type;
@@ -285,9 +285,7 @@ var Simulator = (function(){
                                 if (mPlotDefs[fn.type][nval]) return mPlotDefs[fn.type][nval];
                                 else return "???";
                             }
-                        });
-                        
-                        
+                        });   
                         
                     }
                 } else {
@@ -463,7 +461,7 @@ var Simulator = (function(){
     }
     
     function tran_plot(dataseries){
-//        console.log("data:",dataseries);
+        console.log("data:",dataseries);
         Plot.tran_plot(mDiv,dataseries);
     }
     
