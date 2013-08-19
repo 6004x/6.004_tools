@@ -2,35 +2,36 @@
 <html lang="en">
     <head>
         <title>TMSim</title>
-        <!-- build:js tmsim-all.js -->
-        <!-- external javascript -->
+        <!-- build:js common.min.js -->
+        <!-- This block MUST be identical across bsim, jsim and tmsim. -->
         <script src="../libs/jquery.js"></script>
         <script src="../libs/underscore.js"></script>
         <script src="../libs/backbone.js"></script>
         <script src="../libs/bootstrap.js"></script>
         <script src="../fileSystem/external/jquery-ui.js"></script>
-       
-       
-        <!-- importing editor by mattpf -->
+        <script src="../editor/external/codemirror.js"></script>
+        <script src="../editor/external/radix.js"></script>
+        <script src="../editor/external/codemirror-extensions.js"></script>
         <script src="../editor/toolbar.js"></script>
         <script src="../editor/editor.js"></script>
-        <script src="../editor/autocomplete.js"></script>
         <script src="../editor/prompt.js"></script>
         <script src="../editor/split_pane.js"></script>
-        <script src="../editor/external/codemirror.js"></script>
-        <script src="../editor/external/codemirror-extensions.js"></script>
-        <script src="../editor/external/radix.js"></script>
-        <script src="../editor/modes/tsim.js"></script>
+        <script src="../editor/passive_alert.js"></script>
+        <script src="../editor/autocomplete.js"></script>
         <script src="../editor/browser_check.js"></script>
-        <!-- other files -->
         <script src='../fileSystem/fileSystem.js'></script>
         <script src='../fileSystem/folders.js'></script>
+        <!-- endbuild -->
+
+        <!-- build:js tmsim.min.js -->
+        <script src="../editor/modes/tmsim.js"></script>
+        <!-- other files -->
         <script src='tapeList.js'></script>
         <script src='tsm.js'></script>
         <script src='tsmParser.js'></script>
         <script src='tmsim.js'></script>
-
         <!-- endbuild -->
+
         <!-- build:css tmsim-all.css -->
         <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
         <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">

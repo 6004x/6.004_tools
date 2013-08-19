@@ -2,7 +2,8 @@
 <html>
     <head>
         <title>BSim 2.0.0</title>
-        <!-- build:js bsim-all.js -->
+        <!-- build:js common.min.js -->
+        <!-- This block MUST be identical across bsim, jsim and tmsim. -->
         <script src="../libs/jquery.js"></script>
         <script src="../libs/underscore.js"></script>
         <script src="../libs/backbone.js"></script>
@@ -10,16 +11,19 @@
         <script src="../fileSystem/external/jquery-ui.js"></script>
         <script src="../editor/external/codemirror.js"></script>
         <script src="../editor/external/radix.js"></script>
+        <script src="../editor/external/codemirror-extensions.js"></script>
         <script src="../editor/toolbar.js"></script>
         <script src="../editor/editor.js"></script>
         <script src="../editor/prompt.js"></script>
         <script src="../editor/split_pane.js"></script>
         <script src="../editor/passive_alert.js"></script>
         <script src="../editor/autocomplete.js"></script>
-        <script src="../editor/external/codemirror-extensions.js"></script>
-        <script src="../editor/modes/uasm.js"></script>
+        <script src="../editor/browser_check.js"></script>
         <script src='../fileSystem/fileSystem.js'></script>
         <script src='../fileSystem/folders.js'></script>
+        <!-- endbuild -->
+        <!-- build:js bsim.min.js -->
+        <script src="../editor/modes/uasm.js"></script>
         <script src="external/sstream.js"></script>
         <script src="external/dequeue.js"></script>
         <script src="assemble.js"></script>
@@ -38,9 +42,9 @@
         <script src="simulation/error_handler.js"></script>
         <script src="simulation/schematic_view.js"></script>
         <script src="verify.js"></script>
-        <script src="../editor/browser_check.js"></script>
         <!-- endbuild -->
-        <!-- build:css bsim-all.css -->
+
+        <!-- build:css bsim.min.css -->
         <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
         <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
         <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
