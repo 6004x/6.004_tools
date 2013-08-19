@@ -58,7 +58,8 @@ var Parser = (function(){
         --returns: an array of tokens
     *******************************/
     function split(input_string,filename){ 
-        var pattern = /".*?"|\w*\s*\([^\)]*\)|-?[\w:\.$#\[\]]+|=|\/\*|\n|\u001e/g;
+        var pattern = /".*?"|-?[\w:\.$#\[\]]+|=|\(|\)|,|\/\*|\n|\u001e/g;
+        // \w*\s*\([^\)]*\)| old function pattern
         // 'pattern' will match, in order:
         //      anything wrapped in quotes
         //      a hex number
@@ -69,10 +70,12 @@ var Parser = (function(){
         //          then any number of letters, numbers, underscores, colons,
         //          periods, commas, dollar signs, number signs, or square brackets
         //      an equals sign
+        //      parentheses
+        //      commas
         //      a newline
         //      a record separater (unicode character \u001e)
         
-        var fn_pattern = /^\w*\s*\([^\)]*\)$/;
+//        var fn_pattern = /^\w*\s*\([^\)]*\)$/;
         // [^,\)]+(,\s*[^,\)]+)*
         var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)/;
         var control_pattern = /^\..+/;
@@ -88,9 +91,9 @@ var Parser = (function(){
             var type;
             var base;
             var matched = matched_array[0];
-            if (fn_pattern.test(matched)){
+            /*if (fn_pattern.test(matched)){
                 type = 'function';
-            } else if (string_pattern.test(matched)){
+            } else*/ if (string_pattern.test(matched)){
                 matched = matched.replace(/"/g,'');
                 type = 'string';
             }  else if (names_pattern.test(matched)){
@@ -353,7 +356,7 @@ var Parser = (function(){
         
         while (token_array.length > 0){
             var current = token_array[0];
-            if (current.token.toLowerCase() == ".include"){
+            if (current.type != "number" && current.token.toLowerCase() == ".include"){
                 var file = token_array[1];
                 if (file.type != "string"){
                     throw new CustomError("Filename expected", current);
@@ -489,7 +492,7 @@ Parse
             var current = token_array[0];
             
             // transfer the tokens of one line to toParse
-            if(current.token != "\n"){
+            if(String(current.token) != "\n"){
                 toParse.push(token_array.shift());
             } else if (toParse.length !== 0) { 
                 if (toParse[0].type == "control"){ 
@@ -638,29 +641,35 @@ Parse
     function read_plot(line){
         line.shift();
         var plot_list = [];
+        var plot_fn = [];
+        var reading_fn = false;
         for (var i = 0; i < line.length; i += 1){
+            if (line[i+1] && line[i+1].token == "("){
+                reading_fn = true;
+                plot_function.push(line[i].token);
+            }
             
-            if (line[i].type == "function"){
-                // get the node name in the parentheses
-                var nodes = /\((.+)\)/.exec(line[i].token)[1];
-                nodes = nodes.split(/[,\s]\s*/);
-                
-                for (var n = 0; n < nodes.length; n += 1){
-                    if (!(/(^[A-Za-z][\w$:\[\]\.]*)/.test(nodes[n]))){
-                        throw new CustomError("Node name expected",line[i]);
-                    }
+            if (reading_fn){
+                if (line[i].token = ")") {
+                    reading_fn = false;
+                    plot_function.push(line[i].token);
+                    plot_list.push(plot_function.join(''));
+                } else if (line[i].type != "name" && !(line[i].token == "(" || line[i].token == ",")) {
+                    throw new CustomError("Node name expected.",line[i]);
+                } else {
+                    plot_function.push(line[i].token);
                 }
             } else if (line[i].type != "name"){
-                throw new CustomError("Node name expected",line[i]);
-            }
-            plot_list.push(line[i].token);
-            
+                throw new CustomError("Node name expected.",line[i]);
+            } else {
+                plot_list.push(line[i].token);
+            }   
         }
         
         if (plot_list.length > 0){
             plots.push(plot_list);
         } else {
-            throw new CustomError("Node name expected",line[0]);
+            throw new CustomError("No nodes specified.",line[0]);
         }
     }
     
@@ -1000,28 +1009,38 @@ Parse
         var nodes = [];
         var i = 1;
         var raw_values;
-        
-        // the token representing the function
-        var fn;
+        var fn = [];
+        var fn_token;
+        var reading_fn = false;
         while (true) {
             if (i >= line.length){
                 throw new CustomError("No verify function specified: 'periodic' or 'tvpairs' expected.",
                                       line[0]);
             }
-            if (line[i].type != "name"){
-                if (line[i].type == "function"){
-                    if (i == 1){
-                        throw new CustomError("No specified nodes to verify.",line[1]);
-                    }
-                    fn = line[i];
+            if (line[i+1] && line[i+1].token == "("){
+                reading_fn = true;
+                if (line[i].type != "name"){
+                    throw new CustomError("Invalid function name.",line[i]);
+                } else {
+                    fn.push(line[i].token, line[i+1].token);
+                    fn_token = line[i];
+                    i += 2;
+                    continue;
+                }
+            }
+            if (reading_fn){
+                fn.push(line[i].token);
+                if (line[i].token == ")"){
+                    reading_fn = false;
                     raw_values = line.slice(i+1);
                     break;
-                } else {
-                    throw new CustomError("Node name expected.",line[i]);
                 }
-            } else {
-                nodes.push(line[i].token);
+                i += 1;
+                continue;
             }
+            
+            if (line[i].type != "name") throw new CustomError("Node name expected.",line[i]);
+            nodes.push(line[i].token);
             i += 1;
         }
         
@@ -1034,52 +1053,75 @@ Parse
         // fn_array[2] is the entire contents of the parentheses
         // fn_array[3] is the first arg
         // fn_array[4] is the second arg
+//        var fn_pattern = /(\w+)\((([^,]+),\s*([^,]+))?\)/;
+//        var fn_array = fn.token.match(fn_pattern);
+////        console.log("matched:",fn_array);
+//        
+//        if (!fn_array){
+//            throw new CustomError("Ill-formed .verify function statement",fn_token);
+//        }
+//        
+//        var fn_name = fn_array[1];
+//        if (fn_name != 'periodic' && fn_name != 'tvpairs'){
+//            throw new CustomError("Invalid verify function: 'periodic' or 'tvpairs' expected",fn_token);
+//        }
+        
+        fn = fn.join('');
+        // picks out the name of the function and its args, if any
+        // fn_array[1] is the name
+        // fn_array[2] is the entire contents of the parentheses
+        // fn_array[3] is the first arg
+        // fn_array[4] is the second arg
         var fn_pattern = /(\w+)\((([^,]+),\s*([^,]+))?\)/;
-        var fn_array = fn.token.match(fn_pattern);
+        var fn_array = fn.match(fn_pattern);
 //        console.log("matched:",fn_array);
         
         if (!fn_array){
-            throw new CustomError("Ill-formed .verify function statement",fn);
+            throw new CustomError("Ill-formed .verify function statement",fn_token);
         }
         
         var fn_name = fn_array[1];
         if (fn_name != 'periodic' && fn_name != 'tvpairs'){
-            throw new CustomError("Invalid verify function: 'periodic' or 'tvpairs' expected",fn);
+            throw new CustomError("Invalid verify function: 'periodic' or 'tvpairs' expected",fn_token);
         }
         
         // find what base the values are given in so that the same base can be used to display errors
-        var display_base;
-        var temp_index = fn_name == "periodic" ? 0 : 1;
-        if (/^0x/i.test(raw_values[temp_index].token)) display_base = 'hex';
-        else if (/^0b/i.test(raw_values[temp_index].token)) display_base = 'binary';
-        else if (/^0/i.test(raw_values[temp_index].token) && !(/^0$/.test(raw_values[temp_index].token))) display_base = 'octal';
-        else display_base = 'binary';
-        
-        // parse values
-        for (i = 0; i < raw_values.length; i += 1){
-            var newval;
-//            try{
-//                newval = parse_number(raw_values[i].token);
-//            } catch (err) {
-//                throw new CustomError("Number expected.",raw_values[i]);
+        var display_base = raw_values[0].base;
+//        var display_base;
+//        var temp_index = fn_name == "periodic" ? 0 : 1;
+//        if (/^0x/i.test(raw_values[temp_index].token)) display_base = 'hex';
+//        else if (/^0b/i.test(raw_values[temp_index].token)) display_base = 'binary';
+//        else if (/^0/i.test(raw_values[temp_index].token) && !(/^0$/.test(raw_values[temp_index].token))) display_base = 'octal';
+//        else display_base = 'binary';
+//        
+//        // parse values
+//        for (i = 0; i < raw_values.length; i += 1){
+//            var newval;
+////            try{
+////                newval = parse_number(raw_values[i].token);
+////            } catch (err) {
+////                throw new CustomError("Number expected.",raw_values[i]);
+////            }
+//            if (raw_values[i].type  != "number"){
+//                throw new CustomError("Number expected.", raw_values[i]);
+//            } else {
+//                raw_values[i] = raw_values[i].token;
 //            }
-            if (raw_values[i].type  != "number"){
-                throw new CustomError("Number expected.", raw_values[i]);
-            } else {
-                raw_values[i] = raw_values[i].token;
-            }
-        }
-        
+//        }
+        raw_values = raw_values.map(function(thing){return thing.token;})
         var values;
         var tstart;
         var tstep;
         if (fn_name == "periodic"){
-            try{
-                tstart = parse_number(fn_array[3]);
-                tstep = parse_number(fn_array[4]);
-            } catch (err){
-                throw new CustomError("Number expected",fn);
-            }
+            
+            tstart = fn_array[3];
+            tstep = fn_array[4];
+//            try{
+//                tstart = parse_number(fn_array[3]);
+//                tstep = parse_number(fn_array[4]);
+//            } catch (err){
+//                throw new CustomError("Number expected",fn);
+//            }
             values = raw_values.slice(0);
         }
         
@@ -1094,7 +1136,7 @@ Parse
                       nodes:nodes,
                       tstart:tstart,
                       tstep:tstep,
-                      token:fn, // for throwing errors later
+                      token:fn_token, // for throwing errors later
                       values:values,
                       display_base:display_base
                      };
@@ -1122,21 +1164,21 @@ Parse
 //            } catch (err) {
 //                throw new CustomError("Number expected.",line[i]);
 //            }
-            if (line[i].type != "number"){
+            if (line[i].type != "number" && line[i].token != "(" && line[i].token != ")"){
                 throw new CustomError("Number expected.", line[i]);
             } else {
-                contents.push(line[i].token);
+                contents.push(line[i]);
             }
         }
-        obj.contents = contents;
+        obj.contents = contents.map(function(thing){return thing.token;});
         
-        var display_base;
-        if (/^0x/i.test(line[3].token)) display_base = 'hex';
-        else if (/^0b/i.test(line[3].token)) display_base = 'binary';
-        else if (/^0/i.test(line[3].token) && !(/^0$/.test(line[3].token))) display_base = 'octal';
-        else display_base = 'binary';
+//        var display_base;
+//        if (/^0x/i.test(line[3].token)) display_base = 'hex';
+//        else if (/^0b/i.test(line[3].token)) display_base = 'binary';
+//        else if (/^0/i.test(line[3].token) && !(/^0$/.test(line[3].token))) display_base = 'octal';
+//        else display_base = 'binary';
         
-        obj.display_base = display_base;
+        obj.display_base = contents[0].base;
         obj.token = line[0];
         
         // obj has attributes:
@@ -1264,9 +1306,9 @@ Device readers: each takes a line of tokens and returns a device object,
 //                throw new CustomError("Number expected", line[end-1]);
 //            }
             if (line[end-1].type != "number"){
-                throw new CustomError("Number expected."), line[end-1]);
+                throw new CustomError("Number expected.", line[end-1]);
             } else {
-                obj.properties[line[end-3].token.toUpperCase()] = line[end-1].token);
+                obj.properties[line[end-3].token.toUpperCase()] = line[end-1].token;
             }
         
             if (line[end-5] !== undefined){
@@ -1340,40 +1382,43 @@ Device readers: each takes a line of tokens and returns a device object,
         obj.connections.push(line[1].token);
         obj.connections.push(line[2].token);
         
-        if (line[3].type == "number"){
-//            try{
-//                obj.properties.value = String(parse_number(line[3].token));
-//            } catch (err) {
-//                throw new CustomError("Number Expected",line[3].line,line[3].column);
-//            }
-            obj.properties.value = line[3].token;
-        } else if (line[3].type == "function"){
-            var fn_pttn = /(\w+)\((.+)\)/;
-            var fn_matched = line[3].token.match(fn_pttn);
-            var fn_name = fn_matched[1];
-            var fn_args = fn_matched[2];
-            fn_args = fn_args.split(/[,\s]\s*/);
+        var fn = {args:[]};
+//        var expr_obj;
+        if (line[4] && line[4].token == "("){
+            // source function
+            if (line[3].type != "name") throw new CustomError("Invalid source function name.",line[3]);
+            fn.type = line[3].token;
             
-//            console.log("args:",fn_args);
-            
-            var final_fn_args = [];
-            for (i = 0; i < fn_args.length; i += 1){
-                try{
-                    final_fn_args.push(parse_number(fn_args[i]));
-                } catch (err) {
-                    throw new CustomError("Number expected",line[3]);
+            var i = 5;
+            while (i < line.length){
+                if (line[i].token == ","){
+                    i += 1;
+                    continue;
                 }
+                if (line[i].token == ")") break;
+                
+                if (line[i].type != "number"){
+                    throw new CustomError("Number expected.",line[i]);
+                } else {
+                    fn.args.push(line[i].token);
+                    i += 1;
+                }
+//                expr_obj = eat_expression(line,i);
+//                fn.args.push(expr_obj.expr);
+//                i = expr_obj.next_index;
             }
-            
-            obj.properties.value = fn_name+"("+final_fn_args.join(",")+")";
-//            console.log("object:",obj);
+        } else {
+            fn.type = "dc";
+            if (line[3].type != "number"){
+                throw new CustomError("Number expected.",line[3]);
+            } else {
+                fn.args.push(line[3].token);
+            }
+//            expr_obj = eat_expression(line,3);
+//            fn.args.push(expr_obj.expr);
         }
-//        } else 
-//        if (line[3].type != "function" && line[3].type != "number"){
-//            throw new CustomError("Number or function expected", line[3]);
-//        } else {
-//            obj.properties.value = line[3].token;   
-//        }
+        
+        obj.properties.value = fn;
         return obj;
     }
     
@@ -1413,66 +1458,87 @@ Device readers: each takes a line of tokens and returns a device object,
     Syntax: Wid nodes... nrz(vlow,vhigh,tperiod,tdelay,trise,tfall) data...
     *****************************/
     function read_W(line){
-        var fn, raw_data;
+        var raw_data = [];
+        var fn = {name:"nrz",args:[]};
+        var reading_fn = false;
         var nodes = [];
         var i = 1;
         while (true) {
             if (i >= line.length){
-                throw new CustomError("No nrz function specified.",line[0]);
+                throw new CustomError("No W function specified.",line[0]);
             }
-            if (line[i].type != "name"){
-                if (line[i].type == "function"){
-                    if (i == 1){
-                        throw new CustomError("No specified nodes to drive.",line[1]);
+            if (line[i+1] && line[i+1].token == "("){
+                if (line[i].type != "name" || line[i].token.toLowerCase() != "nrz"){
+                    throw new CustomError("Invalid W function: nrz expected.",line[i]);
+                }
+                i += 2;
+                reading_fn = true;
+            }
+            if (reading_fn){
+                if (line[i]){
+                    if (line[i].token == ",") {
+                        i += 1;
+                        continue;
+                    } else if (line[i].token == ")"){
+                        raw_data = line.slice(i+1);
+                        break;
                     }
-                    fn = line[i];
-                    raw_data = line.slice(i+1);
+                } else {
                     break;
-                } else {
-                    throw new CustomError("Node name expected.",line[i]);
                 }
+                if (line[i].type != "number"){
+                    throw new CustomError("Number expected.",line[i]);
+                } else {
+                    fn.args.push(line[i].token);
+                    i += 1; 
+                }
+//                var expr_obj = eat_expression(line,i);
+//                fn.args.push(expr_obj.expr);
+//                i = expr_obj.next_index;
             } else {
+                if (line[i].type != "name") throw new CustomError("Node name expected.",line[i]);
                 nodes.push(line[i].token);
+                i += 1;
             }
-            i += 1;
         }
-        
-        var fn_pttn = /(\w+)\((.+)\)/;
-        var fn_matched = fn.token.match(fn_pttn);
-        var fn_name = fn_matched[1];
-        var fn_args = fn_matched[2];
-        fn_args = fn_args.split(/[,\s]\s*/);
-        
-        if (fn_name == "nrz"){
-            if (fn_args.length != 6) throw new CustomError("nrz function expects six arguments.",fn);
-            var param_names = ["vlow","vhigh","tperiod","tdelay","trise","tfall"];
-            var args = {};
-            for (i = 0; i < fn_args.length; i += 1){
-                try{
-                    fn_args[i] = parse_number(fn_args[i]);
-                } catch (err){
-                    throw new CustomError("Number expected.",fn);
-                }
-                args[param_names[i]] = fn_args[i];
-            }
-            
-            var data = [];
-            for (i = 0; i < raw_data.length; i += 1){
+//        
+//        var fn_pttn = /(\w+)\((.+)\)/;
+//        var fn_matched = fn.token.match(fn_pttn);
+//        var fn_name = fn_matched[1];
+//        var fn_args = fn_matched[2];
+//        fn_args = fn_args.split(/[,\s]\s*/);
+//        
+//        if (fn_name == "nrz"){
+//            if (fn_args.length != 6) throw new CustomError("nrz function expects six arguments.",fn);
+//            var param_names = ["vlow","vhigh","tperiod","tdelay","trise","tfall"];
+//            var args = {};
+//            for (i = 0; i < fn_args.length; i += 1){
 //                try{
-//                    data.push(parse_number(raw_data[i].token));
-//                } catch (err) {
-//                    throw new CustomError("Number expected.",raw_data[i]);
+//                    fn_args[i] = parse_number(fn_args[i]);
+//                } catch (err){
+//                    throw new CustomError("Number expected.",fn);
 //                }
-                if (raw_data[i].type != "number"){
-                    throw new CustomError("Number expected.",raw_data[i]);
-                } else {
-                    data.push(raw_data[i].token);
-                }
-            }
-            return parse_W(nodes,args,data,line[0]);
-        } else {
-            throw new CustomError("Unrecognized W function",fn);
-        }
+//                args[param_names[i]] = fn_args[i];
+//            }
+//            
+//            var data = [];
+//            for (i = 0; i < raw_data.length; i += 1){
+////                try{
+////                    data.push(parse_number(raw_data[i].token));
+////                } catch (err) {
+////                    throw new CustomError("Number expected.",raw_data[i]);
+////                }
+//                if (raw_data[i].type != "number"){
+//                    throw new CustomError("Number expected.",raw_data[i]);
+//                } else {
+//                    data.push(raw_data[i].token);
+//                }
+//            }
+        var data = raw_data.map(function(thing){return thing.token;});
+        return parse_W(nodes,fn.args,data,line[0]);
+//        } else {
+//            throw new CustomError("Unrecognized W function",fn);
+//        }
     }
     
     /*************************
@@ -1481,7 +1547,8 @@ Device readers: each takes a line of tokens and returns a device object,
                 -args: the parameters of the nrz function
                     (vhigh, vlow, tperiod, tdelay, trise, tfall)
                 -data: the given logic values the set of nodes should take
-        --returns: 
+                -token: the token to throw errors at
+        --returns: a list of voltage source device objects
     *************************/
     function parse_W(nodes,args,data,token){
         var time_steps = [];
@@ -1524,7 +1591,7 @@ Device readers: each takes a line of tokens and returns a device object,
                         ports:["nplus","nminus"],
                         connections:[nodes[n],"gnd"],
                         properties:{name:token.token+"_"+nodes[n],
-                                    value:"pwl("+pwl_args.join()+")"},
+                                    value:{name:"pwl",args:pwl_args}},
                         line:token.line,
                         file:token.origin_file
                        };
@@ -1537,15 +1604,15 @@ Device readers: each takes a line of tokens and returns a device object,
     Instance: instance of user-specified subcircuit
     *******************************/
     function read_instance(line){
-        var props = [];
-        if (line.length >= 4){
-            try{
-                while (line[line.length-2].token == "="){
-                    props.push(line.slice(-3));
-                    line = line.slice(0,-3);
-                }
-            } catch (err) {}
-        }
+//        var props = [];
+//        if (line.length >= 4){
+//            try{
+//                while (line[line.length-2].token == "="){
+//                    props.push(line.slice(-3));
+//                    line = line.slice(0,-3);
+//                }
+//            } catch (err) {}
+//        }
 
         var inst = line[1];
 //        if (!(inst.token in subcircuits)){
@@ -1553,7 +1620,7 @@ Device readers: each takes a line of tokens and returns a device object,
 //        }
         
         if (inst.token == "$memory"){
-            var mem = read_memory(line, props);
+            var mem = read_memory(line);
             return mem;
         }
         
@@ -1563,6 +1630,25 @@ Device readers: each takes a line of tokens and returns a device object,
                    properties:{instanceOf:inst.token, name:line[0].token}
                   };
         line.shift();
+        line.shift();
+        
+        var i = 0;
+        while (i < line.length){
+            if (line[i+1] && line[i+1].token == "="){
+                if (line[i].type != "name"){
+                    throw new CustomError("Invalid property name.", line[i]);
+                } else {
+                    if (!line[i+2]) throw new CustomError("Incomplete assignment statement.",line[i+1]);
+                    if (line[i+2].type != "number") throw new CustomError("Number expected.",line[i+2]);
+                    obj.properties[line[i].token] = line[i+2].token;
+                    i += 3;
+                }
+            } else {
+                if (line[i].type != "name") throw new CustomError("Node name expected.",line[i]);
+                obj.ports.push(line[i].token);
+                i += 1;
+            }
+        }
 //        
 //        var parent_props = subcircuits[inst.token].properties;
 //        for (var item in parent_props){
@@ -1571,41 +1657,106 @@ Device readers: each takes a line of tokens and returns a device object,
 //            }
 //        }
         
-        for (var i = 1; i < line.length; i += 1){
-            if (line[i].type != "name"){
-                throw new CustomError("Node name expected", line[i]);
-            }
-            obj.connections.push(line[i].token);
-        }
-        for (i = 0; i < props.length; i += 1){
-            if (props[i][2].type != "number"){
-                throw new CustomError("Number expected",
-                                props[2].line,props[2].column)
-            }
-            if (!(props[i][0].token in obj.properties)){
-                throw new CustomError("Subcircuit "+inst.token+" has no property "+
-                                      props[i][0].token, props[i][0]);
-            }
+//        for (var i = 1; i < line.length; i += 1){
+//            if (line[i].type != "name"){
+//                throw new CustomError("Node name expected", line[i]);
+//            }
+//            obj.connections.push(line[i].token);
+//        }
+//        for (i = 0; i < props.length; i += 1){
+//            if (props[i][2].type != "number"){
+//                throw new CustomError("Number expected",
+//                                props[2].line,props[2].column)
+//            }
+//            if (!(props[i][0].token in obj.properties)){
+//                throw new CustomError("Subcircuit "+inst.token+" has no property "+
+//                                      props[i][0].token, props[i][0]);
+//            }
 //            try{
 //                obj.properties[props[i][0].token] = parse_number(props[i][2].token);
 //            } catch (err) {
 //                throw new CustomError("Number expected", props[i][2]);
 //            }
-            obj.properties[props[i][0].token] = props[i][2].token;
-        }
+//            obj.properties[props[i][0].token] = props[i][2].token;
+//        }
         return obj;
     }
     
     /***********************
     Memory: special case for memory devices
     ************************/
-    function read_memory(line, prop_tokens){
+    function read_memory(line){
         var obj = {type:"memory",
                    ports:[],
                    connections:[],
                    properties:{name:line[0].token}
                   };
+        line.shift();
+        line.shift();
         
+        var i = 0;
+        var ports = [];
+        var reading_contents = false;
+        while (i < line.length){
+            if (line[i+1] && line[i+1].token == "="){
+                if (line[i].type != "name") {
+                    throw new CustomError("Invalid property name.",line[i]);
+                } else {
+                    if (!line[i+2]) throw new CustomError("Incomplete assignment statement.",line[i+1]);
+                    switch (line[i].token.toLowerCase()){
+                        case "width":
+                        case "nlocations":
+                            if (line[i+2].type != "number") throw new CustomError("Number expected.",line[i+2]);
+                            obj.properties[line[i].token.toLowerCase()] = line[i+2].token;
+                            i += 3;
+                            break;
+                        case "file":
+                            if (line[i+2].type != "string"){
+                                throw new CustomError("Invalid filename.",line[i+2]);
+                            }
+                            
+                            obj.properties.contents = [];
+                            var filename = line[i+2].token;
+                            FileSystem.getFile(filename, 
+                                function(file_obj){
+                                    // success callback
+                                    set_memory_contents(obj, file_obj.data, prop[0]);
+                                }, 
+                                function(){
+                                    // error callback
+                                    error_cb(new CustomError("Could not get file "+filename, prop[2]));
+                                });
+                            break;
+                        case "contents":
+                            obj.properties.contents = [];
+                            reading_contents = true;
+                            i += 3;
+                            break;
+                    }
+                }
+            } else if (reading_contents){
+                if (line[i].token == "("){
+                    i += 1;
+                    continue;
+                } else if (line[i].token == ")"){
+                    i += 1;
+                    reading_contents = false;
+                    continue;
+                } else if (line[i].type != "number"){
+                    throw new CustomError("Number expected.",line[i]);
+                } else {
+                    obj.properties.contents.push(line[i].token);
+                    i += 1;
+                }
+            } else if (line[i].type != "name") {
+                throw new CustomError("Node name expected.",line[i]);
+            } else {
+                ports.push(line[i]);
+                i += 1;
+            }
+        }
+        
+        /*
         // parse property values
         for (var p = 0; p < prop_tokens.length; p += 1){
             var prop = prop_tokens[p];
@@ -1672,6 +1823,7 @@ Device readers: each takes a line of tokens and returns a device object,
                     throw new CustomError("Invalid property name.",prop[0]);
             }
         }
+        */
         
         if (obj.properties.width === undefined) throw new CustomError("Memory width must be specified.",
                                                                       line[0]);
@@ -1685,7 +1837,7 @@ must be specified.",line[0]);
 //        console.log("number of addresses:",naddr);
         var wi = obj.properties.width;
         
-        var ports = line.slice(2);
+//        var ports = line.slice(2);
         var port_size = 3 + naddr + wi; // number of parameters in the port specifications:
         // oe clk wen a(naddr-1) ... a(0) d(w-1) ... d(0)
 //        console.log("ports:",ports,"port size:",port_size);
@@ -1720,6 +1872,7 @@ must be specified.",line[0]);
             obj.properties.ports.push(new_port);
         }
         
+        console.log("mem:",obj);
         return obj;
     }
     
