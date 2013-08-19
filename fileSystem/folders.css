@@ -128,8 +128,9 @@ div.input_file_name button.add-on{
     border-radius: 3px;
 }
 .active_drop{
-    border : solid 2px black ;
+    
 }
 .hover_drop{
-    border-color: orangered;
+    border : solid 1px ;
+    border-color: lightblue;
 }

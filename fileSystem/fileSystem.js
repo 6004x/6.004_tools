@@ -190,7 +190,6 @@ var FileSystem= function(){
 
     //SERVER FUNCTIONS
     this.getFile = function(fileName, callback, callbackFailed){
-        //username or some sort of authentication
         console.log('getting '+fileName);
         fileObj = {
             name : fileName,
@@ -308,7 +307,7 @@ var FileSystem= function(){
         }, callbackFailed);
         
     }
-    this.autoSaveFile = function(fileName, fileData, callback, callbackFailed){
+    this.makeAutoSave = function(fileName, fileData, callback, callbackFailed){
         var fileObj = {
             name : fileName, 
             data : fileData, 

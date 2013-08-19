@@ -8,6 +8,7 @@ var path=require('path');
     	var root_path = process.cwd();//__dirname
 		//current directory will hold all user files in /libraries
 		var lib_path = path.join(root_path, 'libraries'); 
+		//other relevant paths to be instantiated as the user logs in.
 		var m_user_path, m_full_path, m_shared_path, m_shared_full_path;
 
 		var m_file_path = unescape(url.parse(request.url).pathname);
@@ -26,10 +27,11 @@ var path=require('path');
 				var newKey = key.substring(key.indexOf('[') + 1, key.indexOf(']'));
 				otherFileObj[newKey] = postData[key];
 			} else {
+				//no other object should be more than one level down.
 			}
 		}
 		console.log(fileObj)
-		var fileData = fileObj.name;
+		var fileData = fileObj.data;
 
 		if(user){
 			m_user_path = path.join(lib_path, user);
@@ -41,7 +43,6 @@ var path=require('path');
 		if(!fs.existsSync(m_user_path))
 			create_user_path()
 		console.log(user + ' wants ' + query);
-		console.log('directory: ' + m_full_path)
 		var full_dir_name = path.dirname(m_full_path);
 		var user_dir_name = path.dirname(m_file_path);
 		var file_name = path.basename(m_file_path);
@@ -60,7 +61,7 @@ var path=require('path');
 			},
 			getFile:function(exists){
 				console.log('file path is '+ m_full_path);
-				var asv_full_path = full_dir_name + path.sep + 'asv~' + file_name;
+
 				if (!exists) {
 					// it's not in user's directory, try shared directory
 					fs.exists(m_shared_full_path,function(exists) {
@@ -70,8 +71,8 @@ var path=require('path');
 									errorResponse(err)
 								} else {
 									console.log('reading shared file ' + data.name)
-									saveFile(m_full_path, m_file_path, data.data);
-									console.log('and saving to the user folder')
+									saveFile(m_full_path, m_file_path, fileObj);
+									// console.log('and saving to the user folder')
 								}
 							});
 						}
@@ -87,25 +88,23 @@ var path=require('path');
 						if(stats.isDirectory()){
 							errorResponse('the file is a folder, oops for you')
 						} else {
-							fs.exists(asv_full_path, function(asv_exists){
-								if(asv_exists){
-									fs.readFile(asv_full_path, 'utf8', function(err, data){
-										sendFile(m_full_path, m_file_path, data);
-									})
-								} else {
-									sendFile(m_full_path, m_file_path);
-									makeAutoSave(m_full_path, m_file_path);
+							getAutoSave(m_full_path, m_file_path, function(asv_data){
+								var saveAndBackup = {}
+								if(asv_data){
+									saveAndBackup.autosave = true;
+									saveAndBackup.autosaveFile = asv_data;
 								}
-
-							})
+								getBackup(m_full_path, m_file_path, function(bak_data){
+									if(bak_data){
+										saveAndBackup.backup = true;
+										saveAndBackup.backupFile = bak_data;
+									}
+									sendFile(m_full_path, m_file_path, saveAndBackup);
+								});
+							});
 						}
 					})
 
-				// 	if(!fs.lstatSync(m_full_path).isDirectory())
-				// 		sendFile(m_full_path, m_file_path);
-				// 	else{
-				// 		errorResponse('the file that you are speaking of does not exist');
-				// 	}   
 				}
 			},
 			getFileList : function(exists){
@@ -132,14 +131,15 @@ var path=require('path');
 
 						if(!exists){
 							//if directory exists, and file doesn't exist, just make the file. 
-							saveFile(m_full_path, m_file_path, fileData);
-							makeAutoSave(m_full_path, m_file_path, fileData);
+							saveFile(m_full_path, m_file_path, fileObj);
+							makeAutoSave(m_full_path, m_file_path, fileObj);
 						}
 						else{
-							//if the file exists...
-							//merge? overwrite changes?
-							saveFile(m_full_path, m_file_path, fileData);
-							makeAutoSave(m_full_path, m_file_path, fileData);
+							//if the file exists, rename to a backup
+							makeBackup(m_full_path, m_file_path, fileObj, function(data){
+								saveFile(m_full_path, m_file_path, fileObj);
+								makeAutoSave(m_full_path, m_file_path, fileObj);
+							})
 						}
 					}
 					else {
@@ -153,7 +153,7 @@ var path=require('path');
 								console.log(err);
 								errorResponse(err + ' could not make directory');
 							} else {
-								saveFile(m_full_path,m_file_path, fileData);
+								saveFile(m_full_path,m_file_path, fileObj);
 							}
 						});
 					}
@@ -161,19 +161,11 @@ var path=require('path');
 			},
 			autoSaveFile : function(exists){
 				//AutoSaVe file
-					makeAutoSave(m_full_path, m_file_path, fileData);
-					sendJSON({});
+					makeAutoSave(m_full_path, m_file_path, fileObj);
+					sendJSON({name:m_file_path, data:fileData});
 			},
 			getAutoSave : function(exists){
-				var asv_full_path = full_dir_name + path.sep + 'asv~' + file_name;
-				fs.exists(asv_full_path, function(asv_exists){
-					if(asv_exists){
-						sendAutoSave(asv_full_path, m_full_path, m_file_path, fileData);
-					} else {
-						errorResponse('you seem to not have created an autosave file...')
-					}
-
-				})
+				sendAutoSave(full_path, file_path)
 			},
 			newFolder : function(exists){
 				if(exists){
@@ -216,6 +208,11 @@ var path=require('path');
 				} else {
 					console.log(otherFileObj.name)
 					errorResponse( m_file_path + 'does not exist')
+				}
+			},
+			getBackup : function(exists){
+				if(exists){
+					sendBackup(full_path, file_path);
 				}
 			}
 		}
@@ -288,7 +285,7 @@ var path=require('path');
 			response.end(sdata);
 			console.log('data sent');
 		}
-		function sendFile(full_path, file_path, autosave) {
+		function sendFile(full_path, file_path, saveAndBackup) {
 			fs.readFile(full_path, 'utf8', function(err,data) {
 				if (err){
 					console.log(err);
@@ -297,32 +294,41 @@ var path=require('path');
 				if(file_path.substring(0,1) === '/')
 					file_path = file_path.substring(1);
 				console.log(file_path)
-				sendJSON({
+				var fileSend = {
 					name:file_path,
 					data:data,
-					autosave :autosave,
 					status:'success',
 					type:'file',
-				});
+				}
+				if(saveAndBackup.autosave){
+					fileSend.autosave = true;
+					fileSend.autosaveFile = saveAndBackup.autosaveFile
+				}
+				if(saveAndBackup.backup){
+					fileSend.backup = true;
+					fileSend.backupFile = saveAndBackup.backupFile
+				}
+				sendJSON(fileSend);
 			});
 		}
-		function saveFile(full_path, file_path, fileData) {
-			fs.writeFile(full_path, fileData, 'utf8', function (err) {
+		function saveFile(full_path, file_path, fileObj) {
+			fs.writeFile(full_path, fileObj.data, 'utf8', function (err) {
 					if (err){
 						console.log(err);
-						sendJSON({
+						errorResponse({
 							name:file_path,
 							status:'failed',
-							data:fileData,
+							data:fileObj.data,
 							error:err,
 						});
 					}
 					else {
+						writeMetaData(full_path, fileObj);
 						console.log(file_path+ ' saved!');
 						sendJSON({
 							name:file_path,
 							status:'success',
-							data:fileData,
+							data:fileObj.data,
 							type:'file',
 						});
 					}
@@ -384,73 +390,107 @@ var path=require('path');
 
 			})
 		}
-		function makeAutoSave(full_path, file_path, data){
+		function makeAutoSave(full_path, file_path, fileObj){
 			var asv_full_path = path.dirname(full_path)+path.sep+'asv~'+path.basename(full_path)
-			fs.writeFile(asv_full_path, data, 'utf8', function(err){
+			fs.writeFile(asv_full_path, fileObj.data, 'utf8', function(err){
 				if(err)
 					console.log(err)
 				else {
+					writeMetaData(asv_full_path, fileObj);
 					console.log('autosaved ' + file_path);
 				}
 
 			})
 		}
-		function sendAutoSave(full_path, file_path){
+
+		function getAutoSave(full_path, file_path, callback){
 			var asv_full_path = path.dirname(full_path)+path.sep+'asv~'+path.basename(full_path)
 			fs.readFile(asv_full_path, 'utf8', function(err, data){
-				if(err)
-					errorResponse(err)
+				if(err){
+					callback(false);
+				}
 				else{
-					if(file_path.substring(0,1) === '/')
-						file_path = file_path.substring(1);
-					console.log(file_path)
-					sendJSON({
-						name:file_path,
-						autosave : true,
-						data:data,
-						status:'success',
-						type:'file',
+					callback(data);
+				}
+			});
+		}
+		function sendAutoSave(full_path, file_path){
+			getAutoSave(full_path, file_path, function(){
+				if(file_path.substring(0,1) === '/')
+					file_path = file_path.substring(1);
+				console.log(file_path)
+				sendJSON({
+					name : file_path,
+					autosave : true,
+					data : data,
+					status : 'success',
+					type : 'file',
+				});
+			
+			})
+		}
+		function makeBackup(full_path, file_path, fileObj, callback){
+			var bak_full_path = path.dirname(full_path)+path.sep+'bak~'+path.basename(full_path)
+			fs.exists(full_path, function(exists){
+				if(exists){
+					fs.rename(full_path, bak_full_path, function(err){
+						if(err){
+							errorResponse(err)
+						}
+						else {
+							writeMetaData(bak_full_path, fileObj)
+							console.log('backup ' + file_path);
+							callback(exists)
+						}
+					})
+				} else {
+					fs.writeFile(bak_full_path, fileObj.data, 'utf8', function(err){
+						if(err){
+							errorResponse(err)
+						} else {
+							callback(exists)
+						}
 					});
 				}
-			})
+			});
 		}
-		function makeBackup(full_path, file_path, data){
-			var bak_full_path = path.dirname(full_path)+path.sep+'bak~'+path.basename(full_path)
-			fs.writeFile(bak_full_path, data, 'utf8', function(err){
-				if(err)
-					console.log(err)
-				else {
-					console.log('autosaved ' + file_path);
-				}
-
-			})
-		}
-		function sendBackup(full_path, file_path){
+		function getBackup(full_path, file_path, callback){
 			var bak_full_path = path.dirname(full_path)+path.sep+'bak~'+path.basename(full_path)
 			fs.readFile(bak_full_path, 'utf8', function(err, data){
 				if(err)
-					errorResponse(err)
+					callback(false)
 				else{
-					if(file_path.substring(0,1) === '/')
-						file_path = file_path.substring(1);
-					console.log(file_path)
-					getMetaData(full_path, function(obj){
-						obj.name = file_path;
-						obj.backup = true;
-						obj.data = data;
-						obj.stats = 'success'
-						obj.type = 'file';
-						sendJSON(obj);
-					})
-					
+					callback(data)
 				}
+			})
+		}
+		function sendBackup(full_path, file_path){
+			getBackup(function(data){
+				if(file_path.substring(0,1) === '/')
+					file_path = file_path.substring(1);
+				console.log(file_path)
+				getMetaData(full_path, function(obj){
+					obj.name = file_path;
+					obj.backup = true;
+					obj.data = data;
+					obj.stats = 'success'
+					obj.type = 'file';
+					sendJSON(obj);
+				})
+				
+			
 			})
 		}
 		function writeMetaData(full_path, metadata){
 			var met_full_path = path.dirname(full_path)+path.sep+'met~'+path.basename(full_path)
-			fs.writeFile(met_full_path, JSON.stringify(metadata), 'utf8', function(err){
+			var parsedMetadata = {};
+			for (var key in metadata){
+				if(key !== 'content' && key !== 'data')
+					parsedMetadata[key] = metadata[key];
+			}
+			fs.writeFile(met_full_path, JSON.stringify(parsedMetadata), 'utf8', function(err){
 				if(err) errorResponse(err);
-				else console.log(metadata + 'saved')
+				else console.log(parsedMetadata + 'saved')
 
 			})
 		}
