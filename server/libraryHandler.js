@@ -91,16 +91,14 @@ var path=require('path');
 							getAutoSave(m_full_path, m_file_path, function(asv_data){
 								var saveAndBackup = {}
 								if(asv_data){
-									saveAndBackup.autosave = true;
-									saveAndBackup.autosaveFile = asv_data;
+									saveAndBackup.autosave = asv_data;
 								}
-								getBackup(m_full_path, m_file_path, function(bak_data){
-									if(bak_data){
-										saveAndBackup.backup = true;
-										saveAndBackup.backupFile = bak_data;
-									}
+								// getBackup(m_full_path, m_file_path, function(bak_data){
+								// 	if(bak_data){
+								// 		saveAndBackup.backup = bak_data;
+								// 	}
 									sendFile(m_full_path, m_file_path, saveAndBackup);
-								});
+								// });
 							});
 						}
 					})
@@ -466,19 +464,22 @@ var path=require('path');
 		}
 		function sendBackup(full_path, file_path){
 			getBackup(function(data){
-				if(file_path.substring(0,1) === '/')
-					file_path = file_path.substring(1);
-				console.log(file_path)
-				getMetaData(full_path, function(obj){
-					obj.name = file_path;
-					obj.backup = true;
-					obj.data = data;
-					obj.stats = 'success'
-					obj.type = 'file';
-					sendJSON(obj);
-				})
-				
-			
+				if(data){
+					if(file_path.substring(0,1) === '/')
+						file_path = file_path.substring(1);
+					console.log(file_path)
+					getMetaData(full_path, function(obj){
+						obj.name = file_path;
+						obj.backup = true;
+						obj.data = data;
+						obj.status = 'success'
+						obj.type = 'file';
+						sendJSON(obj);
+					})
+				}
+				else {
+					errorResponse('could not find backup');
+				}			
 			})
 		}
 		function writeMetaData(full_path, metadata){

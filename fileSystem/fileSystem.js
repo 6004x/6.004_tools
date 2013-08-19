@@ -409,7 +409,9 @@ var FileSystem= function(){
             }, callbackFailed)
         }, callbackFailed)
     }
-
+    this.getBackup = function(fileName, callback, callbackFailed){
+        sendAjaxRequest({name:fileName, time: (new Date()).getTime()}, null, 'getBackup', callback, callbackFailed)
+    }
     function sendAjaxRequest(fileObj, otherFileObj, query, callbackFunction, failFunction){
         // console.log(failFunction);
         failFunction = failFunction||failResponse;
@@ -417,7 +419,7 @@ var FileSystem= function(){
         console.log(fileObj)
         if(filePath.substring(0,1)!=='/')
             filePath = '/'+filePath;
-        url = mServer+filePath;
+        var url = mServer+filePath;
         var data = {
             'query' : query, 
             'name' : filePath, 
@@ -427,7 +429,7 @@ var FileSystem= function(){
         console.log(data)
         var req = $.ajax({
                 'type' : "POST",
-                'url' : filePath, 
+                'url' : url, 
                 'data' : data,
                 'dataType' : 'json',
             });
@@ -476,7 +478,7 @@ var FileSystem= function(){
     }
     this.setup = function(server){
 
-        mServer=server||DEFAULT_SERVER;
+        mServer = server||DEFAULT_SERVER;
     }
 
     return self;
