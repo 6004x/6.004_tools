@@ -243,7 +243,8 @@ var Simulator = (function(){
             var dataseries = []; // 'dataseries' is the list of data objects to pass to a graph module
             
             if (mType == "gate" && plot_nodes.length > 1){
-                plot_nodes = "L("+plot_nodes.join(' ')+")";
+//                plot_nodes = "L("+plot_nodes.join(' ')+")";
+                plot_nodes = [{type:"L",args:plot_nodes}]
             }
             
             // repeat for each node
@@ -253,34 +254,35 @@ var Simulator = (function(){
                 var values = [];
                 
                 // check of it's a function, e.g. if something like L() or betaop() was asked for
-                var fn_pttn = /([^\(]+)\((.+)\)$/;
-                var matched_array = node.match(fn_pttn);
-                if (matched_array){
-                    var fn_name = matched_array[1];
-                    var arg_nodes = matched_array[2].split(/[,\s]\s*/);
+//                var fn_pttn = /([^\(]+)\((.+)\)$/;
+//                var matched_array = node.match(fn_pttn);
+                if (_.isObject(node)){
+//                    var fn_name = matched_array[1];
+//                    var arg_nodes = matched_array[2].split(/[,\s]\s*/);
+                    var fn = node;
                     
-                    if (fn_name == 'I'){
+                    if (fn.type == 'I'){
                         // continue on
                         values = results[node];
                     } else {
-                        if (fn_name.toUpperCase() != 'L' && !(fn_name in mPlotDefs)) {
-                            throw "No definition for plot function "+fn_name;
+                        if (fn.type.toUpperCase() != 'L' && !(fn.type in mPlotDefs)) {
+                            throw "No definition for plot function "+fn.type;
                         } 
-                        values = results[arg_nodes[0]].slice(0);
+                        values = results[fn.args[0]].slice(0);
                         values = values.map(function(val,index){
                             var tempval = [];
-                            for (var j = 0; j < arg_nodes.length; j += 1){
-                                tempval.push(results[arg_nodes[j]][index]);
+                            for (var j = 0; j < fn.args.length; j += 1){
+                                tempval.push(results[fn.args[j]][index]);
                             }
                             var lval = hex_logic(tempval, mOptions.vil, mOptions.vih);
                             
-                            if (fn_name == "L") {
+                            if (fn.type == "L") {
                                 return lval;
                             } else {
                                 // look up the definition of the plot function and return the
                                 // appropriate string; if the index is out of range return "???"
                                 var nval = parseInt(lval,16);
-                                if (mPlotDefs[fn_name][nval]) return mPlotDefs[fn_name][nval];
+                                if (mPlotDefs[fn.type][nval]) return mPlotDefs[fn.type][nval];
                                 else return "???";
                             }
                         });

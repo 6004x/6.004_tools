@@ -641,23 +641,25 @@ Parse
     function read_plot(line){
         line.shift();
         var plot_list = [];
-        var plot_fn = [];
+        var plot_fn = {type:null,args:[]};
         var reading_fn = false;
         for (var i = 0; i < line.length; i += 1){
             if (line[i+1] && line[i+1].token == "("){
                 reading_fn = true;
-                plot_function.push(line[i].token);
+                plot_fn.type = line[i].token;
+                continue;
             }
             
             if (reading_fn){
-                if (line[i].token = ")") {
+                if (line[i].token == ")") {
                     reading_fn = false;
-                    plot_function.push(line[i].token);
-                    plot_list.push(plot_function.join(''));
-                } else if (line[i].type != "name" && !(line[i].token == "(" || line[i].token == ",")) {
+                    plot_list.push(plot_fn);
+                } else if (line[i].type != "name" && line[i].token != "(" && line[i].token != ",") {
                     throw new CustomError("Node name expected.",line[i]);
+                } else if (line[i].token != "(" && line[i].token != ","){
+                    plot_fn.args.push(line[i].token);
                 } else {
-                    plot_function.push(line[i].token);
+                    continue;
                 }
             } else if (line[i].type != "name"){
                 throw new CustomError("Node name expected.",line[i]);
