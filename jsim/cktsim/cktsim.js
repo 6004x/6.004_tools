@@ -283,18 +283,35 @@ var cktsim = (function() {
         var i, j, c, component, connections, node;
 
         // set up mapping for all ground connections
-        this.node_map.gnd = this.gnd_node();
-        
+        for (i = netlist.length - 1; i >= 0; i -= 1) {
+	    if (netlist[i].type == 'ground') {
+                connections = netlist[i].connections;
+                for (j = 0; j < connections.length; j += 1) {
+                    c = connections[j];
+		    this.node_map[c] = this.gnd_node();
+		}
+	    }
+        }
+
         // "connect a b ..." makes a, b, ... aliases for the same node
         var aliases = {};   // keep track of canonical name for a node
         for (i = netlist.length - 1; i >= 0; i -= 1) {
             if (netlist[i].type == 'connect') {
                 connections = netlist[i].connections;
-                if (connections.length === 0) continue;
-                // connections[0] is arbitrarily chosen as canonical name, other are aliases.
-                // handle the case where some of the connections may already be aliases!
+                if (connections.length <= 1) continue;
+		// see if any of the connected nodes is a ground node.
+		// if so, make it the canonical name. Otherwise just choose
+		// connections[0] as the canonical name.
                 var cname = connections[0];
+                for (j = 1; j < connections.length; j += 1) {
+		    c = connections[j];
+		    if (this.node_map[c] !== undefined) {
+			cname = c;
+			break;
+		    }
+		}
                 while (aliases[cname] !== undefined) cname = aliases[cname];  // follow alias chain
+		// so make all the other connected nodes aliases for the canonical name
                 for (j = 1; j < connections.length; j += 1) {
                     c = connections[j];
                     while (aliases[c] !== undefined) c = aliases[c];  // follow alias chain
@@ -353,6 +370,8 @@ var cktsim = (function() {
             case 'pfet':
                 this.p(connections.D, connections.G, connections.S, properties.W, properties.L, name);
                 break;
+	    case 'ground':
+		break;
             case 'connect':
                 break;  
             default:
@@ -1852,7 +1871,7 @@ var cktsim = (function() {
         }
 
         // post-processing for triangle
-        // triangle(v_init,v_plateua,t_period)
+        // triangle(v_init,v_plateau,freq)
         else if (src.fun == 'triangle') {
             v1 = arg_value(src.args, 0, 0); // default init value: 0V
             v2 = arg_value(src.args, 1, 1); // default plateau value: 1V

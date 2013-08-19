@@ -42,7 +42,6 @@ var BigTable = function(container, width, height, row_height, column_count) {
     // data's length must be equal to the table's column count.
     this.updateRow = function(row, data) {
         if(!mData[row]) {
-            console.warn("Update to nonexistent row " + data);
             return;
         }
         mData[row] = data;
@@ -52,7 +51,6 @@ var BigTable = function(container, width, height, row_height, column_count) {
     // Update's the given column of the given row with the given data, which should be a string.
     this.updateCell = function(row, column, data) {
         if(!mData[row]) {
-            console.warn("Update to nonexistent row " + row + " column " + column + " = " + data);
             return;
         }
         mData[row][column] = data;
@@ -88,9 +86,8 @@ var BigTable = function(container, width, height, row_height, column_count) {
         var height = (row * mRowHeight);
         if(where == 'middle') height -= (mHeight / 2) - (mRowHeight);
         else if(where == 'bottom') height -= mHeight - mRowHeight;
-        mScroller.scrollTop(height);
-        handleScroll(height);
-        // This should handle our scrolling on its callback, so we don't need to call handleScroll().
+        mScroller[0].scrollTop = height;
+        handleScroll(height); // Manually do this to make sure we are locked on where we intend to be.
     };
 
     // Returns the number of (logical) rows in the table.
@@ -107,6 +104,33 @@ var BigTable = function(container, width, height, row_height, column_count) {
         if(!mBufferingDraws)
             redraw();
     };
+
+    this.resize = function(height) {
+        mDisplayRowCount = Math.floor(height / mRowHeight);
+        mHeight = mDisplayRowCount * mRowHeight;
+        mContent.css({height: mHeight});
+        mScroller.css({height: mHeight});
+        create_rows();
+        redraw();
+    };
+
+    var create_rows = function() {
+        // Set up our display rows.
+        mContent.empty();
+        mTableRows = [];
+        for(var i = 0; i < mDisplayRowCount; ++i) {
+            var row = $('<tr>').css({height: mRowHeight});
+            var row_cells = [];
+            for(var j = 0; j < mColumnCount; ++j) {
+                var cell = $('<td>');
+                row.append(cell);
+                row_cells.push(cell[0]);
+            }
+            row_cells.row = row[0];
+            mTableRows.push(row_cells);
+            mContent.append(row);
+        }
+    }
 
     var redraw = function(row) {
         if(mBufferingDraws) return;
@@ -130,7 +154,7 @@ var BigTable = function(container, width, height, row_height, column_count) {
     };
 
     var handleScroll = function(height) {
-        var top = (height === undefined) ? height : mScroller.scrollTop();
+        var top = (_.isNumber(height)) ? height : mScroller[0].scrollTop;
         if(top < 0) top = 0; // This can probably actually happen.
         var top_row = (top / mRowHeight)|0;
         // Don't do anything if we haven't actually moved.
@@ -155,19 +179,7 @@ var BigTable = function(container, width, height, row_height, column_count) {
         }
         mEmptyData.cls = '';
 
-        // Set up our display rows.
-        for(var i = 0; i < mDisplayRowCount; ++i) {
-            var row = $('<tr>').css({height: mRowHeight});
-            var row_cells = [];
-            for(var j = 0; j < mColumnCount; ++j) {
-                var cell = $('<td>');
-                row.append(cell);
-                row_cells.push(cell[0]);
-            }
-            row_cells.row = row[0];
-            mTableRows.push(row_cells);
-            mContent.append(row);
-        }
+        create_rows();
     };
 
     initialise();

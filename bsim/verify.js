@@ -1,7 +1,8 @@
-BSim.TextVerifier = function(beta, checksum) {
+BSim.TextVerifier = function(beta, checkoff) {
     var mBeta = beta;
-    var mChecksum = checksum;
+    var mChecksum = checkoff.checksum;
     var mMessage = null;
+    var mCheckoff = checkoff;
 
     // The checkoffs use the result of this non-standard hash function.
     // It's the Java String.hashCode function.
@@ -32,12 +33,17 @@ BSim.TextVerifier = function(beta, checksum) {
     this.getMessage = function() {
         return mMessage;
     };
+
+    this.checkoff = function() {
+        return mCheckoff;
+    }
 };
 
-BSim.MemoryVerifier = function(beta, addresses, checksum, expected_checksum) {
+BSim.MemoryVerifier = function(beta, checkoff) {
     var mBeta = beta;
-    var mAddresses = addresses;
-    var mValid = (checksum === expected_checksum);
+    var mCheckoff = checkoff;
+    var mAddresses = checkoff.addresses;
+    var mValid = (checkoff.checksum === checkoff.running_checksum);
     var mMessage = null;
 
     this.verify = function() {
@@ -63,4 +69,33 @@ BSim.MemoryVerifier = function(beta, addresses, checksum, expected_checksum) {
     this.getMessage = function() {
         return mMessage;
     };
+
+    this.checkoff = function() {
+        return mCheckoff;
+    }
+};
+
+BSim.SubmitVerification = function(beta, editor, username, password, collaboration, callback) {
+    if(!beta.verifier().verify()) {
+        throw new Error("Attempted to submit checkoff without verifiable result.");
+    }
+    $.post(beta.verifier().checkoff().url, {
+        username: username,
+        userpassword: password,
+        sender: username, // we can't actually figure this one out
+        collaboration: collaboration,
+        pcheckoff: beta.verifier().checkoff().name,
+        checksum: beta.verifier().checkoff().checksum,
+        cycles: beta.getCycleCount(),
+        size: beta.memorySize(),
+        version: 'BSim2.0.0',
+        'server info': beta.mServerInfo.join(','),
+        circuits: _.map(editor.filenames(), function(f) {
+            return '============== source: ' + f + '\n' + editor.content(f) + '\n==============\n';
+        }).join('')
+    }).done(function(data) {
+        callback(true, data);
+    }).fail(function() {
+        callback(false);
+    });
 };

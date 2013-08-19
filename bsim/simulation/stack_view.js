@@ -147,11 +147,14 @@ BSim.StackView = function(container, beta) {
             mCurrentLabelRows[i].updateCell(mCurrentLabelRows[i], 1, BSim.Common.FormatWord(mCurrentLabelRows[i]*4, 4));
         };
         for(var address in labels) {
-            console.log(address);
             var address = parseInt(address, 10);
             mTable.updateCell(address / 4, 1, labels[address]);
         }
         mTable.endBatch();
+    };
+
+    this.resize = function(height) {
+        mTable.resize(height);
     };
 
     var initialise = function() {

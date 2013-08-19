@@ -549,7 +549,8 @@ BSim.Beta.Opcodes = {};
                 case 7: // SEED
                     throw new BSim.Beta.RuntimeError("SEED() is unimplemented. To implement, you must provide your own RNG (Math.random is unseedable)");
                 case 8: // SERVER
-                    throw new BSim.Beta.RuntimeError("SERVER() is currently unimplemented.");
+                    this.mServerInfo.push(this.realReadRegister(0));
+                    break;
                 default:
                     return this.handleIllegalInstruction();
             }

@@ -89,7 +89,6 @@
                     if(mPanes[i].width() > 0) {
                         var new_pane_width = Math.max(0, mPanes[i].width() - (mCurrentWidth - window_width));
                         mPanes[i].css({width: new_pane_width});
-                        console.log(mCurrentWidth, new_pane_width, window_width);
                         mCurrentWidth -= (mCurrentWidth - window_width);
                         if(mCurrentWidth <= window_width) {
                             break;

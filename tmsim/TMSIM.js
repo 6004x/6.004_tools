@@ -386,7 +386,7 @@
 				steps++;
 			
 				updateGUI(stepObject, readObject);
-				markLine( state_transition.lineNumber-1)
+				
 
 				
 				mContainer.find('.tape_div .current_segment').text(stepObject.transition.write).addClass('current_write');
@@ -414,12 +414,12 @@
 					try{
 						if(!(mTSM.getCurrentState() === '*halt*' || mTSM.getCurrentState() === '*error*')){
 							var nextStepObject = mTSM.stepPeek(mCurrentTape);
-							var nextState_transition = nextStepObject.transition;
-							
+							var next_state_transition = nextStepObject.transition;
+							markLine( next_state_transition.lineNumber-1)
 						
-							mContainer.find('.transition_div .new_state').text(nextState_transition.new_state);
-							mContainer.find('.transition_div .write_symbol').text(nextState_transition.write_symbol);
-							mContainer.find('.transition_div .move_dir').text(nextState_transition.move);
+							mContainer.find('.transition_div .new_state').text(next_state_transition.new_state);
+							mContainer.find('.transition_div .write_symbol').text(next_state_transition.write_symbol);
+							mContainer.find('.transition_div .move_dir').text(next_state_transition.move);
 						} else {
 							mContainer.find('.transition_div .new_state').text('');
 							mContainer.find('.transition_div .write_symbol').text('');

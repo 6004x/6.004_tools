@@ -637,9 +637,9 @@ var Folders=new function(){
         var file = {};
         file.name = editor.currentTab();
         file.data = editor.content();
-        FileSystem.autoSaveFile(file.name, file.data, function(data){
+        FileSystem.makeAutoSave(file.name, file.data, function(data){
             console.log(data)
-            passiveAlert(file.name + 'autosaved', 'success');
+            PassiveAlert(file.name + 'autosaved', 'success');
         })
     }
     
