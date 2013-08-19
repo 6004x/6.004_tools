@@ -309,12 +309,11 @@ var Folders=new function(){
 
     function getFile(fileName){
         console.log('getting '+fileName);
-        FileSystem.getFile(fileName, displayFile);
+        editor.openFile(fileName, true, updatePrefs);
     }
 
     function displayFile(file){
-        editor.openTab(file.name, file.data, true); 
-        $(window).resize();
+        editor.openTab(file.name, file.data, true);
         updatePrefs();
     }
 
@@ -632,16 +631,6 @@ var Folders=new function(){
         }, 'btn-danger');
         modal.show();
     }
-
-    function autoSaveCurrent(){
-        var file = {};
-        file.name = editor.currentTab();
-        file.data = editor.content();
-        FileSystem.makeAutoSave(file.name, file.data, function(data){
-            console.log(data)
-            PassiveAlert(file.name + 'autosaved', 'success');
-        })
-    }
     
     function commit() {
         // Todo.
@@ -659,7 +648,6 @@ var Folders=new function(){
             new ToolbarButton('icon-refresh', function(){refresh()}, 'Refresh')/*,
             new ToolbarButton('icon-off', _.identity, 'Off is not implemented')*/
         ]);
-        editor.addButtonGroup([new ToolbarButton('Autosave current Test', autoSaveCurrent, '')]) 
 
     }
 
@@ -694,14 +682,7 @@ var Folders=new function(){
 
         refresh(function(status){
             if(status){
-                for(var i = 0; i <  openFiles.length; i++){
-                    var file = openFiles[i];
-                    FileSystem.getFile(file, function(data){
-                        displayFile(data);
-                    }, function(){
-                        console.log('failed init openFiles')
-                    });
-                }
+                _.map(openFiles, getFile);
             }
             else
                 console.log('failed refresh');

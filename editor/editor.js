@@ -115,6 +115,24 @@ var Editor = function(container, mode) {
         }
     };
 
+    // Opens the file at the given path.
+    // filename: absolute path to th efile.
+    // activate: whether to focus the tab
+    // callback (optional): callback when the file has been opened.
+    this.openFile = function(filename, activate, callback) {
+        if(_.has(mOpenDocuments, filename)) {
+            focusTab(mOpenDocuments[filename]);
+            return;
+        }
+        FileSystem.getFile(filename, function(content) {
+            self.openTab(content.name, content.data, activate, content.autosave);
+            if(callback)
+                callback(content.name, content.data);
+        }, function() {
+            PassiveAlert("Failed to open " + filename);
+        });
+    };
+
     // Opens a new tab with the given filename and content.
     // filename should be a full path to the file. If not given, the document will be called 'untitled'
     // If activate is true, the tab will be focused. If false, the tab will be focused only if there are
@@ -192,6 +210,8 @@ var Editor = function(container, mode) {
         mOpenDocuments[filename] = doc;
         // If we know how tall we should be, arrange to make sure everything still fits in that space.
         if(mExpectedHeight) self.setHeight(mExpectedHeight);
+        // HACK: make sure something understands our window size.
+        $(window).resize();
     };
 
     // Returns the filename of the currently focused document. If there is no such document, returns null.
@@ -369,8 +389,7 @@ var Editor = function(container, mode) {
     var revert_current_document = function() {
         if(!mCurrentDocument) return;
         var document = mCurrentDocument; // we don't want to dump this in the wrong buffer!
-        var filename = document.name + '.bak';
-        FileSystem.getFile(filename, function(content) {
+        FileSystem.getBackup(document.name, function(content) {
             document.cm.setValue(content.data);
         }, function(content) {
             PassiveAlert("Revert failed; unable to load old version.", 'error');
@@ -380,8 +399,14 @@ var Editor = function(container, mode) {
     var restore_autosave = function() {
         if(!mCurrentDocument) return;
         mCurrentDocument.cm.setValue(mCurrentDocument.autosaved);
-        mCurrentDocument.autosaved = null;
-        mRestoreAutosaveButton.hide();
+        clear_autosave(mCurrentDocument);
+    };
+
+    var clear_autosave = function(document) {
+        document.autosaved = null;
+        if(mCurrentDocument == document) {
+            mRestoreAutosaveButton.hide();
+        }
     };
 
     var try_get_document = function(filename) {
@@ -444,12 +469,11 @@ var Editor = function(container, mode) {
     };
 
     var do_autosave = function(document) {
-        console.log('autosave triggered');
         if(document.cm.isClean(document.autosaveGeneration) || document.isAutosaving) return;
         document.isAutosaving = true;
+        clear_autosave(document);
         var generation = document.cm.changeGeneration();
-        FileSystem.saveFile(document.name + '.sav', document.cm.getValue(), function() {
-            console.log('autosave complete');
+        FileSystem.makeAutoSave(document.name, document.cm.getValue(), function() {
             document.isAutosaving = false;
             document.autosaveGeneration = generation;
         }, function() {

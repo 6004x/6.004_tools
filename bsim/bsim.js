@@ -54,9 +54,8 @@ $(function() {
             if(!success) {
                 _.each(result, function(error) {
                     if(!_.contains(editor.filenames(), error.file)) {
-                        FileSystem.getFile(error.file, function(result) {
-                            editor.openTab(error.file, result.data, true);
-                            editor.markErrorLine(error.file, error.message, error.line - 1, error.column);
+                        editor.openFile(error.file, true, function(editor_filename, content) {
+                            editor.markErrorLine(editor_filename, error.message, error.line - 1, error.column);
                         });
                     } else {
                         editor.markErrorLine(error.file, error.message, error.line - 1, error.column);

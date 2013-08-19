@@ -84,9 +84,8 @@ $(function() {
     function error_catcher(err){
         if (err instanceof Parser.CustomError){
             if (editor.filenames().indexOf(err.filename) == -1){
-                FileSystem.getFile(err.filename,function(obj){
-                    editor.openTab(err.filename,obj.data,true);
-                    editor.markErrorLine(err.filename, err.message, err.line-1, err.column);
+                editor.openFile(err.filename, true, function(editor_filename){
+                    editor.markErrorLine(editor_filename, err.message, err.line-1, err.column);
                 });
             } else {
                 editor.markErrorLine(err.filename, err.message, err.line-1, err.column);
