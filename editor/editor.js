@@ -2,6 +2,7 @@
 // - `container` should be a DOM node or unique CSS selector
 // - `mode` should be one of 'uasm', 'tsim' or 'jsim' as appropriate.
 var Editor = function(container, mode) {
+    var AUTOSAVE_TRIGGER_EVENTS = 30; // Number of events to trigger an autosave.
     var self = this; // Tracking 'this' can be finicky; use 'self' instead.
     var mContainer = $(container);
     var mToolbarHolder; // Element holding the toolbar
@@ -12,6 +13,7 @@ var Editor = function(container, mode) {
     var mExpectedHeight = null; // The height the entire editor view (including toolbars and tabs) should maintain
     var mUntitledDocumentCount = 0; // The number of untitled documents (used to name the next one)
     var mAutocompleter = new Editor.Autocomplete(this, mode);
+    var mRestoreAutosaveButton = null;
 
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
@@ -21,7 +23,7 @@ var Editor = function(container, mode) {
 
     // Given a list of ToolbarButtons, adds a button group.
     this.addButtonGroup = function(buttons) {
-        mToolbar.addButtonGroup(buttons);
+        return mToolbar.addButtonGroup(buttons);
     };
 
     // Focuses the tab for the given filename.
@@ -49,6 +51,7 @@ var Editor = function(container, mode) {
     this.content = function(filename) {
         var document = try_get_document(filename);
         if(!document) return null;
+        do_autosave(document); // We assume that whenever something calls this.content, autosaving would be nice.
         return document.cm.getValue();
     };
 
@@ -116,7 +119,7 @@ var Editor = function(container, mode) {
     // filename should be a full path to the file. If not given, the document will be called 'untitled'
     // If activate is true, the tab will be focused. If false, the tab will be focused only if there are
     // no other documents currently open.
-    this.openTab = function(filename, content, activate) {
+    this.openTab = function(filename, content, activate, autosaved_content) {
         // We can't open a file if we already have one at the same path (it wouldn't make sense and breaks things)
         if(_.has(mOpenDocuments, filename)) {
             focusTab(mOpenDocuments[filename]);
@@ -137,9 +140,13 @@ var Editor = function(container, mode) {
             el: editPane, // jQuery element holding the editor
             tab: tab, // jQuery tab element
             cm: cm, // Editor instance
-            has_location: has_location, // Whether we know this file's name (if false, we'll need to prompt)
+            hasLocation: has_location, // Whether we know this file's name (if false, we'll need to prompt)
             name: filename, // This file's name, temporary or otherwise
-            generation: cm.changeGeneration() // The generation at last save. We can use this to track cleanliness of document.
+            generation: cm.changeGeneration(), // The generation at last save. We can use this to track cleanliness of document.
+            autosaveGeneration: cm.changeGeneration(), // Generation of the last autosave.
+            isAutosaving: false, // Prevents multiple simultaneous save attempts
+            n: 0, // Counts changes until we autosave.
+            autosaved: autosaved_content || null
         };
 
         var a = $('<a>', {href: '#' + id}).text(_.last(filename.split('/'))).click(function(e) { e.preventDefault(); focusTab(doc); });
@@ -159,6 +166,14 @@ var Editor = function(container, mode) {
             handle_change_tab_icon(doc);
             // Let our listeners know, too.
             self.trigger('change', filename, changeObj);
+        });
+        // Handle autosaving as appropriate.
+        cm.on('cursorActivity', function() {
+            doc.n++;
+            if(doc.n >= AUTOSAVE_TRIGGER_EVENTS) {
+                doc.n = 0;
+                do_autosave(doc);
+            }
         });
         // Append all that stuff
         a.append(close);
@@ -220,6 +235,11 @@ var Editor = function(container, mode) {
         doc.cm.refresh();
         doc.cm.focus();
         mCurrentDocument = doc;
+        if(doc.autosaved) {
+            mRestoreAutosaveButton.show();
+        } else {
+            mRestoreAutosaveButton.hide();
+        }
     };
 
     var unfocusTab = function(doc) {
@@ -344,7 +364,25 @@ var Editor = function(container, mode) {
                 do_save(document);
             }
         });
-    }
+    };
+
+    var revert_current_document = function() {
+        if(!mCurrentDocument) return;
+        var document = mCurrentDocument; // we don't want to dump this in the wrong buffer!
+        var filename = document.name + '.bak';
+        FileSystem.getFile(filename, function(content) {
+            document.cm.setValue(content.data);
+        }, function(content) {
+            PassiveAlert("Revert failed; unable to load old version.", 'error');
+        });
+    };
+
+    var restore_autosave = function() {
+        if(!mCurrentDocument) return;
+        mCurrentDocument.cm.setValue(mCurrentDocument.autosaved);
+        mCurrentDocument.autosaved = null;
+        mRestoreAutosaveButton.hide();
+    };
 
     var try_get_document = function(filename) {
         var document;
@@ -352,7 +390,7 @@ var Editor = function(container, mode) {
         else document = mCurrentDocument;
         if(!document) return false;
         return document;
-    }
+    };
 
     var initialise = function() {
         // Build up our editor UI.
@@ -361,8 +399,12 @@ var Editor = function(container, mode) {
         // Add some basic button groups
         self.addButtonGroup([
             new ToolbarButton('Save', save_current_document, "Save current file"),
-            new ToolbarButton('Save All', save_all_documents, "Save all open buffers")
+            new ToolbarButton('Save All', save_all_documents, "Save all open buffers"),
+            new ToolbarButton('Revert', revert_current_document, "Revert the current buffer to an earlier state.")
         ]);
+        mRestoreAutosaveButton = self.addButtonGroup([
+            new ToolbarButton('Restore Autosave', restore_autosave, "There is an autosaved document more recent than your last save.", "btn-warning")
+        ]).hide();
         mContainer.append(mToolbarHolder);
         mContainer.css('position', 'relative');
 
@@ -396,9 +438,25 @@ var Editor = function(container, mode) {
         FileSystem.saveFile(document.name, document.cm.getValue(), function() {
             // Mark the file as clean.
             document.generation = document.cm.changeGeneration();
+            document.autosaveGeneration = document.generation;
             handle_change_tab_icon(document);
         });
     };
+
+    var do_autosave = function(document) {
+        console.log('autosave triggered');
+        if(document.cm.isClean(document.autosaveGeneration) || document.isAutosaving) return;
+        document.isAutosaving = true;
+        var generation = document.cm.changeGeneration();
+        FileSystem.saveFile(document.name + '.sav', document.cm.getValue(), function() {
+            console.log('autosave complete');
+            document.isAutosaving = false;
+            document.autosaveGeneration = generation;
+        }, function() {
+            document.isAutosaving = false;
+            console.warn("Autosave failed.");
+        });
+    }
 
     var handle_page_unload = function() {
         for(var name in mOpenDocuments) {
