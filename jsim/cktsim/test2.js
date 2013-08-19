@@ -362,16 +362,17 @@ function ac_plot(div, results, plots) {
 
 // parse number or f(number,...)
 function parse_source(s) {
+    src = {};
     var m = s.match(/^\s*(\w+)\s*\(([^\)]*)\)\s*$/); // parse f(arg,arg,...)
     if (m) {
-        var fun = m[1];
-        var args;
-        if (m[2] === '') args = [];
-        else args = m[2].split(/\s*,\s*/).map(parse_number);
-        return fun + '(' + args.join() + ')';
+        src.type = m[1];
+        if (m[2] === '') src.args = [];
+        else src.args = m[2].split(/\s*,\s*/).map(parse_number);
     } else {
-        return 'dc(' + parse_number(s) + ')';
+	src.type = 'dc';
+	src.args = [parse_number(s)];
     }
+    return src;
 }
 
 // parse "prop=value" tokens
@@ -567,6 +568,8 @@ function simulate(text, div) {
         div.text(parse);
         return;
     }
+    //else div.append('<p>'+JSON.stringify(parse));
+
     var netlist = parse.netlist;
     var analyses = parse.analyses;
     var plots = parse.plots;
