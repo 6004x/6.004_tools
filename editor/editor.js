@@ -344,7 +344,18 @@ var Editor = function(container, mode) {
                 do_save(document);
             }
         });
-    }
+    };
+
+    var revert_current_document = function() {
+        if(!mCurrentDocument) return;
+        var document = mCurrentDocument; // we don't want to dump this in the wrong buffer!
+        var filename = document.name + '.bak';
+        FileSystem.getFile(filename, function(content) {
+            document.cm.setValue(content.data);
+        }, function(content) {
+            PassiveAlert("Revert failed; unable to load old version.", 'error');
+        });
+    };
 
     var try_get_document = function(filename) {
         var document;
@@ -352,7 +363,7 @@ var Editor = function(container, mode) {
         else document = mCurrentDocument;
         if(!document) return false;
         return document;
-    }
+    };
 
     var initialise = function() {
         // Build up our editor UI.
@@ -361,7 +372,8 @@ var Editor = function(container, mode) {
         // Add some basic button groups
         self.addButtonGroup([
             new ToolbarButton('Save', save_current_document, "Save current file"),
-            new ToolbarButton('Save All', save_all_documents, "Save all open buffers")
+            new ToolbarButton('Save All', save_all_documents, "Save all open buffers"),
+            new ToolbarButton('Revert', revert_current_document, "Revert the current buffer to an earlier state.")
         ]);
         mContainer.append(mToolbarHolder);
         mContainer.css('position', 'relative');
