@@ -25,10 +25,11 @@ var cktsim = (function() {
     //    "opamp"		ports: nplus, nminus, output, gnd; properties: A, name
     //    "nfet"		ports: D, G, S, B; properties: W, L, name
     //    "pfet"		ports: D, G, S, B; properties: W, L, name
-    //    "voltage source"	ports: nplus, nminus; properties: value, name
-    //    "current source"	ports: nplus, nminus; properties: value, name
-    //    "connect"     ports are all aliases for the same electrical node
+    //    "voltage source"	ports: nplus, nminus; properties: value=src, name
+    //    "current source"	ports: nplus, nminus; properties: value=src, name
+    //    "connect"             ports are all aliases for the same electrical node
     // signals are just strings
+    // src == {type: function_name, args: [number, ...]}
 
     // DC Analysis
     //   netlist: JSON description of the circuit
@@ -76,8 +77,8 @@ var cktsim = (function() {
             var results2 = [];
             while (true) {
                 // start by setting source values
-                if (source1 !== undefined) source1.src = parse_source(val1.toString());
-                if (source2 !== undefined) source2.src = parse_source(val2.toString());
+                if (source1 !== undefined) source1.src = parse_source({type: 'dc', args: [val1]});
+                if (source2 !== undefined) source2.src = parse_source({type: 'dc', args: [val2]});
 
                 // do DC analysis, add result to accumulated results for each node and branch
                 var result = ckt.dc();
@@ -1789,8 +1790,9 @@ var cktsim = (function() {
     //
     ///////////////////////////////////////////////////////////////////////////////
 
-    // argument is a string describing the source's value (see comments for details)
-    // source types: dc,step,square,triangle,sin,pulse,pwl,pwl_repeating
+    // argument is an object with type and args attributes describing the source's value
+    //    type: one of dc,step,square,triangle,sin,pulse,pwl,pwl_repeating
+    //    args: list of numbers
 
     // returns an object with the following attributes:
     //   fun -- name of source function
@@ -1802,6 +1804,8 @@ var cktsim = (function() {
     function parse_source(v) {
         // generic parser: parse v as either <value> or <fun>(<value>,...)
         var src = {};
+	src.fun = v.type;
+	src.args = v.args;
         src.period = 0; // Default not periodic
         src.value = function(t) {
             return 0;
@@ -1810,18 +1814,6 @@ var cktsim = (function() {
             return undefined;
         }; // may be overridden below
 
-        var m = v.match(/^\s*(\w+)\s*\(([^\)]*)\)\s*$/); // parse f(arg,arg,...)
-        if (m) {
-            src.fun = m[1];
-            if (m[2] === '') src.args = [];
-            else src.args = m[2].split(/\s*,\s*/).map(parseFloat);
-        }
-        else {
-            src.fun = 'dc';
-            src.args = [parseFloat(v)];
-        }
-        //console.log(src.fun + ': ' + src.args);
-        
         var v1,v2,freq,per,td,tr,tf;
 
         // post-processing for constant sources
