@@ -1009,7 +1009,7 @@ Parse
         var nodes = [];
         var i = 1;
         var raw_values;
-        var fn = [];
+        var fn = {args:[]};
         var fn_token;
         var reading_fn = false;
         while (true) {
@@ -1022,18 +1022,19 @@ Parse
                 if (line[i].type != "name"){
                     throw new CustomError("Invalid function name.",line[i]);
                 } else {
-                    fn.push(line[i].token, line[i+1].token);
+                    fn.type = line[i].token;
                     fn_token = line[i];
                     i += 2;
                     continue;
                 }
             }
             if (reading_fn){
-                fn.push(line[i].token);
                 if (line[i].token == ")"){
                     reading_fn = false;
                     raw_values = line.slice(i+1);
                     break;
+                } else if (line[i].token != ","){
+                    fn.args.push(line[i].token);
                 }
                 i += 1;
                 continue;
@@ -1066,22 +1067,22 @@ Parse
 //            throw new CustomError("Invalid verify function: 'periodic' or 'tvpairs' expected",fn_token);
 //        }
         
-        fn = fn.join('');
+//        fn = fn.join('');
         // picks out the name of the function and its args, if any
         // fn_array[1] is the name
         // fn_array[2] is the entire contents of the parentheses
         // fn_array[3] is the first arg
         // fn_array[4] is the second arg
-        var fn_pattern = /(\w+)\((([^,]+),\s*([^,]+))?\)/;
-        var fn_array = fn.match(fn_pattern);
+//        var fn_pattern = /(\w+)\((([^,]+),\s*([^,]+))?\)/;
+//        var fn_array = fn.match(fn_pattern);
 //        console.log("matched:",fn_array);
         
-        if (!fn_array){
-            throw new CustomError("Ill-formed .verify function statement",fn_token);
-        }
+//        if (!fn_array){
+//            throw new CustomError("Ill-formed .verify function statement",fn_token);
+//        }
         
-        var fn_name = fn_array[1];
-        if (fn_name != 'periodic' && fn_name != 'tvpairs'){
+//        var fn_name = fn_array[1];
+        if (fn.type != 'periodic' && fn.type != 'tvpairs'){
             throw new CustomError("Invalid verify function: 'periodic' or 'tvpairs' expected",fn_token);
         }
         
@@ -1112,10 +1113,10 @@ Parse
         var values;
         var tstart;
         var tstep;
-        if (fn_name == "periodic"){
+        if (fn.type == "periodic"){
             
-            tstart = fn_array[3];
-            tstep = fn_array[4];
+            tstart = fn.args[0];
+            tstep = fn.args[1];
 //            try{
 //                tstart = parse_number(fn_array[3]);
 //                tstep = parse_number(fn_array[4]);
@@ -1125,14 +1126,14 @@ Parse
             values = raw_values.slice(0);
         }
         
-        if (fn_name == "tvpairs"){
+        if (fn.type == "tvpairs"){
             values = [];
             for (i = 0; i < raw_values.length; i += 2){
                 values.push({time:raw_values[i],value:raw_values[i+1]});
             }
         }
         
-        var fn_obj = {type:fn_name,
+        var fn_obj = {type:fn.type,
                       nodes:nodes,
                       tstart:tstart,
                       tstep:tstep,
@@ -1550,10 +1551,15 @@ Device readers: each takes a line of tokens and returns a device object,
                 -token: the token to throw errors at
         --returns: a list of voltage source device objects
     *************************/
-    function parse_W(nodes,args,data,token){
+    function parse_W(nodes,fn_args,data,token){
         var time_steps = [];
         var values = [];
         var results = [];
+        var param_names = ["vlow","vhigh","tperiod","tdelay","trise","tfall"];
+        var args = {};
+        for (var p = 0; p < fn_args.length; p += 1){
+            args[param_names[p]] = fn_args[p];
+        }
         
         for (var i = 0; i < data.length; i += 1){
             time_steps.push(args.tdelay + (args.tperiod * i));
@@ -1591,12 +1597,13 @@ Device readers: each takes a line of tokens and returns a device object,
                         ports:["nplus","nminus"],
                         connections:[nodes[n],"gnd"],
                         properties:{name:token.token+"_"+nodes[n],
-                                    value:{name:"pwl",args:pwl_args}},
+                                    value:{type:"pwl",args:pwl_args}},
                         line:token.line,
                         file:token.origin_file
                        };
             results.push(vobj);
         }
+        console.log("W vobjs:",results);
         return results;
     }
     
@@ -1645,7 +1652,7 @@ Device readers: each takes a line of tokens and returns a device object,
                 }
             } else {
                 if (line[i].type != "name") throw new CustomError("Node name expected.",line[i]);
-                obj.ports.push(line[i].token);
+                obj.connections.push(line[i].token);
                 i += 1;
             }
         }
