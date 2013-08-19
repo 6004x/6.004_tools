@@ -191,12 +191,12 @@ function TapeList(){
 		var arrayLL=[];
 		var index = 0; 
 		var currentIndex = 0, previousIndex = null;
-		var trimBeginning = true;
+		var trimBeginning = false;
 		var trimEnd = true;
 		while(tempNode != null){
 
 			if(tempNode.data === '-' && trimBeginning){
-				tempNode=tempNode.next;
+				tempNode = tempNode.next;
 			}
 			else {
 				trimBeginning = false;

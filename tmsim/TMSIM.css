@@ -53,10 +53,13 @@
 	/*background-color: lightyellow;*/
 }		
 .current_segment{
-	background-color : lightyellow;
+	/*background-color : lightyellow;*/
+}
+.read_segment{
+	background-color :  hsl(120, 60%, 75%);
 }
 .prev_segment{
-	color : blue;
+	background-color: hsl(217, 67%, 75%);
 }
 .arrow-up {
 	width: 0; 
@@ -76,20 +79,17 @@
 .old_transition_div{
 	font : medium monospace;
 }
-.write_symbol{
-	
+.current_write{
+	background-color: hsl(217, 67%, 75%);
 }
 .read_symbol{
-	color : red;
+	background-color : hsl(120, 60%, 75%);
 }
 .curr_state{
-	color : green;
+	color : red;
 }
 .old_new_state{
-	color : green;
-}
-.old_write_symbol{
-	color : blue;
+	color : red;
 }
 .highlight-line{
 	background-color : yellow; 
