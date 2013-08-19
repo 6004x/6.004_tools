@@ -8,6 +8,7 @@ var Toolbar = function(container) {
             button.render(group);
         });
         mToolbarHolder.append(group);
+        return group;
     };
 
     var initialise = function() {
@@ -16,7 +17,7 @@ var Toolbar = function(container) {
     initialise();
 };
 
-var ToolbarButton = function(icon, callback, tooltip) {
+var ToolbarButton = function(icon, callback, tooltip, cls) {
     var self = this;
     var mTooltip = tooltip;
     var mIcon = icon;
@@ -32,6 +33,9 @@ var ToolbarButton = function(icon, callback, tooltip) {
         // Special case: if 'icon' is a string starting with 'icon-', assume they wanted a Bootstrap icon.
         // Otherwise it's whatever jQuery makes of it.
         mElement = $('<button class="btn">');
+        if(cls) {
+            mElement.addClass(cls);
+        }
         self.setLabel(mIcon);
         if(mTooltip) {
             mElement.tooltip({title: mTooltip, placement: 'top', delay: 100, container: 'body'});
