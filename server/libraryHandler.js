@@ -5,7 +5,7 @@ var path=require('path');
 
 (function() {
     var libraryHandler = function(request, response, postData){
-    	var root_path = 	process.cwd();//__dirname
+    	var root_path = process.cwd();//__dirname
 		//current directory will hold all user files in /libraries
 		var lib_path = path.join(root_path, 'libraries'); 
 		var m_user_path, m_full_path, m_shared_path, m_shared_full_path;
@@ -13,11 +13,24 @@ var path=require('path');
 		var m_file_path = unescape(url.parse(request.url).pathname);
 
 		var user = request.user;
-		var query = String(postData['query']);
-		// console.log(data);
-		// console.log(root_path);
-		// console.log(request.url);
-		// console.log(m_file_path);
+		var query = String(postData.query);
+		var fileObj = {};
+		var otherFileObj = {};
+		//since qs only does up to one level of objects, we need to add another level
+		//for fileObj and otherFileObj
+		for(var key in postData){
+			if(key.indexOf('fileObj') !== -1){
+				var newKey = key.substring(key.indexOf('[') + 1, key.indexOf(']'));
+				fileObj[newKey] = postData[key];
+			} else if(key.indexOf('otherFileObj') !== -1){
+				var newKey = key.substring(key.indexOf('[') + 1, key.indexOf(']'));
+				otherFileObj[newKey] = postData[key];
+			} else {
+			}
+		}
+		console.log(fileObj)
+		var fileData = fileObj.name;
+
 		if(user){
 			m_user_path = path.join(lib_path, user);
 			m_shared_path = path.join(root_path, 'shared')
@@ -29,6 +42,9 @@ var path=require('path');
 			create_user_path()
 		console.log(user + ' wants ' + query);
 		console.log('directory: ' + m_full_path)
+		var full_dir_name = path.dirname(m_full_path);
+		var user_dir_name = path.dirname(m_file_path);
+		var file_name = path.basename(m_file_path);
 
 		fs.exists(m_full_path, function(exists){
 			try{
@@ -44,6 +60,7 @@ var path=require('path');
 			},
 			getFile:function(exists){
 				console.log('file path is '+ m_full_path);
+				var asv_full_path = full_dir_name + path.sep + 'asv~' + file_name;
 				if (!exists) {
 					// it's not in user's directory, try shared directory
 					fs.exists(m_shared_full_path,function(exists) {
@@ -66,11 +83,29 @@ var path=require('path');
 				}
 				else{
 					console.log('sendFile');
-					if(!fs.lstatSync(m_full_path).isDirectory())
-						sendFile(m_full_path, m_file_path);
-					else{
-						errorResponse('the file that you are speaking of does not exist');
-					}   
+					fs.lstat(m_full_path, function(err, stats){
+						if(stats.isDirectory()){
+							errorResponse('the file is a folder, oops for you')
+						} else {
+							fs.exists(asv_full_path, function(asv_exists){
+								if(asv_exists){
+									fs.readFile(asv_full_path, 'utf8', function(err, data){
+										sendFile(m_full_path, m_file_path, data);
+									})
+								} else {
+									sendFile(m_full_path, m_file_path);
+									makeAutoSave(m_full_path, m_file_path);
+								}
+
+							})
+						}
+					})
+
+				// 	if(!fs.lstatSync(m_full_path).isDirectory())
+				// 		sendFile(m_full_path, m_file_path);
+				// 	else{
+				// 		errorResponse('the file that you are speaking of does not exist');
+				// 	}   
 				}
 			},
 			getFileList : function(exists){
@@ -90,20 +125,26 @@ var path=require('path');
 			}, 
 
 			saveFile : function(exists){
-				var fdata = postData.data;
+				
 				fs.exists(path.dirname(m_full_path), function(parent_exists){
+					//making sure the directory exists...
 					if(parent_exists){
+
 						if(!exists){
-							saveFile(m_full_path, m_file_path, fdata);
+							//if directory exists, and file doesn't exist, just make the file. 
+							saveFile(m_full_path, m_file_path, fileData);
+							makeAutoSave(m_full_path, m_file_path, fileData);
 						}
 						else{
+							//if the file exists...
 							//merge? overwrite changes?
-							saveFile(m_full_path, m_file_path, fdata);
+							saveFile(m_full_path, m_file_path, fileData);
+							makeAutoSave(m_full_path, m_file_path, fileData);
 						}
 					}
 					else {
 						console.log('path of file does not exist');
-						var pathdiff=path.relative(m_full_path, m_user_path);
+						var pathdiff = path.relative(m_full_path, m_user_path);
 						console.log(pathdiff);
 						console.log(m_full_path);
 						//do something with patthdiff...
@@ -111,13 +152,28 @@ var path=require('path');
 							if(err){
 								console.log(err);
 								errorResponse(err + ' could not make directory');
-								// sendJSON({name:m_file_path,status:'failed',error:err})
 							} else {
-								saveFile(m_full_path,m_file_path, fdata);
+								saveFile(m_full_path,m_file_path, fileData);
 							}
 						});
 					}
 				});
+			},
+			autoSaveFile : function(exists){
+				//AutoSaVe file
+					makeAutoSave(m_full_path, m_file_path, fileData);
+					sendJSON({});
+			},
+			getAutoSave : function(exists){
+				var asv_full_path = full_dir_name + path.sep + 'asv~' + file_name;
+				fs.exists(asv_full_path, function(asv_exists){
+					if(asv_exists){
+						sendAutoSave(asv_full_path, m_full_path, m_file_path, fileData);
+					} else {
+						errorResponse('you seem to not have created an autosave file...')
+					}
+
+				})
 			},
 			newFolder : function(exists){
 				if(exists){
@@ -143,14 +199,14 @@ var path=require('path');
 			},
 			renameFile : function(exists){
 				if(exists){
-					rename(m_full_path, m_file_path, String(postData.data));
+					rename(m_full_path, m_file_path, otherFileObj.name);
 				} else {
 					errorResponse(m_file_path + ' does not exist')
 				}
 			},
 			getRelative : function(exists){
 				if(exists){
-					var rel_path = postData.data;
+					var rel_path = otherFileObj.name;
 					console.log(rel_path);
 					var new_path = (path.join(path.dirname(m_file_path), rel_path));
 					var new_full_path = (path.join(m_user_path, new_path));
@@ -158,7 +214,7 @@ var path=require('path');
 					console.log(new_full_path)
 					sendFile(new_full_path, rel_path);
 				} else {
-					console.log(postData.data)
+					console.log(otherFileObj.name)
 					errorResponse( m_file_path + 'does not exist')
 				}
 			}
@@ -232,8 +288,7 @@ var path=require('path');
 			response.end(sdata);
 			console.log('data sent');
 		}
-		function sendFile(full_path, file_path) {
-			postData.user = user;
+		function sendFile(full_path, file_path, autosave) {
 			fs.readFile(full_path, 'utf8', function(err,data) {
 				if (err){
 					console.log(err);
@@ -245,19 +300,20 @@ var path=require('path');
 				sendJSON({
 					name:file_path,
 					data:data,
+					autosave :autosave,
 					status:'success',
 					type:'file',
 				});
 			});
 		}
-		function saveFile(full_path, file_path, fdata) {
-			fs.writeFile(full_path, fdata, 'utf8', function (err) {
+		function saveFile(full_path, file_path, fileData) {
+			fs.writeFile(full_path, fileData, 'utf8', function (err) {
 					if (err){
 						console.log(err);
 						sendJSON({
 							name:file_path,
 							status:'failed',
-							data:fdata,
+							data:fileData,
 							error:err,
 						});
 					}
@@ -266,7 +322,7 @@ var path=require('path');
 						sendJSON({
 							name:file_path,
 							status:'success',
-							data:fdata,
+							data:fileData,
 							type:'file',
 						});
 					}
@@ -279,23 +335,30 @@ var path=require('path');
 				
 				if(exists){
 					//TODO: what should we do in case we delete a file/folder twice
-					fs.unlinkSync(hide_path)
+					fs.unlink(hide_path, renameToHide)
 					console.log('exists');
 				}
-					fs.rename(full_path, hide_path, function (err) {
-						if (err) {
-							errorResponse(err + ' file could not be renamed');
-							return;
-						}
-						else{
-							console.log(path.sep+'del~'+path.basename(full_path));
-							sendJSON({
-								status:'success',
-								name:file_path,
-							});
-						}
-					});
-
+				else
+					renameToHide();
+				function renameToHide(err){
+					if(err)
+						errorResponse(err)
+					else{
+						fs.rename(full_path, hide_path, function (err) {
+							if (err) {
+								errorResponse(err + ' file could not be renamed');
+								return;
+							}
+							else{
+								console.log(path.sep+'del~'+path.basename(full_path));
+								sendJSON({
+									status:'success',
+									name:file_path,
+								});
+							}
+						});
+					}
+				}
 			})
 		}
 		function rename(full_path, file_path, new_path){
@@ -317,6 +380,95 @@ var path=require('path');
 							sendFile(new_full_path, new_path);
 						}
 					});
+				}
+
+			})
+		}
+		function makeAutoSave(full_path, file_path, data){
+			var asv_full_path = path.dirname(full_path)+path.sep+'asv~'+path.basename(full_path)
+			fs.writeFile(asv_full_path, data, 'utf8', function(err){
+				if(err)
+					console.log(err)
+				else {
+					console.log('autosaved ' + file_path);
+				}
+
+			})
+		}
+		function sendAutoSave(full_path, file_path){
+			var asv_full_path = path.dirname(full_path)+path.sep+'asv~'+path.basename(full_path)
+			fs.readFile(asv_full_path, 'utf8', function(err, data){
+				if(err)
+					errorResponse(err)
+				else{
+					if(file_path.substring(0,1) === '/')
+						file_path = file_path.substring(1);
+					console.log(file_path)
+					sendJSON({
+						name:file_path,
+						autosave : true,
+						data:data,
+						status:'success',
+						type:'file',
+					});
+				}
+			})
+		}
+		function makeBackup(full_path, file_path, data){
+			var bak_full_path = path.dirname(full_path)+path.sep+'bak~'+path.basename(full_path)
+			fs.writeFile(bak_full_path, data, 'utf8', function(err){
+				if(err)
+					console.log(err)
+				else {
+					console.log('autosaved ' + file_path);
+				}
+
+			})
+		}
+		function sendBackup(full_path, file_path){
+			var bak_full_path = path.dirname(full_path)+path.sep+'bak~'+path.basename(full_path)
+			fs.readFile(bak_full_path, 'utf8', function(err, data){
+				if(err)
+					errorResponse(err)
+				else{
+					if(file_path.substring(0,1) === '/')
+						file_path = file_path.substring(1);
+					console.log(file_path)
+					getMetaData(full_path, function(obj){
+						obj.name = file_path;
+						obj.backup = true;
+						obj.data = data;
+						obj.stats = 'success'
+						obj.type = 'file';
+						sendJSON(obj);
+					})
+					
+				}
+			})
+		}
+		function writeMetaData(full_path, metadata){
+			var met_full_path = path.dirname(full_path)+path.sep+'met~'+path.basename(full_path)
+			fs.writeFile(met_full_path, JSON.stringify(metadata), 'utf8', function(err){
+				if(err) errorResponse(err);
+				else console.log(metadata + 'saved')
+
+			})
+		}
+		function getMetaData(full_path, callback){
+			var met_full_path = path.dirname(full_path)+path.sep+'met~'+path.basename(full_path)
+			fs.readFile(met_full_path, 'utf8', function(err, data){
+				if(err){
+					//no metadata file
+					fs.writeFile(met_full_path, '', 'utf8', function(err, data){
+						if (err){
+							errorResponse(err)
+						} else {
+							callback({});
+						}
+					})
+				}
+				else {
+					callback(JSON.parse(data));
 				}
 
 			})
