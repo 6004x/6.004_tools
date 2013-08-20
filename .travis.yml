@@ -16,6 +16,7 @@ notifications:
 before_install:
 - sudo apt-get update -qq
 - sudo apt-get install -qq wput
+- sudo npm install -g grunt-cli
 
 script:
 - grunt test
