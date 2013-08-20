@@ -1,3 +1,32 @@
+/***************************************************************************************
+****************************************************************************************
+Simulator.simulate is what both simulate buttons call:
+    simulate(text, filename, div, error_callback, type)
+args: -text: a string containing the text of a file to parse 
+      -filename: the name of the file the text comes from
+      -div: the div into which results should be inserted
+      -error_callback: a callback function called whenever there is an error in an
+                       asynchronous part of the code
+      -type: a string, either "device" or "gate"
+      
+simulate calls Parser.parse, then when the parser is done, it calls run_simulation:
+    run_simulation(data, div, type)
+args: -data: an object of the sort given by the parser (see parser comment)
+      -div and type are the same as above
+run_simulation calls the analysis functions in cktsim/gatesim, then calls the
+appropriate prepare_<type>_data function.
+
+prepare_(tran|ac|dc)_data takes the raw data that cktsim/gatesim generates along with 
+the list of nodes to plot and turns them into a list of objects of the sort that a plotting
+library uses: the definition of each object is marked with a big star comment and the label
+"series object" for easy editing. These functions then call the appropriate plot functions.
+
+Plot functions are all defined at the bottom of the module: they're really just dummy 
+functions that call functions of the same name in plot.js, e.g., Plot.tran_plot, etc.
+
+****************************************************************************************
+***************************************************************************************/
+
 var Simulator = (function(){
     var mAnalyses;
     var mCurrent_analysis;

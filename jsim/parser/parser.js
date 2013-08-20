@@ -1,5 +1,36 @@
-var Parser = (function(){
+/***************************************************************************************
+****************************************************************************************
+Parser.parse maps to the tokenize function:
+    tokenize(input_string, filename, callback, error_callback, reset)
+args:
+    -input_string: the text of a file to parse
+    -filename: the name of the file (used to throw errors)
+    -callback: a function that will be called when the parser is finished. This function 
+               will be passed an object with the following attributes:
+                -netlist
+                -analyses
+                -plots
+                -plotdefs
+                -options
+                -globals
+    -error_callback: a function that will be called whenever an error is generated in an 
+                     asynchronous part of the code
+    -reset: a boolean that should be true for a new simulation, false otherwise (recursive
+            calls automatically set this to false)
+            
+You shouldn't be calling this function at all! Call Simulator.simulate instead.
+
+Parser.CustomError is the function that generates error objects:
+    new CustomError(message, token)
+args:
+    -message: a string that describes the error
+    -token: an object that has line, column, and origin_file attributes. Used to tell
+            the editor where to mark an error
     
+****************************************************************************************
+***************************************************************************************/
+
+var Parser = (function(){
     /********************************
     Error object:
     *********************************/
