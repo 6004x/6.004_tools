@@ -299,12 +299,10 @@ var path=require('path');
 					type:'file',
 				}
 				if(saveAndBackup.autosave){
-					fileSend.autosave = true;
-					fileSend.autosaveFile = saveAndBackup.autosaveFile
+					fileSend.autosave =  saveAndBackup.autosaveFile
 				}
 				if(saveAndBackup.backup){
-					fileSend.backup = true;
-					fileSend.backupFile = saveAndBackup.backupFile
+					// fileSend.backup = saveAndBackup.backupFile
 				}
 				sendJSON(fileSend);
 			});
