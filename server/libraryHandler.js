@@ -302,10 +302,10 @@ var path=require('path');
 				if(saveAndBackup){
 					console.log(saveAndBackup)
 					if(saveAndBackup.autosave){
-						fileSend.autosave =  saveAndBackup.autosaveFile
+						fileSend.autosave =  saveAndBackup.autosave;
 					}
 					if(saveAndBackup.backup){
-						// fileSend.backup = saveAndBackup.backupFile
+						// fileSend.backup = saveAndBackup.backup;
 					}
 				}
 				sendJSON(fileSend);
