@@ -17,7 +17,7 @@ var path=require('path');
 		var query = String(postData.query);
 		var fileObj = {};
 		var otherFileObj = {};
-		//since qs only does up to one level of objects, we need to add another level
+		//since querystring only does up to one level of objects, we need to add another level
 		//for fileObj and otherFileObj
 		for(var key in postData){
 			if(key.indexOf('fileObj') !== -1){
@@ -34,21 +34,26 @@ var path=require('path');
 		var fileData = fileObj.data;
 
 		if(user){
-			m_user_path = path.join(lib_path, user);
-			m_shared_path = path.join(root_path, 'shared')
-			m_full_path = path.join(m_user_path, m_file_path);
-			m_shared_full_path = path.join(m_shared_path, m_file_path);
+			m_user_path = path.join(lib_path, user);//user path in libraries
+			m_shared_path = path.join(root_path, 'shared') //shared folder outside of user libraries
+			m_full_path = path.join(m_user_path, m_file_path); //full path of file/folder we are accessing
+			m_shared_full_path = path.join(m_shared_path, m_file_path); //path of shared file/folder we *might* be accessing
 			console.log(m_user_path)
 		}
-		if(!fs.existsSync(m_user_path))
+
+		if(!fs.existsSync(m_user_path)) //user doesn't have a library yet...
 			create_user_path()
+
 		console.log(user + ' wants ' + query);
+
 		var full_dir_name = path.dirname(m_full_path);
 		var user_dir_name = path.dirname(m_file_path);
 		var file_name = path.basename(m_file_path);
 
+
 		fs.exists(m_full_path, function(exists){
 			try{
+				// do the funcion in the query after checking if it exists
 				functions[query](exists);
 			} catch(e) {
 				errorResponse(e);
