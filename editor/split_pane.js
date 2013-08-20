@@ -87,9 +87,10 @@
                 var window_width = $(window).width() - 20;
                 for (var i = mPanes.length - 1; i >= 0; i--) {
                     if(mPanes[i].width() > 0) {
-                        var new_pane_width = Math.max(0, mPanes[i].width() - (mCurrentWidth - window_width));
+                        var delta_width = (mCurrentWidth - window_width)
+                        var new_pane_width = Math.max(0, mPanes[i].width() - delta_width);
+                        mCurrentWidth -= Math.min(mPanes[i].width(), delta_width); // Can't shrink by more than a pane width.
                         mPanes[i].css({width: new_pane_width});
-                        mCurrentWidth -= (mCurrentWidth - window_width);
                         if(mCurrentWidth <= window_width) {
                             break;
                         }
