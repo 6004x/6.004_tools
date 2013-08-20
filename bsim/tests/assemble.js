@@ -567,7 +567,7 @@ test(".include works", function() {
                 success_callback({name: filename, data: '.include "/bad.uasm"'});
                 break;
             case "/syntax_error.uasm":
-                success_callback({name: filename, data: '!'})
+                success_callback({name: filename, data: '!'});
                 break;
             default:
                 error_callback();

@@ -49,7 +49,7 @@ test("BigTable", function() {
         ok(html.find('tr:first').hasClass('batched-class'), "Class added on batch end.");
         ok(html.find('tr:first').hasClass('second-class'), "Multiple classes added.");
         table.removeRowClass(11, 'batched-class');
-        ok(html.find('tr:first').hasClass('second-class') && !html.find('tr:first').hasClass('batched-class'), "Class removal correctly removes only specified class.")
+        ok(html.find('tr:first').hasClass('second-class') && !html.find('tr:first').hasClass('batched-class'), "Class removal correctly removes only specified class.");
 
 
         scroller[0].scrollTop = 0;
