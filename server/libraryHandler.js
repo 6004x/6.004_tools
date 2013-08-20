@@ -509,7 +509,7 @@ var path=require('path');
 			fs.readFile(met_full_path, 'utf8', function(err, data){
 				if(err){
 					//no metadata file
-					fs.writeFile(met_full_path, '', 'utf8', function(err, data){
+					fs.writeFile(met_full_path, '{}', 'utf8', function(err, data){
 						if (err){
 							errorResponse(err)
 						} else {
@@ -518,7 +518,13 @@ var path=require('path');
 					})
 				}
 				else {
-					callback(JSON.parse(data));
+                    var object_data = {};
+                    try {
+                        object_data = JSON.parse(data);
+                    } catch(e) {
+                        console.log(e);
+                    }
+					callback(object_data);
 				}
 
 			})
