@@ -52,6 +52,7 @@ $(function() {
         editor.clearErrors();
         assembler.assemble(filename, content, function(success, result) {
             if(!success) {
+                PassiveAlert("Assembly failed.", "error");
                 _.each(result, function(error) {
                     if(!_.contains(editor.filenames(), error.file)) {
                         editor.openFile(error.file, true, function(editor_filename, content) {
