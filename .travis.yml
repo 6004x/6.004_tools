@@ -10,17 +10,17 @@ branches:
     only:
         - master
 
-before_install:
-- sudo apt-get update -qq
-- sudo apt-get install -qq wput
-
-before_script:
-- python -m SimpleHTTPServer &
-- sleep 5
-
 notifications:
   email: false
 
-script: phantomjs test/run-qunit.js 'http://localhost:8000/test/all.html'
+before_install:
+- sudo apt-get update -qq
+- sudo apt-get install -qq wput
+- npm install -g grunt-cli
 
-after_success: wput -nc -B . ftp://$FTP_USER:$FTP_PASSWORD@6004.mattpf.net/web/
+script:
+- grunt test
+- grunt
+
+after_success:
+- wput -nc -B built/ server/ ftp://$FTP_USER:$FTP_PASSWORD@6004.mattpf.net/web/
