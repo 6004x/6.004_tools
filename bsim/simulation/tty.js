@@ -3,6 +3,8 @@ BSim.TTY = function(container, beta) {
     var mBeta = beta;
     var mPendingText = '';
     var mTextHolder = $('<pre class="tty-output" tabindex="1">');
+    var mJustFocused = false;
+    var mHasFocus = false;
 
     var initialise = function() {
         mContainer.append(mTextHolder);
@@ -42,14 +44,28 @@ BSim.TTY = function(container, beta) {
             beta.keyboardInterrupt(e.which);
         });
 
-        mContainer.click(function(e) {
-            var offset = mContainer.offset();
+        mTextHolder.click(function(e) {
+            if(!mHasFocus || mJustFocused) return; // Ignore clicks just as we're focused.
+            var offset = mTextHolder.offset();
             var x = e.pageX - offset.left;
             var y = e.pageY - offset.top;
             if(x < 0) x = 0;
             if(y < 0) y = 0; // This is not impossible.
             beta.mouseInterrupt(x, y);
         });
+
+        mTextHolder.focus(function(e) {
+            // Ignore any click events that come in the immediate future.
+            mJustFocused = true;
+            mHasFocus = true;
+            setTimeout(function() {
+                mJustFocused = false;
+            }, 100); // this timer is a hack, but I'm not sure we can do better given the order of events (focus then click)
+        });
+
+        mTextHolder.blur(function(e) {
+            mHasFocus = false;
+        })
     };
 
     initialise();

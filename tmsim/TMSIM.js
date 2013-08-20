@@ -348,9 +348,9 @@
 				'font-family' : 'sans-serif',
 				'font-size' : 'smaller',
 			})
-			var greenDiv = $('<div>').append('<span class = "curr_state">GREEN</span> marks the current state');
-			var redDiv = $('<div>').append('<span class = "read_symbol">RED</span> marks the current read symbol');
-			var blueDiv = $('<div>').append('<span class = "old_write_symbol">BLUE</span> marks the previous written symbol');
+			var greenDiv = $('<div>').append('<span class = "curr_state">RED</span> marks the current state');
+			var redDiv = $('<div>').append('<span class = "read_symbol">GREEN</span> marks the current read symbol');
+			var blueDiv = $('<div>').append('<span class = "current_write">BLUE</span> marks the previous written symbol');
 			legendDiv.append(greenDiv, redDiv, blueDiv)
 
 			mContainer.append(stepsDiv, speedDiv, actionDiv, tapeWrapper, machineDiv, speedDiv,  testRadioButtons, feedbackDiv, legendDiv);

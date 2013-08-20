@@ -210,7 +210,7 @@ var path=require('path');
 			},
 			getBackup : function(exists){
 				if(exists){
-					sendBackup(full_path, file_path);
+					sendBackup(m_full_path, m_file_path);
 				}
 			}
 		}
@@ -463,7 +463,7 @@ var path=require('path');
 			})
 		}
 		function sendBackup(full_path, file_path){
-			getBackup(function(data){
+			getBackup(full_path, file_path, function(data){
 				if(data){
 					if(file_path.substring(0,1) === '/')
 						file_path = file_path.substring(1);

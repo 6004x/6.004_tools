@@ -102,62 +102,66 @@ test("TTY", function() {
     // ----------------
     var offset = container.offset();
     var mouse = new $.Event('click', {pageX:100 + offset.left, pageY:200 + offset.top});
-
-    beta.mouseInterrupt = function(x, y) {
-        deepEqual([x, y], [100, 200], "Positive mouse coordinates reported correctly.");
-    };
-    container.trigger(mouse);
-    mouse.pageX = offset.left;
-    mouse.pageY = offset.top;
-    beta.mouseInterrupt = function(x, y) {
-        deepEqual([x, y], [0, 0], "Zero mouse coordinates reported correctly.");
-    };
-    container.trigger(mouse);
-    mouse.pageX = offset.left - 10;
-    mouse.pageY = offset.top - 10;
-    beta.mouseInterrupt = function(x, y) {
-        deepEqual([x, y], [0, 0], "Negative mouse coordinates reported correctly.");
-    };
-    container.trigger(mouse);
-
-    // Keyboard tests
-    // -----------------
-    var keyboard = new $.Event('keypress', {which: 97});
-    beta.keyboardInterrupt = function(key) {
-        equal(key, 97, "Keyboard interrupts triggered correctly.");
-    };
-    container.trigger(keyboard);
-
-    // Text output tests
-    // -----------------
-
-    beta.trigger('text:out', 'hello');
-    equal(html.text(), "hello", "Initial text output works.");
-    beta.trigger('text:out', ' world');
-
-    // Due to throttling, this should still only contain 'hello'. Probably.
-    equal(html.text(), "hello", "Text output is throttled.");
-
+    container.find('pre').trigger($.Event('focus'));
     stop();
     setTimeout(function() {
-        equal(html.text(), "hello world", "Text output completes after delay.");
+        beta.mouseInterrupt = function(x, y) {
+            deepEqual([x, y], [100, 200], "Positive mouse coordinates reported correctly.");
+        };
+        container.find('pre').trigger(mouse);
+        mouse.pageX = offset.left;
+        mouse.pageY = offset.top;
+        beta.mouseInterrupt = function(x, y) {
+            deepEqual([x, y], [0, 0], "Zero mouse coordinates reported correctly.");
+        };
+        container.find('pre').trigger(mouse);
+        mouse.pageX = offset.left - 10;
+        mouse.pageY = offset.top - 10;
+        beta.mouseInterrupt = function(x, y) {
+            deepEqual([x, y], [0, 0], "Negative mouse coordinates reported correctly.");
+        };
+        container.find('pre').trigger(mouse);
 
-        beta.trigger('text:out', '');
+
+        // Keyboard tests
+        // -----------------
+        var keyboard = new $.Event('keypress', {which: 97});
+        beta.keyboardInterrupt = function(key) {
+            equal(key, 97, "Keyboard interrupts triggered correctly.");
+        };
+        container.trigger(keyboard);
+
+        // Text output tests
+        // -----------------
+
+        beta.trigger('text:out', 'hello');
+        equal(html.text(), "hello", "Initial text output works.");
         beta.trigger('text:out', ' world');
-        beta.trigger('text:replace', "goodbye");
-        equal(html.text(), "goodbye", "replace works");
+
+        // Due to throttling, this should still only contain 'hello'. Probably.
+        equal(html.text(), "hello", "Text output is throttled.");
+
         setTimeout(function() {
-            equal(html.text(), "goodbye", "replace clears pending text appends.");
+            equal(html.text(), "hello world", "Text output completes after delay.");
 
             beta.trigger('text:out', '');
-            beta.trigger('text:out', 'foo');
-            beta.trigger('text:clear');
-            equal(html.text(), "", "clear clears text.");
+            beta.trigger('text:out', ' world');
+            beta.trigger('text:replace', "goodbye");
+            equal(html.text(), "goodbye", "replace works");
             setTimeout(function() {
-                equal(html.text(), "", "clear clears pending text appends.");
+                equal(html.text(), "goodbye", "replace clears pending text appends.");
 
-                start();
+                beta.trigger('text:out', '');
+                beta.trigger('text:out', 'foo');
+                beta.trigger('text:clear');
+                equal(html.text(), "", "clear clears text.");
+                setTimeout(function() {
+                    equal(html.text(), "", "clear clears pending text appends.");
+
+                    start();
+                }, 55);
             }, 55);
         }, 55);
-    }, 55);
+
+    }, 110);
 });
