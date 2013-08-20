@@ -89,16 +89,19 @@ var path=require('path');
 							errorResponse('the file is a folder, oops for you')
 						} else {
 							getAutoSave(m_full_path, m_file_path, function(asv_data){
-								var saveAndBackup = {}
-								if(asv_data){
-									saveAndBackup.autosave = asv_data;
-								}
-								// getBackup(m_full_path, m_file_path, function(bak_data){
-								// 	if(bak_data){
-								// 		saveAndBackup.backup = bak_data;
-								// 	}
-									sendFile(m_full_path, m_file_path, saveAndBackup);
-								// });
+								getMetaData(m_full_path, function(metadata){
+									var saveAndBackup = {}
+									if(asv_data && metadata.autosaveTime > metadata.time){
+										console.log(metadata);
+										saveAndBackup.autosave = asv_data;
+									}
+									// getBackup(m_full_path, m_file_path, function(bak_data){
+									// 	if(bak_data){
+									// 		saveAndBackup.backup = bak_data;
+									// 	}
+										sendFile(m_full_path, m_file_path, saveAndBackup);
+									// });
+								});
 							});
 						}
 					})
@@ -392,15 +395,27 @@ var path=require('path');
 		}
 		function makeAutoSave(full_path, file_path, fileObj){
 			var asv_full_path = full_path+'~asv';
-			fs.writeFile(asv_full_path, fileObj.data, 'utf8', function(err){
-				if(err)
-					console.log(err)
-				else {
-					//writeMetaData(asv_full_path, fileObj);
-					console.log('autosaved ' + file_path);
+			getMetaData(full_path, function(metadata){
+				if(!metadata.autosaveTime){	
+					metadata.autosaveTime = fileObj.time;
 				}
-
+				if(metadata.autosaveTime <= fileObj.time){
+					metadata.autosaveTime = fileObj.time;
+					console.log(metadata)
+					fs.writeFile(asv_full_path, fileObj.data, 'utf8', function(err){
+						if(err)
+							console.log(err)
+						else {
+							writeMetaData(full_path, metadata);
+							console.log('autosaved ' + file_path);
+						}
+					})
+				} else {//autosave is older than stored autosave, do nothing
+					console.log('autosave is older than stored, do nothing')
+				}
+				
 			})
+			
 		}
 
 		function getAutoSave(full_path, file_path, callback){
@@ -438,7 +453,6 @@ var path=require('path');
 							errorResponse(err)
 						}
 						else {
-							//writeMetaData(bak_full_path, fileObj)
 							console.log('backup ' + file_path);
 							callback(exists)
 						}
