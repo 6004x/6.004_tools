@@ -333,7 +333,7 @@ var path=require('path');
 			});
 		}
 		function hide(full_path, file_path){
-			var hide_path = path.dirname(full_path)+path.sep+'del~'+path.basename(full_path)
+			var hide_path = full_path + '~del';
 			console.log('hiding '+hide_path);
 			fs.exists(hide_path, function(exists){
 				
@@ -389,12 +389,12 @@ var path=require('path');
 			})
 		}
 		function makeAutoSave(full_path, file_path, fileObj){
-			var asv_full_path = path.dirname(full_path)+path.sep+'asv~'+path.basename(full_path)
+			var asv_full_path = full_path+'~asv';
 			fs.writeFile(asv_full_path, fileObj.data, 'utf8', function(err){
 				if(err)
 					console.log(err)
 				else {
-					writeMetaData(asv_full_path, fileObj);
+					//writeMetaData(asv_full_path, fileObj);
 					console.log('autosaved ' + file_path);
 				}
 
@@ -402,7 +402,7 @@ var path=require('path');
 		}
 
 		function getAutoSave(full_path, file_path, callback){
-			var asv_full_path = path.dirname(full_path)+path.sep+'asv~'+path.basename(full_path)
+			var asv_full_path = full_path+'~asv';
 			fs.readFile(asv_full_path, 'utf8', function(err, data){
 				if(err){
 					callback(false);
@@ -428,7 +428,7 @@ var path=require('path');
 			})
 		}
 		function makeBackup(full_path, file_path, fileObj, callback){
-			var bak_full_path = path.dirname(full_path)+path.sep+'bak~'+path.basename(full_path)
+			var bak_full_path = full_path + '~bak'
 			fs.exists(full_path, function(exists){
 				if(exists){
 					fs.rename(full_path, bak_full_path, function(err){
@@ -436,7 +436,7 @@ var path=require('path');
 							errorResponse(err)
 						}
 						else {
-							writeMetaData(bak_full_path, fileObj)
+							//writeMetaData(bak_full_path, fileObj)
 							console.log('backup ' + file_path);
 							callback(exists)
 						}
@@ -453,7 +453,7 @@ var path=require('path');
 			});
 		}
 		function getBackup(full_path, file_path, callback){
-			var bak_full_path = path.dirname(full_path)+path.sep+'bak~'+path.basename(full_path)
+			var bak_full_path = full_path + '~bak'
 			fs.readFile(bak_full_path, 'utf8', function(err, data){
 				if(err)
 					callback(false)
@@ -468,14 +468,21 @@ var path=require('path');
 					if(file_path.substring(0,1) === '/')
 						file_path = file_path.substring(1);
 					console.log(file_path)
-					getMetaData(full_path, function(obj){
+					sendJSON({
+						name : file_path,
+						backup: true,
+						data: data,
+						status: 'success',
+						type: 'file',
+					})
+					/*getMetaData(full_path, function(obj){
 						obj.name = file_path;
 						obj.backup = true;
 						obj.data = data;
 						obj.status = 'success'
 						obj.type = 'file';
 						sendJSON(obj);
-					})
+					})*/
 				}
 				else {
 					errorResponse('could not find backup');
@@ -483,7 +490,7 @@ var path=require('path');
 			})
 		}
 		function writeMetaData(full_path, metadata){
-			var met_full_path = path.dirname(full_path)+path.sep+'met~'+path.basename(full_path)
+			var met_full_path = full_path + '~met';
 			var parsedMetadata = {};
 			for (var key in metadata){
 				if(key !== 'content' && key !== 'data')
@@ -496,7 +503,7 @@ var path=require('path');
 			})
 		}
 		function getMetaData(full_path, callback){
-			var met_full_path = path.dirname(full_path)+path.sep+'met~'+path.basename(full_path)
+			var met_full_path = full_path + '~met';
 			fs.readFile(met_full_path, 'utf8', function(err, data){
 				if(err){
 					//no metadata file

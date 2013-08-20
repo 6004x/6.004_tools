@@ -659,7 +659,7 @@ var Folders=new function(){
             new ToolbarButton('icon-refresh', function(){refresh()}, 'Refresh')/*,
             new ToolbarButton('icon-off', _.identity, 'Off is not implemented')*/
         ]);
-        editor.addButtonGroup([new ToolbarButton('Autosave current Test', autoSaveCurrent, '')]) 
+        
 
     }
 
