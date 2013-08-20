@@ -159,6 +159,7 @@ var path=require('path');
 			},
 			autoSaveFile : function(exists){
 				//AutoSaVe file
+					console.log('autosave, does it work?')
 					makeAutoSave(m_full_path, m_file_path, fileObj);
 					sendJSON({name:m_file_path, data:fileData});
 			},
@@ -298,11 +299,14 @@ var path=require('path');
 					status:'success',
 					type:'file',
 				}
-				if(saveAndBackup.autosave){
-					fileSend.autosave =  saveAndBackup.autosaveFile
-				}
-				if(saveAndBackup.backup){
-					// fileSend.backup = saveAndBackup.backupFile
+				if(saveAndBackup){
+					console.log(saveAndBackup)
+					if(saveAndBackup.autosave){
+						fileSend.autosave =  saveAndBackup.autosaveFile
+					}
+					if(saveAndBackup.backup){
+						// fileSend.backup = saveAndBackup.backupFile
+					}
 				}
 				sendJSON(fileSend);
 			});
