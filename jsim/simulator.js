@@ -1,3 +1,32 @@
+/***************************************************************************************
+****************************************************************************************
+Simulator.simulate is what both simulate buttons call:
+    simulate(text, filename, div, error_callback, type)
+args: -text: a string containing the text of a file to parse 
+      -filename: the name of the file the text comes from
+      -div: the div into which results should be inserted
+      -error_callback: a callback function called whenever there is an error in an
+                       asynchronous part of the code
+      -type: a string, either "device" or "gate"
+      
+simulate calls Parser.parse, then when the parser is done, it calls run_simulation:
+    run_simulation(data, div, type)
+args: -data: an object of the sort given by the parser (see parser comment)
+      -div and type are the same as above
+run_simulation calls the analysis functions in cktsim/gatesim, then calls the
+appropriate prepare_<type>_data function.
+
+prepare_(tran|ac|dc)_data takes the raw data that cktsim/gatesim generates along with 
+the list of nodes to plot and turns them into a list of objects of the sort that a plotting
+library uses: the definition of each object is marked with a big star comment and the label
+"series object" for easy editing. These functions then call the appropriate plot functions.
+
+Plot functions are all defined at the bottom of the module: they're really just dummy 
+functions that call functions of the same name in plot.js, e.g., Plot.tran_plot, etc.
+
+****************************************************************************************
+***************************************************************************************/
+
 var Simulator = (function(){
     var mAnalyses;
     var mCurrent_analysis;
@@ -243,7 +272,8 @@ var Simulator = (function(){
             var dataseries = []; // 'dataseries' is the list of data objects to pass to a graph module
             
             if (mType == "gate" && plot_nodes.length > 1){
-                plot_nodes = "L("+plot_nodes.join(' ')+")";
+//                plot_nodes = "L("+plot_nodes.join(' ')+")";
+                plot_nodes = [{type:"L",args:plot_nodes}]
             }
             
             // repeat for each node
@@ -253,39 +283,38 @@ var Simulator = (function(){
                 var values = [];
                 
                 // check of it's a function, e.g. if something like L() or betaop() was asked for
-                var fn_pttn = /([^\(]+)\((.+)\)$/;
-                var matched_array = node.match(fn_pttn);
-                if (matched_array){
-                    var fn_name = matched_array[1];
-                    var arg_nodes = matched_array[2].split(/[,\s]\s*/);
+//                var fn_pttn = /([^\(]+)\((.+)\)$/;
+//                var matched_array = node.match(fn_pttn);
+                if (_.isObject(node)){
+//                    var fn_name = matched_array[1];
+//                    var arg_nodes = matched_array[2].split(/[,\s]\s*/);
+                    var fn = node;
                     
-                    if (fn_name == 'I'){
+                    if (fn.type == 'I'){
                         // continue on
-                        values = results[node];
+                        values = results[fn.args[0]];
                     } else {
-                        if (fn_name.toUpperCase() != 'L' && !(fn_name in mPlotDefs)) {
-                            throw "No definition for plot function "+fn_name;
+                        if (fn.type.toUpperCase() != 'L' && !(fn.type in mPlotDefs)) {
+                            throw "No definition for plot function "+fn.type;
                         } 
-                        values = results[arg_nodes[0]].slice(0);
+                        values = results[fn.args[0]].slice(0);
                         values = values.map(function(val,index){
                             var tempval = [];
-                            for (var j = 0; j < arg_nodes.length; j += 1){
-                                tempval.push(results[arg_nodes[j]][index]);
+                            for (var j = 0; j < fn.args.length; j += 1){
+                                tempval.push(results[fn.args[j]][index]);
                             }
                             var lval = hex_logic(tempval, mOptions.vil, mOptions.vih);
                             
-                            if (fn_name == "L") {
+                            if (fn.type == "L") {
                                 return lval;
                             } else {
                                 // look up the definition of the plot function and return the
                                 // appropriate string; if the index is out of range return "???"
                                 var nval = parseInt(lval,16);
-                                if (mPlotDefs[fn_name][nval]) return mPlotDefs[fn_name][nval];
+                                if (mPlotDefs[fn.type][nval]) return mPlotDefs[fn.type][nval];
                                 else return "???";
                             }
-                        });
-                        
-                        
+                        });   
                         
                     }
                 } else {
@@ -462,6 +491,7 @@ var Simulator = (function(){
     
     function tran_plot(dataseries){
         console.log("data:",dataseries);
+        Plot.tran_plot(mDiv,dataseries);
     }
     
     function ac_plot(mdata,pdata){

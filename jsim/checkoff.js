@@ -1,4 +1,64 @@
 var Checkoff = (function(){
+    /*****************
+    Engineering notation: formats a number in engineering notation
+        --args: -n: value to be formatted
+                -nplaces: the number of decimal places to keep
+                -trim: boolean, defaults to true; if true, removes trailing 0s and decimals
+        --returns: a string representing the value in engineering notation
+        
+    Written by Chris Terman (description by Stacey Terman)
+    *********************/
+    function engineering_notation(n, nplaces, trim) {
+        
+        if (n === 0) return '0';
+        if (n === undefined) return 'undefined';
+        if (trim === undefined) trim = true;
+    
+        var sign = n < 0 ? -1 : 1;
+        var log10 = Math.log(sign * n) / Math.LN10;
+        var exp = Math.floor(log10 / 3); // powers of 1000
+        var mantissa = sign * Math.pow(10, log10 - 3 * exp);
+    
+        // keep specified number of places following decimal point
+        var mstring = (mantissa + sign * 0.5 * Math.pow(10, - nplaces)).toString();
+        var mlen = mstring.length;
+        var endindex = mstring.indexOf('.');
+        if (endindex != -1) {
+            if (nplaces > 0) {
+                endindex += nplaces + 1;
+                if (endindex > mlen) endindex = mlen;
+                if (trim) {
+                    while (mstring.charAt(endindex - 1) == '0') endindex -= 1;
+                    if (mstring.charAt(endindex - 1) == '.') endindex -= 1;
+                }
+            }
+            if (endindex < mlen) mstring = mstring.substring(0, endindex);
+        }
+    
+        switch (exp) {
+        case -5:
+            return mstring + "f";
+        case -4:
+            return mstring + "p";
+        case -3:
+            return mstring + "n";
+        case -2:
+            return mstring + "u";
+        case -1:
+            return mstring + "m";
+        case 0:
+            return mstring;
+        case 1:
+            return mstring + "K";
+        case 2:
+            return mstring + "M";
+        case 3:
+            return mstring + "G";
+        }
+    
+        // don't have a good suffix, so just print the number
+        return n.toPrecision(nplaces);
+    }
     var mVerify_statements = [];
     var mCheckoff_statement = null;
     var mResults = null;
@@ -90,7 +150,7 @@ var Checkoff = (function(){
                 failedModal.setTitle("Checkoff Failed!");
                 failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
     <p><table class='table'><tr><td>Node(s):</td><td>"+mistake.nodes+"</tr>\
-    <tr><td>Time:</td><td>"+Simulator.engineering_notation(mistake.time,2)+"s</td></tr>\
+    <tr><td>Time:</td><td>"+engineering_notation(mistake.time,2)+"s</td></tr>\
     <tr><td>Expected Logic Value:</td><td>"+mistake.exp+"</td></tr>\
     <tr><td>Actual Logic Value:</td><td>"+mistake.given+"</td></tr></table></p>");
     
@@ -176,18 +236,20 @@ var Checkoff = (function(){
                 
             var base;
             var base_prefix;
-            if (vobj.display_base == 'hex') {
+            // change decimal numbers to hex automatically because otherwise it's a huge pain
+            if (vobj.display_base == 'hex' || vobj.display_base == 'dec') {
                 base = 16;
                 base_prefix = '0x';
-            }
-            if (vobj.display_base == 'octal') {
+            } else if (vobj.display_base == 'oct') {
                 base = 8;
                 base_prefix = '0';
-            }
-            if (vobj.display_base == 'binary') {
+            } else if (vobj.display_base == 'bin') {
                 base = 2;
                 base_prefix = '0b';
-            }
+            }/* else {
+                base = 10;
+                base_prefix = '';
+            }*/
                 
             var mistake = false;
             for (i = 0; i < vobj.values.length; i += 1){

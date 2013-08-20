@@ -1,0 +1,330 @@
+// 6.004 standard cell library (3/5/00)
+// Modified for New JSim in August 2013
+
+/*******************************************************************************
+********************************************************************************
+***
+***  memory options
+***
+********************************************************************************
+*******************************************************************************/
+
+.options mem_cin=.005pf	// input terminal capacitance (F)
+.options mem_cout=0	// output terminal capacitance (F)
+.options mem_tr=1000	// output rise time (s/F)
+.options mem_tf=500	// output fall time (s/F)
+.options mem_tpd_regfile=2ns	// tpd when nlocs <= 128 (s)
+.options mem_tpd_sram=4ns	// tpd when 128 < nlocs <= 1024 (s)
+.options mem_tpd_dram=40ns	// tpd when nlocs > 1024 (s)
+.options mem_tcd=20ps	// contamination delay (s)
+
+.options mem_size_sram=5	// size of static memory cell (u**2)
+.options mem_size_access=1	// size of access fet to mem cell (u**2)
+.options mem_size_address_buffer=20 // size of memory address buffer (u**2)
+.options mem_size_address_decoder=4 // size of 1 bit's worth of memory address decoder (u**2)
+.options mem_size_output_buffer=30  // size of memory output buffer (u**2)
+.options mem_size_write_buffer=20  // size of memory write data buffer (u**2)
+
+/*******************************************************************************
+********************************************************************************
+***
+***  constants, buffers and inverters
+***
+********************************************************************************
+*******************************************************************************/
+
+// .subckt constant0 z
+// .connect z gnd
+// .ends
+
+// .subckt constant1 z
+// .connect z vdd
+// .ends
+
+.subckt buffer a z 
+Xinv1 inverter a n1
+Xinv2 inverter n1 z
+.ends
+
+.subckt buffer_2 a z 
+Xinv1 inverter a n1
+Xinv2 inverter_2 n1 z
+.ends
+
+.subckt buffer_4 a z 
+Xinv1 inverter a n1
+Xinv2 inverter_4 n1 z
+.ends
+
+.subckt buffer_8 a z 
+Xinv1 inverter_2 a n1
+Xinv2 inverter_8 n1 z
+.ends
+
+.subckt inverter a z
+N1 z a gnd w=4
+P1 vdd a z w=16
+.ends
+
+.subckt inverter_2 a z
+N1 z a gnd w=8
+P1 vdd a z w=32
+.ends
+
+.subckt inverter_4 a z
+N1 z a gnd w=16
+P1 vdd a z w=64
+.ends
+
+.subckt inverter_8 a z
+N1 z a gnd w=32
+P1 vdd a z w=128
+.ends
+
+.subckt tristate e a z
+Xeinv inverter e en
+Xnand nand2 e a n1
+Xnor nor2 en a n2
+N2 z n2 gnd w=4
+P1 vdd n1 z w=16
+.ends
+
+.subckt tristate_2 e a z
+Xeinv inverter e en
+Xnand nand2 e a n1
+Xnor nor2 en a n2
+N2 z n2 gnd w=8
+P1 vdd n1 z w=32
+.ends
+
+.subckt tristate_4 e a z
+Xeinv inverter e en
+Xnand nand2 e a n1
+Xnor nor2 en a n2
+N2 z n2 gnd w=16
+P1 vdd n1 z w=64
+.ends
+
+.subckt tristate_8 e a z
+Xeinv inverter e en
+Xnand nand2 e a n1
+Xnor nor2 en a n2
+N2 z n2 gnd w=32
+P1 vdd n1 z w=128
+.ends
+
+/*******************************************************************************
+********************************************************************************
+***
+***  AND gates
+***
+********************************************************************************
+*******************************************************************************/
+
+.subckt and2 a b z
+Xnand nand2 a b n1
+Xinv inverter n1 z
+.ends
+
+.subckt and3 a b c z
+Xnand nand3 a b c n1
+Xinv inverter n1 z
+.ends
+
+.subckt and4 a b c d z
+Xnand nand4 a b c d n1
+Xinv inverter n1 z
+.ends
+
+/*******************************************************************************
+********************************************************************************
+***
+***  NAND gates
+***
+********************************************************************************
+*******************************************************************************/
+
+.subckt nand2 a b z
+Na z a n1 w=4
+Nb n1 b gnd w=4
+Pa vdd a z w=16
+Pb vdd b z w=16
+.ends
+
+.subckt nand3 a b c z
+Na z a n1 w=4
+Nb n1 b n2 w=4
+Nc n2 c gnd w=4
+Pa vdd a z w=16
+Pb vdd b z w=16
+Pc vdd c z w=16
+.ends
+
+.subckt nand4 a b c d z
+Na z a n1 w=4
+Nb n1 b n2 w=4
+Nc n2 c n3 w=4
+Nd n3 d gnd w=4
+Pa vdd a z w=16
+Pb vdd b z w=16
+Pc vdd c z w=16
+Pd vdd d z w=16
+.ends
+
+/*******************************************************************************
+********************************************************************************
+***
+***  OR gates
+***
+********************************************************************************
+*******************************************************************************/
+
+.subckt or2 a b z
+Xnor nor2 a b n1
+Xinv inverter n1 z
+.ends
+
+.subckt or3 a b c z
+Xnor nor3 a b c n1
+Xinv inverter n1 z
+.ends
+
+.subckt or4 a b c d z
+Xnor nor4 a b c d n1
+Xinv inverter n1 z
+.ends
+
+/*******************************************************************************
+********************************************************************************
+***
+***  NOR gates
+***
+********************************************************************************
+*******************************************************************************/
+
+.subckt nor2 a b z
+Na z a gnd w=4
+Nb z b gnd w=4
+Pa vdd a n1 w=16
+Pb n1 b z w=16
+.ends
+
+.subckt nor3 a b c z
+Na z a gnd w=4
+Nb z b gnd w=4
+Nc z c gnd w=4
+Pa vdd a n1 w=16
+Pb n1 b n2 w=16
+Pc n2 c z w=16
+.ends
+
+.subckt nor4 a b c d z
+Na z a gnd w=4
+Nb z b gnd w=4
+Nc z c gnd w=4
+Nd z d gnd w=4
+Pa vdd a n1 w=16
+Pb n1 b n2 w=16
+Pc n2 c n3 w=16
+Pd n3 d z w=16
+.ends
+
+/*******************************************************************************
+********************************************************************************
+***
+***  XOR gates
+***
+********************************************************************************
+*******************************************************************************/
+
+.subckt xor2 a b z
+Xnor nor2 a b nNor
+Na z a n1 w=4
+Nb n1 b gnd w=4
+Nnor z nNor gnd w=4
+Pa vdd a n2 w=16
+Pb vdd b n2 w=16
+Pnor n2 nNor z w=16
+.ends
+
+.subckt xnor2 a b z
+Xnand nand2 a b nNand
+Nnand z nNand n1 w=4
+Nb n1 b gnd w=4
+Na n1 a gnd w=4
+Pnand vdd nNand z w=16
+Pa vdd a n2 w=16
+Pb n2 b z w=16
+.ends
+
+/*******************************************************************************
+********************************************************************************
+***
+***  AOI/OAI gates
+***
+********************************************************************************
+*******************************************************************************/
+
+.subckt aoi21 a1 a2 b z
+Na z a1 n1 w=4
+Nb n1 a2 gnd w=4
+Nc z b gnd w=4
+Pa vdd a1 n2 w=16
+Pb vdd a2 n2 w=16
+Pc n2 b z w=16
+.ends
+
+.subckt oai21 a1 a2 b z
+Na z a1 n1 w=4
+Nb z a2 n1 w=4
+Nc n1 b gnd w=4
+Pa vdd a1 n2 w=16
+Pb n2 a2 z w=16
+Pc vdd b z w=16
+.ends
+
+/*******************************************************************************
+********************************************************************************
+***
+***  Muxes
+***
+********************************************************************************
+*******************************************************************************/
+
+.subckt mux2 s d0 d1 z
+Xsinv inverter s sn
+Xnand0 nand2 d0 sn n1
+Xnand1 nand2 d1 s n2
+Xnandfinal nand2 n1 n2 z
+.ends
+
+.subckt mux4 s0 s1 d0 d1 d2 d3 z
+Xsinv1 inverter s0 sn0
+Xsinv2 inverter s1 sn1
+Xnand0 nand3 d0 sn0 sn1 o1
+Xnand1 nand3 d1 s0 sn1 o2
+Xnand2 nand3 d2 sn0 s1 o3
+Xnand3 nand3 d3 s0 s1 o4
+Xnandfinal nand4 o1 o2 o3 o4 z
+.ends
+
+/*******************************************************************************
+********************************************************************************
+***
+***  Registers
+***
+********************************************************************************
+*******************************************************************************/
+
+.subckt dreg d clk q
+Xmaster dlatchn d clk n1
+Xslave dlatch n1 clk q
+.ends
+
+.subckt dlatch d clk q
+Xmux mux2 clk q d q
+.ends
+
+.subckt dlatchn d clk q
+Xmux mux2 clk d q q
+.ends
