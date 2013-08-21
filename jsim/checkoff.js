@@ -1,3 +1,17 @@
+/***************************************************************************************
+****************************************************************************************
+Checkoff.reset clears existing results and checkoff and verify statements
+Checkoff.addVerify adds a verify statement to the current list
+Checkoff.setCheckoffStatement and Checkoff.setResults set the current checkoff and simulation
+    results. Nothing is done with the checkoff statement besides checking that it exists
+    and that it has all the required parameters (server path, assignment name, checksum)
+    
+Checkoff.testResults performs a checkoff. It calls runVerify, which checks all the previously set
+    verify statements against the current results and returns any mistakes. testResults then 
+    displays a notification indicating the success or failure of the checkoff.
+****************************************************************************************
+***************************************************************************************/
+
 var Checkoff = (function(){
     /*****************
     Engineering notation: formats a number in engineering notation
@@ -5,8 +19,6 @@ var Checkoff = (function(){
                 -nplaces: the number of decimal places to keep
                 -trim: boolean, defaults to true; if true, removes trailing 0s and decimals
         --returns: a string representing the value in engineering notation
-        
-    Written by Chris Terman (description by Stacey Terman)
     *********************/
     function engineering_notation(n, nplaces, trim) {
         
@@ -77,7 +89,7 @@ var Checkoff = (function(){
     **************************/
     function addVerify(obj){
         mVerify_statements.push(obj);
-        console.log('adding verify: ',obj);
+//        console.log('adding verify: ',obj);
     }
     
     /**************************
@@ -89,11 +101,11 @@ var Checkoff = (function(){
     }
     
     /**************************
-    Get the results of the last simulation
+    Get the results of the last simulation -- deprecated
     **************************/
-    function getResults(){
-        mResults = $('#results').data("current"); 
-    }
+//    function getResults(){
+//        mResults = $('#results').data("current"); 
+//    }
     
     /************************
     Set results to the given results
