@@ -14,7 +14,8 @@ var Editor = function(container, mode) {
     var mUntitledDocumentCount = 0; // The number of untitled documents (used to name the next one)
     var mAutocompleter = new Editor.Autocomplete(this, mode);
     var mRestoreAutosaveButton = null;
-
+    var mShowingTips = false;
+    var mTipHolder = null;
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
     var mMarkedLines  = []; // List of lines we need to clear things from when requested.
@@ -197,6 +198,9 @@ var Editor = function(container, mode) {
         a.append(close);
 
         mTabHolder.append(tab);
+
+        // Make sure we aren't still showing initial tips.
+        clear_initial_tips();
 
         mContainer.append(editPane);
 
@@ -463,8 +467,8 @@ var Editor = function(container, mode) {
             Editor.IsSetUp = true;
         }
 
-        // Load any prior tabs we have.
-        restore_tabs();
+        // Load any prior tabs we have or show some handy tips.
+        if(!restore_tabs()) display_initial_tips();
     };
 
     var do_save = function(document) {
@@ -509,10 +513,29 @@ var Editor = function(container, mode) {
 
     var restore_tabs = function() {
         var filenames = localStorage['6004_' + mSyntaxMode + '_tabs'];
-        if(!filenames) return; // Default state
+        if(!filenames) return false; // Default state
         filenames = JSON.parse(filenames);
         console.log(filenames);
         _.each(filenames, function(f) { self.openFile(f, false); });
+        return !!filenames.length;
+    };
+
+    // Re-opens whatever tabs the user had open last time.
+    // Returns true if there are any such tabs, false otherwise.
+    var display_initial_tips = function() {
+        if(!_.isEmpty(mOpenDocuments)) return;
+        var tip = "To create a file or folder, hover over the desired parent folder on the left and click the " +
+            "new file or new folder icons. To open a file or folder, single click it in the list on the left. " +
+            "You can move files by dragging them from their existing location to the desired one.";
+        mTipHolder = $('<div class="editor-tips">').html(tip);
+        mContainer.append(mTipHolder);
+        mShowingTips = true;
+    };
+
+    var clear_initial_tips = function() {
+        if(!mShowingTips) return;
+        mShowingTips = false;
+        mTipHolder.remove();
     };
 
     initialise();

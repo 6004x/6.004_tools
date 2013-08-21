@@ -38,12 +38,12 @@ $(function() {
         }
     });
 
-    // Filesystem tree thing
+    // Must be done first.
     FileSystem.setup('https://6004.mattpf.net:6004/');
-    Folders.setup('#filetree', editor, 'uasm');
-
     // Make an editor
     var editor = new Editor('#editor', 'uasm');
+    // Filesystem tree thing
+    Folders.setup('#filetree', editor, 'uasm');
 
     var do_assemble = function() {
         var filename = editor.currentTab();
