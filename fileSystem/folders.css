@@ -105,16 +105,36 @@ div.input_file_name button.add-on{
     text-align: center;
     width: 100%;
 }
+..folders_div{
+    padding:0px;
+    overflow-x : auto; 
+    overflow-y : auto;
+}
 .file_paths{
     padding:0px;
     overflow-x : auto; 
     overflow-y : auto;
-}	
+    height : 60%;
+}
+
+.shared_file_paths{
+    padding:0px;
+    overflow-x : auto; 
+    overflow-y : auto;
+    /*why 20 instad of 60? i wish i knew, it just seems that it likes 20 better.*/
+    height:22%;
+}
 .folder_name {
     z-index:3;
 }
 .folder_name:hover{
     background-color:lightblue;
+}
+.root_folder_name{
+    background-color: #6699FF;
+}
+.shared_root_folder_name{
+    background-color: #FF9900;
 }
 .folder_contents{
     border:none;

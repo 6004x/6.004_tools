@@ -16,8 +16,10 @@ var Folders=new function(){
     }
 
     var isLoadingFileList = false;
-    function getFileList(callback, parentNode){
+    function getFileList(callback, parentNode, sharedNode){
+
         parentNode = parentNode || rootNode.find('.file_paths');
+        sharedNode = sharedNode ||  rootNode.find('.shared_file_paths');
         if(isLoadingFileList) return;
         isLoadingFileList = true;
 
@@ -45,6 +47,24 @@ var Folders=new function(){
                 isLoadingFileList = false;
                 FileSystem.getUserName();
                 callback(true);
+                FileSystem.getSharedFileList(function(sharedFileList){
+                    sharedNode.empty();
+                    console.log(sharedFileList);
+                    var sharedRoot = {
+                        'path' : '',
+                        'name' : 'shared',
+                        'folders' : {
+                            'shared' : {
+                                'name' : 'shared',
+                                'path' : '',
+                                'folders' : sharedFileList.folders,
+                                'files' : sharedFileList.files,
+                            },
+                        }
+                    }
+                    addSharedFiles(sharedRoot, sharedNode)
+                })
+               
             }, function(status){
                 noServer();
                 callback(false);
@@ -120,7 +140,7 @@ var Folders=new function(){
         function addFiles(fileList, parentNode){
             //testing whether username chenged or not, to change data structure
             level++;
-            parentPath = fileList.path;
+            var parentPath = fileList.path;
             var files = _.sortBy(fileList.files, function(file, name){
                 var fileType = name.split('.').pop()
                 return !isInMode(fileType);
@@ -249,7 +269,7 @@ var Folders=new function(){
             _.each(files, function(file) {
                 var fileName = file.name;
                 var path = file.path;
-                var collapseName = 'collapse'+(path).replace(/(\/|\s)/g, '_');
+                var collapseName = 'sharedcollapse'+(path).replace(/(\/|\s)/g, '_');
                 
                 //collapseName is name without whitespace
                 if(fileName.indexOf('~') > -1){
@@ -281,7 +301,7 @@ var Folders=new function(){
                     function cloneFileName(e){
                         var current = $(e.currentTarget)
                         var div = $('<div>').append(current.text()).addClass('dragging_div file_name');
-                        $('.file_paths').append(div)
+                        parentNode.append(div)
                         return div;
                     }
                     listVar.draggable({
@@ -297,6 +317,130 @@ var Folders=new function(){
 
                         }
                     });
+                        
+                }
+            });
+        }
+        var levelShared = 0;
+        function addSharedFiles(fileList, parentNode){
+            //testing whether username chenged or not, to change data structure
+            levelShared++;
+            var parentPath = fileList.path;
+            var files = _.sortBy(fileList.files, function(file, name){
+                var fileType = name.split('.').pop()
+                return !isInMode(fileType);
+            })
+            var folders = _.sortBy(fileList.folders, function(folder, name){
+                var folder = fileList.folders[name];
+                var maxType = '';
+                var maxValue = 0;
+                _.each(folder.contentType, function(total, type){
+                    if(total > maxValue){
+                        maxValue = total;
+                        maxType = type;
+                    }
+                })
+                return !isInMode(maxType);
+            })
+            _.each(folders, function(folder){
+                var folderName = folder.name;
+                var path = folder.path;
+                var collapseName = 'shared_collapse'+(path).replace(/(\/|\s)/g, '_');
+                var totalPath = path;
+                if(levelShared==1){
+                    //we are in root folder, so we need to ignore username
+                    name = '';
+                    totalPath = '';
+                }
+                    //collapser area will hold the folder name and will 
+                    //allow user to hide and expand folderContents
+                    var totalPath =  path;
+                    
+                    var folderContentsDiv = addDiv('folder_contents shared_folder_contents')
+                        .attr({
+                            'data-path' : totalPath,
+                        });
+                    var collapser = $('<li>').addClass('folder_name shared_folder_name')
+                        .attr({
+                            'data-toggle':'collapse',
+                            'href':'#'+collapseName,
+                            'data-path': totalPath,
+                        });
+                    if(levelShared == 1)
+                        collapser.addClass('shared_root_folder_name');
+                    folderContentsDiv.append(collapser);
+                    //add folder name and the arrow
+                    var arrow = $('<i>').addClass("icon-chevron-down pull-left open_indicator").addClass(collapseName)
+                        .css('height', 16);
+                    collapser.append(arrow).append($('<span>').text(folderName));
+
+                    collapser.on('click', function(){
+                        subListUL.collapse('toggle');
+                        console.log('toggle');
+                    });
+
+                    if(collapsedFolders[collapseName] === undefined){
+                        collapsedFolders[collapseName] = levelShared > 1;
+                    }
+
+                    //the folder contents sublist, will hold all files and subfolders
+                    var subListUL=$('<ul>').addClass('collapse').attr('id', collapseName);
+                    //adding the class in will expand/collapse the folder according to user preference/
+                    if(!collapsedFolders[collapseName]){
+                        subListUL.addClass('in');
+                    } else {
+                        arrow.toggleClass('icon-chevron-down icon-chevron-right');
+                    }
+
+                    //when it is not collaped, change the arrow icon, mark the state
+                    subListUL.on('show', function(e) {
+                        arrow.toggleClass('icon-chevron-down icon-chevron-right');
+                        collapsedFolders[$(e.currentTarget).attr('id')] = false;
+                        updatePrefs();
+                        e.stopPropagation();
+                    });
+
+                    //when it is collapsed, change the arrow icon, mark the state
+                    subListUL.on('hide', function(e){
+                        arrow.toggleClass('icon-chevron-down icon-chevron-right');
+                        collapsedFolders[$(e.currentTarget).attr('id')] = true;
+                        updatePrefs();
+                        e.stopPropagation();
+                    });
+                    if(Object.keys(folder.folders).length > 0 || Object.keys(folder.files).length > 0){
+                        addSharedFiles(folder, subListUL);
+                    }
+                    else{
+                        //the subfolder has no files inside, it's an empty folder
+                        subListUL.append(addDiv('muted').text('[empty folder]'));
+                    }
+
+                    folderContentsDiv.append(subListUL);
+
+                    parentNode.append(folderContentsDiv);
+
+            });
+            _.each(files, function(file) {
+                var fileName = file.name;
+                var path = file.path;
+                var collapseName = 'collapse'+(path).replace(/(\/|\s)/g, '_');
+                
+                //collapseName is name without whitespace
+                if(fileName.indexOf('~') > -1){
+                    //metadata, ignore
+                    // console.log(name);
+                } else {
+                    //if the name does not have a period, then it is a file and not a folder
+                    var listVar=$('<li>').addClass('file_name shared_file_name')
+                        .attr('data-path', path)
+                        .append($('<span>'+fileName+'</span>'));
+
+                 
+                    listVar.click(function(e){
+                        getFile(path);
+                    });
+                    
+                    parentNode.append(listVar);
                         
                 }
             });
@@ -660,12 +804,13 @@ var Folders=new function(){
         var buttonDiv = addDiv('button_div');
         addButtons(buttonDiv);
 
-        var sideBarNav = addDiv('sidebar-nav');
+        var sideBarNav = addDiv('sidebar-nav folders_div');
         var filesWrapper = $('<ul>').addClass('file_paths nav nav-list nav-stacked');
+        var sharedFilesWrapper = $('<ul>').addClass('shared_file_paths nav nav-list nav-stacked');
 
-        filesWrapper.height(window.innerHeight - filesWrapper.offset().top);
-        $(window).on('resize',function(){filesWrapper.height(window.innerHeight - filesWrapper.offset().top);})
-        sideBarNav.append(filesWrapper);
+        sideBarNav.height(window.innerHeight - sideBarNav.offset().top);
+        // $(window).on('resize',function(){filesWrapper.height(window.innerHeight - filesWrapper.offset().top);})
+        sideBarNav.append(filesWrapper, sharedFilesWrapper);
         var pref = JSON.parse(localStorage.getItem('6004folderspref'+editMode));
        
         if(pref){

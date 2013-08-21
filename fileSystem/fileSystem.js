@@ -89,6 +89,12 @@ var FileSystem= function(){
             //callback will return with a file object
         }
     }
+    this.getSharedFileList = function(callback, callbackFailed){
+        sendAjaxRequest({name:'/'}, null, 'getSharedFileList', function(data){
+            fileTree = data.data;
+            callback(fileTree);
+        })
+    }
     function makeListOfFiles(currTree){
         
         for(key in currTree.folders){
