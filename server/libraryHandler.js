@@ -361,7 +361,7 @@ var path=require('path');
 						fs.lstat(m_full_path, function(err, stats){
 
 							if(stats.isDirectory()){ //do something else if it's a folder
-								var hide_full_path = path.join(path.dirname(full_path), path.basename(new_path))+'~del';
+								var hide_full_path = path.join(path.dirname(full_path), path.basename(file_path))+'~del';
 								fs.rename(full_path, hide_full_path, function (err){
 									if(err){
 										console.log(hide_full_path + 'failed')
