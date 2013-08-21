@@ -40,13 +40,14 @@ BSim.SchematicView = function(schematic, beta) {
             mStylesheet.deleteRule(0);
         }
         mRules = {};
-    }
+    };
 
     var beta_change_pc = function(pc) {
         mCurrentPC = pc;
         if(!mUpdating) return;
+        var word;
         try {
-            var word = mBeta.readWord(pc);
+            word = mBeta.readWord(pc);
         } catch(e) {
             return;
         }
@@ -130,7 +131,7 @@ BSim.SchematicView = function(schematic, beta) {
         $('.rdw-value').text(BSim.Common.FormatWord(reg_write_value));
         $('.pcsel-out-value').text(BSim.Common.FormatWord(pcsel_out));
         $('.pc-value').text(BSim.Common.FormatWord(pc));
-    }
+    };
 
     var do_alu = function(operation, a, b) {
         switch(operation) {
@@ -169,7 +170,7 @@ BSim.SchematicView = function(schematic, beta) {
             default:
                 console.warn("Unknown ALU operation: " + operation);
                 return 0;
-        };
+        }
     };
 
     var initialise = function() {
@@ -179,8 +180,9 @@ BSim.SchematicView = function(schematic, beta) {
 
 
     initialise();
-};    
-// HACK: This really should use fewer random IDs.
+};
+
+// HACK: This really should use fewer app-specific IDs.
 BSim.SchematicView.Scale = function() {
     var scaleX = $('#schematic-view').width() / 940;
     var scaleY = ($(window).height() - $('#schematic-holder').offset().top - 20) / 600;
@@ -192,4 +194,4 @@ BSim.SchematicView.Scale = function() {
         '-ms-transform': scale_prop,
         'transform': scale_prop
     });
-}
+};

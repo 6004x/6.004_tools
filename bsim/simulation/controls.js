@@ -119,7 +119,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
             mStepButton.enable();
             mResetButton.enable();
         }
-    }
+    };
 
     var handle_undo = function() {
         mBeta.undoCycle();
@@ -136,7 +136,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
             mSchematic.startUpdating();
         }
         BSim.SchematicView.Scale();
-    }
+    };
 
     var initialise = function() {
         mResetButton = new ToolbarButton('icon-fast-backward', handle_reset, 'Reset Simulation');

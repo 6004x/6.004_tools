@@ -20,7 +20,7 @@ BSim.Beta.Memory = function() {
 
     this.reset = function() {
         mMemory = new Uint32Array(mOriginalMemory);
-    }
+    };
 
     this.readWord = function(address) {
         address >>= 2;

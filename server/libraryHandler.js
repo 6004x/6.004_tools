@@ -17,7 +17,7 @@ var path=require('path');
 		var query = String(postData.query);
 		var fileObj = {};
 		var otherFileObj = {};
-		//since qs only does up to one level of objects, we need to add another level
+		//since querystring only does up to one level of objects, we need to add another level
 		//for fileObj and otherFileObj
 		for(var key in postData){
 			if(key.indexOf('fileObj') !== -1){
@@ -34,21 +34,26 @@ var path=require('path');
 		var fileData = fileObj.data;
 
 		if(user){
-			m_user_path = path.join(lib_path, user);
-			m_shared_path = path.join(root_path, 'shared')
-			m_full_path = path.join(m_user_path, m_file_path);
-			m_shared_full_path = path.join(m_shared_path, m_file_path);
+			m_user_path = path.join(lib_path, user);//user path in libraries
+			m_shared_path = path.join(root_path, 'shared') //shared folder outside of user libraries
+			m_full_path = path.join(m_user_path, m_file_path); //full path of file/folder we are accessing
+			m_shared_full_path = path.join(m_shared_path, m_file_path); //path of shared file/folder we *might* be accessing
 			console.log(m_user_path)
 		}
-		if(!fs.existsSync(m_user_path))
+
+		if(!fs.existsSync(m_user_path)) //user doesn't have a library yet...
 			create_user_path()
+
 		console.log(user + ' wants ' + query);
+
 		var full_dir_name = path.dirname(m_full_path);
 		var user_dir_name = path.dirname(m_file_path);
 		var file_name = path.basename(m_file_path);
 
+
 		fs.exists(m_full_path, function(exists){
 			try{
+				// do the funcion in the query after checking if it exists
 				functions[query](exists);
 			} catch(e) {
 				errorResponse(e);
@@ -64,17 +69,9 @@ var path=require('path');
 
 				if (!exists) {
 					// it's not in user's directory, try shared directory
-					fs.exists(m_shared_full_path,function(exists) {
-						if (exists){
-							fs.readFile(shared_full_path, 'utf8', function(err,data){
-								if(err){
-									errorResponse(err)
-								} else {
-									console.log('reading shared file ' + data.name)
-									saveFile(m_full_path, m_file_path, fileObj);
-									// console.log('and saving to the user folder')
-								}
-							});
+					fs.exists(m_shared_full_path,function(shared_exists) {
+						if (shared_exists){
+							sendShared(m_shared_full_path, m_file_path)
 						}
 						else {
 						// library not found, send empty one
@@ -85,28 +82,38 @@ var path=require('path');
 				else{
 					console.log('sendFile');
 					fs.lstat(m_full_path, function(err, stats){
-						if(stats.isDirectory()){
+						if(stats.isDirectory()){ //assuring that it is a file
 							errorResponse('the file is a folder, oops for you')
 						} else {
 							getAutoSave(m_full_path, m_file_path, function(asv_data){
 								getMetaData(m_full_path, function(metadata){
 									var saveAndBackup = {}
+									//assuring autosave is newer than the file in order to send it back
+
 									if(asv_data && metadata.autosaveTime > metadata.time){
 										console.log(metadata);
 										saveAndBackup.autosave = asv_data;
 									}
-									// getBackup(m_full_path, m_file_path, function(bak_data){
-									// 	if(bak_data){
-									// 		saveAndBackup.backup = bak_data;
-									// 	}
+									
 										sendFile(m_full_path, m_file_path, saveAndBackup);
-									// });
+									
 								});
 							});
 						}
 					})
 
 				}
+			},
+			getShared : function(exists){
+				fs.exists(m_shared_full_path,function(shared_exists) {
+						if (shared_exists){
+							sendShared(m_shared_full_path, m_file_path);
+						}
+						else {
+						// library not found, send empty one
+							errorResponse('could not find the file');
+						}
+					});
 			},
 			getFileList : function(exists){
 				console.log('file path is '+ m_full_path);
@@ -193,7 +200,7 @@ var path=require('path');
 			},
 			renameFile : function(exists){
 				if(exists){
-					rename(m_full_path, m_file_path, otherFileObj.name);
+					renameFile(m_full_path, m_file_path, otherFileObj.name);
 				} else {
 					errorResponse(m_file_path + ' does not exist')
 				}
@@ -339,38 +346,57 @@ var path=require('path');
 		}
 		function hide(full_path, file_path){
 			var hide_path = full_path + '~del';
-			console.log('hiding '+hide_path);
 			fs.exists(hide_path, function(exists){
-				
 				if(exists){
 					//TODO: what should we do in case we delete a file/folder twice
 					fs.unlink(hide_path, renameToHide)
 					console.log('exists');
-				}
-				else
+				} else {
 					renameToHide();
+				}
 				function renameToHide(err){
 					if(err)
-						errorResponse(err)
+								errorResponse(err)
 					else{
-						fs.rename(full_path, hide_path, function (err) {
-							if (err) {
-								errorResponse(err + ' file could not be renamed');
-								return;
+						fs.lstat(m_full_path, function(err, stats){
+
+							if(stats.isDirectory()){ //do something else if it's a folder
+								var hide_full_path = path.join(path.dirname(full_path), path.basename(file_path))+'~del';
+								fs.rename(full_path, hide_full_path, function (err){
+									if(err){
+										console.log(hide_full_path + 'failed')
+										errorResponse(err)
+									} else {
+										console.log(hide_full_path)
+										sendJSON({
+											status:'success',
+											name:file_path,
+										})
+									}
+
+								})
 							}
 							else{
-								console.log(path.sep+'del~'+path.basename(full_path));
-								sendJSON({
-									status:'success',
-									name:file_path,
+								fs.rename(full_path, hide_path, function (err) {
+									if (err) {
+										console.log(hide_path = 'failed')
+										errorResponse(err + ' file could not be renamed');
+									}
+									else{
+										console.log(hide_path);
+										sendJSON({
+											status:'success',
+											name:file_path,
+										});
+									}
 								});
 							}
-						});
+						})
 					}
 				}
-			})
+			});
 		}
-		function rename(full_path, file_path, new_path){
+		function renameFile(full_path, file_path, new_path){
 			var new_full_path = path.join(path.dirname(full_path), path.basename(new_path));
 			console.log('renaming to ' + new_full_path)
 			fs.exists(new_full_path, function(exists){
@@ -382,7 +408,6 @@ var path=require('path');
 					fs.rename(full_path, new_full_path, function (err) {
 						if (err) {
 							errorResponse(err + ' file could not be renamed');
-							return;
 						}
 						else{
 							console.log(path.join(path.dirname(full_path), path.basename(new_path)));
@@ -428,6 +453,28 @@ var path=require('path');
 					callback(data);
 				}
 			});
+		}
+		function renameBackup(full_path, new_full_path, callback){
+			var bak_full_path = full_path + '~bak';
+			var new_bak_full_path = new_full_path = '~bak';
+			fs.exists(bak_full_path, function(exists){
+				if(exists){
+					fs.rename(bak_full_path, new_bak_full_path, function(err){
+
+					})
+				} else {
+					//no need to rename
+					callback(true);
+				}
+			})
+		}
+		function renameAutoSave(full_path, callback){
+			var asv_full_path = full_path + '~asv';
+			var new_asv_full_path = new_full_path = '~asv';
+		}
+		function renameMetadata(full_path, callback){
+			var met_full_path = full_path + '~met';
+			var new_met_full_path = new_full_path = '~met';
 		}
 		function sendAutoSave(full_path, file_path){
 			getAutoSave(full_path, file_path, function(){
@@ -505,6 +552,23 @@ var path=require('path');
 				}			
 			})
 		}
+		function sendShared(shared_path, file_path){
+			console.log('sending shared '+ shared_path)
+			getMetaData(shared_path, function(metadata){
+				fs.readFile(shared_path, 'utf8', function(err, data){
+					if(err)
+						errorResponse(err)
+					else {
+						metadata.name = file_path;
+						metadata.shared = true;
+						metadata.data = data;
+						metadata.status = 'success';
+						metadata.type = 'file';
+						sendJSON(metadata);
+					}
+				})
+			}, true)
+		}
 		function writeMetaData(full_path, metadata){
 			var met_full_path = full_path + '~met';
 			var parsedMetadata = {};
@@ -518,18 +582,23 @@ var path=require('path');
 
 			})
 		}
-		function getMetaData(full_path, callback){
+		function getMetaData(full_path, callback, shared){
 			var met_full_path = full_path + '~met';
 			fs.readFile(met_full_path, 'utf8', function(err, data){
 				if(err){
 					//no metadata file
-					fs.writeFile(met_full_path, '{}', 'utf8', function(err, data){
-						if (err){
-							errorResponse(err)
-						} else {
-							callback({});
-						}
-					})
+					if(!shared){
+						fs.writeFile(met_full_path, '{}', 'utf8', function(err, data){
+							if (err){ 
+								//abort file transfer, tell user that there was an error
+								errorResponse(err)
+							} else {
+								callback({});
+							}
+						});
+					} else {
+						callback({});
+					}
 				}
 				else {
                     var object_data = {};

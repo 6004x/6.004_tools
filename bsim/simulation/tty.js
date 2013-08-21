@@ -65,7 +65,7 @@ BSim.TTY = function(container, beta) {
 
         mTextHolder.blur(function(e) {
             mHasFocus = false;
-        })
+        });
     };
 
     initialise();

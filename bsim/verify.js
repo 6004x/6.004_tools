@@ -36,7 +36,7 @@ BSim.TextVerifier = function(beta, checkoff) {
 
     this.checkoff = function() {
         return mCheckoff;
-    }
+    };
 };
 
 BSim.MemoryVerifier = function(beta, checkoff) {
@@ -55,13 +55,13 @@ BSim.MemoryVerifier = function(beta, checkoff) {
             // if(!_.has(mAddresses, address)) continue;
             var value = mAddresses[address];
             if(mBeta.readWord(address) != value) {
-                mMessage = "<p><strong>Checkoff failed.</strong></p><table><tr><td>Memory location:</td><td><code>0x" + BSim.Common.FormatWord(parseInt(address,10)) 
-                + "</code></td></tr><tr><td>Expected value:</td><td><code>0x" + BSim.Common.FormatWord(value) 
-                + "</code></td></tr><tr><td>Actual value:</td><td><code>0x" + BSim.Common.FormatWord(mBeta.readWord(address))
-                + "</code></td></tr></table>";
+                mMessage = "<p><strong>Checkoff failed.</strong></p><table><tr><td>Memory location:</td><td><code>0x" + BSim.Common.FormatWord(parseInt(address,10)) +
+                "</code></td></tr><tr><td>Expected value:</td><td><code>0x" + BSim.Common.FormatWord(value) +
+                "</code></td></tr><tr><td>Actual value:</td><td><code>0x" + BSim.Common.FormatWord(mBeta.readWord(address)) +
+                "</code></td></tr></table>";
                 return false;
             }
-        };
+        }
         mMessage = null;
         return true;
     };
@@ -72,7 +72,7 @@ BSim.MemoryVerifier = function(beta, checkoff) {
 
     this.checkoff = function() {
         return mCheckoff;
-    }
+    };
 };
 
 BSim.SubmitVerification = function(beta, editor, username, password, collaboration, callback) {

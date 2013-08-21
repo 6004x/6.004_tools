@@ -71,7 +71,7 @@ BSim.Beta.Opcodes = {};
                     pcsel: 0,
                     asel: 0,
                     wasel: 0
-                }
+                };
             }
         }
         var signals = ['alufn','werf','bsel','wdsel','wr','ra2sel','pcsel','asel','wasel'];

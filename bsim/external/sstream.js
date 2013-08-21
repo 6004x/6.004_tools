@@ -25,7 +25,7 @@ StringStream.prototype = {
     line_number: function() { return this.fstream.line_number; },
     file: function() { return this.fstream.file; },
     eol: function() {return this.pos >= this.string.length;},
-    sol: function() {return this.pos == 0;},
+    sol: function() {return this.pos === 0;},
     peek: function() {return this.string.charAt(this.pos) || undefined;},
     next: function() {
         if (this.pos < this.string.length)
@@ -33,8 +33,9 @@ StringStream.prototype = {
     },
     eat: function(match) {
         var ch = this.string.charAt(this.pos);
-        if (typeof match == "string") var ok = ch == match;
-        else var ok = ch && (match.test ? match.test(ch) : match(ch));
+        var ok;
+        if (typeof match == "string") ok = ch == match;
+        else ok = ch && (match.test ? match.test(ch) : match(ch));
         if (ok) {++this.pos; return ch;}
     },
     eatWhile: function(match) {
@@ -76,7 +77,7 @@ function FileStream(string, filename) {
     this.line_number = 0;
     this.file = filename;
     this.lines = string.split("\n");
-};
+}
 FileStream.prototype = {
     line: function() {
         return this.lines[this.line_number++];
