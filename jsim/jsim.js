@@ -47,14 +47,14 @@ $(function() {
                                 );
     
     $('#results').data("current",null);
-
-    // Make an editor
-    var mode = 'jsim';
-    var editor = new Editor('#editor', mode);
     
     FileSystem.setup('https://6004.mattpf.net:6004/');
 //    FileSystem.setup('https://localhost:6004');
     Folders.setup('#filetree', editor, mode);
+
+    // Make an editor
+    var mode = 'jsim';
+    var editor = new Editor('#editor', mode);
     
     
     function dls(){

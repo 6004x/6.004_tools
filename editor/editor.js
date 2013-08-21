@@ -208,6 +208,7 @@ var Editor = function(container, mode) {
 
         // Stash these away somewhere.
         mOpenDocuments[filename] = doc;
+        store_tabs();
         // If we know how tall we should be, arrange to make sure everything still fits in that space.
         if(mExpectedHeight) self.setHeight(mExpectedHeight);
         // HACK: make sure something understands our window size.
@@ -273,8 +274,8 @@ var Editor = function(container, mode) {
         if(!doc.cm.isClean(doc.generation) && !force) {
             var dialog = new ModalDialog();
             dialog.setTitle("Unsaved document");
-            dialog.setContent("<p><strong>Do you want to save the changes you made to " + doc.name + "?</strong></p>"
-                + "<p>Your changes will be lost if you don't save them.</p>");
+            dialog.setContent("<p><strong>Do you want to save the changes you made to " + doc.name + "?</strong></p>" +
+                "<p>Your changes will be lost if you don't save them.</p>");
             dialog.addButton("Don't save", function() {
                 closeTab(doc, true);
                 dialog.dismiss();
@@ -297,12 +298,18 @@ var Editor = function(container, mode) {
             var new_doc = _.find(_.values(mOpenDocuments), function(e) { return e.tab[0] == sibling[0];});
             if(new_doc) {
                 focusTab(new_doc); // Focus the document, assuming we found it.
+            } else {
+                mRestoreAutosaveButton.hide();
             }
+        } else {
+            mRestoreAutosaveButton.hide();
         }
         // Now get rid of this one.
         delete mOpenDocuments[doc.name];
         doc.el.remove();
         doc.tab.remove();
+
+        store_tabs();
     };
 
     var create_error_widget = function(message) {
@@ -455,6 +462,9 @@ var Editor = function(container, mode) {
 
             Editor.IsSetUp = true;
         }
+
+        // Load any prior tabs we have.
+        restore_tabs();
     };
 
     var do_save = function(document) {
@@ -481,7 +491,7 @@ var Editor = function(container, mode) {
             document.isAutosaving = false;
             console.warn("Autosave failed.");
         });
-    }
+    };
 
     var handle_page_unload = function() {
         for(var name in mOpenDocuments) {
@@ -491,6 +501,18 @@ var Editor = function(container, mode) {
                 return "You have unsaved files. If you leave the page you will lose your unsaved work.";
             }
         }
+    };
+
+    var store_tabs = function() {
+        localStorage['6004_' + mSyntaxMode + '_tabs'] = JSON.stringify(self.filenames());
+    };
+
+    var restore_tabs = function() {
+        var filenames = localStorage['6004_' + mSyntaxMode + '_tabs'];
+        if(!filenames) return; // Default state
+        filenames = JSON.parse(filenames);
+        console.log(filenames);
+        _.each(filenames, function(f) { self.openFile(f, false); });
     };
 
     initialise();

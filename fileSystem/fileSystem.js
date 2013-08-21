@@ -11,7 +11,7 @@ var FileSystem= function(){
 
     var delimRegExp = /[^<>\$\:\"\|\/\\\?\*]+/g;
     var updated=true;
-    var online=false;
+    var online=true;
 
     /*
         fileTree contains a tree representation of a file list, starting with the rootnode,

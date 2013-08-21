@@ -1,6 +1,5 @@
 var Folders=new function(){
     var rootNode, editor, editorWrapper;
-    var openFiles = [];
     var editMode;
     var fileRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~)/;
     var folderRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~|\.)/;
@@ -11,7 +10,7 @@ var Folders=new function(){
         callback = callback || function(f){return f;};
         getFileList(function(done){
             // $('.tooltip').detach();  
-            callback(done)
+            callback(done);
         }); 
     }
 
@@ -462,9 +461,7 @@ var Folders=new function(){
     }
 
     function updatePrefs(){
-        var openFiles = editor.filenames();
         var object = {
-            openFiles : openFiles,
             collapsedFolders:collapsedFolders,
         }
         localStorage.setItem('6004folderspref'+editMode, JSON.stringify(object))
@@ -816,8 +813,6 @@ var Folders=new function(){
         if(pref){
             if(pref.collapsedFolders)
                 collapsedFolders = pref.collapsedFolders;
-            if(pref.openFiles)
-                openFiles = pref.openFiles;
         }
 
         
@@ -826,12 +821,9 @@ var Folders=new function(){
         rootNode.append(sideBarNav);
 
         refresh(function(status){
-            if(status){
-                _.map(openFiles, getFile);
+            if(!status){
+                console.warn('failed refresh');
             }
-            else
-                console.log('failed refresh');
-            
         });
     }
     return {setup:setup, refresh:refresh};
