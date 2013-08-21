@@ -637,7 +637,9 @@ Parse
     Read connect
     **********************/
     function read_connect(line){
+        console.log("current subckt:",current_subckt);
         var obj = {type:"connect",
+                   ports:[],
                    connections:[],
                    properties:{}};
         for (var i = 1; i < line.length; i += 1){
@@ -645,8 +647,11 @@ Parse
                 throw new CustomError("Node name expected.",line[i]);
             }
             obj.connections.push(line[i].token);
+            obj.ports.push(line[i].token);
         }
-        netlist.push(obj);
+        obj.properties.name = "connect_"+obj.connections.join("_");
+//        netlist.push(obj);
+        current_subckt.devices.push(obj);
     }
     
     /*********************

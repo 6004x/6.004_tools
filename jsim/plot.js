@@ -601,7 +601,8 @@ Graph setup functions
         },
         grid:{
             hoverable:true,
-            autoHighlight:false
+            autoHighlight:false,
+            backgroundColor:"white"
         },
         legend:{
             labelFormatter:legendFormatter,
