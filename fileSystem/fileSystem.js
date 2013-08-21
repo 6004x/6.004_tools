@@ -1,6 +1,5 @@
 var FileSystem= function(){
-    var DEFAULT_SERVER = 'https://localhost:6004';
-    var mServer;
+    var mServer = FILESERVER_HOST;
     var mUsername;
     var self = this;
 
@@ -485,10 +484,6 @@ var FileSystem= function(){
             folderName = folderName.substring(1);
         console.log(allFolders.indexOf(folderName))
         return allFolders.indexOf(folderName) !== -1;
-    }
-    this.setup = function(server){
-
-        mServer = server||DEFAULT_SERVER;
     }
 
     return self;

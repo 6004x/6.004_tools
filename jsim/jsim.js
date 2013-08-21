@@ -47,9 +47,6 @@ $(function() {
                                 );
     
     $('#results').data("current",null);
-    
-    FileSystem.setup('https://6004.mattpf.net:6004/');
-//    FileSystem.setup('https://localhost:6004');
 
     // Make an editor
     var mode = 'jsim';

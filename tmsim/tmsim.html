@@ -4,6 +4,7 @@
         <title>TMSim</title>
         <!-- build:js common.min.js -->
         <!-- This block MUST be identical across bsim, jsim and tmsim. -->
+        <script src="../fileserver_host.js"></script>
         <script src="../libs/jquery.js"></script>
         <script src="../libs/underscore.js"></script>
         <script src="../libs/backbone.js"></script>
@@ -53,8 +54,6 @@
     <script>
     var editor;
     $(document).ready(function(){
-        FileSystem.setup('https://6004.mattpf.net:6004');
-
         var split = new SplitPane('#main_wrapper', ['#folders_div', '#editor_div', '#tmsim_div'])
         split.setPaneWidth(0, 200);
         split.setPaneWidth(1, $(window).width() - 220);

@@ -38,8 +38,6 @@ $(function() {
         }
     });
 
-    // Must be done first.
-    FileSystem.setup('https://6004.mattpf.net:6004/');
     // Make an editor
     var editor = new Editor('#editor', 'uasm');
     // Filesystem tree thing
