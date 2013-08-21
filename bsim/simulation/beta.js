@@ -29,7 +29,7 @@ BSim.Beta = function() {
     var mLastReads = [];
     var mLastWrites = [];
     var mCurrentRegisterReads = [];
-    var mCurrentRegisterWrites = []; 
+    var mCurrentRegisterWrites = [];
 
     // Used for 'step back'
     var mHistory = new Dequeue();
@@ -472,7 +472,7 @@ BSim.Beta = function() {
 
     this.undoLength = function() {
         return mHistory.length();
-    }
+    };
 
     // Runs the program to completion (if it terminates) or until stopped using
     // stop(). Yields to the UI every `quantum` emulated cycles.

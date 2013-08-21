@@ -26,14 +26,14 @@ $(function() {
     });
 
     split.on('resize', function(widths) {
-        if(widths[2] == 0) {
+        if(widths[2] === 0) {
             $('#maximise_editor').addClass('active').siblings().removeClass('active');
-        } else if(widths[0] == 0 && widths[1] == 0) {
+        } else if(widths[0] === 0 && widths[1] === 0) {
             $('#maximise_simulation').addClass('active').siblings().removeClass('active');
         } else {
             $('#split_pane').addClass('active').siblings().removeClass('active');
         }
-        if(widths[1] == 0) {
+        if(widths[1] === 0) {
             editor.blur();
         }
     });
@@ -52,6 +52,7 @@ $(function() {
         editor.clearErrors();
         assembler.assemble(filename, content, function(success, result) {
             if(!success) {
+                PassiveAlert("Assembly failed.", "error");
                 _.each(result, function(error) {
                     if(!_.contains(editor.filenames(), error.file)) {
                         editor.openFile(error.file, true, function(editor_filename, content) {
@@ -72,28 +73,26 @@ $(function() {
                 beta.getMemory().setProtectedRegions(result.protection);
                 if(result.checkoff) {
                     if(result.checkoff.kind == 'tty') {
-                        var verifier = new BSim.TextVerifier(beta, result.checkoff);
-                        beta.setVerifier(verifier);
+                        beta.setVerifier(new BSim.TextVerifier(beta, result.checkoff));
                     } else if(result.checkoff.kind == 'memory') {
-                        var verifier = new BSim.MemoryVerifier(beta, result.checkoff);
-                        beta.setVerifier(verifier);
+                        beta.setVerifier(new BSim.MemoryVerifier(beta, result.checkoff));
                     }
                 } else {
                     beta.setVerifier(null);
                 }
-                if(split.currentState()[2] == 0) {
+                if(split.currentState()[2] === 0) {
                     $('#maximise_simulation').click();
                 }
             }
         });
-    }
+    };
 
     // Add some buttons to it
     editor.addButtonGroup([new ToolbarButton('Assemble', do_assemble, 'Runs your program!')]);
 
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 90); // Set height to window height minus title.
-    }
+    };
     set_height();
     $(window).resize(set_height); // Update the height whenever the browser window changes size.
     split.on('resize', _.throttle(editor.redraw, 50));
@@ -107,7 +106,7 @@ $(function() {
                 holder.css({height: height});
             });
         }
-    }
+    };
 
     var beta = new BSim.Beta(80); // This starting number is basically irrelevant
 

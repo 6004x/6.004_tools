@@ -11,7 +11,7 @@ BSim.DisassembledView = function(container, beta) {
         var decoded = mBeta.decodeInstruction(value);
         var op = BSim.Beta.Opcodes[decoded.opcode];
         var deasm = "illop";
-        if(op) deasm = op.disassemble.call(mBeta, decoded, parseInt(address));
+        if(op) deasm = op.disassemble.call(mBeta, decoded, parseInt(address, 10));
         return deasm;
     };
 

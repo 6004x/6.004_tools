@@ -34,7 +34,7 @@ var BigTable = function(container, width, height, row_height, column_count) {
     this.insertRow = function(data) {
         data.cls = '';
         mData.push(data);
-        mScrollContent.css({height: mRowHeight * mData.length})
+        mScrollContent.css({height: mRowHeight * mData.length});
         redraw(mData.length - 1);
     };
 
@@ -130,7 +130,7 @@ var BigTable = function(container, width, height, row_height, column_count) {
             mTableRows.push(row_cells);
             mContent.append(row);
         }
-    }
+    };
 
     var redraw = function(row) {
         if(mBufferingDraws) return;

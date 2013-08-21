@@ -54,20 +54,19 @@
         case '\\':
             chr = stream.next();
             switch(chr) {
-            case 'b': return '\b'; break;
-            case 'f': return '\f'; break;
-            case 'n': return '\n'; break;
-            case 'r': return '\r'; break;
-            case 't': return '\t'; break;
-            case '"': return '"'; break;
-            case "'": return "'"; break;
-            case '\\': return '\\'; break;
+            case 'b': return '\b';
+            case 'f': return '\f';
+            case 'n': return '\n';
+            case 'r': return '\r';
+            case 't': return '\t';
+            case '"': return '"';
+            case "'": return "'";
+            case '\\': return '\\';
             // Allow octal sequences like \123
             case '0': case '1': case '2': case '3':
             case '4': case '5': case '6': case '7':
                 stream.backUp(1);
                 return readOctalStringEscape(stream);
-                break;
             default:
                 throw new SyntaxError("Unknown escape sequence \\" + chr + ". (if you want a literal backslash, try \\\\)", stream);
             }
@@ -196,7 +195,7 @@
                 throw new SyntaxError("Multi-character char constant; char constants must have exactly one character (for more, try .ascii or .text)", stream);
             }
             return chr.charCodeAt(0);
-        };
+        }
 
 
         return null;
@@ -232,7 +231,7 @@
         this.value = value;
         this.file = file;
         this.line = line;
-    };
+    }
     Assignment.prototype.assemble = function(context, out) {
         // Dot is a special case.
         if(this.name === '.') {
@@ -256,7 +255,7 @@
         this.name = name;
         this.file = file;
         this.line = line;
-    };
+    }
     Label.prototype.assemble = function(context, out) {
         context.symbols[this.name] = context.dot;
         context.labels[this.name] = context.dot;
@@ -268,7 +267,7 @@
         this.args = args;
         this.file = file;
         this.line = line;
-    };
+    }
     // Creates a MacroInvocation. Expects to be given the name of the macro as `token`, and a
     // stream pointing immediately after the macro name 
     // Parses the parenthesised argument list, or throws a SyntaxError if it can't.
@@ -320,7 +319,7 @@
         this.op = op;
         this.file = file;
         this.line = line;
-    };
+    }
     // Returns the result of performing the Operation on a and b (a op b)
     // a and b will be treated as unsigned integers.
     Operation.prototype.operate = function(a, b) {
@@ -355,7 +354,7 @@
         this.value = value;
         this.file = file;
         this.line = line;
-    };
+    }
     UnaryOperation.prototype.evaluate = function(context, strict) {
         var ops = {
             '-': function(a) { return -a; },
@@ -369,7 +368,7 @@
             throw new SyntaxError("Cannot perform unary operation '" + this.op + "'; no function defined.", this.file, this.line);
         }
         return ops[this.op](this.value);
-    }
+    };
 
     // Represents an 'arithmetic expression'. This includes the degenerate cases of either an integer
     // literal or a symbol name with no operations.
@@ -381,7 +380,7 @@
         this.expression = expression;
         this.file = file;
         this.line = line;
-    };
+    }
     Expression.parse = function(stream) {
         var terms = []; // List of terms (which we don't generally evaluate while parsing)
         var want_operation = false; // We alternate between expecting a value and an expression.
@@ -504,7 +503,7 @@
         this.instructions = instructions;
         this.file = file;
         this.line = line;
-    };
+    }
     Macro.prototype.assemble = function(context, out) {
         if(out) return; // Only evalute macro definitions on first parse to avoid redefinition errors.
         if(!_.has(context.macros, this.name)) {
@@ -539,7 +538,7 @@
         this.file = file;
         this.line = line;
         this.instructions = null;
-    };
+    }
     Include.parse = function(stream) {
         var filename = readString(stream);
         return new Include(filename, stream.file(), stream.line_number());
@@ -551,23 +550,23 @@
         _.each(this.instructions, function(instruction) {
             instruction.assemble(context, out);
         });
-    }
+    };
 
     // Represents a .align statement.
     function Align(expression, file, line) {
         this.expression = expression;
         this.file = file;
         this.line = line;
-    };
+    }
     Align.parse = function(stream) {
         var expression = Expression.parse(stream);
         return new Align(expression, stream.file(), stream.line_number());
-    }
+    };
     Align.prototype.assemble = function(context, out) {
         var align = this.expression ? this.expression.evaluate(context, true) : 4;
         if(context.dot % align === 0) return;
         context.dot = context.dot + (align - (context.dot % align));
-    }
+    };
 
     // Represnts both .ascii (null_terminated = false) and .text (null_terminated = true)
     function AssemblyString(text, null_terminated, file, line) {
@@ -575,7 +574,7 @@
         this.null_terminated = null_terminated;
         this.file = file;
         this.line = line;
-    };
+    }
     AssemblyString.prototype.assemble = function(context, out) {
         if(out) {
             for(var i = 0; i < this.text.length; ++i) {
@@ -599,10 +598,10 @@
     function Breakpoint(file, line) {
         this.file = file;
         this.line = line;
-    };
+    }
     Breakpoint.prototype.assemble = function(context, out) {
         if(out) context.breakpoints.push(context.dot);
-    }
+    };
 
     // Represents .protect
     var Protect = function(file, line) {
@@ -616,7 +615,7 @@
                 context.protection.push({start: context.dot, end: Infinity});
             }
         }
-    }
+    };
 
     // Represents .unprotect
     var Unprotect = function(file, line) {
@@ -630,7 +629,7 @@
                 last_range.end = context.dot;
             }
         }
-    }
+    };
 
     // Represents .options
     var Options = function(options, file, line) {
@@ -684,7 +683,6 @@
                     break;
                 default:
                     throw new SyntaxError("Unrecognised option '" + option + "'", stream);
-                    break;
             }
         }
         return new Options(options, stream.file(), stream.line_number());
@@ -747,7 +745,7 @@
             context.checkoff.running_checksum = 36038;
             context.checkoff.addresses = {};
         }
-    }
+    };
 
     var Verify = function(address, words, checksum, file, line) {
         this.address = address;
@@ -758,7 +756,7 @@
     };
     Verify.parse = function(stream) {
         eatSpace(stream);
-        var address = readNumber(stream, false)
+        var address = readNumber(stream, false);
         if(address === null) {
             throw new SyntaxError("Expected address", stream);
         }
@@ -859,11 +857,12 @@
                 }, function() {
                     error_callback([new SyntaxError("File not found: " + include.filename, include.file, include.line)]);
                 });
-            }
+            };
 
+            var our_syntax;
             do {
                 try {
-                    var our_syntax = parse(stream, false, insert_include);
+                    our_syntax = parse(stream, false, insert_include);
                 } catch(e) {
                     if(e instanceof SyntaxError) {
                         errors.push(e);
@@ -881,7 +880,7 @@
                     completion_callback(our_syntax);
                 }
             }
-        }
+        };
 
         // Parses a file (or a macro, if is_macro is true)
         var parse = function(stream, is_macro, include_callback) {
@@ -1008,8 +1007,8 @@
                         if(stream.peek() == '=') {
                             
                             stream.next();
-                            var expression = Expression.parse(stream);
-                            var assignment = new Assignment(token, expression, stream.file(), stream.line_number());
+                            var assigned_expression = Expression.parse(stream);
+                            var assignment = new Assignment(token, assigned_expression, stream.file(), stream.line_number());
                             fileContent.push(assignment);
                             continue;
                         }
@@ -1026,7 +1025,7 @@
                     }
 
                     // This is an expression of some form
-                    var expression = Expression.parse(stream)
+                    var expression = Expression.parse(stream);
                     fileContent.push(expression);
 
                     if(expression === null) {
@@ -1103,8 +1102,9 @@
             var can_succeed = true;
 
             parse_file(file, content, function(syntax) {
+                var code;
                 try {
-                    var code = run_assembly(syntax);
+                    code = run_assembly(syntax);
                 } catch(e) {
                     if(e instanceof SyntaxError) {
                         errors.push(e);

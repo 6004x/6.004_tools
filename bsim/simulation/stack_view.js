@@ -103,7 +103,7 @@ BSim.StackView = function(container, beta) {
             beta_change_register(register, registers[register]);
         }
         mTable.endBatch();
-    }
+    };
 
     var beta_write_word = function(address) {
         handle_beta_thing(address, 'last-write', 'a', mWriteHighlight);
@@ -120,7 +120,7 @@ BSim.StackView = function(container, beta) {
             mTable.removeRowClass(list[i], cls_prefix + (i));
             if(i <= 3) mTable.addRowClass(list[i], cls_prefix + (i+1));
             else mTable.removeRowClass(list[i], cls);
-        };
+        }
         if(list.length > 5) list.pop();
 
         list.unshift(row);
@@ -145,9 +145,9 @@ BSim.StackView = function(container, beta) {
         mTable.startBatch();
         for (var i = mCurrentLabelRows.length - 1; i >= 0; i--) {
             mCurrentLabelRows[i].updateCell(mCurrentLabelRows[i], 1, BSim.Common.FormatWord(mCurrentLabelRows[i]*4, 4));
-        };
+        }
         for(var address in labels) {
-            var address = parseInt(address, 10);
+            address = parseInt(address, 10);
             mTable.updateCell(address / 4, 1, labels[address]);
         }
         mTable.endBatch();

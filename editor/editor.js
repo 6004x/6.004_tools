@@ -464,6 +464,7 @@ var Editor = function(container, mode) {
             // Mark the file as clean.
             document.generation = document.cm.changeGeneration();
             document.autosaveGeneration = document.generation;
+            clear_autosave(document);
             handle_change_tab_icon(document);
         });
     };

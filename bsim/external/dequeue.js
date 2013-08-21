@@ -5,7 +5,7 @@ var Dequeue = function() {
     this._head._next = this._tail;
     this._tail._prev = this._head;
     this._length = 0;
-}
+};
 
 Dequeue.Node = function(data) {
     this._data = data;
@@ -61,4 +61,4 @@ Dequeue.prototype.shift = function() {
 
 Dequeue.prototype.length = function() {
     return this._length;
-}
+};

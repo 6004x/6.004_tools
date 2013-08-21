@@ -78,7 +78,7 @@ var testc = function(a, literal, opcode) {
     beta.writeRegister(2, a);
     BSim.Beta.Opcodes[opcode].exec.call(beta, 2, literal, 9);
     return beta.readRegister(9);
-}
+};
 
 var ops = BSim.Beta.Opcodes;
 
@@ -443,7 +443,7 @@ test("ST exec", function() {
     equal(beta.readWord(0x8), 0xDEADBEEF, "Setting by absolute address works");
 
     beta.writeRegister(1, 0x8);
-    beta.writeRegister(3, 0xFACADE)
+    beta.writeRegister(3, 0xFACADE);
     st.call(beta, 1, 0x8, 3);
     equal(beta.readWord(0x10), 0xFACADE, "Setting by relative address works");
 });

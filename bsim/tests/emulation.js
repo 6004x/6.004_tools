@@ -235,7 +235,7 @@ test("Illegal instruction handling", function() {
 
 test("Clock interrupts", function() {
     var beta = new BSim.Beta();
-    beta.loadBytes([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    beta.loadBytes([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     
     beta.setOption('clock', true);
     ok(beta.isOptionSet('clock'), "Clock interrupts can be enabled.");
