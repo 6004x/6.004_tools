@@ -263,12 +263,12 @@ var Folders=new function(){
 
                     var deleteButton = buildListButton('icon-trash', deleteFile, 'file_button', 'Delete');
                     var renameButton = buildListButton('icon-pencil', renameFile, 'file_button', 'Rename');
-                    var downloadButton = buildListButton('icon-download-alt', null, 'file_button', 'Download');
+                    // var downloadButton = buildListButton('icon-download-alt', null, 'file_button', 'Download');
 
                     var fileButtonDiv = addDiv('file_button_div');
 
                     var timeOut;
-                    fileButtonDiv.append(downloadButton, renameButton, deleteButton);
+                    fileButtonDiv.append(renameButton, deleteButton);
 
                     listVar.append(fileButtonDiv);
 

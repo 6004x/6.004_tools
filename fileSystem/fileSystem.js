@@ -199,7 +199,8 @@ var FileSystem= function(){
                 if(status == 'success'){
                     console.log(data)
                     callback(data);
-                    writeFileToTree(data.name, data.data, true);
+                    if(!data.shared)
+                        writeFileToTree(data.name, data.data, true);
                 }
             }, callbackFailed);
         }else if (file){
@@ -411,6 +412,9 @@ var FileSystem= function(){
     }
     this.getBackup = function(fileName, callback, callbackFailed){
         sendAjaxRequest({name:fileName, time: (new Date()).getTime()}, null, 'getBackup', callback, callbackFailed)
+    }
+    this.getSharedFile = function(fileName, callback, callbackFailed){
+        sendAjaxRequest({name:fileName, time: (new Date()).getTime()}, null, 'getShared', callback, callbackFailed)
     }
     function sendAjaxRequest(fileObj, otherFileObj, query, callbackFunction, failFunction){
         // console.log(failFunction);
