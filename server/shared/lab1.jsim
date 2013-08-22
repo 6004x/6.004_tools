@@ -1,0 +1,23 @@
+.include "/lab1checkoff.jsim"
+.include "/nominal.jsim"
+
+// inverter
+.subckt inv a z
+N1 z a gnd w=16
+P1 z a vdd w=16
+.ends
+
+// not F = C + AB
+.subckt notF a b c x
+Pa vdd a n1
+Pb vdd b n1
+Pc n1 c x
+Nc x c gnd
+Na x a n2
+Nb n2 b gnd
+.ends
+
+.subckt F a b c z
+Xnf notF a b c x
+Xinv inv x z
+.ends
