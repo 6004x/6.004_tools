@@ -266,9 +266,9 @@ var FileSystem= function(){
                                 // console.log(pathSeg)
                                 if(pathSeg !== '.' && pathSeg !== '..')
                                     newPathArray.push(pathSeg)
-                                else if(pathSeg === '.')
+                                else if(pathSeg === '.') {
                                     // console.log('. detected')
-                                else if(pathSeg == '..'){
+                                } else if(pathSeg == '..'){
                                     // console.log('.. is not allowed here, sorry');
                                 } else
                                     break;
