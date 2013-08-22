@@ -1,1 +1,1 @@
-var FILESERVER_HOST = 'https://6004.mattpf.net:6004/';
+var FILESERVER_HOST = 'https://6004.mit.edu:6004/';
