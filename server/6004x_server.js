@@ -42,7 +42,6 @@ var options = {
     ca: [fs.readFileSync('./mit-client.crt')],
     requestCert: true,
     rejectUnauthorized: true,
-    'Access-Control-Allow-Origin': '*',
 };
 
 var server = https.createServer(options, app).listen(6004, function() {
@@ -124,30 +123,22 @@ var libraryHandler = function(request, response, postData) {
                     }
                 });
             } else {
-            //console.log('sendFile');
                 fs.lstat(m_full_path, function(err, stats){
                     if(stats.isDirectory()){ //assuring that it is a file
                         errorResponse('the file is a folder, oops for you');
                     } else {
                         getAutoSave(m_full_path, m_file_path, function(asv_data){
-                            getMetaData(m_full_path, function(metadata) {
-                                var saveAndBackup = {};
-                                //assuring autosave is newer than the file in order to send it back
-
-                                if(asv_data && metadata.autosaveTime > metadata.time){
-                                    //console.log(metadata);
-                                    saveAndBackup.autosave = asv_data;
-                                }
-                                            
-                                sendFile(m_full_path, m_file_path, saveAndBackup);
-                                            
-                            });
+                            var saveAndBackup = {};
+                            if(asv_data){
+                                saveAndBackup.autosave = asv_data;
+                            }
+                            sendFile(m_full_path, m_file_path, saveAndBackup);
                         });
                     }
                 });
             }
         },
-        getShared: function(exists){
+        getShared: function(exists) {
             fs.exists(m_shared_full_path,function(shared_exists) {
                 if (shared_exists){
                     sendShared(m_shared_full_path, m_file_path);
@@ -188,12 +179,10 @@ var libraryHandler = function(request, response, postData) {
                     if(!exists) {
                         //if directory exists, and file doesn't exist, just make the file. 
                         saveFile(m_full_path, m_file_path, fileObj);
-                        makeAutoSave(m_full_path, m_file_path, fileObj);
                     } else {
                         //if the file exists, rename to a backup
                         makeBackup(m_full_path, m_file_path, fileObj, function(data){
                             saveFile(m_full_path, m_file_path, fileObj);
-                            makeAutoSave(m_full_path, m_file_path, fileObj);
                         });
                     }
                 } else {
@@ -370,25 +359,26 @@ var libraryHandler = function(request, response, postData) {
     }
 
     function saveFile(full_path, file_path, fileObj) {
-        fs.writeFile(full_path, fileObj.data, 'utf8', function (err) {
-            if (err) {
-                //console.log(err);
-                errorResponse({
-                    name: file_path,
-                    status: 'failed',
-                    data: fileObj.data,
-                    error: err,
-                });
-            } else {
-                writeMetaData(full_path, fileObj);
-                //console.log(file_path+ ' saved!');
-                sendJSON({
-                    name: file_path,
-                    status: 'success',
-                    data: fileObj.data,
-                    type: 'file',
-                });
-            }
+        fs.rename(full_path, full_path + '~bak', function() {
+            fs.writeFile(full_path, fileObj.data, 'utf8', function (err) {
+                if (err) {
+                    //console.log(err);
+                    errorResponse({
+                        name: file_path,
+                        status: 'failed',
+                        data: fileObj.data,
+                        error: err,
+                    });
+                } else {
+                    sendJSON({
+                        name: file_path,
+                        status: 'success',
+                        data: fileObj.data,
+                        type: 'file',
+                    });
+                }
+                fs.unlink(full_path + '~asv', function() {});
+            });
         });
     }
 
@@ -464,21 +454,9 @@ var libraryHandler = function(request, response, postData) {
 
     function makeAutoSave(full_path, file_path, fileObj){
         var asv_full_path = full_path+'~asv';
-        getMetaData(full_path, function(metadata) {
-            if(!metadata.autosaveTime) {
-                metadata.autosaveTime = fileObj.time;
-            }
-            if(metadata.autosaveTime <= fileObj.time) {
-                metadata.autosaveTime = fileObj.time;
-                //console.log(metadata)
-                fs.writeFile(asv_full_path, fileObj.data, 'utf8', function(err) {
-                    if(err) {
-                        //console.log(err)
-                    } else {
-                        writeMetaData(full_path, metadata);
-                        //console.log('autosaved ' + file_path);
-                    }
-                });
+        fs.writeFile(asv_full_path, fileObj.data, 'utf8', function(err) {
+            if(err) {
+                console.warn("Saving failed: " + err);
             }
         });
     }
@@ -496,7 +474,7 @@ var libraryHandler = function(request, response, postData) {
 
     function renameBackup(full_path, new_full_path, callback){
         var bak_full_path = full_path + '~bak';
-        var new_bak_full_path = new_full_path = '~bak';
+        var new_bak_full_path = new_full_path + '~bak';
         fs.exists(bak_full_path, function(exists){
             if(exists){
                 fs.rename(bak_full_path, new_bak_full_path, function(err){
@@ -509,17 +487,12 @@ var libraryHandler = function(request, response, postData) {
         });
     }
 
-    function renameAutoSave(full_path, callback){
+    function renameAutoSave(full_path, callback) {
         var asv_full_path = full_path + '~asv';
-        var new_asv_full_path = new_full_path = '~asv';
+        var new_asv_full_path = new_full_path + '~asv';
     }
 
-    function renameMetadata(full_path, callback){
-        var met_full_path = full_path + '~met';
-        var new_met_full_path = new_full_path = '~met';
-    }
-
-    function sendAutoSave(full_path, file_path){
+    function sendAutoSave(full_path, file_path) {
         getAutoSave(full_path, file_path, function() {
             if(file_path.substring(0, 1) === '/')
                 file_path = file_path.substring(1);
@@ -543,7 +516,6 @@ var libraryHandler = function(request, response, postData) {
                         errorResponse(err);
                     }
                     else {
-                        //console.log('backup ' + file_path);
                         callback(exists);
                     }
                 });
@@ -584,14 +556,6 @@ var libraryHandler = function(request, response, postData) {
                     status: 'success',
                     type: 'file',
                 });
-                /*getMetaData(full_path, function(obj){
-                  obj.name = file_path;
-                  obj.backup = true;
-                  obj.data = data;
-                  obj.status = 'success'
-                  obj.type = 'file';
-                  sendJSON(obj);
-                  })*/
             } else {
                 errorResponse('could not find backup');
             }
@@ -599,64 +563,18 @@ var libraryHandler = function(request, response, postData) {
     }
 
     function sendShared(shared_path, file_path){
-        //console.log('sending shared '+ shared_path)
-        getMetaData(shared_path, function(metadata) {
-            fs.readFile(shared_path, 'utf8', function(err, data){
-                if(err) {
-                    errorResponse(err);
-                } else {
-                    metadata.name = file_path;
-                    metadata.shared = true;
-                    metadata.data = data;
-                    metadata.status = 'success';
-                    metadata.type = 'file';
-                    sendJSON(metadata);
-                }
-            });
-        }, true);
-    }
-
-    function writeMetaData(full_path, metadata) {
-        var met_full_path = full_path + '~met';
-        var parsedMetadata = {};
-        for (var key in metadata){
-            if(key !== 'content' && key !== 'data')
-            parsedMetadata[key] = metadata[key];
-        }
-        fs.writeFile(met_full_path, JSON.stringify(parsedMetadata), 'utf8', function(err){
+        fs.readFile(shared_path, 'utf8', function(err, data){
             if(err) {
                 errorResponse(err);
             } else {
-                // console.log(parsedMetadata + 'saved')
-            }
-        });
-    }
-
-    function getMetaData(full_path, callback, shared) {
-        var met_full_path = full_path + '~met';
-        fs.readFile(met_full_path, 'utf8', function(err, data) {
-            if(err) {
-                //no metadata file
-                if(!shared) {
-                    fs.writeFile(met_full_path, '{}', 'utf8', function(err, data) {
-                        if(err) {
-                            //abort file transfer, tell user that there was an error
-                            errorResponse(err);
-                        } else {
-                            callback({});
-                        }
-                    });
-                } else {
-                callback({});
-                }
-            } else {
-                var object_data = {};
-                try {
-                    object_data = JSON.parse(data);
-                } catch(e) {
-                    //console.log(e);
-                }
-                callback(object_data);
+                var response = {
+                    name: file_path,
+                    shared: true,
+                    data: data,
+                    status: 'success',
+                    type: 'file',
+                };
+                sendJSON(response);
             }
         });
     }
