@@ -13,74 +13,18 @@ Checkoff.testResults performs a checkoff. It calls runVerify, which checks all t
 ***************************************************************************************/
 
 var Checkoff = (function(){
-    /*****************
-    Engineering notation: formats a number in engineering notation
-        --args: -n: value to be formatted
-                -nplaces: the number of decimal places to keep
-                -trim: boolean, defaults to true; if true, removes trailing 0s and decimals
-        --returns: a string representing the value in engineering notation
-    *********************/
-    function engineering_notation(n, nplaces, trim) {
-        
-        if (n === 0) return '0';
-        if (n === undefined) return 'undefined';
-        if (trim === undefined) trim = true;
-    
-        var sign = n < 0 ? -1 : 1;
-        var log10 = Math.log(sign * n) / Math.LN10;
-        var exp = Math.floor(log10 / 3); // powers of 1000
-        var mantissa = sign * Math.pow(10, log10 - 3 * exp);
-    
-        // keep specified number of places following decimal point
-        var mstring = (mantissa + sign * 0.5 * Math.pow(10, - nplaces)).toString();
-        var mlen = mstring.length;
-        var endindex = mstring.indexOf('.');
-        if (endindex != -1) {
-            if (nplaces > 0) {
-                endindex += nplaces + 1;
-                if (endindex > mlen) endindex = mlen;
-                if (trim) {
-                    while (mstring.charAt(endindex - 1) == '0') endindex -= 1;
-                    if (mstring.charAt(endindex - 1) == '.') endindex -= 1;
-                }
-            }
-            if (endindex < mlen) mstring = mstring.substring(0, endindex);
-        }
-    
-        switch (exp) {
-        case -5:
-            return mstring + "f";
-        case -4:
-            return mstring + "p";
-        case -3:
-            return mstring + "n";
-        case -2:
-            return mstring + "u";
-        case -1:
-            return mstring + "m";
-        case 0:
-            return mstring;
-        case 1:
-            return mstring + "K";
-        case 2:
-            return mstring + "M";
-        case 3:
-            return mstring + "G";
-        }
-    
-        // don't have a good suffix, so just print the number
-        return n.toPrecision(nplaces);
-    }
     var mVerify_statements = [];
-    var mCheckoff_statement = null;
+    var mCheckoffStatement = null;
     var mResults = null;
+    var mOptions = null;
+    var mEditor;
     
     /**************************
     Reset: clear the stored results and verify and checkoff statements
     **************************/
     function reset(){
         mVerify_statements = [];
-        mCheckoff_statement = null;
+        mCheckoffStatement = null;
         mResults = null;
     }
     
@@ -96,8 +40,8 @@ var Checkoff = (function(){
     Add a checkoff statement -- called by the parser
     **************************/
     function setCheckoffStatement(checkoff_obj){
-        mCheckoff_statement = checkoff_obj;
-//        console.log("checkoff statement:",mCheckoff_statement);
+        mCheckoffStatement = checkoff_obj;
+//        console.log("checkoff statement:",mCheckoffStatement);
     }
     
     /**************************
@@ -110,8 +54,13 @@ var Checkoff = (function(){
     /************************
     Set results to the given results
     *************************/
-    function setResults(data){
+    function setResults(data, options){
         mResults = data;
+        mOptions = options;
+    }
+    
+    function setEditor(editor){
+        mEditor = editor;
     }
     
     /**************************
@@ -138,7 +87,7 @@ var Checkoff = (function(){
             return;
         }
         
-        if (mCheckoff_statement === null){
+        if (mCheckoffStatement === null){
             failedModal = new FailedModal("No checkoff requested. Did you include the appropriate \
 'labXcheckoff.jsim' file?");
             failedModal.show();
@@ -152,6 +101,9 @@ var Checkoff = (function(){
             passedModal.setTitle("Checkoff Succeeded!");
             passedModal.setText("Verification succeeded!");
             passedModal.addButton("Dismiss",'dismiss');
+            passedModal.addButton("Submit", 
+                                  function(){show_checkoff_form(passedModal)},
+                                  'btn-primary');
             passedModal.show();
         } else {
             if (mistake.verifyError){
@@ -192,6 +144,7 @@ var Checkoff = (function(){
     Run Verify: runs the stored verify statements
     **************************/
     function runVerify(){
+        var checksum = 0;
         for (var v = 0; v < mVerify_statements.length; v += 1){
             var vobj = mVerify_statements[v];
             
@@ -272,6 +225,12 @@ var Checkoff = (function(){
                     expectedVal = vobj.values[i].value;
                 }
                 
+                // checksum: (i+1)*((int)(time*1e12) + (int)expect)
+                checksum += ((i + 1) * (Math.floor(time_steps[i]*1e12) + Math.floor(expectedVal)));
+                console.log("checksum term:",(i+1)*(Math.floor(time_steps[i]*1e12) + Math.floor(expectedVal)));
+//                console.log("i + 1:",i+1);
+                console.log("cumulative checksum:",checksum);
+                    
                 expectedVal = expectedVal.toString(base).split("");
                     
                 var nodeVals = [];
@@ -323,6 +282,8 @@ var Checkoff = (function(){
                 }
             }
         }
+        checksum += 2536038;
+        console.log("expected checksum:",mCheckoffStatement.checksum.value,"actual:",checksum);
         // if there are no mistakes, return null
         return null;
     }
@@ -343,23 +304,145 @@ var Checkoff = (function(){
     V_il = 0.6
     V_ih = 2.7
     **************************/
-    var vil = 0.6;
-    var vih = 2.7;
+//    var vil = 0.6;
+//    var vih = 2.7;
     function logic(number){
+        var vil, vih;
+        if (mOptions.vil) vil = mOptions.vil;
+        else vil = 0.6;
+        if (mOptions.vih) vih = mOptions.vih;
+        else vih = 2.7;
+        
+        
         if (number < vil) return 0;
         else if (number > vih) return 1;
         else return "X";
+    }
+    
+    function complete_checkoff(old){
+        var username = old.inputContent(0);
+        var password = old.inputContent(1);
+        var collaborators = old.inputContent(2);
+        old.dismiss();
+        
+        var url = mCheckoffStatement.server.name;
+        var checksum = mCheckoffStatement.checksum.value;
+        var assignment = mCheckoffStatement.assignment.name;
+        var callback = function(success, text){
+            var dialog = new ModalDialog();
+            if(success) {
+                dialog.setTitle("Checkoff complete");
+                dialog.setContent(text);
+            } else {
+                dialog.setTitle("Checkoff failed");
+                dialog.setContent("There was an error communicating with the server.");
+            }
+            dialog.addButton('Dismiss', 'dismiss');
+            dialog.show();
+        }
+        
+        $.post(url, {
+            username: username,
+            userpassword: password,
+            sender: username, // we can't actually figure this one out
+            pcheckoff:assignment,
+            collaboration: collaborators,
+            checksum: checksum,
+            size: "FIX_ME",
+            figure_of_merit: "FIX_ME",
+            time: "FIX_ME",
+            version: 'JSim3.0.0',
+            circuits: _.map(mEditor.filenames(), function(f) {
+                return '============== source: ' + f + '\n' + mEditor.content(f) + '\n==============\n';
+            }).join('')
+        }).done(function(data) {
+            callback(true, data);
+        }).fail(function() {
+            callback(false);
+        });
+    }
+
+    function show_checkoff_form(old){
+        old.dismiss();
+        var dialog = new ModalDialog();
+        dialog.setTitle("Submit Lab");
+        dialog.inputBox({label: "Username", callback: complete_checkoff});
+        dialog.inputBox({label: "Password", type: 'password', callback: complete_checkoff});
+        dialog.inputBox({label: "Collaborators", callback: complete_checkoff});
+        dialog.addButton("Dismiss", "dismiss");
+        dialog.addButton("Submit", function(){complete_checkoff(dialog)}, 'btn-primary');
+        dialog.show();
+    }
+    
+    /*****************
+    Engineering notation: formats a number in engineering notation
+        --args: -n: value to be formatted
+                -nplaces: the number of decimal places to keep
+                -trim: boolean, defaults to true; if true, removes trailing 0s and decimals
+        --returns: a string representing the value in engineering notation
+    *********************/
+    function engineering_notation(n, nplaces, trim) {
+        
+        if (n === 0) return '0';
+        if (n === undefined) return 'undefined';
+        if (trim === undefined) trim = true;
+    
+        var sign = n < 0 ? -1 : 1;
+        var log10 = Math.log(sign * n) / Math.LN10;
+        var exp = Math.floor(log10 / 3); // powers of 1000
+        var mantissa = sign * Math.pow(10, log10 - 3 * exp);
+    
+        // keep specified number of places following decimal point
+        var mstring = (mantissa + sign * 0.5 * Math.pow(10, - nplaces)).toString();
+        var mlen = mstring.length;
+        var endindex = mstring.indexOf('.');
+        if (endindex != -1) {
+            if (nplaces > 0) {
+                endindex += nplaces + 1;
+                if (endindex > mlen) endindex = mlen;
+                if (trim) {
+                    while (mstring.charAt(endindex - 1) == '0') endindex -= 1;
+                    if (mstring.charAt(endindex - 1) == '.') endindex -= 1;
+                }
+            }
+            if (endindex < mlen) mstring = mstring.substring(0, endindex);
+        }
+    
+        switch (exp) {
+        case -5:
+            return mstring + "f";
+        case -4:
+            return mstring + "p";
+        case -3:
+            return mstring + "n";
+        case -2:
+            return mstring + "u";
+        case -1:
+            return mstring + "m";
+        case 0:
+            return mstring;
+        case 1:
+            return mstring + "K";
+        case 2:
+            return mstring + "M";
+        case 3:
+            return mstring + "G";
+        }
+    
+        // don't have a good suffix, so just print the number
+        return n.toPrecision(nplaces);
     }
     
     /*************************
     Exports
     **************************/
     return {reset:reset,
-            getResults:getResults,
+//            getResults:getResults,
             setResults:setResults,
             testResults:testResults,
             addVerify:addVerify,
             setCheckoffStatement:setCheckoffStatement,
+            setEditor:setEditor
 //            logic:logic
            };
 }());

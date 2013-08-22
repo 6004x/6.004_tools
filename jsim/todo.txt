@@ -9,8 +9,7 @@ involving memory errors.
 Notifications: Matthew implemented a nice tasteful notification system for things such as 'simulation
 successful', which is not integrated into jsim.
 
-Checkoffs: computing logic values for checkoffs uses hard-coded values for vih and vil; it should check
-to see if there are any in the options instead. Nothing is done with the checksum or the checkoff server.
+Checkoffs: checkoff server things should send all the files that were used, not all the open files.
 
 Plots: 
     bugs: zooming and panning sometimes works and sometimes doesn't -- it works on lab 1 but not my test jig for

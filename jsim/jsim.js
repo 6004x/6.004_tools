@@ -109,7 +109,11 @@ $(function() {
         }
     },"Checkoff")]);
     
+    // setup things
     Plot.setup();
+    Checkoff.setEditor(editor);
+    
+    
     var set_height = function() {
         editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
     };

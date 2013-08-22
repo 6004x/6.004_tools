@@ -51,7 +51,7 @@ var Parser = (function(){
         input_string += "\n";
         var line_ext_pattern = /\n+[\t ]*\+/g;
         // newline followed by (whitespace and) a plus
-        var comment1_pattern = /\/\/.*\n/g;
+        var comment1_pattern = /[^:]\/\/.*\n/g;
         var comment2_pattern = /\/\*(.|\n)*?\*\//g;
         // double slash till the end of the line
         // slash-star till star-slash

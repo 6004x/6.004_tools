@@ -96,7 +96,7 @@ var Simulator = (function(){
                 tranProgress.hide();
                 mCurrent_results = results;
 //                $('#results').data("current",results);
-                Checkoff.setResults(mCurrent_results);
+                Checkoff.setResults(mCurrent_results, mOptions);
                 
                 try{
                     prepare_tran_data(plots);
