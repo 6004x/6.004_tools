@@ -1,27 +1,24 @@
-.global vdd gnd
-VDD vdd gnd 3.3v
-
 /* information on how to contact the on-line assignments server.  A checksum
 * is included that is computed from the .verify statements, so don't change
 * those or you won't be able to complete your checkoff!
 */
-.checkoff "6004.mit.edu/currentsemester/6004assignment.doit" "Lab #1" 454352233
+.checkoff "https://6004.mit.edu/currentsemester/6004xassignment.doit" "Lab #1" 456852233
 
 /* a list of expected values for node z.  The first data value (0)
 * is compared against the actual node values at time 99.9ns into the
 * simulation, the second value (0) at time 199.9ns, and so on.
 */
-.verify Z periodic(4.9n,5n)
+.verify Z periodic(99.9n,100n)
 + 0 0 0 1 1 1 1 1
 
-Wtest C B A nrz(0, 3.3, 5n, 0n, .1n, .1n) 
+Wtest C B A nrz(0, 3.3, 100n, 0n, .1n, .1n) 
 + 0b000 0b001 0b010 0b011 0b100 0b101 0b110 0b111
 
 /* instantiate the subcircuit you defined
 */
 Xtest F A B C Z
 
-.tran 40ns
+.tran 800ns
 .plot A
 .plot B
 .plot C
