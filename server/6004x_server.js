@@ -55,7 +55,7 @@ var libraryHandler = function(request, response, postData) {
     //other relevant paths to be instantiated as the user logs in.
     var m_user_path, m_full_path, m_shared_root_path, m_shared_full_path;
 
-    var m_file_path = unescape(url.parse(request.url).pathname);
+    var m_file_path = path.normalize(unescape(url.parse(request.url).pathname));
 
     var user = request.user;
     var query = String(postData.query);
@@ -78,12 +78,13 @@ var libraryHandler = function(request, response, postData) {
     // console.log(fileObj)
     var fileData = fileObj.data;
 
-    if(user){
+    if(user) {
         m_user_path = path.join(lib_path, user); //user path in libraries
         m_shared_root_path = path.join(root_path, 'shared'); //shared folder outside of user libraries
         m_full_path = path.join(m_user_path, m_file_path); //full path of file/folder we are accessing
-        m_shared_full_path = path.join(m_shared_root_path, m_file_path); //path of shared file/folder we *might* be accessing
-        //console.log(m_user_path)
+        if(m_file_path.indexOf('/shared/') === 0) {
+            m_full_path = path.join(m_shared_root_path, m_file_path.substr(8)); // Search inside the shared folder.
+        }
     }
 
     if(!fs.existsSync(m_user_path)) { //user doesn't have a library yet...
@@ -113,15 +114,7 @@ var libraryHandler = function(request, response, postData) {
             //console.log('file path is '+ m_full_path);
 
             if (!exists) {
-                // it's not in user's directory, try shared directory
-                fs.exists(m_shared_full_path,function(shared_exists) {
-                    if (shared_exists) {
-                        sendShared(m_shared_full_path, m_file_path);
-                    } else {
-                        // library not found, send empty one
-                        errorResponse('could not find the file');
-                    }
-                });
+                errorResponse('could not find the file');
             } else {
                 fs.lstat(m_full_path, function(err, stats){
                     if(stats.isDirectory()){ //assuring that it is a file
@@ -138,16 +131,6 @@ var libraryHandler = function(request, response, postData) {
                 });
             }
         },
-        getShared: function(exists) {
-            fs.exists(m_shared_full_path,function(shared_exists) {
-                if (shared_exists){
-                    sendShared(m_shared_full_path, m_file_path);
-                } else {
-                    // library not found, send empty one
-                    errorResponse('could not find the file');
-                }
-            });
-        },
         getFileList: function(exists){
             //console.log('file path is '+ m_full_path);
             if (!exists) {
@@ -160,16 +143,6 @@ var libraryHandler = function(request, response, postData) {
                     user: user,
                     data: fileList
                 });
-            }
-        },
-        getSharedFileList: function(exists){
-            //console.log('shared path is ' + m_shared_full_path)
-            if(!exists) {
-                errorResponse('could not find the directory');
-            } else {
-                var sharedFileList = recurseThroughFolders(m_shared_full_path, '');
-                //console.log('returned from shared');
-                sendJSON({user: user, data: sharedFileList, shared: true});
             }
         },
         saveFile: function(exists) {

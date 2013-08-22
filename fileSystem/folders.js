@@ -421,7 +421,7 @@ var Folders=new function(){
             });
             _.each(files, function(file) {
                 var fileName = file.name;
-                var path = file.path;
+                var path = '/shared/' + file.path;
                 var collapseName = 'collapse'+(path).replace(/(\/|\s)/g, '_');
                 
                 //collapseName is name without whitespace

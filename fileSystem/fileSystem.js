@@ -89,7 +89,7 @@ var FileSystem= function(){
         }
     }
     this.getSharedFileList = function(callback, callbackFailed){
-        sendAjaxRequest({name:'/'}, null, 'getSharedFileList', function(data){
+        sendAjaxRequest({name:'/shared/'}, null, 'getFileList', function(data){
             fileTree = data.data;
             callback(fileTree);
         })
@@ -419,7 +419,7 @@ var FileSystem= function(){
         sendAjaxRequest({name:fileName, time: (new Date()).getTime()}, null, 'getBackup', callback, callbackFailed)
     }
     this.getSharedFile = function(fileName, callback, callbackFailed){
-        sendAjaxRequest({name:fileName, time: (new Date()).getTime()}, null, 'getShared', callback, callbackFailed)
+        sendAjaxRequest({name:'/shared/'+fileName, time: (new Date()).getTime()}, null, 'getFile', callback, callbackFailed)
     }
     function sendAjaxRequest(fileObj, otherFileObj, query, callbackFunction, failFunction){
         // console.log(failFunction);
