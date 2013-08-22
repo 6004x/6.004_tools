@@ -126,7 +126,7 @@ var Editor = function(container, mode) {
             return;
         }
         FileSystem.getFile(filename, function(content) {
-            self.openTab(content.name, content.data, activate, content.autosave);
+            self.openTab(content.name, content.data, activate, content.autosave, content.shared);
             if(callback)
                 callback(content.name, content.data);
         }, function() {
@@ -138,7 +138,7 @@ var Editor = function(container, mode) {
     // filename should be a full path to the file. If not given, the document will be called 'untitled'
     // If activate is true, the tab will be focused. If false, the tab will be focused only if there are
     // no other documents currently open.
-    this.openTab = function(filename, content, activate, autosaved_content) {
+    this.openTab = function(filename, content, activate, autosaved_content, is_readonly) {
         // We can't open a file if we already have one at the same path (it wouldn't make sense and breaks things)
         if(_.has(mOpenDocuments, filename)) {
             focusTab(mOpenDocuments[filename]);
@@ -152,7 +152,7 @@ var Editor = function(container, mode) {
         }
         var id = _.uniqueId('edit_tab');
         var editPane = $('<div>', {'class': 'tab-pane', id: id}).hide();
-        var cm = create_cm_instance(editPane, content);
+        var cm = create_cm_instance(editPane, content, !!is_readonly);
         var tab = $('<li>');
 
         var doc = {
@@ -323,7 +323,7 @@ var Editor = function(container, mode) {
         return widget[0];
     };
 
-    var create_cm_instance = function(container, content) {
+    var create_cm_instance = function(container, content, is_readonly) {
         var cm = new CodeMirror(container[0], {
             indentUint: 4,
             lineNumbers: true,
@@ -336,6 +336,7 @@ var Editor = function(container, mode) {
             value: content,
             tabindex: -1,
             mode: mSyntaxMode,
+            readOnly: is_readonly,
             extraKeys: {
                 Tab: function() {
                     var marks = cm.getAllMarks();
@@ -515,7 +516,6 @@ var Editor = function(container, mode) {
         var filenames = localStorage['6004_' + mSyntaxMode + '_tabs'];
         if(!filenames) return false; // Default state
         filenames = JSON.parse(filenames);
-        console.log(filenames);
         _.each(filenames, function(f) { self.openFile(f, false); });
         return !!filenames.length;
     };

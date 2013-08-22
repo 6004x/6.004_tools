@@ -324,6 +324,7 @@ var libraryHandler = function(request, response, postData) {
                 data: data,
                 status: 'success',
                 type: 'file',
+                shared: m_is_shared
             };
 
             if(saveAndBackup) {
@@ -539,23 +540,6 @@ var libraryHandler = function(request, response, postData) {
                 });
             } else {
                 errorResponse('could not find backup');
-            }
-        });
-    }
-
-    function sendShared(shared_path, file_path){
-        fs.readFile(shared_path, 'utf8', function(err, data){
-            if(err) {
-                errorResponse(err);
-            } else {
-                var response = {
-                    name: file_path,
-                    shared: true,
-                    data: data,
-                    status: 'success',
-                    type: 'file',
-                };
-                sendJSON(response);
             }
         });
     }
