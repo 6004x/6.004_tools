@@ -439,8 +439,8 @@ var FileSystem= function(){
         var req = $.ajax({
                 'type' : "POST",
                 'url' : url, 
-                'data' : data,
-                'dataType' : 'json',
+                'data' : {data: JSON.stringify(data)},
+                'dataType' : 'json'
             });
         req.done(function(data, status){
             //check if status is successful

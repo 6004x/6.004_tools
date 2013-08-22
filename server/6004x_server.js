@@ -29,7 +29,7 @@ function serverFunction(request, response, next) {
             }
         });
         request.on('end', function () {
-            var POST = qs.parse(body);
+            var POST = JSON.parse(qs.parse(body).data);
             libraryHandler(request, response, POST);
         });
     }
@@ -54,27 +54,14 @@ var libraryHandler = function(request, response, postData) {
     var lib_path = path.join(root_path, 'files');
     //other relevant paths to be instantiated as the user logs in.
     var m_user_path, m_full_path, m_shared_root_path, m_shared_full_path;
+    var m_is_shared = false;
 
     var m_file_path = path.normalize(unescape(url.parse(request.url).pathname));
 
     var user = request.user;
     var query = String(postData.query);
-    var fileObj = {};
-    var otherFileObj = {};
-    //since querystring only does up to one level of objects, we need to add another level
-    //for fileObj and otherFileObj
-    for(var key in postData) {
-        var newKey;
-        if(key.indexOf('fileObj') !== -1) {
-            newKey = key.substring(key.indexOf('[') + 1, key.indexOf(']'));
-            fileObj[newKey] = postData[key];
-        } else if(key.indexOf('otherFileObj') !== -1) {
-            newKey = key.substring(key.indexOf('[') + 1, key.indexOf(']'));
-            otherFileObj[newKey] = postData[key];
-        } else {
-            //no other object should be more than one level down.
-        }
-    }
+    var fileObj = postData.fileObj;
+    var otherFileObj = postData.otherFileObj;
     // console.log(fileObj)
     var fileData = fileObj.data;
 
@@ -84,6 +71,7 @@ var libraryHandler = function(request, response, postData) {
         m_full_path = path.join(m_user_path, m_file_path); //full path of file/folder we are accessing
         if(m_file_path.indexOf('/shared/') === 0) {
             m_full_path = path.join(m_shared_root_path, m_file_path.substr(8)); // Search inside the shared folder.
+            m_is_shared = true;
         }
     }
 
@@ -146,6 +134,10 @@ var libraryHandler = function(request, response, postData) {
             }
         },
         saveFile: function(exists) {
+            if(m_is_shared) {
+                errorResponse('Cannot write to shared files.');
+                return;
+            }
             fs.exists(path.dirname(m_full_path), function(parent_exists){
                 //making sure the directory exists...
                 if(parent_exists) {
@@ -176,6 +168,10 @@ var libraryHandler = function(request, response, postData) {
             });
         },
         autoSaveFile: function(exists) {
+            if(m_is_shared) {
+                errorResponse('Cannot write to shared files.');
+                return;
+            }
             //AutoSaVe file
             //console.log('autosave, does it work?')
             makeAutoSave(m_full_path, m_file_path, fileObj);
@@ -185,6 +181,10 @@ var libraryHandler = function(request, response, postData) {
             sendAutoSave(full_path, file_path);
         },
         newFolder: function(exists) {
+            if(m_is_shared) {
+                errorResponse('Cannot write to shared files.');
+                return;
+            }
             if(exists){
                 errorResponse('path already exists at ' + m_file_path);
             } else {
@@ -200,6 +200,10 @@ var libraryHandler = function(request, response, postData) {
             }
         },
         deleteFile: function(exists) {
+            if(m_is_shared) {
+                errorResponse('Cannot write to shared files.');
+                return;
+            }
             if(exists) {
                 hide(m_full_path, m_file_path);
             } else {
@@ -207,6 +211,10 @@ var libraryHandler = function(request, response, postData) {
             }
         },
         renameFile: function(exists) {
+            if(m_is_shared) {
+                errorResponse('Cannot write to shared files.');
+                return;
+            }
             if(exists) {
                 renameFile(m_full_path, m_file_path, otherFileObj.name);
             } else {
