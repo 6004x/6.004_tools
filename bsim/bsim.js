@@ -40,9 +40,7 @@ $(function() {
 
     // Make an editor
     var editor = new Editor('#editor', 'uasm');
-
     // Filesystem tree thing
-    FileSystem.setup('https://6004.mattpf.net:6004/');
     Folders.setup('#filetree', editor, 'uasm');
 
     var do_assemble = function() {

@@ -9,7 +9,7 @@ var path=require('path');
 		//current directory will hold all user files in /libraries
 		var lib_path = path.join(root_path, 'libraries'); 
 		//other relevant paths to be instantiated as the user logs in.
-		var m_user_path, m_full_path, m_shared_path, m_shared_full_path;
+		var m_user_path, m_full_path, m_shared_root_path, m_shared_full_path;
 
 		var m_file_path = unescape(url.parse(request.url).pathname);
 
@@ -35,9 +35,9 @@ var path=require('path');
 
 		if(user){
 			m_user_path = path.join(lib_path, user);//user path in libraries
-			m_shared_path = path.join(root_path, 'shared') //shared folder outside of user libraries
+			m_shared_root_path = path.join(root_path, 'shared') //shared folder outside of user libraries
 			m_full_path = path.join(m_user_path, m_file_path); //full path of file/folder we are accessing
-			m_shared_full_path = path.join(m_shared_path, m_file_path); //path of shared file/folder we *might* be accessing
+			m_shared_full_path = path.join(m_shared_root_path, m_file_path); //path of shared file/folder we *might* be accessing
 			console.log(m_user_path)
 		}
 
@@ -130,7 +130,16 @@ var path=require('path');
 					});
 				}
 			}, 
-
+			getSharedFileList: function(exists){
+				console.log('shared path is ' + m_shared_full_path)
+				if(!exists){
+					errorResponse('could not find the directory')
+				} else {
+					var sharedFileList = recurseThroughFolders(m_shared_full_path, '')
+					console.log('returned from shared');
+					sendJSON({user:user,data:sharedFileList, shared:true});
+				}
+			},
 			saveFile : function(exists){
 				
 				fs.exists(path.dirname(m_full_path), function(parent_exists){

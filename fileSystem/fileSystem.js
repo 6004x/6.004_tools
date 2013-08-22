@@ -1,6 +1,5 @@
 var FileSystem= function(){
-    var DEFAULT_SERVER = 'https://localhost:6004';
-    var mServer;
+    var mServer = FILESERVER_HOST;
     var mUsername;
     var self = this;
 
@@ -11,7 +10,7 @@ var FileSystem= function(){
 
     var delimRegExp = /[^<>\$\:\"\|\/\\\?\*]+/g;
     var updated=true;
-    var online=false;
+    var online=true;
 
     /*
         fileTree contains a tree representation of a file list, starting with the rootnode,
@@ -88,6 +87,12 @@ var FileSystem= function(){
             }); 
             //callback will return with a file object
         }
+    }
+    this.getSharedFileList = function(callback, callbackFailed){
+        sendAjaxRequest({name:'/'}, null, 'getSharedFileList', function(data){
+            fileTree = data.data;
+            callback(fileTree);
+        })
     }
     function makeListOfFiles(currTree){
         
@@ -479,10 +484,6 @@ var FileSystem= function(){
             folderName = folderName.substring(1);
         console.log(allFolders.indexOf(folderName))
         return allFolders.indexOf(folderName) !== -1;
-    }
-    this.setup = function(server){
-
-        mServer = server||DEFAULT_SERVER;
     }
 
     return self;

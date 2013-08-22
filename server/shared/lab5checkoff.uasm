@@ -1,0 +1,760 @@
+// Beta environment for assembling compiled C programs -  10/1/03 SAW
+// file crt0.uasm_incl
+// Scheme: a C program is compiled using gcc-beta into prog.uasm, then
+//   sandwiched between crt0.uasm_incl and crt1.uasm_incl via:
+//       cat crt0.uasm prog.uasm crt1.uasm >main.uasm
+// which is then compiled and run.
+
+// Fill our reset vectors with pointers to something primitive:
+. = VEC_RESET
+	BR(I_Reset)	// on Reset (start-up)
+. = VEC_II
+	BR(I_IllOp)	// on Illegal Instruction (eg SVC)
+. = VEC_CLK
+	BR(I_Clk)	// On clock interrupt
+. = VEC_KBD
+	BR(I_Kbd)	// on Keyboard interrupt
+// . = VEC_MOUSE
+//	BR(I_Mouse)	// on Mouse interrupt
+
+// Skip over the interrupt vectors for remaining code:
+. = 20
+
+// Here are the default interrupt handlers.  Eventually we'll generalize
+// these a bit, so they may be replaced by calls to SetInterruptHandler(...)
+
+I_Reset:
+	// First instruction: branch to our starting code:
+	BR(__start)
+
+I_IllOp:
+	HALT()
+	BR(I_IllOp)
+
+I_Clk:
+	HALT()
+	BR(I_Clk)
+
+I_Kbd:
+	HALT()
+	BR(I_Kbd)
+
+I_Mouse:
+	HALT()
+	BR(I_Mouse)
+
+// Here's where we go on initial startup.  Initialize the stack, and
+// call BetaMain (presumably defined in the C code):
+
+__start:
+
+	LDR(StackBase, SP)            // Set up our stack pointer.
+	BR(BetaMain, LP)              // Call the main program,
+
+__halt:	HALT()                        //    then halt.
+	BR(__halt)
+
+////////////////////////////////////////////////////////////////////////
+//// Procedure to print out a zero-terminated message, packed one     ////
+////    char/byte. Char data follows branch; returns to next 4-byte   ////
+////    aligned location. Saves all regs.			     ////
+////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////
+// C-callable low-level I/O:
+////////////////////////////////////////////////////////////////////////
+
+// C-callable routine to type null-terminated text:
+// Type("ascii text")
+
+Type:	PUSH(LP)
+	LD(SP, -8, R0)          // Get the char* pointer
+	CALL(KMsgAux)
+	POP(LP)	
+	RTN()
+
+// C-callable routine: type a character
+TypeChar:
+	PUSH(LP)
+	LD(SP, -8, R0)
+	WRCHAR()
+	POP(LP)	
+	RTN()
+
+// C-callable routine: read a typed character
+// int ReadChar()
+ReadChar:
+	PUSH(LP)
+	RDCHAR()
+	POP(LP)	
+	RTN()
+
+// C-callable routine: generate a random 32-bit integer.
+// int RandomWord()
+RandomWord:
+	PUSH(LP)
+	RANDOM()
+	POP(LP)	
+	RTN()
+
+// C-callable routine: send a 32-bit word to the server
+// void Server(int)
+Server:
+	PUSH(LP)
+	LD(SP, -8, R0)
+	SERVER()
+	POP(LP)	
+	RTN()
+
+
+// Abort execution.  Just types a msg and halts.
+// void abort()
+abort:
+	PUSH(LP)
+	LDR(__abort_msg, R0)
+	CALL(KMsgAux)
+__abort_halt:
+	HALT()
+	BR(__abort_halt)
+
+__abort_msg:	LONG(.+4)
+	.ascii "abort() called.\n\0"
+
+
+// Auxiliary routine for sending a message to the console.
+// On entry, R0 should point to data; on return, R0 holds next
+// longword aligned location after data.
+// Note: Must be called while in supervisor mode.
+
+KMsgAux:
+	PUSH(r1)
+	PUSH(r2)
+	PUSH(r3)
+	PUSH(r4)
+
+	MOVE (R0, R1)
+
+WrWord:	LD (R1, 0, R2)		// Fetch a 4-byte word into R2
+	ADDC (R1, 4, R1)	// Increment word pointer
+	CMOVE(4,r3)		// Byte/word counter
+
+WrByte:	ANDC(r2, 0x7F, r0)	// Grab next byte -- LOW end first!
+	BEQ(r0, WrEnd)		// Zero byte means end of text.
+	WRCHAR()		// Print it.
+	SRAC(r2,8,r2)		// Shift out this byte
+	SUBC(r3,1,r3)		// Count down... done with this word?
+	BNE(r3,WrByte)		// Nope, continue.
+	BR(WrWord)		// Yup, on to next.
+
+WrEnd:
+	MOVE (R1, R0)
+	POP(r4)
+	POP(r3)
+	POP(r2)
+	POP(r1)
+	RTN()
+
+// compiled gcc v2.7.2.3
+// source file "lab5checkoff_3.c"
+
+	.options tty annotate kalways
+	.tcheckoff "http://6004.mit.edu/currentsemester/6004xassignment.doit" "Lab #5" 1404559175
+
+	.align 4
+LOUD:
+	LONG (0)
+
+	.align 4
+__Ashqewer:
+	PUSH (LP)
+	PUSH (BP)
+	MOVE (SP, BP)
+	PUSH (R1)
+	PUSH (R2)
+	PUSH (R3)
+	PUSH (R4)
+	PUSH (R5)
+	PUSH (R6)
+	PUSH (R7)
+	PUSH (R8)
+	PUSH (R9)
+	LD (BP, -12, R6)
+	LD (BP, -16, R5)
+	MOVE (R31, R9)
+	MOVE (R31, R8)
+	CMOVE (15, R2)
+	CMOVE (3, R4)
+_L24:
+	AND (R6, R2, R0)
+	AND (R5, R2, R1)
+	CMPEQ (R0, R1, R0)
+	BF (R0, _L25)
+	ADDC (R9, 1, R9)
+	OR (R6, R2, R6)
+	OR (R5, R2, R5)
+_L25:
+	SHLC (R2, 4, R2)
+	SUBC (R4, 1, R4)
+	CMPLT (R4, R31, R0)
+	BF (R0, _L24)
+	CMOVE (3, R4)
+_L30:
+	ANDC (R6, 15, R7)
+	SRAC (R6, 4, R6)
+	CMPEQC (R7, 15, R0)
+	BT (R0, _L29)
+	MOVE (R5, R3)
+	CMOVE (15, R2)
+	MOVE (R31, R1)
+_L35:
+	ANDC (R3, 15, R0)
+	SRAC (R3, 4, R3)
+	CMPEQ (R0, R7, R0)
+	BF (R0, _L36)
+	ADDC (R8, 1, R8)
+	OR (R5, R2, R5)
+	BR (_L29)
+_L36:
+	SHLC (R2, 4, R2)
+	ADDC (R1, 1, R1)
+	CMPLEC (R1, 3, R0)
+	BT (R0, _L35)
+_L29:
+	SUBC (R4, 1, R4)
+	CMPLT (R4, R31, R0)
+	BF (R0, _L30)
+	SHLC (R9, 4, R0)
+	ADD (R0, R8, R0)
+	POP (R9)
+	POP (R8)
+	POP (R7)
+	POP (R6)
+	POP (R5)
+	POP (R4)
+	POP (R3)
+	POP (R2)
+	POP (R1)
+	POP (BP)
+	POP (LP)
+	JMP (LP)
+
+	.align 4
+NGAMES:
+	LONG (32)
+	.align 4
+__Aczxy:
+	LONG (32872)
+	LONG (4099)
+	LONG (22272)
+	LONG (13059)
+	LONG (13428)
+	LONG (38689)
+	LONG (12849)
+	LONG (33382)
+	LONG (9859)
+	LONG (30726)
+	LONG (21763)
+	LONG (8293)
+	LONG (33585)
+	LONG (21810)
+	LONG (32822)
+	LONG (25448)
+	LONG (1105)
+	LONG (24693)
+	LONG (20871)
+	LONG (5219)
+	LONG (35207)
+	LONG (21907)
+	LONG (21045)
+	LONG (22901)
+	LONG (29443)
+	LONG (30598)
+	LONG (10039)
+	LONG (4867)
+	LONG (10567)
+	LONG (33604)
+	LONG (22325)
+	LONG (327)
+	LONG (0)
+
+	.align 4
+_LC0:
+	.ascii "0123456789ABCDEF\0"
+
+	.align 4
+hex_digits:
+	LONG (_LC0)
+
+	.align 4
+type_str:
+	PUSH (LP)
+	PUSH (BP)
+	MOVE (SP, BP)
+	PUSH (R1)
+	PUSH (R2)
+	LD (BP, -12, R2)
+	BR (_L45)
+_L42:
+	SRAC (R0, 24, R1)
+	CMPEQC (R1, 48, R0)
+	BT (R0, _L41)
+	PUSH (R1)
+	BR (TypeChar, LP)
+	DEALLOCATE (1)
+_L45:
+	ANDC (R2, -4, R0)
+	LD (R0, 0, R1)
+	ANDC (R2, 3, R0)
+	SHLC (R0, 3, R0)
+	SRA (R1, R0, R0)
+	SHLC (R0, 24, R0)
+	ADDC (R2, 1, R2)
+	BNE (R0, _L42)
+_L41:
+	POP (R2)
+	POP (R1)
+	POP (BP)
+	POP (LP)
+	JMP (LP)
+	.align 4
+_LC1:
+	LONG (hex_digits)
+	.align 4
+type_hex:
+	PUSH (LP)
+	PUSH (BP)
+	MOVE (SP, BP)
+	PUSH (R1)
+	PUSH (R2)
+	PUSH (R3)
+	LD (BP, -12, R3)
+	LD (BP, -16, R2)
+	ANDC (R3, 15, R1)
+	LDR (_LC1, R0)
+	LD (R0, 0, R0)
+	ADD (R0, R1, R0)
+	ANDC (R0, -4, R1)
+	LD (R1, 0, R1)
+	ANDC (R0, 3, R0)
+	SHLC (R0, 3, R0)
+	SRA (R1, R0, R1)
+	SHLC (R1, 24, R1)
+	SRAC (R1, 24, R1)
+	SUBC (R2, 1, R2)
+	CMPLE (R2, R31, R0)
+	BT (R0, _L47)
+	PUSH (R2)
+	SRAC (R3, 4, R0)
+	PUSH (R0)
+	BR (type_hex, LP)
+	DEALLOCATE (2)
+_L47:
+	PUSH (R1)
+	BR (TypeChar, LP)
+	DEALLOCATE (1)
+	POP (R3)
+	POP (R2)
+	POP (R1)
+	POP (BP)
+	POP (LP)
+	JMP (LP)
+	.align 4
+type_hex_with_0x:
+	PUSH (LP)
+	PUSH (BP)
+	MOVE (SP, BP)
+	PUSH (R1)
+	PUSH (R2)
+	LD (BP, -12, R2)
+	LD (BP, -16, R1)
+	CMOVE (48, R0)
+	PUSH (R0)
+	BR (TypeChar, LP)
+	DEALLOCATE (1)
+	CMOVE (120, R0)
+	PUSH (R0)
+	BR (TypeChar, LP)
+	DEALLOCATE (1)
+	PUSH (R1)
+	PUSH (R2)
+	BR (type_hex, LP)
+	DEALLOCATE (2)
+	POP (R2)
+	POP (R1)
+	POP (BP)
+	POP (LP)
+	JMP (LP)
+	.align 4
+read_line:
+	PUSH (LP)
+	PUSH (BP)
+	MOVE (SP, BP)
+	PUSH (R1)
+	PUSH (R2)
+	PUSH (R3)
+	PUSH (R4)
+	PUSH (R5)
+	PUSH (R6)
+	PUSH (R7)
+	LD (BP, -12, R4)
+	LD (BP, -16, R7)
+	MOVE (R31, R5)
+	CMOVE (255, R6)
+_L50:
+	BR (ReadChar, LP)
+	MOVE (R0, R2)
+	CMPEQC (R2, 10, R0)
+	BT (R0, _L51)
+	CMPEQC (R2, 13, R0)
+	BT (R0, _L51)
+	CMPLT (R5, R7, R0)
+	BF (R0, _L52)
+	ANDC (R4, -4, R3)
+	ANDC (R4, 3, R1)
+	SHLC (R1, 3, R1)
+	SHL (R2, R1, R2)
+	SHL (R6, R1, R1)
+	AND (R2, R1, R2)
+	XORC (R1, -1, R1)
+	LD (R3, 0, R0)
+	AND (R0, R1, R0)
+	OR (R0, R2, R0)
+	ST (R0, 0, R3)
+	ADDC (R4, 1, R4)
+_L52:
+	ADDC (R5, 1, R5)
+	BR (_L50)
+_L51:
+	MOVE (R5, R0)
+	POP (R7)
+	POP (R6)
+	POP (R5)
+	POP (R4)
+	POP (R3)
+	POP (R2)
+	POP (R1)
+	POP (BP)
+	POP (LP)
+	JMP (LP)
+	.align 4
+_LC2:
+	.ascii "ERROR: count_bull_cows(\0"
+	.align 4
+_LC4:
+	.ascii ", \0"
+	.align 4
+_LC6:
+	.ascii " returned \0"
+	.align 4
+_LC8:
+	.ascii "; expected \0"
+	.align 4
+_LC11:
+	.ascii " x \0"
+	.align 4
+_LC13:
+	.ascii " => \0"
+	.align 4
+_LC3:
+	LONG (_LC2)
+	.align 4
+_LC5:
+	LONG (_LC4)
+	.align 4
+_LC7:
+	LONG (_LC6)
+	.align 4
+_LC9:
+	LONG (_LC8)
+	.align 4
+_LC10:
+	LONG (LOUD)
+	.align 4
+_LC12:
+	LONG (_LC11)
+	.align 4
+_LC14:
+	LONG (_LC13)
+	.align 4
+Check:
+	PUSH (LP)
+	PUSH (BP)
+	MOVE (SP, BP)
+	PUSH (R1)
+	PUSH (R2)
+	PUSH (R3)
+	PUSH (R4)
+	PUSH (R5)
+	PUSH (R6)
+	PUSH (R7)
+	PUSH (R8)
+	PUSH (R9)
+	PUSH (R10)
+	PUSH (R11)
+	PUSH (R12)
+	LD (BP, -12, R11)
+	LD (BP, -16, R12)
+	PUSH (R12)
+	PUSH (R11)
+	BR (count_bull_cows, LP)
+	DEALLOCATE (2)
+	MOVE (R0, R10)
+	MOVE (R11, R6)
+	MOVE (R12, R5)
+	MOVE (R31, R9)
+	MOVE (R31, R8)
+	CMOVE (15, R2)
+	CMOVE (3, R4)
+_L61:
+	AND (R6, R2, R0)
+	AND (R5, R2, R1)
+	CMPEQ (R0, R1, R0)
+	BF (R0, _L62)
+	ADDC (R9, 1, R9)
+	OR (R6, R2, R6)
+	OR (R5, R2, R5)
+_L62:
+	SHLC (R2, 4, R2)
+	SUBC (R4, 1, R4)
+	CMPLT (R4, R31, R0)
+	BF (R0, _L61)
+	CMOVE (3, R4)
+_L67:
+	ANDC (R6, 15, R7)
+	SRAC (R6, 4, R6)
+	CMPEQC (R7, 15, R0)
+	BT (R0, _L66)
+	MOVE (R5, R3)
+	CMOVE (15, R2)
+	MOVE (R31, R1)
+_L72:
+	ANDC (R3, 15, R0)
+	SRAC (R3, 4, R3)
+	CMPEQ (R0, R7, R0)
+	BF (R0, _L73)
+	ADDC (R8, 1, R8)
+	OR (R5, R2, R5)
+	BR (_L66)
+_L73:
+	SHLC (R2, 4, R2)
+	ADDC (R1, 1, R1)
+	CMPLEC (R1, 3, R0)
+	BT (R0, _L72)
+_L66:
+	SUBC (R4, 1, R4)
+	CMPLT (R4, R31, R0)
+	BF (R0, _L67)
+	CMOVE (4, R4)
+	SHLC (R9, 4, R0)
+	ADD (R0, R8, R2)
+	CMPEQ (R2, R10, R0)
+	BT (R0, _L76)
+	LDR (_LC3, R0)
+	PUSH (R0)
+	BR (type_str, LP)
+	DEALLOCATE (1)
+	PUSH (R4)
+	PUSH (R11)
+	BR (type_hex_with_0x, LP)
+	DEALLOCATE (2)
+	LDR (_LC5, R0)
+	PUSH (R0)
+	BR (type_str, LP)
+	DEALLOCATE (1)
+	PUSH (R4)
+	PUSH (R12)
+	BR (type_hex_with_0x, LP)
+	DEALLOCATE (2)
+	LDR (_LC7, R0)
+	PUSH (R0)
+	BR (type_str, LP)
+	DEALLOCATE (1)
+	CMOVE (2, R1)
+	PUSH (R1)
+	PUSH (R10)
+	BR (type_hex_with_0x, LP)
+	DEALLOCATE (2)
+	LDR (_LC9, R0)
+	PUSH (R0)
+	BR (type_str, LP)
+	DEALLOCATE (1)
+	PUSH (R1)
+	PUSH (R2)
+	BR (type_hex_with_0x, LP)
+	DEALLOCATE (2)
+	CMOVE (1, R0)
+	BR (_L79)
+_L76:
+	LDR (_LC10, R0)
+	LD (R0, 0, R0)
+	BEQ (R0, _L77)
+	PUSH (R4)
+	PUSH (R11)
+	BR (type_hex_with_0x, LP)
+	DEALLOCATE (2)
+	LDR (_LC12, R0)
+	PUSH (R0)
+	BR (type_str, LP)
+	DEALLOCATE (1)
+	PUSH (R4)
+	PUSH (R12)
+	BR (type_hex_with_0x, LP)
+	DEALLOCATE (2)
+	LDR (_LC14, R0)
+	PUSH (R0)
+	BR (type_str, LP)
+	DEALLOCATE (1)
+	CMOVE (2, R0)
+	PUSH (R0)
+	PUSH (R10)
+	BR (type_hex_with_0x, LP)
+	DEALLOCATE (2)
+	CMOVE (10, R0)
+	PUSH (R0)
+	BR (TypeChar, LP)
+	DEALLOCATE (1)
+_L77:
+	MOVE (R31, R0)
+_L79:
+	POP (R12)
+	POP (R11)
+	POP (R10)
+	POP (R9)
+	POP (R8)
+	POP (R7)
+	POP (R6)
+	POP (R5)
+	POP (R4)
+	POP (R3)
+	POP (R2)
+	POP (R1)
+	POP (BP)
+	POP (LP)
+	JMP (LP)
+	.align 4
+_LC16:
+	.ascii "Checking count_bull_cows: \12\0"
+	.align 4
+_LC19:
+	.ascii "\12Your count_bull_cows routine passes all our tests - congrats!\12\0"
+	.align 4
+_LC15:
+	LONG (NGAMES)
+	.align 4
+_LC17:
+	LONG (_LC16)
+	.align 4
+_LC18:
+	LONG (__Aczxy)
+	.align 4
+_LC20:
+	LONG (_LC19)
+	.align 4
+BetaMain:
+	PUSH (LP)
+	PUSH (BP)
+	MOVE (SP, BP)
+	PUSH (R1)
+	PUSH (R2)
+	PUSH (R3)
+	PUSH (R4)
+	PUSH (R5)
+	PUSH (R6)
+	PUSH (R7)
+	BR (RandomWord, LP)
+	LDR (_LC15, R4)
+	LD (R4, 0, R1)
+	SUBC (R1, 1, R1)
+	AND (R0, R1, R7)
+	LDR (_LC17, R0)
+	PUSH (R0)
+	BR (type_str, LP)
+	DEALLOCATE (1)
+	CMOVE (4660, R1)
+	PUSH (R1)
+	PUSH (R1)
+	BR (Check, LP)
+	DEALLOCATE (2)
+	BNE (R0, _L98)
+	CMOVE (22136, R0)
+	PUSH (R0)
+	PUSH (R1)
+	BR (Check, LP)
+	DEALLOCATE (2)
+	BNE (R0, _L98)
+	CMOVE (8738, R2)
+	PUSH (R2)
+	PUSH (R1)
+	BR (Check, LP)
+	DEALLOCATE (2)
+	BNE (R0, _L98)
+	PUSH (R1)
+	PUSH (R2)
+	BR (Check, LP)
+	DEALLOCATE (2)
+	BNE (R0, _L98)
+	CMOVE (5170, R0)
+	PUSH (R0)
+	PUSH (R1)
+	BR (Check, LP)
+	DEALLOCATE (2)
+	BEQ (R0, _L85)
+_L98:
+_L97:
+	MOVE (R31, R0)
+	BR (_L80)
+_L85:
+	MOVE (R31, R3)
+	LD (R4, 0, R0)
+	CMPLT (R31, R0, R0)
+	BF (R0, _L87)
+	MOVE (R4, R5)
+	LDR (_LC18, R6)
+_L89:
+	CMOVE (46, R0)
+	PUSH (R0)
+	BR (TypeChar, LP)
+	DEALLOCATE (1)
+	MOVE (R3, R2)
+	LD (R5, 0, R0)
+	CMPLT (R3, R0, R0)
+	BF (R0, _L88)
+	XOR (R3, R7, R0)
+	SHLC (R0, 2, R0)
+	ADD (R0, R6, R4)
+_L93:
+	LD (R4, 0, R0)
+	XOR (R2, R7, R1)
+	SHLC (R1, 2, R1)
+	ADD (R1, R6, R1)
+	LD (R1, 0, R1)
+	PUSH (R1)
+	PUSH (R0)
+	BR (Check, LP)
+	DEALLOCATE (2)
+	BNE (R0, _L97)
+	ADDC (R2, 1, R2)
+	LD (R5, 0, R0)
+	CMPLT (R2, R0, R0)
+	BT (R0, _L93)
+_L88:
+	ADDC (R3, 1, R3)
+	LD (R5, 0, R0)
+	CMPLT (R3, R0, R0)
+	BT (R0, _L89)
+_L87:
+	LDR (_LC20, R0)
+	PUSH (R0)
+	BR (type_str, LP)
+	DEALLOCATE (1)
+_L80:
+	POP (R7)
+	POP (R6)
+	POP (R5)
+	POP (R4)
+	POP (R3)
+	POP (R2)
+	POP (R1)
+	POP (BP)
+	POP (LP)
+	JMP (LP)

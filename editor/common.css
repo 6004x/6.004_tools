@@ -78,6 +78,10 @@ html {
     cursor: pointer;
 }
 
+.editor-tips {
+    max-width: 400px;
+}
+
 /* Split pane styles */
 .split-holder {
     float: left;

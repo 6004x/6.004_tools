@@ -14,7 +14,8 @@ var Editor = function(container, mode) {
     var mUntitledDocumentCount = 0; // The number of untitled documents (used to name the next one)
     var mAutocompleter = new Editor.Autocomplete(this, mode);
     var mRestoreAutosaveButton = null;
-
+    var mShowingTips = false;
+    var mTipHolder = null;
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
 
     var mMarkedLines  = []; // List of lines we need to clear things from when requested.
@@ -198,6 +199,9 @@ var Editor = function(container, mode) {
 
         mTabHolder.append(tab);
 
+        // Make sure we aren't still showing initial tips.
+        clear_initial_tips();
+
         mContainer.append(editPane);
 
         // If we have no open documents, or we were explicitly asked to activate this document, do so.
@@ -208,6 +212,7 @@ var Editor = function(container, mode) {
 
         // Stash these away somewhere.
         mOpenDocuments[filename] = doc;
+        store_tabs();
         // If we know how tall we should be, arrange to make sure everything still fits in that space.
         if(mExpectedHeight) self.setHeight(mExpectedHeight);
         // HACK: make sure something understands our window size.
@@ -273,8 +278,8 @@ var Editor = function(container, mode) {
         if(!doc.cm.isClean(doc.generation) && !force) {
             var dialog = new ModalDialog();
             dialog.setTitle("Unsaved document");
-            dialog.setContent("<p><strong>Do you want to save the changes you made to " + doc.name + "?</strong></p>"
-                + "<p>Your changes will be lost if you don't save them.</p>");
+            dialog.setContent("<p><strong>Do you want to save the changes you made to " + doc.name + "?</strong></p>" +
+                "<p>Your changes will be lost if you don't save them.</p>");
             dialog.addButton("Don't save", function() {
                 closeTab(doc, true);
                 dialog.dismiss();
@@ -297,12 +302,18 @@ var Editor = function(container, mode) {
             var new_doc = _.find(_.values(mOpenDocuments), function(e) { return e.tab[0] == sibling[0];});
             if(new_doc) {
                 focusTab(new_doc); // Focus the document, assuming we found it.
+            } else {
+                mRestoreAutosaveButton.hide();
             }
+        } else {
+            mRestoreAutosaveButton.hide();
         }
         // Now get rid of this one.
         delete mOpenDocuments[doc.name];
         doc.el.remove();
         doc.tab.remove();
+
+        store_tabs();
     };
 
     var create_error_widget = function(message) {
@@ -455,6 +466,9 @@ var Editor = function(container, mode) {
 
             Editor.IsSetUp = true;
         }
+
+        // Load any prior tabs we have or show some handy tips.
+        if(!restore_tabs()) display_initial_tips();
     };
 
     var do_save = function(document) {
@@ -481,7 +495,7 @@ var Editor = function(container, mode) {
             document.isAutosaving = false;
             console.warn("Autosave failed.");
         });
-    }
+    };
 
     var handle_page_unload = function() {
         for(var name in mOpenDocuments) {
@@ -491,6 +505,37 @@ var Editor = function(container, mode) {
                 return "You have unsaved files. If you leave the page you will lose your unsaved work.";
             }
         }
+    };
+
+    var store_tabs = function() {
+        localStorage['6004_' + mSyntaxMode + '_tabs'] = JSON.stringify(self.filenames());
+    };
+
+    var restore_tabs = function() {
+        var filenames = localStorage['6004_' + mSyntaxMode + '_tabs'];
+        if(!filenames) return false; // Default state
+        filenames = JSON.parse(filenames);
+        console.log(filenames);
+        _.each(filenames, function(f) { self.openFile(f, false); });
+        return !!filenames.length;
+    };
+
+    // Re-opens whatever tabs the user had open last time.
+    // Returns true if there are any such tabs, false otherwise.
+    var display_initial_tips = function() {
+        if(!_.isEmpty(mOpenDocuments)) return;
+        var tip = "To create a file or folder, hover over the desired parent folder on the left and click the " +
+            "new file or new folder icons. To open a file or folder, single click it in the list on the left. " +
+            "You can move files by dragging them from their existing location to the desired one.";
+        mTipHolder = $('<div class="editor-tips">').html(tip);
+        mContainer.append(mTipHolder);
+        mShowingTips = true;
+    };
+
+    var clear_initial_tips = function() {
+        if(!mShowingTips) return;
+        mShowingTips = false;
+        mTipHolder.remove();
     };
 
     initialise();
