@@ -78,7 +78,9 @@
                             ret = 'keyword';
                         }
                     } else {
-                        steam.eatWhile(/^\s/);
+                        if(!stream.eatWhile(/^\s/)) {
+                            stream.skipToEnd();
+                        }
                     }
                     stream.eatSpace();
                     if(stream.eol()) {
