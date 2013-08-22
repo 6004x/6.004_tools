@@ -1,10 +1,11 @@
-//DEPENDENCIES: connect, querystring
+//DEPENDENCIES: connect, rimraf
 var url=require('url');
 var fs = require("fs");
 var https = require("https");
 var connect = require("connect");
 var path = require('path');
 var qs = require('querystring');
+var rimraf = require('rimraf');
 var libraryHandler = require('./libraryHandler.js');
 
 function authenticate_user(req,res,next) {
@@ -365,53 +366,28 @@ var libraryHandler = function(request, response, postData) {
     }
 
     function hide(full_path, file_path) {
-        var hide_path = full_path + '~del';
-        fs.exists(hide_path, function(exists) {
-            if(exists) {
-                //TODO: what should we do in case we delete a file/folder twice
-                fs.unlink(hide_path, renameToHide);
-                //console.log('exists');
-            } else {
-                renameToHide();
+        fs.lstat(m_full_path, function(err, stat) {
+            if(err) {
+                errorResponse(err);
+                return;
             }
-
-            function renameToHide(err) {
-                if(err) {
-                    errorResponse(err);
-                } else {
-                    fs.lstat(m_full_path, function(err, stats) {
-                        if(stats.isDirectory()) { //do something else if it's a folder
-                            var hide_full_path = path.join(path.dirname(full_path), path.basename(file_path))+'~del';
-                            fs.rename(full_path, hide_full_path, function (err) {
-                                if(err) {
-                                    //console.log(hide_full_path + 'failed')
-                                    errorResponse(err);
-                                } else {
-                                    //console.log(hide_full_path)
-                                    sendJSON({
-                                        status: 'success',
-                                        name: file_path,
-                                    });
-                                }
-                            });
-                        } else {
-                            fs.rename(full_path, hide_path, function (err) {
-                                if (err) {
-                                    //console.log(hide_path = 'failed')
-                                    errorResponse(err + ' file could not be renamed');
-                                } else {
-                                    //console.log(hide_path);
-                                    sendJSON({
-                                        status:'success',
-                                        name:file_path,
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
+            if(stat.isDirectory()) {
+                rimraf(m_full_path, handle_result);
+            } else {
+                fs.unlink(m_full_path, handle_result);
             }
         });
+
+        var handle_result = function(err) {
+            if(err) {
+                errorResponse(err);
+            } else {
+                sendJSON({
+                    status: 'success',
+                    name: file_path
+                });
+            }
+        };
     }
 
     function renameFile(full_path, file_path, new_path){
