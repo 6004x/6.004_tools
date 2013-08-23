@@ -31,6 +31,10 @@ table.regfile {
     background-color: white;
 }
 
+#schematic-view table.regfile {
+    width: 358px;
+}
+
 .regfile, .disassembly, .tty, .memory, .stack, .pc-value, .pc-label {
     font-family: Menlo, Monaco, monospace;
     font-size: small;
