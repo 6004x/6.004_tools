@@ -1,5 +1,5 @@
-.include "/lab1checkoff.jsim"
-.include "/nominal.jsim"
+.include "/shared/lab1checkoff.jsim"
+.include "/shared/nominal.jsim"
 
 // inverter
 .subckt inv a z
