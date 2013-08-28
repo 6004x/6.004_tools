@@ -814,8 +814,8 @@ var Folders=new function(){
         var filesWrapper = $('<ul>').addClass('file_paths nav nav-list nav-stacked');
         var sharedFilesWrapper = $('<ul>').addClass('shared_file_paths nav nav-list nav-stacked');
 
-        //sideBarNav.height(window.innerHeight - sideBarNav.offset().top);
-        // $(window).on('resize',function(){filesWrapper.height(window.innerHeight - filesWrapper.offset().top);})
+        sideBarNav.height(window.innerHeight - sideBarNav.offset().top - 10);
+        $(window).on('resize',function(){sideBarNav.height(window.innerHeight - sideBarNav.offset().top - 10);})
         sideBarNav.append(filesWrapper, sharedFilesWrapper);
         var pref = JSON.parse(localStorage.getItem('6004folderspref'+editMode));
        

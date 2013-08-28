@@ -42,29 +42,22 @@ div.input_file_name button.add-on{
 .folder_button_div{
     text-align:right;
     float : right;
-    position : absolute;
-    right : 0;
     display : inline;
     vertical-align : center;
     background-color: inherit;
 }
 .file_button_div{
-	text-align:right;
-    float:none;
-    position:absolute;
-    right:0;
-    top:0;
-	display:inline-block;
+    text-align:right;
+    float:right;
+    display:inline-block;
     vertical-align: center;
 }
 .file_name:hover .file_button_div{
    display:block;
-   position:absolute;
 }
 .file_button, .folder_button {
     padding: 0px;
     width: 15px;
-    top : 0;
     display: none;
 }
 .file_name:hover .file_button,
@@ -78,11 +71,9 @@ div.input_file_name button.add-on{
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    position: relative;
 }   
 .file_name{
     vertical-align: center;
-    position : relative;
 }
 .sidebar-nav li{
 	list-style-type: none;
@@ -100,22 +91,15 @@ div.input_file_name button.add-on{
 }
 .folders_div{
     padding:0px;
-    overflow-x : auto; 
-    overflow-y : auto;
+    overflow: auto;
 }
 .file_paths{
     padding:0px;
-    overflow-x : auto; 
-    overflow-y : auto;
 }
-
 .shared_file_paths{
     padding:0px;
-    overflow-x : auto; 
-    overflow-y : auto;
 }
 .folder_name {
-    z-index:3;
 }
 .folder_name:hover{
     background-color:lightblue;
@@ -129,8 +113,6 @@ div.input_file_name button.add-on{
 .folder_contents{
     border:none;
     border-radius: 4px;
-    z-index: 2;
-    position : relative;
 }
 .dragging_div{
     background-color : grey;
