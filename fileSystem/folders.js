@@ -48,7 +48,7 @@ var Folders=new function(){
                 callback(true);
                 FileSystem.getSharedFileList(function(sharedFileList){
                     sharedNode.empty();
-                    console.log(sharedFileList);
+                    //console.log(sharedFileList);
                     var sharedRoot = {
                         'path' : '',
                         'name' : 'shared',
@@ -96,34 +96,34 @@ var Folders=new function(){
 
             var filePathArr = filePath.split('/');
             var folderPathArr = folderDestination.split('/');
-            console.log(filePathArr); console.log(folderPathArr);
+            //console.log(filePathArr); //console.log(folderPathArr);
             var samePath = (filePathArr.length)  == folderPathArr.length;
             for(var i = 0, j = 0; i < filePathArr.length -1 && j < folderPathArr.length; i++, j++){
-                console.log(filePathArr[i] === folderPathArr[j])
+                //console.log(filePathArr[i] === folderPathArr[j])
                 if(filePathArr[i] !== folderPathArr[j]){
                     samePath = false;
-                    console.log(filePathArr);
-                    console.log(folderPathArr);
+                    //console.log(filePathArr);
+                    //console.log(folderPathArr);
                     break;
                 }
             }
-            console.log(samePath);
+            //console.log(samePath);
             if(!samePath){
                 if(type === 'move')
                     FileSystem.moveFile(filePath, folderDestination, function(data){
-                        console.log('moved ' + filePath )
-                        console.log(data);
-                        console.log('to ' + data.name );
+                        //console.log('moved ' + filePath )
+                        //console.log(data);
+                        //console.log('to ' + data.name );
                         refresh();
                     })
                 else if (type === 'copy')
                     FileSystem.copyFile(filePath, folderDestination, function(data){
-                        console.log('copied ' + filePath )
-                        console.log('to ' + data.name );
+                        //console.log('copied ' + filePath )
+                        //console.log('to ' + data.name );
                         refresh();
                     })
             } else {
-                console.log('do nothing');
+                //console.log('do nothing');
             }
         }
         function isInMode(type){
@@ -140,6 +140,7 @@ var Folders=new function(){
             //testing whether username chenged or not, to change data structure
             level++;
             var parentPath = fileList.path;
+	    /*
             var files = _.sortBy(fileList.files, function(file, name){
                 var fileType = name.split('.').pop()
                 return !isInMode(fileType);
@@ -156,6 +157,9 @@ var Folders=new function(){
                 })
                 return !isInMode(maxType);
             })
+	    */
+	    var files = _.sortBy(fileList.files,name);     // just keep sorted by name
+	    var folders = _.sortBy(fileList.folders,name);
             _.each(folders, function(folder){
                 var folderName = folder.name;
                 var path = folder.path;
@@ -198,7 +202,7 @@ var Folders=new function(){
 
                     collapser.on('click', function(){
                         subListUL.collapse('toggle');
-                        console.log('toggle');
+                        //console.log('toggle');
                     });
                     if(level > 1) // don't allow user to delete root folder
                         newButtonDiv.append(deleteButton);
@@ -253,13 +257,13 @@ var Folders=new function(){
                         'hoverClass' : 'hover_drop',
                         'tolerance' : 'pointer',
                         'activate' : function(e, ui){
-                            // console.log(ui.draggable.data('path'));
+                            // //console.log(ui.draggable.data('path'));
                         },
                         'drop' : function(e, ui){
                             var filePath = ui.draggable.data('path');
                             var folderDestination = $(e.target).data('path');
-                            console.log('file dragged ' + filePath);
-                            console.log('dropped at ' + folderDestination);
+                            //console.log('file dragged ' + filePath);
+                            //console.log('dropped at ' + folderDestination);
                             dragFile(filePath, folderDestination, 'move')
                             
                         },
@@ -273,7 +277,7 @@ var Folders=new function(){
                 //collapseName is name without whitespace
                 if(fileName.indexOf('~') > -1){
                     //metadata, ignore
-                    // console.log(name);
+                    // //console.log(name);
                 } else {
                     //if the name does not have a period, then it is a file and not a folder
                     var listVar=$('<li>').addClass('file_name')
@@ -325,6 +329,7 @@ var Folders=new function(){
             //testing whether username chenged or not, to change data structure
             levelShared++;
             var parentPath = fileList.path;
+	    /*
             var files = _.sortBy(fileList.files, function(file, name){
                 var fileType = name.split('.').pop()
                 return !isInMode(fileType);
@@ -341,6 +346,10 @@ var Folders=new function(){
                 })
                 return !isInMode(maxType);
             })
+	    */
+	    var files = _.sortBy(fileList.files,name);     // just keep sorted by name
+	    var folders = _.sortBy(fileList.folders,name);
+
             _.each(folders, function(folder){
                 var folderName = folder.name;
                 var path = folder.path;
@@ -375,7 +384,7 @@ var Folders=new function(){
 
                     collapser.on('click', function(){
                         subListUL.collapse('toggle');
-                        console.log('toggle');
+                        //console.log('toggle');
                     });
 
                     if(collapsedFolders[collapseName] === undefined){
@@ -427,7 +436,7 @@ var Folders=new function(){
                 //collapseName is name without whitespace
                 if(fileName.indexOf('~') > -1){
                     //metadata, ignore
-                    // console.log(name);
+                    // //console.log(name);
                 } else {
                     //if the name does not have a period, then it is a file and not a folder
                     var listVar=$('<li>').addClass('file_name shared_file_name')
@@ -451,7 +460,7 @@ var Folders=new function(){
    
 
     function getFile(fileName){
-        console.log('getting '+fileName);
+        //console.log('getting '+fileName);
         editor.openFile(fileName, true, updatePrefs);
     }
 
@@ -553,7 +562,7 @@ var Folders=new function(){
                     actions.destroy();
                 }
                 if(!validateFunction(text,  actions)){
-                    console.log('invalid action');
+                    //console.log('invalid action');
                     valid = false;
                 } else {
                     actions.hideError();
@@ -610,16 +619,16 @@ var Folders=new function(){
     function renameFile(path, file_li){
         var file_path = path.substring(0, path.lastIndexOf('/')+1);
         var oldFileName = path.substring(path.lastIndexOf('/')+1);
-        console.log(file_path)
-        console.log(oldFileName)
+        //console.log(file_path)
+        //console.log(oldFileName)
         var newFileName = '';
 
         function validFileRename(fileName, actions){
            
-            console.log(fileName)
+            //console.log(fileName)
             if(!isValidName(fileRegexp, fileName)){
                 actions.showError('File names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~');
-               console.log('fails regexp')
+               //console.log('fails regexp')
                 return false;
             } 
             var newFileName = '';
@@ -629,45 +638,45 @@ var Folders=new function(){
                 newFileName = file_path + fileName;
             //checks that there is not already another file with that name.
             if (FileSystem.isFile(newFileName)){
-                console.log(newFileName.substring(newFileName.lastIndexOf('/')+1) )
-                console.log(oldFileName)
+                //console.log(newFileName.substring(newFileName.lastIndexOf('/')+1) )
+                //console.log(oldFileName)
                 if(newFileName.substring(newFileName.lastIndexOf('/')+1) !== oldFileName){
-                    console.log('already exists')
+                    //console.log('already exists')
                     actions.showError('file already exists ');
                     return false;
                 }
-                console.log('is the same')
+                //console.log('is the same')
                 return newFileName
             } 
             return newFileName;
         }
         var handleRename = function(fileName, actions) {
-            console.log(fileName + ' obtained from modal')
+            //console.log(fileName + ' obtained from modal')
             validName = validFileRename(fileName, actions);
             if(validName){
                 // action(validName, actions)
 
-                console.log('rename file to ' + validName);
+                //console.log('rename file to ' + validName);
                 FileSystem.renameFile(path, validName , function(data){
-                    console.log(data.status + ' rename file');
+                    //console.log(data.status + ' rename file');
                     displayFile(data);
                     actions.destroy();
                     refresh();
                     return true;
                 });
             } else{
-                console.log('not a valid name')
+                //console.log('not a valid name')
 
                 return false;
             }
         }
-        console.log(file_li)
+        //console.log(file_li)
         var oldDom = file_li.html();
-        console.log(oldDom)
+        //console.log(oldDom)
         var width = file_li.width()-30;
         file_li.html('')
         function restoreLi(){
-            console.log('restore');
+            //console.log('restore');
             file_li.html(oldDom)
             refresh();
         }
@@ -681,7 +690,7 @@ var Folders=new function(){
             if(validName){
                 action(validName, actions);
             } else {
-                console.log(validName + ' is invalid, oops')
+                //console.log(validName + ' is invalid, oops')
             }
         }
         //attaches the input to the collapsable value of 
@@ -708,7 +717,7 @@ var Folders=new function(){
         }
         function validNewFileName(fileName, actions){
            
-            console.log(fileName)
+            //console.log(fileName)
             if(!isValidName(fileRegexp, fileName)){
                 actions.showError('File names cannot be empty or contain \\, \/ , : , " , < , > , | , ? , * , or ~');
                
@@ -794,7 +803,7 @@ var Folders=new function(){
 
     function setup(root, editorN, mode){
         rootNode = $(root);
-        console.log(root);
+        //console.log(root);
         editor = editorN;
         editMode = mode;
 
