@@ -20,4 +20,3 @@ count_bull_cows:  // your subroutine must have this name
 StackBase:
     LONG(.+4)      // Pointer to bottom of stack
     . = .+0x1000   // Reserve space for stack
-
