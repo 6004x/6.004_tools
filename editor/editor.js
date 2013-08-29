@@ -168,8 +168,11 @@ var Editor = function(container, mode) {
             autosaved: autosaved_content || null
         };
 
-        var a = $('<a>', {href: '#' + id}).text(_.last(filename.split('/'))).click(function(e) { e.preventDefault(); focusTab(doc); });
+	//cjt var label = _.last(filename.split('/'));
+	var label = filename;
+        var a = $('<a>', {href: '#' + id}).text(label).click(function(e) { e.preventDefault(); focusTab(doc); });
         tab.append(a);
+
         // Build us a 'close' button. It uses an X when the document is clean and a circle when dirty, except
         // when hovered over.
         var close = $('<button class="close">&times;</button>').click(function(e) {
