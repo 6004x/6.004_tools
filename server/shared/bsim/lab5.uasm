@@ -1,5 +1,5 @@
-.include "/shared/beta.uasm"          // include instruction macros
-.include "/shared/lab5checkoff.uasm"  // include test jig
+.include "/shared/bsim/beta.uasm"          // include instruction macros
+.include "/shared/bsim/lab5checkoff.uasm"  // include test jig
 
 // TEMPLATE for Lab 5
 

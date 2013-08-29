@@ -24,7 +24,7 @@
 // ELLOHAY
 // 
 
-.include beta.uasm		// Define Beta instructions, etc.
+.include "/shared/bsim/beta.uasm"	// Define Beta instructions, etc.
 .options clock tty
 
 // The following code is a primitive but complete timesharing kernel
@@ -53,7 +53,7 @@
 // The following macro is the first instruction to be entered for each
 // asynchronous I/O interrupt handler.	 It adjusts XP (the interrupted
 // PC) to account for the instruction skipped due to the pipeline bubble.
-.macro ENTER_INTERRUPT SUBC(XP,4,XP)
+.macro ENTER_INTERRUPT() SUBC(XP,4,XP)
 
 ////////////////////////////////////////////////////////////////////////
 /// Kernel Interrupt support code
