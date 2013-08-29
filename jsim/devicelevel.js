@@ -257,7 +257,7 @@ var Simulator = (function(){
                     var fn_name = matched_array[1];
                     var arg_nodes = matched_array[2].split(/[,\s]\s*/);
                     
-                    console.log('fn:',fn_name,"args:",arg_nodes);
+//                    console.log('fn:',fn_name,"args:",arg_nodes);
                     
                     if (fn_name == 'I'){
                         // continue on
@@ -551,15 +551,15 @@ var Simulator = (function(){
     }
     
     function tran_plot(dataseries){
-        console.log("data:",dataseries);
+//       console.log("data:",dataseries);
     }
     
     function ac_plot(mdata,pdata){
-        console.log("mdata:",mdata,"pdata:",pdata);
+//        console.log("mdata:",mdata,"pdata:",pdata);
     }
     
     function dc_plot(dataseries){
-        console.log("data:",dataseries);
+//        console.log("data:",dataseries);
     }
     
     /*********************

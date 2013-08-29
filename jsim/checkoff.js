@@ -227,9 +227,9 @@ var Checkoff = (function(){
                 
                 // checksum: (i+1)*((int)(time*1e12) + (int)expect)
                 checksum += ((i + 1) * (Math.floor(time_steps[i]*1e12) + Math.floor(expectedVal)));
-                console.log("checksum term:",(i+1)*(Math.floor(time_steps[i]*1e12) + Math.floor(expectedVal)));
+//                console.log("checksum term:",(i+1)*(Math.floor(time_steps[i]*1e12) + Math.floor(expectedVal)));
 //                console.log("i + 1:",i+1);
-                console.log("cumulative checksum:",checksum);
+//                console.log("cumulative checksum:",checksum);
                     
                 expectedVal = expectedVal.toString(base).split("");
                     
@@ -283,7 +283,7 @@ var Checkoff = (function(){
             }
         }
         checksum += 2536038;
-        console.log("expected checksum:",mCheckoffStatement.checksum.value,"actual:",checksum);
+//        console.log("expected checksum:",mCheckoffStatement.checksum.value,"actual:",checksum);
         // if there are no mistakes, return null
         return null;
     }

@@ -850,7 +850,7 @@ min-height:'+minHeight+'px"></div>');
     function dc_plot(div, results, plots, sweep1, sweep2){
         if (sweep1 === undefined) return;
     
-        console.log("results:",results);
+//        console.log("results:",results);
         for (var p = 0; p < plots.length; p += 1) {
             var node = plots[p][0];  // for now: only one value per plot
             var dataseries = [];

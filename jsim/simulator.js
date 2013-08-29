@@ -490,16 +490,16 @@ var Simulator = (function(){
     }
     
     function tran_plot(dataseries){
-        console.log("data:",dataseries);
+//        console.log("data:",dataseries);
         Plot.tran_plot(mDiv,dataseries);
     }
     
     function ac_plot(mdata,pdata){
-        console.log("mdata:",mdata,"pdata:",pdata);
+//        console.log("mdata:",mdata,"pdata:",pdata);
     }
     
     function dc_plot(dataseries){
-        console.log("data:",dataseries);
+//        console.log("data:",dataseries);
     }
     
     /*********************
