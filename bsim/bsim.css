@@ -37,7 +37,8 @@ table.regfile {
 
 .regfile, .disassembly, .tty, .memory, .stack, .pc-value, .pc-label {
     font-family: Menlo, Monaco, monospace;
-    font-size: small;
+    font-size: 12px;
+    line-height: 1.7;
 }
 
 .pc-label {
