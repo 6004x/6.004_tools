@@ -25,6 +25,7 @@
 
         this.setPaneWidth = function(pane_number, width) {
             var old_width = mPanes[pane_number].width();
+	    width = Math.floor(width);  // keep dimensions integers!
             mPanes[pane_number].css({width: width});
             if(pane_number+1 < mPanes.length) {
                 mPanes[pane_number+1].css({width: mPanes[pane_number+1].width() + (old_width - width)});
