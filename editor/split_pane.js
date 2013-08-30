@@ -9,6 +9,7 @@
         var mSplitters = [];
         var mCurrentHeight = 0;
         var mCurrentWidth = 0;
+	var window_margin = 25;
 
         _.extend(this, Backbone.Events);
 
@@ -77,14 +78,14 @@
             _.each(panes, function(p) {
                 self.addPane(p);
             });
-            var width = $(window).width() - 20;
+            var width = $(window).width() - window_margin;
             mCurrentWidth = width;
             _.each(_.range(mPanes.length), function(i) {
                 self.setPaneWidth(i, (width/mPanes.length)|0); 
             });
 
             $(window).resize(function() {
-                var window_width = $(window).width() - 20;
+                var window_width = $(window).width() - window_margin;
                 for (var i = mPanes.length - 1; i >= 0; i--) {
                     if(mPanes[i].width() > 0) {
                         var delta_width = (mCurrentWidth - window_width)
