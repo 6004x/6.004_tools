@@ -9,7 +9,6 @@
         var mSplitters = [];
         var mCurrentHeight = 0;
         var mCurrentWidth = 0;
-	var window_margin = 5;  // a little fudge factor on pane width calcs
 
         _.extend(this, Backbone.Events);
 
@@ -73,9 +72,12 @@
 
 	// compute width available for panes = window width - total width of splitters - margin
 	var window_width = function() {
+	    var window_margin = 5;
 	    var splitter_width = 11;   // css says 10, but sometimes reported as 11 by inspectors?
-	    return $(window).width() - splitter_width*(mPanes.length - 1) - window_margin;
+	    var result = $(window).width() - splitter_width*(mPanes.length - 1) - window_margin;
+	    return 2*Math.floor(result/2);  // make evenly divisible by 2
 	}
+	this.window_width = window_width;
 
         var initialise = function(panes) {
             mHolder = $('<div>').css({width: '100%'}).appendTo(mContainer);

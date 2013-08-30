@@ -1,29 +1,29 @@
 JSim = {};
 
 $(function() {
-    
     var split = new SplitPane('#split-container', ['#filetree', '#editor-pane', '#simulation-pane']);
+
+    // initial configuration
     split.setPaneWidth(0, 200);
-    split.setPaneWidth(1, $(window).width() - 220);
+    split.setPaneWidth(1, split.window_width() - 200);
     split.setPaneWidth(2, 0);
 
     // Set up the split buttons.
     $('#maximise_editor').click(function() {
         split.setPaneWidth(0, 200);
-        split.setPaneWidth(1, $(window).width() - 220);
+        split.setPaneWidth(1, split.window_width() - 200);
         split.setPaneWidth(2, 0);
     });
     $('#split_pane').click(function() {
-        var width = $(window).width() - 20;
+        var width = split.window_width();
         split.setPaneWidth(0, 0);
         split.setPaneWidth(1, width/2);
         split.setPaneWidth(2, width/2);
     });
     $('#maximise_simulation').click(function() {
-        var width = $(window).width() - 20;
         split.setPaneWidth(0, 0);
         split.setPaneWidth(1, 0);
-        split.setPaneWidth(2, width);
+        split.setPaneWidth(2, split.window_width());
     });
 
     split.on('resize', function(widths) {
@@ -42,8 +42,7 @@ $(function() {
     // set up the results pane
     $('#simulation-pane').append($('<div class="btn-toolbar" id="graph-toolbar"></div>'),
                                  $('<div id="results"></div>'),
-                                 $('<div id="graphScrollOuter">\
-<div id="graphScrollInner"></div></div>')
+                                 $('<div id="graphScrollOuter"><div id="graphScrollInner"></div></div>')
                                 );
     
     $('#results').data("current",null);
