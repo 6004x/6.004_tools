@@ -9,7 +9,7 @@
         var mSplitters = [];
         var mCurrentHeight = 0;
         var mCurrentWidth = 0;
-	var window_margin = 25;
+	var window_margin = 5;  // a little fudge factor on pane width calcs
 
         _.extend(this, Backbone.Events);
 
@@ -70,6 +70,12 @@
             return _.map(mPanes, function(pane) { return pane.width(); });
         };
 
+	// compute width available for panes = window width - total width of splitters - margin
+	var window_width = function() {
+	    var splitter_width = 11;   // css says 10, but sometimes reported as 11 by inspectors?
+	    return $(window).width() - splitter_width*(mPanes.length - 1) - window_margin;
+	}
+
         var initialise = function(panes) {
             mHolder = $('<div>').css({width: '100%'}).appendTo(mContainer);
             var height = $(window).height() - mHolder.offset().top - 10;
@@ -78,17 +84,18 @@
             _.each(panes, function(p) {
                 self.addPane(p);
             });
-            var width = $(window).width() - window_margin;
-            mCurrentWidth = width;
+            var width = window_width();
+	    var pwidth = mPanes.length ? Math.floor(width/mPanes.length) : 0;
+	    mCurrentWidth = mPanes.length * pwidth;
             _.each(_.range(mPanes.length), function(i) {
-                self.setPaneWidth(i, (width/mPanes.length)|0); 
+		self.setPaneWidth(i, pwidth);
             });
 
             $(window).resize(function() {
-                var window_width = $(window).width() - window_margin;
+	        var wwidth = window_width();
                 for (var i = mPanes.length - 1; i >= 0; i--) {
                     if(mPanes[i].width() > 0) {
-                        var delta_width = (mCurrentWidth - window_width)
+                        var delta_width = (mCurrentWidth - wwidth)
                         var new_pane_width = Math.max(0, mPanes[i].width() - delta_width);
                         mCurrentWidth -= Math.min(mPanes[i].width(), delta_width); // Can't shrink by more than a pane width.
                         mPanes[i].css({width: new_pane_width});

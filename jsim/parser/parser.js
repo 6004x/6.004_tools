@@ -637,7 +637,7 @@ Parse
     Read connect
     **********************/
     function read_connect(line){
-        console.log("current subckt:",current_subckt);
+//        console.log("current subckt:",current_subckt);
         var obj = {type:"connect",
                    ports:[],
                    connections:[],
@@ -720,7 +720,7 @@ Parse
         }
         var defs = line.slice(2).map(function(item){return item.token});
         plotdefs[line[1].token] = defs;
-        console.log("plotdefs:",plotdefs);
+//        console.log("plotdefs:",plotdefs);
     }
     
     /*********************
@@ -1641,7 +1641,7 @@ Device readers: each takes a line of tokens and returns a device object,
                        };
             results.push(vobj);
         }
-        console.log("W vobjs:",results);
+//        console.log("W vobjs:",results);
         return results;
     }
     
@@ -1917,7 +1917,7 @@ must be specified.",line[0]);
             obj.properties.ports.push(new_port);
         }
         
-        console.log("mem:",obj);
+//        console.log("mem:",obj);
         return obj;
     }
     
@@ -1933,7 +1933,7 @@ must be specified.",line[0]);
             }
         }
         mem_obj.properties.contents = contents.slice(0);
-        console.log("obj:",mem_obj);
+//        console.log("obj:",mem_obj);
     }
     
     /***********************
