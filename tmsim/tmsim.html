@@ -18,36 +18,31 @@
         <script src="../editor/prompt.js"></script>
         <script src="../editor/passive_alert.js"></script>
         <script src="../editor/split_pane.js"></script>
-        <script src="../editor/external/codemirror.js"></script>
-        <script src="../editor/external/codemirror-extensions.js"></script>
-        <script src="../editor/external/radix.js"></script>
-        <script src="../editor/modes/tsim.js"></script>
-        <script src="../editor/passive_alert.js"></script>
         <script src="../editor/autocomplete.js"></script>
-        <!-- // <script src="../editor/browser_check.js"></script> -->
-        <!-- other files -->
-        <script src='../fileSystem/fileSystem.js'></script>
-        <script src='../fileSystem/folders.js'></script>
+        <script src="../editor/browser_check.js"></script>
+        <script src="../fileSystem/fileSystem.js"></script>
+        <script src="../fileSystem/folders.js"></script>
+        <!-- endbuild -->
+
+        <!-- build:css common.min.css -->
+        <!-- This block MUST be identical across bsim, jsim and tmsim. -->
+        <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
+        <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
+        <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
+        <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+        <link rel="stylesheet" type="text/css" href="../editor/common.css">
+        <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">
         <!-- endbuild -->
 
         <!-- build:js tmsim.min.js -->
         <script src="../editor/modes/tsim.js"></script>
-        <!-- other files -->
-        <script src='tapeList.js'></script>
-        <script src='tsm.js'></script>
-        <script src='tsmParser.js'></script>
-        <script src='tmsim.js'></script>
+        <script src="tapeList.js"></script>
+        <script src="tsm.js"></script>
+        <script src="tsmParser.js"></script>
+        <script src="tmsim.js"></script>
         <!-- endbuild -->
 
-        <!-- build:css tmsim-all.css -->
-        <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
-        <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
-
-        <link href='../fileSystem/external/jquery-ui.css' rel='stylesheet' type='text/css'>
-        <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
-
-        <link rel="stylesheet" type="text/css" href="../editor/common.css">
-        <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">    
+        <!-- build:css tmsim.min.css -->
         <link rel="stylesheet" type="text/css" href="TMSIM.css">   
         <!-- endbuild -->
     </head>
