@@ -1,6 +1,6 @@
 .options tty kalways
 
-.pcheckoff "http://6004.mit.edu/currentsemester/6004xassignment.doit" "Lab #7" -369169646
+.pcheckoff "http://6004.mit.edu/currentsemester/6004xassignment.doit" "Lab #7" -369169644
 
 .verify 0x0 1 0x73ff0003
 .verify 0x8 6 0x73ff013f 0x73ff013e 0x7fbf017b 0x739f0176 0x72617453 0x676e6974

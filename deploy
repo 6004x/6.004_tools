@@ -1,2 +1,3 @@
 #!/bin/sh
-rsync -avz -e ssh built/* 6004.mit.edu:webdocs/coursewarex/
+grunt
+rsync -avz -e ssh built/* 6004.mit.edu:ssldocs/coursewarex/

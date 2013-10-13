@@ -10,7 +10,7 @@ BSim.TextVerifier = function(beta, checkoff) {
         for(var ret = 0, i = 0, len = str.length; i < len; i++) {
             ret = (31 * ret + str.charCodeAt(i)) << 0;
         }
-        return ret + 36038; // Where does 36038 come from? I have no idea.
+        return ret + 36036; // Where does 36036 come from? I have no idea.
     };
 
     this.verify = function() {

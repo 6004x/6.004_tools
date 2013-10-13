@@ -636,7 +636,7 @@ test(".pcheckoff works", function() {
         deepEqual(result.checkoff, {
             kind: 'memory',
             addresses: {},
-            running_checksum: 36038,
+            running_checksum: 36036,
             url: 'some url',
             name: 'some name',
             checksum: 42
@@ -661,30 +661,30 @@ test(".pcheckoff works", function() {
 
     assembler.assemble("t.uasm", '.pcheckoff "some url" "some name" 42\n.verify 0 1 2', function(success, result) {
         deepEqual(result.checkoff.addresses, {0: 2}, "Single address is correct.");
-        equal(result.checkoff.running_checksum, 36040, "Single address checksum is correct");
+        equal(result.checkoff.running_checksum, 36038, "Single address checksum is correct");
     });
 
     assembler.assemble("t.uasm", '.pcheckoff "some url" "some name" 42\n.verify 0 2 6 5', function(success, result) {
         deepEqual(result.checkoff.addresses, {0: 6, 4: 5}, "Multiple address is correct.");
-        equal(result.checkoff.running_checksum, 36062, "Multiple address checksum is correct");
+        equal(result.checkoff.running_checksum, 36060, "Multiple address checksum is correct");
     });
 
     assembler.assemble("t.uasm", '.pcheckoff "some url" "some name" 42\n.verify 8 1 6', function(success, result) {
         deepEqual(result.checkoff.addresses, {8: 6}, "Single offset address is correct.");
-        equal(result.checkoff.running_checksum, 36052, "Single offset address checksum is correct");
+        equal(result.checkoff.running_checksum, 36050, "Single offset address checksum is correct");
     });
 
     assembler.assemble("t.uasm", '.pcheckoff "some url" "some name" 42\n.verify 8 2 6 9', function(success, result) {
         deepEqual(result.checkoff.addresses, {8: 6, 12: 9}, "Multiple offset address is correct.");
-        equal(result.checkoff.running_checksum, 36094, "Multiple offset address checksum is correct");
+        equal(result.checkoff.running_checksum, 36092, "Multiple offset address checksum is correct");
     });
 
     assembler.assemble("t.uasm", '.pcheckoff "some url" "some name" 42\n.verify 4 2 3 7\n.verify 32 3 20 21 22', function(success, result) {
         deepEqual(result.checkoff.addresses, {4: 3, 8: 7, 32: 20, 36: 21, 40: 22}, "Multiple statementt address is correct.");
-        equal(result.checkoff.running_checksum, 36427, "Multiple statement checksum is correct");
+        equal(result.checkoff.running_checksum, 36425, "Multiple statement checksum is correct");
     });
 
     assembler.assemble("t.uasm", '.pcheckoff "some url" "some name" 42\n.verify 0x20 8 0x73657420 0x2e2e2e74 0xa 0x20000000 0x73ff0143 0xc15f04e0 0x42ff04e1 0xd2370056', function(success, result) {
-        equal(result.checkoff.running_checksum, -2102874766, "Negative checksum is calculated correctly.");
+        equal(result.checkoff.running_checksum, -2102874770, "Negative checksum is calculated correctly.");
     });
 });

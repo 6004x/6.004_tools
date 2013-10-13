@@ -1,3 +1,6 @@
+var JSON;    // keep jslint happy
+var console,localStorage;
+
 var FileSystem= function(){
     var mServer = FILESERVER_HOST;
     var mUsername;
@@ -6,7 +9,7 @@ var FileSystem= function(){
     var openFiles=[];
     var allFiles=[];
     var allFolders=[];
-    var fileTree={};
+    var fileTree={files:{},folders:{}};
 
     var delimRegExp = /[^<>\$\:\"\|\/\\\?\*]+/g;
     var updated=true;
@@ -57,7 +60,7 @@ var FileSystem= function(){
         //  return fileTree;
         // }
         if(mServer){
-            sendAjaxRequest({name:'/',}, null, 'getFileList',
+            sendAjaxRequest({name:'/'}, null, 'getFileList',
                 function(data, status){
                     if(status=='success'){
 
@@ -72,7 +75,7 @@ var FileSystem= function(){
                         // console.log(allFolders);
                         // console.log(allFiles);
                         
-                        writeTreeToLocalStorage();
+                        //writeTreeToLocalStorage();
                         updated=true;
                         online=true;
                         callback(data.data);
@@ -87,17 +90,17 @@ var FileSystem= function(){
             }); 
             //callback will return with a file object
         }
-    }
+    };
     this.getSharedFileList = function(callback, callbackFailed){
         sendAjaxRequest({name:'/shared/'}, null, 'getFileList', function(data){
             fileTree = data.data;
             callback(fileTree);
-        })
-    }
+        });
+    };
     function makeListOfFiles(currTree){
-        
+        var key;
         for(key in currTree.folders){
-            var folder = currTree.folders[key]
+            var folder = currTree.folders[key];
             if(key.indexOf('~') > -1){
                 // console.log(key + 'metadata')
             } else {
@@ -106,7 +109,7 @@ var FileSystem= function(){
             }
         }
         for (key in currTree.files){
-            var file = currTree.files[key]
+            var file = currTree.files[key];
             allFiles.push(file.path);
         }
     }
@@ -120,7 +123,7 @@ var FileSystem= function(){
             var file = traverseTree(filePath, function(i, followPath, pathname, end){
 
                 if(end){
-                    var file = followPath.files[pathname]
+                    var file = followPath.files[pathname];
                     localStorage.setItem('6004file'+mUsername+'/'+filePath, JSON.stringify(file));    
                 }
                 return true;
@@ -145,7 +148,7 @@ var FileSystem= function(){
         var pathArray = fileName.match(delimRegExp);
         var followPath = fileTree;
         for(var i = 0; i < pathArray.length; i++){
-            var pathName = pathArray[i]
+            var pathName = pathArray[i];
             // action function of 4 variables, the index, the current path, the current path name, and whether we're at the end or not
             //, and the length of the whole pathArray. 
             // returns true if we can continue
@@ -155,11 +158,11 @@ var FileSystem= function(){
                     if(action(i, followPath, pathName, false))
                         followPath = followPath.folders[pathName];
                 } else {
-                    action(i, followPath, pathName, true)
+                    action(i, followPath, pathName, true);
                 }
             } catch(e) {
-                console.log(e.stack)
-                console.log(i)
+                console.log(e.stack);
+                console.log(i);
                 console.log(pathArray);
                 console.log(followPath);
             }
@@ -180,6 +183,7 @@ var FileSystem= function(){
         var finalTree=traverseTree(fileName, function(i, followPath, currentPath, end){
             if(end){
                 // console.log(fileName+' being written');
+		if (!(currentPath in followPath.files)) followPath.files[currentPath] = {};
                 followPath.files[currentPath].data = fileData;
                 followPath.files[currentPath].onServer = onServer;
                 followPath.files[currentPath].localDate = (new Date()).getTime();
@@ -188,7 +192,7 @@ var FileSystem= function(){
             return true;
         });
         openFiles.push(fileName);
-        writeTreeToLocalStorage();
+        //writeTreeToLocalStorage();
         return finalTree;
     }
 
@@ -196,9 +200,9 @@ var FileSystem= function(){
     //SERVER FUNCTIONS
     this.getFile = function(fileName, callback, callbackFailed){
         // console.log('getting '+fileName);
-        fileObj = {
+        var fileObj = {
             name : fileName,
-        }
+        };
         if(online){
             sendAjaxRequest(fileObj, null, 'getFile', function(data, status){
                 if(status == 'success'){
@@ -211,9 +215,9 @@ var FileSystem= function(){
         }else if (file){
             return callback(file, 'success');
         } else {
-            alert('file could not be retrieved')
+            alert('file could not be retrieved');
         }
-    }
+    };
     this.getRelativeFile = function(fileName, relativeFile, callback, callbackFailed){
         if(relativeFile.substring(0,1) == '/'){
             //not a relative file, but a direct path
@@ -226,12 +230,12 @@ var FileSystem= function(){
             // / is not allowed as the first char, as that points to direct path file. 
             var fileObj = {
                 name : fileName, 
-                data : '',
-            }
+                data : ''
+            };
             var otherFileObj = {
                 name : fileName, 
-                data : '',
-            }
+                data : ''
+            };
             sendAjaxRequest(fileObj, otherFileObj, 'json', 'getRelative', function(data, status){
                 // console.log(data);
                 callback(data);
@@ -259,13 +263,13 @@ var FileSystem= function(){
                             // console.log('current path'+i)
                             var k = 0;
                             for( k = 0; k <= i && k < pathArray.length - 1 ; k++){
-                                newPathArray.push(pathArray[k])
+                                newPathArray.push(pathArray[k]);
                             }
                             for ( k = j; k < relPathArray.length ; k++){
                                 var pathSeg = relPathArray[k];
                                 // console.log(pathSeg)
                                 if(pathSeg !== '.' && pathSeg !== '..')
-                                    newPathArray.push(pathSeg)
+                                    newPathArray.push(pathSeg);
                                 else if(pathSeg === '.') {
                                     // console.log('. detected')
                                 } else if(pathSeg == '..'){
@@ -299,84 +303,84 @@ var FileSystem= function(){
 
             }
         }
-    }
+    };
     this.saveFile = function(fileName, fileData, callback, callbackFailed){
         var fileObj = {
             name : fileName, 
             data : fileData, 
-            time : (new Date()).getTime(),
-        }
+            time : (new Date()).getTime()
+        };
         sendAjaxRequest(fileObj, null, 'saveFile', function(data, status){
             callback(data);
             writeFileToTree(fileName, fileData);
             updated = false;
         }, callbackFailed);
         
-    }
+    };
     this.makeAutoSave = function(fileName, fileData, callback, callbackFailed){
         var fileObj = {
             name : fileName, 
             data : fileData, 
-            time : (new Date()).getTime(),
-        }
+            time : (new Date()).getTime()
+        };
         sendAjaxRequest(fileObj, null, 'autoSaveFile', function(data, status){
             callback(data);
             writeFileToTree(fileName, fileData);
             updated = false;
         }, callbackFailed);
-    }
+    };
     this.getAutoSave = function(fileName, callback, callbackFailed){
         var fileObj = {
             name : fileName, 
-            time : (new Date()).getTime(),
-        }
+            time : (new Date()).getTime()
+        };
         sendAjaxRequest(fileObj, null, 'getAutoSave', function(data, status){
                 if(data.status === 'success'){
                     callback(data);
                     //writeFileToTree(data.name, data.data, true);
                 }
             }, callbackFailed);
-    }
+    };
     this.newFile = function(fileName, fileData, callback, callbackFailed){
         var fileObj = {
             name : fileName, 
             data : fileData, 
-            time : (new Date()).getTime(),
-        }
+            time : (new Date()).getTime()
+        };
         sendAjaxRequest(fileObj, null, 'saveFile', callback, callbackFailed);
         updated=false;
-    }   
+    };
     this.newFolder = function(folderName, callback, callbackFailed){
         var fileObj = {
             name : folderName, 
-            time : (new Date()).getTime(),
-        }
+            time : (new Date()).getTime()
+        };
         sendAjaxRequest(fileObj, null, 'newFolder', callback, callbackFailed);
         updated=false;
-    }   
+    };
     this.renameFile = function(oldFileName, newFileName, callback, callbackFailed){
         var fileObj = {
             name : oldFileName, 
-            time : (new Date()).getTime(),
-        }
+            time : (new Date()).getTime()
+        };
         var otherFileObj = {
             name : newFileName, 
-            time : (new Date()).getTime(),
-        }
+            time : (new Date()).getTime()
+        };
         sendAjaxRequest(fileObj, otherFileObj, 'renameFile', function(data, status){
             // console.log(status)
             if(status === 'success')
                 callback(data);
         }, callbackFailed);
-    }
+    };
     this.deleteFile = function(fileName, callback, callbackFailed){
         var fileObj = {
             name : fileName, 
-            time : (new Date()).getTime(),
-        }
+            time : (new Date()).getTime()
+        };
         sendAjaxRequest(fileObj, null, 'deleteFile', callback, callbackFailed);
         updated=false;
-    }
+    };
     this.copyFile = function(fileName, folderDestination,  callback, callbackFailed){
         callbackFailed = callbackFailed || failResponse;
         var newFileName = fileName.split('/');
@@ -388,7 +392,7 @@ var FileSystem= function(){
 
         var count = 0;
         var newFileFront = newFileName.substring(0, newFileName.lastIndexOf('.'));
-        var newFileType = newFileName.substring(newFileName.lastIndexOf('.'))
+        var newFileType = newFileName.substring(newFileName.lastIndexOf('.'));
         //loop to make sure that we don't overwrite an existing file
         //still allows the user to copy the file, doesn't overwrite
         //but names off the file
@@ -398,13 +402,13 @@ var FileSystem= function(){
             count++;
         }
         self.saveFile(newFileNameTemp, oldFile.data, function(newFile){
-            if(newFile.status = 'success'){
+            if(newFile.status == 'success'){
                 callback(newFile);
             }
 
-        })
-        }, callbackFailed)
-    }
+        });
+        }, callbackFailed);
+    };
     this.moveFile = function(fileName, folderDestination, callback, callbackFailed){
         self.copyFile(fileName, folderDestination, function(newFile){
             self.deleteFile(fileName, function(data){
@@ -412,15 +416,15 @@ var FileSystem= function(){
                     callback(newFile);
                 // console.log(data)
                 // console.log('from deleteFile');
-            }, callbackFailed)
-        }, callbackFailed)
-    }
+            }, callbackFailed);
+        }, callbackFailed);
+    };
     this.getBackup = function(fileName, callback, callbackFailed){
         sendAjaxRequest({name:fileName, time: (new Date()).getTime()}, null, 'getBackup', callback, callbackFailed)
-    }
+    };
     this.getSharedFile = function(fileName, callback, callbackFailed){
         sendAjaxRequest({name:'/shared/'+fileName, time: (new Date()).getTime()}, null, 'getFile', callback, callbackFailed)
-    }
+    };
     function sendAjaxRequest(fileObj, otherFileObj, query, callbackFunction, failFunction){
         // console.log(failFunction);
         failFunction = failFunction||failResponse;
@@ -433,8 +437,8 @@ var FileSystem= function(){
             'query' : query, 
             'name' : filePath, 
             'fileObj' : fileObj, 
-            'otherFileObj' : otherFileObj,
-        }
+            'otherFileObj' : otherFileObj
+        };
         // console.log(data)
         var req = $.ajax({
                 'type' : "POST",
@@ -467,7 +471,7 @@ var FileSystem= function(){
                 // console.log(data);
                 online = true;
                 return mUsername;
-            })
+            });
         else
             return mUsername;
     };
@@ -477,14 +481,14 @@ var FileSystem= function(){
             fileName = fileName.substring(1);
         // console.log(allFiles.indexOf(fileName));
         return allFiles.indexOf(fileName) !== -1;
-    }
+    };
     this.isFolder = function(folderName){
         // console.log(folderName+' check if in allFolders');
         if(folderName.substring(0,1) ==='/')
             folderName = folderName.substring(1);
         // console.log(allFolders.indexOf(folderName))
         return allFolders.indexOf(folderName) !== -1;
-    }
+    };
 
     return self;
 }();
