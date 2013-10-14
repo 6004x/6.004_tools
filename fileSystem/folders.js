@@ -1,5 +1,6 @@
-var $,_,FileSystem;   // keep jslint happy
-var JSON,localStorage,console;
+// keep jslint happy
+// var $,_,FileSystem;
+// var JSON,localStorage,console;
 
 var Folders=new function(){
     var rootNode, editor, editorWrapper;
@@ -67,7 +68,9 @@ var Folders=new function(){
                 addSharedFiles(sharedRoot, sharedNode);
             });
             
-        }, function(status){
+        }, function(jqXHR,status,errorThrown){
+	    console.log(status);
+	    console.log(errorThrown);
             noServer();
             callback(false);
         }

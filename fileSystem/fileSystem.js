@@ -1,5 +1,6 @@
-var JSON;    // keep jslint happy
-var console,localStorage;
+// keep jslint happy
+//var JSON;
+//var console,localStorage;
 
 var FileSystem= function(){
     var mServer = FILESERVER_HOST;
@@ -441,11 +442,12 @@ var FileSystem= function(){
         };
         // console.log(data)
         var req = $.ajax({
-                'type' : "POST",
-                'url' : url, 
-                'data' : {data: JSON.stringify(data)},
-                'dataType' : 'json'
-            });
+            'type' : "POST",
+	    'xhrFields': {withCredentials: true},
+            'url' : url, 
+            'data' : {data: JSON.stringify(data)},
+            'dataType' : 'json'
+        });
         req.done(function(data, status){
             //check if status is successful
             updated = true;
