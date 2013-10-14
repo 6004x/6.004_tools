@@ -295,7 +295,7 @@ var path=require('path');
 		function sendJSON(data) {
 			var sdata = JSON.stringify(data);
 			response.writeHead(200,{
-				'Content-Length': sdata.length,
+				'Content-Length': Buffer.byteLength(sdata),
 				'Content-Type': 'application/json'
 			});
 			response.end(sdata);
