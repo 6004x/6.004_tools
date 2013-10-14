@@ -8,18 +8,35 @@ var qs = require('querystring');
 var rimraf = require('rimraf');
 var libraryHandler = require('./libraryHandler.js');
 
+https.globalAgent.options.secureProtocol = 'SSLv3_method';
+
 function authenticate_user(req,res,next) {
+    //console.log("authenticate: "+req.method);
     var user = req.connection.getPeerCertificate().subject.emailAddress;
     req.user = user.split('@')[0];
     next();
 }
 
 var app = connect()
+    //.use(connect.logger({immediate: true, format: 'dev'}))
     .use(authenticate_user)
     .use(serverFunction);
 
+
 function serverFunction(request, response, next) {
-    if (request.method == 'POST') {
+    //console.log("method: "+request.method);
+    if (request.method == 'OPTIONS' || request.method == 'HEAD') {
+	var headers = {};
+	headers["Access-Control-Allow-Origin"] = request.headers.origin;
+	//headers["Access-Control-Allow-Origin"] = "*";
+	headers["Access-Control-Allow-Methods"] = "POST, OPTIONS, HEAD";
+	headers["Access-Control-Allow-Credentials"] = true;
+	headers["Access-Control-Max-Age"] = '86400'; // 24 hours
+	headers["Access-Control-Allow-Headers"] = "X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept";
+	headers['Content-Type'] = 'application/json';
+	response.writeHead(200, headers);
+	response.end('{}');
+    } else if (request.method == 'POST') {
         var body = '';
         request.on('data', function (data) {
             body += data;
@@ -38,9 +55,9 @@ function serverFunction(request, response, next) {
 }
 
 var options = {
-    key: fs.readFileSync('./6004.key'),
-    cert: fs.readFileSync('./6004.crt'),
-    ca: [fs.readFileSync('./mit-client.crt')],
+    key: fs.readFileSync('/home/6.004x/6004.key'),
+    cert: fs.readFileSync('/home/6.004x/6004.crt'),
+    ca: [fs.readFileSync('/home/6.004x/mit-client.crt')],
     requestCert: true,
     rejectUnauthorized: true,
 };
@@ -50,7 +67,7 @@ var server = https.createServer(options, app).listen(6004, function() {
 });
 
 var libraryHandler = function(request, response, postData) {
-    var root_path = process.cwd();//__dirname
+    var root_path = '/home/6.004x'; //process.cwd();//__dirname
     //current directory will hold all user files in /files
     var lib_path = path.join(root_path, 'files');
     //other relevant paths to be instantiated as the user logs in.
@@ -289,10 +306,10 @@ var libraryHandler = function(request, response, postData) {
     }
 
     function errorResponse(string){
-        //console.log(string)
+        console.log('ERROR: '+string);
         response.writeHeader(404, {
-            "Content-Type": "text/plain",
-            "Access-Control-Allow-Origin": '*'
+		"Content-Type": "text/plain",
+		"Access-Control-Allow-Origin": request.headers.origin
         });
         response.write('error: ' + string);
         response.end();
@@ -301,12 +318,12 @@ var libraryHandler = function(request, response, postData) {
     function sendJSON(data) {
         var sdata = JSON.stringify(data);
         response.writeHead(200, {
-            'Content-Length': sdata.length,
-            'Content-Type': 'application/json',
-            "Access-Control-Allow-Origin":'*'
+		'Content-Length': sdata.length,
+		'Content-Type': 'application/json',
+		'Access-Control-Allow-Origin': request.headers.origin
         });
         response.end(sdata);
-        //console.log('data sent');
+        //console.log('data sent: '+sdata);
     }
 
     function sendFile(full_path, file_path, saveAndBackup) {
