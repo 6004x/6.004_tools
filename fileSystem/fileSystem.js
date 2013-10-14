@@ -443,7 +443,7 @@ var FileSystem= function(){
         // console.log(data)
         var req = $.ajax({
             'type' : "POST",
-	    'xhrFields': {withCredentials: true},
+	    //'xhrFields': {withCredentials: true},
             'url' : url, 
             'data' : {data: JSON.stringify(data)},
             'dataType' : 'json'
