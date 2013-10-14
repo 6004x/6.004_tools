@@ -32,11 +32,9 @@ function cors_preflight(request, response, next) {
 function inject_cors(request, response, next) {
     var write = response.writeHead.bind(response);
     response.writeHead = function(status, headers) {
-        if(status >= 200 && status <= 299) {
-            headers = headers || {};
-            headers['Access-Control-Allow-Origin'] = request.headers.origin || '*';
-            headers['Access-Control-Allow-Credentials'] = 'true';
-        }
+        headers = headers || {};
+        headers['Access-Control-Allow-Origin'] = request.headers.origin || '*';
+        headers['Access-Control-Allow-Credentials'] = 'true';
         write(status, headers);
     };
     next();
