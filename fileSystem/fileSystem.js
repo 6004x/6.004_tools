@@ -421,10 +421,10 @@ var FileSystem= function(){
         }, callbackFailed);
     };
     this.getBackup = function(fileName, callback, callbackFailed){
-        sendAjaxRequest({name:fileName, time: (new Date()).getTime()}, null, 'getBackup', callback, callbackFailed)
+        sendAjaxRequest({name:fileName, time: (new Date()).getTime()}, null, 'getBackup', callback, callbackFailed);
     };
     this.getSharedFile = function(fileName, callback, callbackFailed){
-        sendAjaxRequest({name:'/shared/'+fileName, time: (new Date()).getTime()}, null, 'getFile', callback, callbackFailed)
+        sendAjaxRequest({name:'/shared/'+fileName, time: (new Date()).getTime()}, null, 'getFile', callback, callbackFailed);
     };
     function sendAjaxRequest(fileObj, otherFileObj, query, callbackFunction, failFunction){
         // console.log(failFunction);

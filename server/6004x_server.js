@@ -38,16 +38,16 @@ function inject_cors(request, response, next) {
             headers['Access-Control-Allow-Credentials'] = 'true';
         }
         write(status, headers);
-    }
+    };
     next();
 }
 
 var app = connect()
-    //.use(connect.logger({immediate: true, format: 'dev'}))
-    .use(inject_cors)
-    .use(cors_preflight)
-    .use(authenticate_user)
-    .use(serverFunction);
+//.use(connect.logger({immediate: true, format: 'dev'}))
+	.use(inject_cors)
+	.use(cors_preflight)
+	.use(authenticate_user)
+	.use(serverFunction);
 
 
 function serverFunction(request, response, next) {
@@ -75,7 +75,7 @@ var options = {
     cert: fs.readFileSync('/home/6.004x/6004.crt'),
     ca: [fs.readFileSync('/home/6.004x/mit-client.crt')],
     requestCert: true,
-    rejectUnauthorized: false,
+    rejectUnauthorized: false
 };
 
 var server = https.createServer(options, app).listen(6004, function() {
@@ -211,9 +211,6 @@ var libraryHandler = function(request, response, postData) {
             makeAutoSave(m_full_path, m_file_path, fileObj);
             sendJSON({name: m_file_path, data: fileData});
         },
-        getAutoSave: function(exists) {
-            sendAutoSave(full_path, file_path);
-        },
         newFolder: function(exists) {
             if(m_is_shared) {
                 errorResponse('Cannot write to shared files.');
@@ -329,7 +326,7 @@ var libraryHandler = function(request, response, postData) {
         response.write('error: ' + string);
         response.end();
     }
-        
+    
     function sendJSON(data) {
         var sdata = JSON.stringify(data);
         response.writeHead(200, {
@@ -338,6 +335,7 @@ var libraryHandler = function(request, response, postData) {
         });
         response.end(sdata);
         //console.log('data sent: '+sdata);
+	//console.log('data length: '+sdata.length);
     }
 
     function sendFile(full_path, file_path, saveAndBackup) {
@@ -476,26 +474,6 @@ var libraryHandler = function(request, response, postData) {
         });
     }
 
-    function renameAutoSave(full_path, callback) {
-        var asv_full_path = full_path + '~asv';
-        var new_asv_full_path = new_full_path + '~asv';
-    }
-
-    function sendAutoSave(full_path, file_path) {
-        getAutoSave(full_path, file_path, function() {
-            if(file_path.substring(0, 1) === '/')
-                file_path = file_path.substring(1);
-
-            sendJSON({
-                name: file_path,
-                autosave: true,
-                data: data,
-                status: 'success',
-                type: 'file',
-            });
-        });
-    }
-
     function makeBackup(full_path, file_path, fileObj, callback){
         var bak_full_path = full_path + '~bak';
         fs.exists(full_path, function(exists) {
@@ -543,7 +521,7 @@ var libraryHandler = function(request, response, postData) {
                     backup: true,
                     data: data,
                     status: 'success',
-                    type: 'file',
+                    type: 'file'
                 });
             } else {
                 errorResponse('could not find backup');
