@@ -1,34 +1,34 @@
 .include "/shared/bsim/beta.uasm"
 .include "/shared/bsim/lab7macros.uasm"
 
-||| Handler for opcode 1 extension:
-||| swapreg(RA,RC) swaps the contents of the two named registers.
-||| UASM defn = .macro swapreg(RA,RC) betaopc(0x01,RA,0,RC)
+// Handler for opcode 1 extension:
+// swapreg(RA,RC) swaps the contents of the two named registers.
+// UASM defn = .macro swapreg(RA,RC) betaopc(0x01,RA,0,RC)
 
-regs:   RESERVE(32)                     | Array used to store register contents
+regs:   RESERVE(32)                     // Array used to store register contents
 
 UI: 
         save_all_regs(regs)
  
-        LD(xp,-4,r0)                    | illegal instruction
-        extract_field(r0, 31, 26, r1)   | extract opcode, bits 31:26
-        CMPEQC(r1,0x1,r2)               | OPCODE=1?
-        BT(r2, swapreg)                 | yes, handle the swapreg instruction.
+        LD(xp,-4,r0)                    // illegal instruction
+        extract_field(r0, 31, 26, r1)   // extract opcode, bits 31:26
+        CMPEQC(r1,0x1,r2)               // OPCODE=1?
+        BT(r2, swapreg)                 // yes, handle the swapreg instruction.
 
-        LD(r31,regs,r0)                 | Its something else.  Restore regs
-        LD(r31,regs+4,r1)               | we've used, and go to the system's
-        LD(r31,regs+8,r2)               | Illegal Instruction handler.
+        LD(r31,regs,r0)                 // Its something else.  Restore regs
+        LD(r31,regs+4,r1)               // we've used, and go to the system's
+        LD(r31,regs+8,r2)               // Illegal Instruction handler.
         BR(_IllegalInstruction)
 
 swapreg:
-        extract_field(r0, 25, 21, r1)   | extract rc field from trapped instruction
-        MULC(r1, 4, r1)                 | convert to byte offset into regs array
-        extract_field(r0, 20, 16, r2)   | extract ra field from trapped instruction
-        MULC(r2, 4, r2)                 | convert to byte offset into regs array
-        LD(r1, regs, r3)                | r3 <- regs[rc]
-        LD(r2, regs, r4)                | r4 <- regs[ra]
-        ST(r4, regs, r1)                | regs[rc] <- old regs[ra]
-        ST(r3, regs, r2)                | regs[ra] <- old regs[rc]
+        extract_field(r0, 25, 21, r1)   // extract rc field from trapped instruction
+        MULC(r1, 4, r1)                 // convert to byte offset into regs array
+        extract_field(r0, 20, 16, r2)   // extract ra field from trapped instruction
+        MULC(r2, 4, r2)                 // convert to byte offset into regs array
+        LD(r1, regs, r3)                // r3 <- regs[rc]
+        LD(r2, regs, r4)                // r4 <- regs[ra]
+        ST(r4, regs, r1)                // regs[rc] <- old regs[ra]
+        ST(r3, regs, r2)                // regs[ra] <- old regs[rc]
         
         restore_all_regs(regs)
         JMP(xp)
