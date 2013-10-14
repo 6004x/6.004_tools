@@ -11,32 +11,48 @@ var libraryHandler = require('./libraryHandler.js');
 https.globalAgent.options.secureProtocol = 'SSLv3_method';
 
 function authenticate_user(req,res,next) {
-    //console.log("authenticate: "+req.method);
-    var user = req.connection.getPeerCertificate().subject.emailAddress;
-    req.user = user.split('@')[0];
+    if(req.connection.getPeerCertificate().subject) { // req.authorized doesn't seem to work...
+        var user = req.connection.getPeerCertificate().subject.emailAddress;
+        req.user = user.split('@')[0];
+        next();
+    } else {
+        res.writeHead(403); // No cert
+        res.write("Client certificate required.");
+        res.end();
+    }
+}
+
+function cors_preflight(request, response, next) {
+    if(request.method == 'OPTIONS') {
+        response.writeHead(200);
+        response.end();
+    } else next();
+}
+
+function inject_cors(request, response, next) {
+    var write = response.writeHead.bind(response);
+    response.writeHead = function(status, headers) {
+        if(status >= 200 && status <= 299) {
+            headers = headers || {};
+            headers['Access-Control-Allow-Origin'] = request.headers.origin || '*';
+            headers['Access-Control-Allow-Credentials'] = 'true';
+        }
+        write(status, headers);
+    }
     next();
 }
 
 var app = connect()
     //.use(connect.logger({immediate: true, format: 'dev'}))
+    .use(inject_cors)
+    .use(cors_preflight)
     .use(authenticate_user)
     .use(serverFunction);
 
 
 function serverFunction(request, response, next) {
     //console.log("method: "+request.method);
-    if (request.method == 'OPTIONS' || request.method == 'HEAD') {
-	var headers = {};
-	headers["Access-Control-Allow-Origin"] = request.headers.origin;
-	//headers["Access-Control-Allow-Origin"] = "*";
-	headers["Access-Control-Allow-Methods"] = "POST, OPTIONS, HEAD";
-	headers["Access-Control-Allow-Credentials"] = true;
-	headers["Access-Control-Max-Age"] = '86400'; // 24 hours
-	headers["Access-Control-Allow-Headers"] = "X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept";
-	headers['Content-Type'] = 'application/json';
-	response.writeHead(200, headers);
-	response.end('{}');
-    } else if (request.method == 'POST') {
+    if (request.method == 'POST') {
         var body = '';
         request.on('data', function (data) {
             body += data;
@@ -59,7 +75,7 @@ var options = {
     cert: fs.readFileSync('/home/6.004x/6004.crt'),
     ca: [fs.readFileSync('/home/6.004x/mit-client.crt')],
     requestCert: true,
-    rejectUnauthorized: true,
+    rejectUnauthorized: false,
 };
 
 var server = https.createServer(options, app).listen(6004, function() {
@@ -307,9 +323,8 @@ var libraryHandler = function(request, response, postData) {
 
     function errorResponse(string){
         console.log('ERROR: '+string);
-        response.writeHeader(404, {
-		"Content-Type": "text/plain",
-		"Access-Control-Allow-Origin": request.headers.origin
+        response.writeHead(404, {
+            "Content-Type": "text/plain"
         });
         response.write('error: ' + string);
         response.end();
@@ -318,9 +333,8 @@ var libraryHandler = function(request, response, postData) {
     function sendJSON(data) {
         var sdata = JSON.stringify(data);
         response.writeHead(200, {
-		'Content-Length': sdata.length,
-		'Content-Type': 'application/json',
-		'Access-Control-Allow-Origin': request.headers.origin
+            'Content-Length': sdata.length,
+            'Content-Type': 'application/json'
         });
         response.end(sdata);
         //console.log('data sent: '+sdata);

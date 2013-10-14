@@ -284,10 +284,9 @@ var path=require('path');
 
 		function errorResponse(string){
 			console.log(string)
-			response.writeHeader(404, 
+			response.writeHead(404, 
 				{
-					"Content-Type": "text/plain",
-					"Access-Control-Allow-Origin":'*'
+					"Content-Type": "text/plain"
 				});
 			response.write('error: '+string);
 			response.end();
@@ -297,8 +296,7 @@ var path=require('path');
 			var sdata = JSON.stringify(data);
 			response.writeHead(200,{
 				'Content-Length': sdata.length,
-				'Content-Type': 'application/json',
-				"Access-Control-Allow-Origin":'*'
+				'Content-Type': 'application/json'
 			});
 			response.end(sdata);
 			console.log('data sent');
