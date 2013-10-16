@@ -7,11 +7,6 @@
 // Copyright (C) 2011-2013 Massachusetts Institute of Technology
 // Chris Terman and Jacob White
 
-/*************** Notes by Stacey: 
-I changed the ground node at line 210 to 'gnd'
-
-*****/
-
 var cktsim = (function() {
 
     // JSON circuit description: [{type: device_type,
@@ -23,11 +18,12 @@ var cktsim = (function() {
     //    "inductor"		ports: n1, n2; properties: value, name
     //    "diode"		ports: anode, cathode; properties: area, type, name
     //    "opamp"		ports: nplus, nminus, output, gnd; properties: A, name
-    //    "nfet"		ports: D, G, S, B; properties: W, L, name
-    //    "pfet"		ports: D, G, S, B; properties: W, L, name
+    //    "nfet"		ports: D, G, S; properties: W, L, name
+    //    "pfet"		ports: D, G, S; properties: W, L, name
     //    "voltage source"	ports: nplus, nminus; properties: value=src, name
     //    "current source"	ports: nplus, nminus; properties: value=src, name
     //    "connect"             ports are all aliases for the same electrical node
+    //    "ground"              connections is list of aliases for gnd
     // signals are just strings
     // src == {type: function_name, args: [number, ...]}
 
@@ -122,6 +118,7 @@ var cktsim = (function() {
             //   sweep value of the second source
             return results;
         }
+	return undefined;
     }
 
     // AC analysis
@@ -138,6 +135,7 @@ var cktsim = (function() {
             var ckt = new Circuit(netlist);
             return ckt.ac(npts, fstart, fstop, ac_source_name);
         }
+	return undefined;
     }
 
     // Transient analysis
@@ -168,6 +166,7 @@ var cktsim = (function() {
 
             ckt.tran_start(progress, 100, 0, tstop);
         }
+	return undefined;
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -894,7 +893,7 @@ var cktsim = (function() {
             // Save magnitude and phase
             for (i = N - 1; i >= 0; i -= 1) {
                 var mag = Math.sqrt(solac[i] * solac[i] + solac[i + N] * solac[i + N]);
-                response[i].push(20 * Math.log(mag) / Math.LN10); //dB
+                response[i].push(mag);     //cjt 20 * Math.log(mag) / Math.LN10); //dB
 
                 // Avoid wrapping phase, add or sub 180 for each jump
                 var phase = 180 * (Math.atan2(solac[i + N], solac[i]) / Math.PI);
@@ -951,6 +950,7 @@ var cktsim = (function() {
             var d = new Diode(n1, n2, area, type);
             return this.add_device(d, name);
         } // zero area diodes discarded.
+	return undefined;
     };
 
 
@@ -1997,9 +1997,10 @@ var cktsim = (function() {
     //
     ///////////////////////////////////////////////////////////////////////////////
     var module = {
+	Circuit: Circuit,
         dc_analysis: dc_analysis,
         ac_analysis: ac_analysis,
-        transient_analysis: transient_analysis,
+        transient_analysis: transient_analysis
     };
     return module;
 }());
