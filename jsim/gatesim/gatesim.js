@@ -240,7 +240,7 @@ var gatesim = (function() {
 	var n = this.node_map[node];
 	if (n === undefined) return undefined;
 	else return n.history;
-    }
+    };
 
     ///////////////////////////////////////////////////////////////////////////////
     //
@@ -424,7 +424,7 @@ var gatesim = (function() {
         this.clock = false; // is this node connected to clock input of state device
         this.timing_info = undefined; // min tCD, max tPD for this node
         this.in_progress = false; // flag to catch combinational cycles
-    }
+    };
 
     Node.prototype.add_fanout = function(device) {
         if (this.fanouts.indexOf(device) == -1) this.fanouts.push(device);
@@ -547,9 +547,7 @@ var gatesim = (function() {
 
     function Source(network, name, inputs, output, properties) {
         this.network = network;
-        this.type = type;
         this.name = name;
-        this.table = table;
         this.inputs = inputs;
         this.output = output;
         this.source = parse_source(properties.v);
@@ -611,7 +609,7 @@ var gatesim = (function() {
                 onode.p_event(tpd, v, drive, this.lenient);
             }
         }
-    }
+    };
 
     function parse_source(v) {
     }
@@ -850,7 +848,7 @@ var gatesim = (function() {
     var module = {
         'dc_analysis': dc_analysis,
         'ac_analysis': ac_analysis,
-        'transient_analysis': transient_analysis,
+        'transient_analysis': transient_analysis
     };
     return module;
 }());
