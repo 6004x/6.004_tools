@@ -49,12 +49,9 @@ var Parser = (function(){
     ************************************/
     function analyze(input_string){
         input_string += "\n";
-        var line_ext_pattern = /\n+[\t ]*\+/g;
-        // newline followed by (whitespace and) a plus
-        var comment1_pattern = /[^:]\/\/.*\n/g;
-        var comment2_pattern = /\/\*(.|\n)*?\*\//g;
-        // double slash till the end of the line
-        // slash-star till star-slash
+        var line_ext_pattern = /\n+[\t ]*\+/g;       // newline followed by (whitespace and) a plus
+        var comment1_pattern = /\/\/.*\n/g;      // double slash till the end of the line
+        var comment2_pattern = /\/\*(.|\n)*?\*\//g;  // slash-star till star-slash
         
         function newline_track(match){
             // replace everything that isn't a newline/record separator with a space
@@ -89,10 +86,10 @@ var Parser = (function(){
         --returns: an array of tokens
     *******************************/
     function split(input_string,filename){ 
-        var pattern = /".*?"|-?[\w:\.$#\[\]]+|=|\(|\)|,|\/\*|\n|\u001e/g;
+        var pattern = /"(\\.|[^"])*"|-?[\w:\.$#\[\]]+|=|\(|\)|,|\/\*|\n|\u001e/g;
         // \w*\s*\([^\)]*\)| old function pattern
         // 'pattern' will match, in order:
-        //      anything wrapped in quotes
+        //      anything wrapped in quotes (handles escaped characters)
         //      a hex number
         //      a number (int, float, exponential or scaled) (includes octal)
         //      names:
@@ -110,7 +107,7 @@ var Parser = (function(){
         // [^,\)]+(,\s*[^,\)]+)*
         var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)/;
         var control_pattern = /^\..+/;
-        var string_pattern = /".*?"/;
+        var string_pattern = /"(\\.|[^"])*"/;
         var num_pattern = /^(([+-]?\d*\.?)|(0x)|(0b))\d+(([eE]-?\d+)|[A-Za-z]*)/;
         
         var matched_array;
@@ -125,7 +122,7 @@ var Parser = (function(){
             /*if (fn_pattern.test(matched)){
                 type = 'function';
             } else*/ if (string_pattern.test(matched)){
-                matched = matched.replace(/"/g,'');
+                matched = matched.slice(1,-1);  // chop off enclosing quotes
                 type = 'string';
             }  else if (names_pattern.test(matched)){
                 type = 'name';
@@ -159,7 +156,7 @@ var Parser = (function(){
                                  column:offset,
                                  type:type,
                                  origin_file:filename
-                                }
+                                };
                 if (type == "number"){
                     try {
                         token_obj.token = parse_number(matched);
@@ -2110,10 +2107,66 @@ Flattening
 //        move_instances(tokens);
 //    }
        
+    /***************************
+     cjt
+     ****************************/
+
+    function xparse(input_string, filename, callback, error_callback, reset) {
+	var included_files = [];   // list of included files
+	var contents;   // string holding JSim text
+
+	// called when complete contents is available, including .include files
+	// invoke callback when done
+	function tokenize() {
+	    var m = contents.match(/".*?"|-?[\w:\.$#\[\]]+|=|\(|\)|,|\/\*|\n|\u001e/g);
+	}
+
+	function process_includes() {
+	    // search for .include "filename" <EOL>
+	    var pattern = /^([ \t]*?)\.include\s*\"(.*?)".*?$/m;
+	    var m = pattern.exec(contents);
+	    if (m) {
+		var fname = m[2];
+		// found another include statement, 
+		if (included_files.indexOf(fname) != -1) {
+		    // complain about multiple include
+		}
+
+		// replace .include by file contents
+		included_files.push(fname);
+		var start = m.index;
+		var end = start + m[0].length;
+		FileSystem.getFile(fname,
+				   function(data) {
+				       // success
+				       contents = contents.slice(0,start) +
+					   '.file "' + fname + '"\n' + 
+					   analyze(data.data) + 
+					   '\n.endfile\n' +
+					   contents.slice(end);
+				       // look for additional includes
+				       process_includes();
+				   },
+				   function () {
+				       // error
+				       error_cb(new CustomError("Could not get file "+fname,file_token));
+				   });
+	    } else {
+		// no more includes, start remainder of processing
+		tokenize();
+	    }
+	}
+
+	// process top-level file
+	contents = '.file "' + filename + '"\n' + analyze(input_string) + '\n.endfile\n';
+	process_includes();
+    }
+    
+
 /***************************
 Exports
 ****************************/
-    return {parse:tokenize,
+    return {parse:xparse, //tokenize,
             CustomError:CustomError,
 //            parse_number:parse_number
 //            move_instances:move_instances
