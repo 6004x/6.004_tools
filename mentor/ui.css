@@ -1,0 +1,15 @@
+.help-holder {
+    position: absolute;
+    top: 0px;
+    right: 100px;
+}
+
+.help-request-button {
+    background-color: white;
+    color: gray;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    padding: 5px;
+    font-weight: bold;
+    border: 2px solid gray;
+}

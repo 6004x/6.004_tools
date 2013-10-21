@@ -141,6 +141,8 @@ $(function() {
         new BSim.Controls(this, beta, editor, schematic);
     });
 
+    new Mentoring.UI('body');
+
     // Work around weird sizing bug.
     _.delay(function() {
         $(window).resize();

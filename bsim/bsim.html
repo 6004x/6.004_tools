@@ -54,11 +54,15 @@
         <script src="simulation/error_handler.js"></script>
         <script src="simulation/schematic_view.js"></script>
         <script src="verify.js"></script>
+        <script src="../mentor/external/webrtc.js"></script>
+        <script src="../mentor/comm_channel.js"></script>
+        <script src="../mentor/ui.js"></script>
         <!-- endbuild -->
 
         <!-- build:css bsim.min.css -->
         <link rel="stylesheet" type="text/css" href="bsim.css">
         <link rel="stylesheet" type="text/css" href="schematic.css">
+        <link rel="stylesheet" type="text/css" href="../mentor/ui.css">
         <!-- endbuild -->
     </head>
     <body>
@@ -72,6 +76,7 @@
                 <div id="header-alert-holder">
                 </div>
             </div>
+            <div id="helper-pane"></div>
             <div id="split-container">
                 <div id="filetree"></div>
                 <div id="editor-pane">
