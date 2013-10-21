@@ -1,10 +1,10 @@
 /***************************************************************************************
 ****************************************************************************************
 Parser.parse maps to the tokenize function:
-    tokenize(input_string, filename, callback, error_callback, reset)
+  xparse(input_string, filename, callback, error_callback)
 args:
     -input_string: the text of a file to parse
-    -filename: the name of the file (used to throw errors)
+    -filename: the name of the file (used to report errors)
     -callback: a function that will be called when the parser is finished. This function 
                will be passed an object with the following attributes:
                 -netlist
@@ -15,8 +15,6 @@ args:
                 -globals
     -error_callback: a function that will be called whenever an error is generated in an 
                      asynchronous part of the code
-    -reset: a boolean that should be true for a new simulation, false otherwise (recursive
-            calls automatically set this to false)
             
 You shouldn't be calling this function at all! Call Simulator.simulate instead.
 
@@ -39,142 +37,6 @@ var Parser = (function(){
         this.line = token.line;
         this.column = token.column;
         this.filename = token.origin_file;
-    }
-    
-    /**********************************
-    Analyzer: removes comments and line extensions
-        --args: -input_string: a string representing the contents of a file
-        --returns: a string representing the contents of the file with line extensions
-                    processed and comments removed
-    ************************************/
-    function analyze(input_string){
-        input_string += "\n";
-        var line_ext_pattern = /\n+[\t ]*\+/g;       // newline followed by (whitespace and) a plus
-        var comment1_pattern = /\/\/.*\n/g;      // double slash till the end of the line
-        var comment2_pattern = /\/\*(.|\n)*?\*\//g;  // slash-star till star-slash
-        
-        function newline_track(match){
-            // replace everything that isn't a newline/record separator with a space
-            var replaced1 = match.replace(/[^\n\u001e]/g," ");
-            // now replace all newlines with record separators so that line numbers
-            // can be tracked accurately
-            return replaced1.replace(/\n/g,"\u001e");
-        }
-        
-        // remove single-line comments by replacing them with a newline,
-        // since the pattern includes the newline
-        var decommented1_string = input_string.replace(comment1_pattern,
-                                                        "\n");
-        
-        // extend lines by replacing the line_ext_pattern with a
-        // record separator for each newline.
-        var extended_string = decommented1_string.replace(line_ext_pattern,
-                                                          newline_track);
-        
-        // remove multi-line comments by replacing them with a record
-        // separator for each newline
-        var decommented2_string = extended_string.replace(comment2_pattern,
-                                                        newline_track);
-        
-        return decommented2_string;
-    }
-    
-    /*****************************
-    Splitter: splits a string into an array of tokens
-        --args: -input_string: a string containing the processed contents of a file
-                -filename: the name of the file
-        --returns: an array of tokens
-    *******************************/
-    function split(input_string,filename){ 
-        var pattern = /"(\\.|[^"])*"|-?[\w:\.$#\[\]]+|=|\(|\)|,|\/\*|\n|\u001e/g;
-        // \w*\s*\([^\)]*\)| old function pattern
-        // 'pattern' will match, in order:
-        //      anything wrapped in quotes (handles escaped characters)
-        //      a hex number
-        //      a number (int, float, exponential or scaled) (includes octal)
-        //      names:
-        //          a sequence that may start with a period,
-        //          then has a letter, 
-        //          then any number of letters, numbers, underscores, colons,
-        //          periods, commas, dollar signs, number signs, or square brackets
-        //      an equals sign
-        //      parentheses
-        //      commas
-        //      a newline
-        //      a record separater (unicode character \u001e)
-        
-//        var fn_pattern = /^\w*\s*\([^\)]*\)$/;
-        // [^,\)]+(,\s*[^,\)]+)*
-        var names_pattern = /(^[A-Za-z][\w$:\[\]\.]*)/;
-        var control_pattern = /^\..+/;
-        var string_pattern = /"(\\.|[^"])*"/;
-        var num_pattern = /^(([+-]?\d*\.?)|(0x)|(0b))\d+(([eE]-?\d+)|[A-Za-z]*)/;
-        
-        var matched_array;
-        var substrings = [];
-        var lineNumber = 1;
-        var lastLineOffset = 0;
-        while ((matched_array = pattern.exec(input_string)) !== null){
-            //set the token's type
-            var type;
-            var base;
-            var matched = matched_array[0];
-            /*if (fn_pattern.test(matched)){
-                type = 'function';
-            } else*/ if (string_pattern.test(matched)){
-                matched = matched.slice(1,-1);  // chop off enclosing quotes
-                type = 'string';
-            }  else if (names_pattern.test(matched)){
-                type = 'name';
-            } else if (num_pattern.test(matched)){
-                type = 'number';
-                if (/^0x/.test(matched)) base = 'hex';
-                else if (/^0b/.test(matched)) base = 'bin';
-                else if (/^0/.test(matched) && !(/^0$/.test(matched))) base = 'oct';
-                else base = 'dec';
-            } else if (control_pattern.test(matched)){
-                type = 'control';
-            } else if (matched == "="){
-                type = 'equals';
-            } else {
-                type = null;   
-            }
-            
-            // check for unclosed comments
-            if (matched == "/*"){
-                throw new CustomError("Unclosed comment",
-                                      {line:lineNumber,column:0,origin_file:filename});
-            }
-            
-            // find column offset
-            var offset = matched_array.index - lastLineOffset;
-            
-            // don't include record separators as tokens
-            if (matched != "\u001e"){
-                var token_obj = {token:matched,
-                                 line:lineNumber,
-                                 column:offset,
-                                 type:type,
-                                 origin_file:filename
-                                };
-                if (type == "number"){
-                    try {
-                        token_obj.token = parse_number(matched);
-                        token_obj.base = base;
-                    } catch (err) {
-                        throw new CustomError(err, token_obj);
-                    }
-                }
-                substrings.push(token_obj);
-            }
-            
-            // increment line number and calculate new line offset
-            if ((matched == "\n")||(matched_array[0] == "\u001e")){
-                lineNumber += 1;
-                lastLineOffset = matched_array.index + 1;
-            }
-        }
-        return substrings;
     }
     
     /********************************
@@ -343,90 +205,6 @@ var Parser = (function(){
         throw "Number expected";
     }
     
-    /******************************
-    filename_to_contents: takes a file path and returns the string representing its 
-    content
-        --args: -filename: a string representing the unique name of a file
-        --returns: a string representing the contents of the file
-    *******************************/
-    var numPendingFiles = 0;
-    var included_contents = [];
-    var includeCompleted = false;
-    var parseCalled = false;
-    function filename_to_contents(file_token, callback){
-        var filename = file_token.token;
-        numPendingFiles += 1;
-        FileSystem.getFile(filename, function(obj){
-            // success function
-            numPendingFiles -= 1;
-            tokenize(obj.data,filename,callback,error_cb,false);
-            
-            if (numPendingFiles === 0 && includeCompleted && !parseCalled) {
-                /*************** completed callback****************/
-                return parse(callback);
-            }
-            
-        }, function(){
-            error_cb(new CustomError("Could not get file "+filename,file_token));
-        });
-    }
-    
-    /**************************
-    Include: takes a parsed array of tokens and includes all the files
-        --args: -token_array: an array of tokens
-        --returns: a new array of tokens consisting of all the tokens from all files
-    ***************************/
-    function include(token_array, callback){
-        var included_files = [token_array[0].origin_file];
-        // list of filenames that have already been included 
-        var new_token_array = [];
-        includeCompleted = false;
-        
-        while (token_array.length > 0){
-            var current = token_array[0];
-            if (current.type != "number" && current.token.toLowerCase() == ".include"){
-                var file = token_array[1];
-                if (file.type != "string"){
-                    throw new CustomError("Filename expected", current);
-                } else {
-                    var filename = file.token;
-                    if (included_files.indexOf(filename) == -1) {
-                        included_files.push(filename);
-                        
-                        filename_to_contents(file, callback);
-                        token_array.shift();
-                        token_array.shift();  
-                    }
-                }
-            } else {
-            new_token_array.push(token_array.shift());
-            }
-        }
-        includeCompleted = true;
-        included_contents.push(new_token_array.slice(0));
-        if (numPendingFiles === 0){
-            parse(callback);
-        }
-    }
-    
-    /*********************************
-    Tokenize: takes a raw string, does decommenting/extending, tokenizes it, and expands
-    iterators and duplicators, and includes files
-        --args: -input_string: a string representing the file contents
-                -filename: a string representing the unique name of the file
-        --returns: an array of strings (tokens)
-    *********************************/
-    var error_cb;
-    
-    function tokenize(input_string, filename, callback, error_callback, reset){
-        error_cb = error_callback;
-        if (reset){
-            included_contents = [];
-            parseCalled = false;
-            numPendingFiles = 0;
-        }
-        return include(iter_expand(split(analyze(input_string),filename)),callback);
-    }
     
 /******************************************************************************
 *******************************************************************************
@@ -443,51 +221,6 @@ Parse
     var used_names;
     var netlist;
     var plotdefs;
-    
-    /********************
-    Parse: combines contents of all included files, interpets them (=turns into netlists), and runs the 
-    callback
-    ********************/
-    function parse(callback){
-        parseCalled = true;
-        
-        var token_array = [];
-        for (var i = 0; i < included_contents.length; i += 1){
-            token_array = token_array.concat(included_contents[i]);
-        }
-        try {
-            callback(interpret(token_array));
-        } catch(err){
-            error_cb(err);
-            return;
-        }
-    }
-    
-    /*************************
-    Instance mover: takes all lines that list instances of user-defined subcircuits and puts them at the
-    end of the token array so that subcircuit definitions can be in any included file
-    **************************/
-    function move_instances(token_array){
-        var new_token_array = [];
-        var instances = [];
-        var line = [];
-        while (token_array.length > 0){
-            var current = token_array[0];
-            line.push(token_array.shift());
-            
-            if (current.token == "\n"){
-                if (line[0].token[0].toUpperCase() == "X"){
-                    instances = instances.concat(line);
-                } else {
-                    new_token_array = new_token_array.concat(line);
-                }
-                line = [];
-            }
-        }
-        new_token_array = new_token_array.concat(instances);
-//        console.log("new token array:",new_token_array);
-        return new_token_array;
-    }
     
     /***************************
     Interpret: turns a token array into a hierarchal representation then calls the flattening functions
@@ -512,7 +245,6 @@ Parse
         current_subckt = subcircuits._top_level_;
         
         var toParse = [];
-//        token_array = move_instances(token_array);
         
         // go through tokens one line at a time, and pass the line to the 
         // appropriate handler
@@ -1965,7 +1697,7 @@ must be specified.",line[0]);
         for (i = 0; i < props.length; i += 1){
             if (props[i][2].type != "number"){
                 throw new CustomError("Number expected",
-                                props[2].line,props[2].column)
+                                props[2].line,props[2].column);
             }
 //            try{
 //                obj.properties[props[i][0].token] = parse_number(props[i][2].token);
@@ -2099,67 +1831,191 @@ Flattening
         }
     }
     
-    
-    
-//    function moveInstTest(input_string){
-//        var tokens = split(analyze(input_string),"test_file");
-//        console.log("old tokens:",tokens);
-//        move_instances(tokens);
-//    }
-       
     /***************************
      cjt
      ****************************/
 
-    function xparse(input_string, filename, callback, error_callback, reset) {
-	var included_files = [];   // list of included files
-	var contents;   // string holding JSim text
+    // tokenize contents, build netlist, send it to the callback
+    // complication: reading include files is asynchronous, so the processing state is
+    // organized to allow for processing to resume after an async file operation is complete.
+    function xparse(input_string, filename, callback, error_callback) {
+        var included_files = [];   // list of included files
+        var tokens = [];  // list of accumulated tokens
 
-	// called when complete contents is available, including .include files
-	// invoke callback when done
-	function tokenize() {
-	    var m = contents.match(/".*?"|-?[\w:\.$#\[\]]+|=|\(|\)|,|\/\*|\n|\u001e/g);
-	}
+        // a stack of {pattern, contents, filename, line_number, line_offset}
+        // Note that the RegEx patten keeps track of where the next token match will
+        // start when pattern.exec is called.  The other parts of the state are used
+        // when generating error reports.
+        // An .include statement will push another state onto the stack, interrupting
+        // the processing of the current file. The last state on the stack is the one
+        // currently being processed.  When that contents is exhausted, the stack
+        // is popped and tokenizing resumes with the file that had the .include.
+        var state_stack = [];
 
-	function process_includes() {
-	    // search for .include "filename" <EOL>
-	    var pattern = /^([ \t]*?)\.include\s*\"(.*?)".*?$/m;
-	    var m = pattern.exec(contents);
-	    if (m) {
-		var fname = m[2];
-		// found another include statement, 
-		if (included_files.indexOf(fname) != -1) {
-		    // complain about multiple include
-		}
+        // test patterns are anchored to start of token
+        var string_pattern = /^"(\\.|[^"])*"/;
+        var comment_multiline_pattern = /^\/\*(.|\n)*?\*\//;  // comment: /* ... */ 
+        var comment_pattern = /^\/\/.*\n/;          // comment: double slash till the end of the line
+        var line_ext_pattern = /^\n+[\t ]*\+/;       // newline followed by (whitespace and) a plus
+        
+        var control_pattern = /^\..+/;
+        var names_pattern = /^([A-Za-z_$][\w$:\[\]\.]*)/;
+        var num_pattern = /^(([+-]?\d*\.?)|(0[xX])|(0[bB]))\d+(([eE]-?\d+)|[A-Za-z]*)/;
 
-		// replace .include by file contents
-		included_files.push(fname);
-		var start = m.index;
-		var end = start + m[0].length;
-		FileSystem.getFile(fname,
-				   function(data) {
-				       // success
-				       contents = contents.slice(0,start) +
-					   '.file "' + fname + '"\n' + 
-					   analyze(data.data) + 
-					   '\n.endfile\n' +
-					   contents.slice(end);
-				       // look for additional includes
-				       process_includes();
-				   },
-				   function () {
-				       // error
-				       error_cb(new CustomError("Could not get file "+fname,file_token));
-				   });
-	    } else {
-		// no more includes, start remainder of processing
-		tokenize();
-	    }
-	}
+        // work on tokenizing contents, starting with most recently pushed state
+        function tokenize() {
+            var state = state_stack[state_stack.length - 1];
 
-	// process top-level file
-	contents = '.file "' + filename + '"\n' + analyze(input_string) + '\n.endfile\n';
-	process_includes();
+            var m,type,base,token,offset;
+            var include = false;   // true if next token is name of included file
+
+            while (state !== undefined) {
+                // find next token
+                m = state.pattern.exec(state.contents);
+
+                // all done with this file, return to previous file
+                if (m == null) {
+                    state_stack.pop();   // remove entry for file we just finished
+                    state = state_stack[state_stack.length - 1];  // return to previous file
+                    continue;
+                }
+
+                token = m[0];
+                
+                // take care of comments and line extensions
+                if (comment_multiline_pattern.test(token) || line_ext_pattern.test(token)) {
+                    // account for any matched newlines
+                    m = token.split('\n');
+                    state.line_number += m.length - 1;
+                    state.line_offset = m[m.length - 1].length;
+                    continue;
+                }
+                if (comment_pattern.test(token)) token = '\n';
+
+                //set the token's type
+                if (string_pattern.test(token)) {
+                    token = token.slice(1,-1);  // chop off enclosing quotes
+                    type = 'string';
+                }  else if (names_pattern.test(token)) {
+                    type = 'name';
+                } else if (num_pattern.test(token)) {
+                    type = 'number';
+                    if (/^0x/.test(token)) base = 'hex';
+                    else if (/^0b/.test(token)) base = 'bin';
+                    else if (/^0/.test(token) && !(/^0$/.test(token))) base = 'oct';
+                    else base = 'dec';
+                } else if (control_pattern.test(token)) {
+                    type = 'control';
+                    if (token == '.include') {
+                        // next token will be included filename
+                        include = true;
+                        continue;
+                    }
+                } else if (token == "=") {
+                    type = 'equals';
+                } else {
+                    type = null;
+                }
+            
+                // create a token and do a little post-processing
+                var t = {token: token,
+                         line: state.line_number,
+                         column: m.index - state.line_offset,
+                         type: type,
+                         origin_file: state.filename
+                        };
+
+                // check for unclosed comments
+                if (token == "/*") {
+                    error_callback(new CustomError("Unclosed comment",t));
+                    return;
+                }
+                else if (type == "number") {
+                    try {
+                        t.token = parse_number(token);
+                        t.base = base;
+                    } catch (err) {
+                        error_callback(new CustomError(err,t));
+                        return;
+                    }
+                }
+                else if (include) {
+                    // push new file onto state stack
+                    if (process_file(token,t)) return;
+                    include = false;
+                    continue;
+                }
+                else if (token == "\n") {
+                    // increment line number and calculate new line offset
+                    state.line_number += 1;
+                    state.line_offset = m.index + 1;
+                }
+
+                // finally add token to our list and look for the next one
+                tokens.push(t);
+            }
+
+            // all done tokenizing...  the rest of the processing in synchronous
+            // so can code it up in a straightforward fashion
+            try {
+                callback(interpret(tokens));
+            } catch(err){
+                error_callback(err);
+                return;
+            }
+        }
+
+        // add a new state to the state stack to handle the processing of included file
+        function make_state(filename,contents) {
+            // pattern will match, in order:
+            //      anything wrapped in quotes (handles escaped characters)
+            //      /* */ multi-line comments
+            //      // comment to end of line
+            //      line extensions: one or more newlines followed by a line beginning with "+"
+            //      a token: optional sign followed by sequence of \w,:,.,$,#,[,]
+            //      other operators: (, ), comma, /*
+            //      newlines
+            var pattern = /"(\\.|[^"])*"|\/\*(.|\n)*?\*\/|\/\/.*\n|\n+[\t ]*\+|-?[\w:\.$#\[\]]+|=|\(|\)|,|\/\*|\n/g;
+
+            // pattern keeps track of processing state, so make a new one for each file to be processed
+            state_stack.push({contents: contents + '\n',     // add trailing newline just in case
+                              filename: filename,
+                              line_number: 1,
+                              line_offset: 0,
+                              pattern: pattern,
+                             });
+        }
+
+        // fetch new file from server then (asynchronously) push a state for the new file on the
+        // state stack and restart tokenizing process
+        function process_file(filename,token) {
+            if (included_files.indexOf(filename) != -1) {
+                error_callback(new CustomError("File included more than once",token));
+                return false;
+            }
+
+            included_files.push(filename);
+            FileSystem.getFile(filename,
+                               function(data) {
+                                   // success: add state for new file to processing stack
+                                   make_state(filename,data.data);  
+                                   // restart tokenizing with the new file.  The tokenizer
+                                   // will return to the old file once the new file is
+                                   // exhausted
+                                   tokenize();
+                               },
+                               function () {
+                                   // error: invoke error callback, then we're done!
+                                   error_callback(new CustomError("Could not get file",token));
+                               });
+
+            // let caller know async callback will take up further processing
+            return true;
+        }
+
+        // process top-level file
+        make_state(filename,input_string);
+        tokenize();  // start the ball rolling
     }
     
 
@@ -2169,7 +2025,5 @@ Exports
     return {parse:xparse, //tokenize,
             CustomError:CustomError,
 //            parse_number:parse_number
-//            move_instances:move_instances
-//            moveInstTest:moveInstTest
            };
 }());
