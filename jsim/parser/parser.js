@@ -244,35 +244,28 @@ Parse
                       };
         current_subckt = subcircuits._top_level_;
         
-        var toParse = [];
-        
-        // go through tokens one line at a time, and pass the line to the 
-        // appropriate handler
-        while (token_array.length > 0){
-            var current = token_array[0];
-            
-            // transfer the tokens of one line to toParse
-            if(String(current.token) != "\n"){
-                toParse.push(token_array.shift());
-            } else if (toParse.length !== 0) { 
-                if (toParse[0].type == "control"){ 
-                    parse_control(toParse);
-                    toParse = [];
-                } else {
-                    var dev = read_device(toParse);
-                    if (dev instanceof Array){
-                        current_subckt.devices = current_subckt.devices.concat(dev);
-                    } else {
-                        current_subckt.devices.push(dev);
-                    }
-                    token_array.shift();
-                    toParse = [];
-                }
-            } else {
-                token_array.shift();
-                continue;
-            }
-        }
+        // go through tokens one line at a time, passing the line to the appropriate handler
+	var index = 0;
+	var start = 0;
+        while (index < token_array.length){
+	    if (token_array[index].type == '\n') {
+		if (start < index) {
+		    var toParse = token_array.slice(start,index);   // tokens for this statement
+		    if (toParse[0].type == 'control') parse_control(toParse);
+		    else {
+			var dev = read_device(toParse);
+			if (dev instanceof Array){
+                            current_subckt.devices = current_subckt.devices.concat(dev);
+			} else {
+                            current_subckt.devices.push(dev);
+			}
+		    }
+		}
+		start = index + 1;  // next statement starts after newline
+	    }
+	    index += 1;
+	}
+
         netlist_instance("",{type:"instance",
                              ports:[],
                              connections:[],
@@ -1890,7 +1883,10 @@ Flattening
                     state.line_offset = m[m.length - 1].length;
                     continue;
                 }
-                if (comment_pattern.test(token)) token = '\n';
+                if (comment_pattern.test(token)) {
+		    state.pattern.lastIndex -= 1;  // leave newline at end for next token to deal with
+		    continue;
+		}
 
                 //set the token's type
                 if (string_pattern.test(token)) {
@@ -1913,9 +1909,10 @@ Flattening
                     }
                 } else if (token == "=") {
                     type = 'equals';
-                } else {
-                    type = null;
+                } else if (token == "\n") {
+                    type = '\n';
                 }
+		else type = undefined;
             
                 // create a token and do a little post-processing
                 var t = {token: token,
@@ -1958,7 +1955,9 @@ Flattening
             // all done tokenizing...  the rest of the processing in synchronous
             // so can code it up in a straightforward fashion
             try {
-                callback(interpret(tokens));
+		tokens = iter_expand(tokens);
+		var netlist = interpret(tokens);
+                callback(netlist);
             } catch(err){
                 error_callback(err);
                 return;

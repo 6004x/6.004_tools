@@ -64,13 +64,13 @@ var gatesim = (function() {
     function Network(netlist, options) {
         this.N = 0;
         this.node_map = {};
-	this.nodes = [];
+        this.nodes = [];
         this.devices = []; // list of devices
         this.device_map = {}; // name -> device
         this.event_queue = new Heap();
-	this.options = options;
+        this.options = options;
 
-	if (netlist !== undefined) this.load_netlist(netlist);
+        if (netlist !== undefined) this.load_netlist(netlist);
     }
 
     // return Node object for specified name, create if necessary
@@ -79,7 +79,7 @@ var gatesim = (function() {
         if (n === undefined) {
             n = new Node(name, this);
             this.node_map[name] = n;
-	    this.nodes.push(n);
+            this.nodes.push(n);
             this.N += 1;
         }
         return n;
@@ -92,13 +92,12 @@ var gatesim = (function() {
         var n,d;
         for (var i = netlist.length - 1; i >= 0; i -= 1) {
             var component = netlist[i];
-            var type = component[0];
-            var connections = component[1];
-            var properties = component[2];
+            var type = component.type;
+            var connections = component.connections;
+            var properties = component.properties;
 
             // convert node names to Nodes
-            for (var c in connections)
-            connections[c] = this.node(connections[c]);
+            for (var c in connections) connections[c] = this.node(connections[c]);
 
             // process the component
             var name = properties.name;
@@ -114,29 +113,29 @@ var gatesim = (function() {
                 this.device_map[name] = d;
             }
             else if (type == 'dlatch') {
-		throw "Device "+type+" not yet implemented in gatesim";
-	    }
+                throw "Device "+type+" not yet implemented in gatesim";
+            }
             else if (type == 'dlatchn') {
-		throw "Device "+type+" not yet implemented in gatesim";
-	    }
+                throw "Device "+type+" not yet implemented in gatesim";
+            }
             else if (type == 'dreg') {
-		throw "Device "+type+" not yet implemented in gatesim";
-	    }
+                throw "Device "+type+" not yet implemented in gatesim";
+            }
             else if (type == 'memory') {
-		throw "Device "+type+" not yet implemented in gatesim";
-	    }
+                throw "Device "+type+" not yet implemented in gatesim";
+            }
             else if (type == 'ground') {
                 // gnd node -- drive with a 0-input OR gate (output = 0)
                 n = connections.gnd;
                 if (n.drivers.length > 0) continue; // already handled this one
-		n.v = V0;   // should be set by initialization of LogicGate that drives this node
+                n.v = V0;   // should be set by initialization of LogicGate that drives this node
                 this.devices.push(new LogicGate(this, type, name, OrTable, [], n, properties));
             }
             else if (type == 'voltage source') {
                 n = connections.nplus; // hmmm.
                 if (n.drivers.length > 0) continue; // already handled this one
 
-		// Source have output node has an input too so one output change triggers the next
+                // Source have output node has an input too so one output change triggers the next
                 this.devices.push(new Source(this, name, [n], n, properties, true));
             }
             else throw 'Unrecognized gate: ' + type;
@@ -158,7 +157,7 @@ var gatesim = (function() {
         this.time = 0;
 
         // initialize nodes
-	var i;
+        var i;
         for (i = 0; i < this.nodes.length; i += 1) this.nodes[i].initialize();
 
         // queue initial events
@@ -182,7 +181,7 @@ var gatesim = (function() {
             if (t >= tupdate) {
                 // update progress bar
                 var completed = Math.round(100 * this.time / this.tstop);
-		this.progress.update(completed);
+                this.progress.update(completed);
 
                 // a brief break in the action to allow progress bar to update
                 // then pick up where we left off
@@ -237,9 +236,9 @@ var gatesim = (function() {
     //   old_v: value of node before event
     //   node: corresponding Node object
     Network.prototype.history = function(node) {
-	var n = this.node_map[node];
-	if (n === undefined) return undefined;
-	else return n.history;
+        var n = this.node_map[node];
+        if (n === undefined) return undefined;
+        else return n.history;
     };
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -552,12 +551,17 @@ var gatesim = (function() {
         this.output = output;
         this.source = parse_source(properties.v);
 
+	this.vol = network.options.vol || 0;
+	this.vil = network.options.vil || 0.1;
+	this.vih = network.options.vih || 0.9;
+	this.voh = network.options.voh || 1.0;
+
         for (var i = 0; i < inputs.length ; i+= 1) inputs[i].add_fanout(this);
         output.add_driver(this);
     }
 
     Source.prototype.initialize = function() {
-	// do something here?-- set initial value?
+        // do something here?-- set initial value?
     };
 
     Source.prototype.capacitance = function(node) {
@@ -611,7 +615,63 @@ var gatesim = (function() {
         }
     };
 
+    Source.prototype.next_contamination_time = function(time) {
+	time += 1e-13;	// get past current time by epsilon
+	var tlast = 0;
+	var vlast = 0;
+	var npairs = this.source.length / 2;
+	var et;
+	for (var i = 0; i < npairs; i += 2) {
+	    var t = this.source[i];
+	    var v = this.source[i+1];
+	    if (i > 0 && time <= t) {
+		if (vlast >= this.vih && v < this.vih) {
+		    et = tlast + (t - tlast)*(this.vih - vlast)/(v - vlast);
+		    if (et > time) return et;
+		}
+		else if (vlast <= this.vil && v > this.vil) {
+		    et = tlast + (t - tlast)*(this.vil - vlast)/(v - vlast);
+		    if (et > time) return et;
+		}
+	    }
+	    tlast = t;
+	    vlast = v;
+	}
+	return -1;
+    };
+
+    Source.prototype.next_propagation_time = function (time) {
+	time += 1e-13;	// get past current time by epsilon
+	var tlast = 0;
+	var vlast = 0;
+	var npairs = this.source.length / 2;
+	var et;
+	for (var i = 0; i < npairs; i += 2) {
+	    var t = this.source[i];
+	    var v = this.source[i+1];
+	    if (i > 0 && time <= t) {
+		if (vlast < this.vih && v >= this.vih) {
+		    et = tlast + (t - tlast)*(this.vih - vlast)/(v - vlast);
+		    if (et > time) return et;
+		}
+		else if (vlast > this.vil && v <= this.vil) {
+		    et = tlast + (t - tlast)*(this.vil - vlast)/(v - vlast);
+		    if (et > time) return et;
+		}
+	    }
+	    tlast = t;
+	    vlast = v;
+	}
+	return -1;
+    };
+
+    // return list of alternating t and v values
     function parse_source(v) {
+	if (v.type == 'dc') {
+	    return [0, v.args[0]];   // single t,v pair
+	} else if (v.type == 'pwl') {
+	    return v.args;
+	} else throw "Unrecognized source type "+v.type;
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -730,7 +790,7 @@ var gatesim = (function() {
         this.output = output;
         this.properties = properties;
 
-	this.lenient = properties.lenient !== undefined && properties.lenient !== 0;
+        this.lenient = properties.lenient !== undefined && properties.lenient !== 0;
 
         for (var i = 0; i < inputs.length ; i+= 1) inputs[i].add_fanout(this);
         output.add_driver(this);
@@ -771,11 +831,11 @@ var gatesim = (function() {
             return table[in0.v][in1.v][in2.v][in3.v][in4.v][in5.v][4];
         };
         else this.logic_eval = function() {
-		// handles arbitrary numbers of inputs (eg, for BusTable).
-		var t = table;
-		for (var i = 0; i < inputs.length ; i+= 1) t = t[inputs[i].v];
-		return t[4];
-	    };
+                // handles arbitrary numbers of inputs (eg, for BusTable).
+                var t = table;
+                for (var i = 0; i < inputs.length ; i+= 1) t = t[inputs[i].v];
+                return t[4];
+            };
     }
 
     LogicGate.prototype.initialize = function() {
