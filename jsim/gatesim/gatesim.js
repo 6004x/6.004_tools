@@ -95,6 +95,7 @@ var gatesim = (function() {
             var type = component.type;
             var connections = component.connections;
             var properties = component.properties;
+	    counts[type] = (counts[type] || 0) + 1;
 
             // convert node names to Nodes
             for (var c in connections) connections[c] = this.node(connections[c]);
@@ -149,7 +150,7 @@ var gatesim = (function() {
         for (n in this.node_map) this.node_map[n].finalize();
 
         var msg = this.N.toString() + ' nodes';
-        for (d in counts) msg += ', ' + counts[d].toString() + ' ' + d.split(':')[1];
+        for (d in counts) msg += ', ' + counts[d].toString() + ' ' + d;
         console.log(msg);
     };
 
@@ -175,6 +176,7 @@ var gatesim = (function() {
         if (!this.progress.stop_requested) // halt when user clicks stop
         while (this.time < this.tstop && !this.event_queue.empty()) {
             var event = this.event_queue.pop();
+	    this.time = event.time;
             event.node.process_event(event, false);
 
             // check for coffee break every 1000 events
@@ -419,7 +421,8 @@ var gatesim = (function() {
 
     Node.prototype.initialize = function() {
         this.v = VX;
-        this.history = []; // list of events that changed node value
+        this.times = []; // history of events
+        this.values = [];
         this.cd_event = undefined; // contamination delay event for this node
         this.pd_event = undefined; // propagation delay event for this node
 
@@ -443,10 +446,11 @@ var gatesim = (function() {
         else if (event == this.pd_event) this.pd_event = undefined;
 
         if (this.v != event.v || force) {
-            // remember history of changes
-            event.old_v = this.v;
-            this.history.push(event);
+	    this.times.push(event.time);
+	    this.values.push(this.v*4 + event.v);   // remember both previous and new values
+
             this.v = event.v;
+	    //console.log(this.name + ": " + "01XZ"[event.old_v] + "->" + "01XZ"[event.v] + " @ " + (event.time * 1e9).toFixed(2));
 
             // let fanouts know our value changed
             for (var i = this.fanouts.length - 1; i >= 0; i -= 1)
@@ -589,13 +593,16 @@ var gatesim = (function() {
     Source.prototype.process_event = function(event) {
         var time = this.network.time;
         var t,v;
-        if (event.type == CONTAMINATE) {
+
+	// propagate events on source's output cause new events
+	// to be scheduled for *next* source transition
+        if (event.type == PROPAGATE) {
             t = this.next_contamination_time(time);
             if (t >= 0) this.output.c_event(t - time);
-        }
-        else if (event.type == PROPAGATE) {
+
             t = this.next_propagation_time(time);
             if (t.time > 0) this.output.p_event(t.time - time, t.value, 0, false);
+	    //console.log(this.output.name + ": "+(t.time * 1e9).toFixed(2) + ' -> ' + "01XZ"[t.value]);
         }
     };
 
