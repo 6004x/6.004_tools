@@ -233,8 +233,7 @@ Parse
         used_names = [];
         plotdefs = {};
         netlist = [{type:'ground',
-                    ports:['gnd'],
-                    connections:['gnd'],
+                    connections:{gnd: 'gnd'},
                     properties:{}}];
         subcircuits = {_top_level_:{name:"_top_level_",
                                     ports:[],
@@ -1712,6 +1711,8 @@ Flattening
     Netlist Device
     ************************/
     function netlist_device(prefix, dev_obj, parent_obj, JSON_netlist){
+	if (prefix) prefix += '.';
+
         var item;
         if (dev_obj.type == "instance"){
             if (!(dev_obj.properties.instanceOf in subcircuits)){
@@ -1779,7 +1780,7 @@ Flattening
                     var si = parent_obj.ports.indexOf(signal);
                     local_connections.push(parent_obj.connections[si]);
                 } else {
-                    local_connections.push(addAffixes(signal,dev_index));
+                    local_connections.push(prefix+signal); //addAffixes(signal,dev_index));
                 } 
             }
             
@@ -1787,8 +1788,9 @@ Flattening
             for (item in local_props){
                 new_obj.properties[item] = local_props[item];
             }
-            new_obj.properties.name = addAffixes(new_obj.properties.name,
-                                                 dev_index);
+	    var n = prefix + new_obj.properties.name;
+	    if (ndevices != 1) n += '#' + dev_index;
+            new_obj.properties.name = n;
             new_obj.type = dev_obj.type;
             
             // check for duplicate device names
