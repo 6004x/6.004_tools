@@ -686,8 +686,13 @@ Parse
     *******************************/
     function read_device(line){
         var device_obj;
+
+	var dev = line[0];
+	if (dev.type != 'name')
+	    throw new CustomError("Invalid device type",line[0]);
+
         // type of device based on first letter of first token
-        switch (line[0].token[0].toUpperCase()){
+        switch (dev.token[0].toUpperCase()){
             case "R":
                 device_obj = read_resistor(line);
                 break;
@@ -1976,7 +1981,7 @@ Flattening
             //      a token: optional sign followed by sequence of \w,:,.,$,#,[,]
             //      other operators: (, ), comma, /*
             //      newlines
-            var pattern = /"(\\.|[^"])*"|\/\*(.|\n)*?\*\/|\/\/.*\n|\n+[\t ]*\+|-?[\w:\.$#\[\]]+|=|\(|\)|,|\/\*|\n/g;
+            var pattern = /"(\\.|[^"])*"|\/\*(.|\n)*?\*\/|\/\/.*\n|\n+[\t ]*\+|-?[\w:\-\.$#\[\]]+|=|\(|\)|,|\/\*|\n/g;
 
             // pattern keeps track of processing state, so make a new one for each file to be processed
             state_stack.push({contents: contents + '\n',     // add trailing newline just in case
