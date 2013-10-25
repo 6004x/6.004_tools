@@ -1859,17 +1859,17 @@ var cktsim = (function() {
         }
 
         // post-processing for square wave
-        // square(v_init,v_plateau,freq,duty_cycle)
+        // square(v_init,v_plateau,freq,duty_cycle,rise_fall)
         else if (src.fun == 'square') {
             v1 = arg_value(src.args, 0, 0); // default init value: 0V
             v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
             freq = Math.abs(arg_value(src.args, 2, 1)); // default frequency: 1Hz
             var duty_cycle = Math.min(100, Math.abs(arg_value(src.args, 3, 50))); // default duty cycle: 0.5
-            src.args = [v1, v2, freq, duty_cycle]; // remember any defaulted values
+            var t_change = Math.abs(arg_value(src.args,4,1e-10)); 
+            src.args = [v1, v2, freq, duty_cycle,t_change]; // remember any defaulted values
 
             per = freq === 0 ? Infinity : 1 / freq;
-            var t_change = 0.01 * per; // rise and fall time
-            var t_pw = (.01 * duty_cycle) * 0.98 * per; // fraction of cycle minus rise and fall time
+            var t_pw = (.01 * duty_cycle) * (per - 2*t_change); // fraction of cycle minus rise and fall time
             pwl_source(src, [0, v1, t_pw, v1, t_pw + t_change, v2, 2*t_pw + t_change,
 			     v2, 2*t_change + 2*t_pw, v1, per, v1], true);
         }
