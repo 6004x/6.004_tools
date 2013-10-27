@@ -2,7 +2,7 @@
 // var $,_,FileSystem;
 // var JSON,localStorage,console;
 
-var Folders=new function(){
+var Folders = (function(){
     var rootNode, editor, editorWrapper;
     var editMode;
     var fileRegexp=/(<|>|\:|\"|\||\/|\\|\?|\*|~)/;
@@ -620,7 +620,7 @@ var Folders=new function(){
         $(parent).off('click');
         input.focus();
         input.select();
-
+	return true;
     }
     function renameFile(path, file_li){
         var file_path = path.substring(0, path.lastIndexOf('/')+1);
@@ -844,4 +844,4 @@ var Folders=new function(){
         });
     }
     return {setup:setup, refresh:refresh};
-}();
+}());
