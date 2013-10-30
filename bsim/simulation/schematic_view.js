@@ -78,6 +78,8 @@ BSim.SchematicView = function(schematic, beta) {
             setValue(key, value);
         });
 
+        $('#z-value').text((mBeta.readRegister(decoded.ra) == 0) ? '1' : '0');  //cjt
+
         // Update all the path value displays, as appropriate.
         var address_sum = decoded.literal*4 + pc + 4;
         var reg_out_a = mBeta.readRegister(decoded.ra);
