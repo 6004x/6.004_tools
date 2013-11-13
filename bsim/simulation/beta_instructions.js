@@ -502,6 +502,7 @@ BSim.Beta.Opcodes = {};
         opcode: 0x3B,
         name: 'XNORC',
         alufn: '~^',
+        has_literal: true,
         exec: function XNORC(a, literal, c) {
             this.realWriteRegister(c, ~(this.realReadRegister(a) ^ literal));
         }
