@@ -88,7 +88,7 @@ BSim.SubmitVerification = function(beta, editor, username, password, collaborati
         checksum: beta.verifier().checkoff().checksum,
         cycles: beta.getCycleCount(),
         size: beta.memorySize(),
-        version: 'BSim2.0.3',
+        version: 'BSim2.0.4',
         'server info': beta.mServerInfo.join(','),
         circuits: _.map(editor.filenames(), function(f) {
             return '============== source: ' + f + '\n' + editor.content(f) + '\n==============\n';
