@@ -93,7 +93,7 @@ BSim.Beta.Opcodes = {};
         },
         disassemble: function(op) {
             if(op.rb == 31) return "MOVE(" + name_register(op.ra) + ", " + name_register(op.rc) + ")";
-            else return "ADD(" + name_register(op.ra) + ", " + name_register(op.rc) + ", " + name_register(op.rc) + ")";
+            else return "ADD(" + name_register(op.ra) + ", " + name_register(op.rb) + ", " + name_register(op.rc) + ")";
         }
     });
 
@@ -502,6 +502,7 @@ BSim.Beta.Opcodes = {};
         opcode: 0x3B,
         name: 'XNORC',
         alufn: '~^',
+        has_literal: true,
         exec: function XNORC(a, literal, c) {
             this.realWriteRegister(c, ~(this.realReadRegister(a) ^ literal));
         }

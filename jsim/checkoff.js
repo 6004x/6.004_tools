@@ -138,6 +138,7 @@ var Checkoff = (function(){
                 else return i-1;
             }
         }
+	return undefined;
     }
     
     /**************************
@@ -339,7 +340,7 @@ var Checkoff = (function(){
             }
             dialog.addButton('Dismiss', 'dismiss');
             dialog.show();
-        }
+        };
         
         $.post(url, {
             username: username,

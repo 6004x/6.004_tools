@@ -67,8 +67,10 @@ $(function() {
     }
     
     function gls(){
-        var content = editor.content();
+        $('#split_pane').click();
         editor.clearErrors();
+        Checkoff.reset();
+        var content = editor.content();
         var div = $('#results');
         if (!content){
             return;

@@ -76,11 +76,11 @@ BSim.StackView = function(container, beta) {
             annotate(row, 'BP');
         }
         annotate(--row, 'oldBP');
-        annotate(--row, 'oldSP');
+        annotate(--row, 'oldLP');
 
         var return_instruction = mBeta.readWord(mBeta.readWord(bp - 8));
-        // If this instruction looks like ALLOCATE, assume we have a number of arguments
-        // equal to however many words we allocated.
+        // If this instruction looks like DEALLOCATE (ie, SUBC), assume we have a
+        // number of arguments equal to however many words we allocated.
         if(BSim.Common.FixUint(return_instruction & 0xFFFF0000) == 0xC7BD0000) {
             var arg_count = (return_instruction & 0xFFFF) >> 2;
             for(var arg = 1; arg <= arg_count; ++arg) {

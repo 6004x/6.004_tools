@@ -13,6 +13,7 @@ var Editor = function(container, mode) {
     var mExpectedHeight = null; // The height the entire editor view (including toolbars and tabs) should maintain
     var mUntitledDocumentCount = 0; // The number of untitled documents (used to name the next one)
     var mAutocompleter = new Editor.Autocomplete(this, mode);
+    var mSaveButtons = null;   //cjt: so we can manage SAVE/SAVE ALL/REVERT buttons as a group
     var mRestoreAutosaveButton = null;
     var mShowingTips = false;
     var mTipHolder = null;
@@ -165,13 +166,17 @@ var Editor = function(container, mode) {
             autosaveGeneration: cm.changeGeneration(), // Generation of the last autosave.
             isAutosaving: false, // Prevents multiple simultaneous save attempts
             n: 0, // Counts changes until we autosave.
-            autosaved: autosaved_content || null
+            autosaved: autosaved_content || null,
+            readonly: is_readonly    //cjt: for managing SAVE/SAVE ALL/REVERT buttons
         };
 
-	//cjt var label = _.last(filename.split('/'));
+	//cjt: var label = _.last(filename.split('/'));
 	var label = filename;
         var a = $('<a>', {href: '#' + id}).text(label).click(function(e) { e.preventDefault(); focusTab(doc); });
         tab.append(a);
+
+        //cjt: let user know this file is read-only!
+        if (is_readonly) a.append('<span style="color:red"> (read only)</span>');
 
         // Build us a 'close' button. It uses an X when the document is clean and a circle when dirty, except
         // when hovered over.
@@ -267,6 +272,12 @@ var Editor = function(container, mode) {
             mRestoreAutosaveButton.show();
         } else {
             mRestoreAutosaveButton.hide();
+        }
+        //cjt: user can't save or revert read-only buffers
+        if (doc.readonly) {
+            mSaveButtons.hide();
+        } else {
+            mSaveButtons.show();
         }
     };
 
@@ -437,7 +448,8 @@ var Editor = function(container, mode) {
         mToolbarHolder = $('<div>');
         mToolbar = new Toolbar(mToolbarHolder);
         // Add some basic button groups
-        self.addButtonGroup([
+        //cjt: save reference to this button grouop
+        mSaveButtons = self.addButtonGroup([
             new ToolbarButton('Save', save_current_document, "Save current file"),
             new ToolbarButton('Save All', save_all_documents, "Save all open buffers"),
             new ToolbarButton('Revert', revert_current_document, "Revert the current buffer to an earlier state.")

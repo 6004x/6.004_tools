@@ -2,19 +2,18 @@
 //var JSON;
 //var console,localStorage;
 
-var FileSystem= function(){
+var FileSystem= (function(){
     var mServer = FILESERVER_HOST;
     var mUsername;
-    var self = this;
 
     var openFiles=[];
     var allFiles=[];
     var allFolders=[];
-    var fileTree={files:{},folders:{}};
+    //var fileTree={files:{},folders:{}};
 
     var delimRegExp = /[^<>\$\:\"\|\/\\\?\*]+/g;
-    var updated=true;
-    var online=true;
+    //var updated=true;
+    //var online=true;
 
     /*
         fileTree contains a tree representation of a file list, starting with the rootnode,
@@ -49,7 +48,7 @@ var FileSystem= function(){
 
     //TODO: rename folder, version control
 
-    this.getFileList = function(callback, callbackFailed){
+    function getFileList(callback, callbackFailed){
         //using username or some other sort of authentication, we can get the root folder of the user
         // if(fileTree)
         //     console.log(Object.keys(fileTree).length);
@@ -66,19 +65,19 @@ var FileSystem= function(){
                     if(status=='success'){
 
                         mUsername = data.user;
-                        fileTree = data.data;
+                        //fileTree = data.data;
                         allFiles = [];
                         allFolders = [];
                         // console.log(fileTree);
                         // console.log(fileTree);
-                        makeListOfFiles(fileTree,'');
+                        makeListOfFiles(data.data,'');
 
                         // console.log(allFolders);
                         // console.log(allFiles);
                         
                         //writeTreeToLocalStorage();
-                        updated=true;
-                        online=true;
+                        //updated=true;
+                        //online=true;
                         callback(data.data);
 
                     }
@@ -86,16 +85,15 @@ var FileSystem= function(){
             ,   function(req, status, error){
                     if(callbackFailed)
                         callbackFailed(req, status, error);
-                    online=false;
+                    //online=false;
                     //return readTreeFromLocalStorage();
             }); 
             //callback will return with a file object
         }
     };
-    this.getSharedFileList = function(callback, callbackFailed){
+    function getSharedFileList(callback, callbackFailed){
         sendAjaxRequest({name:'/shared/'}, null, 'getFileList', function(data){
-            fileTree = data.data;
-            callback(fileTree);
+            callback(data.data);
         });
     };
     function makeListOfFiles(currTree){
@@ -114,6 +112,7 @@ var FileSystem= function(){
             allFiles.push(file.path);
         }
     }
+    /*
     function writeTreeToLocalStorage(){
         // console.log('writing tree to local storage');
 
@@ -184,7 +183,7 @@ var FileSystem= function(){
         var finalTree=traverseTree(fileName, function(i, followPath, currentPath, end){
             if(end){
                 // console.log(fileName+' being written');
-		if (!(currentPath in followPath.files)) followPath.files[currentPath] = {};
+                if (!(currentPath in followPath.files)) followPath.files[currentPath] = {};
                 followPath.files[currentPath].data = fileData;
                 followPath.files[currentPath].onServer = onServer;
                 followPath.files[currentPath].localDate = (new Date()).getTime();
@@ -196,30 +195,24 @@ var FileSystem= function(){
         //writeTreeToLocalStorage();
         return finalTree;
     }
-
+     */
 
     //SERVER FUNCTIONS
-    this.getFile = function(fileName, callback, callbackFailed){
+    function getFile(fileName, callback, callbackFailed){
         // console.log('getting '+fileName);
         var fileObj = {
-            name : fileName,
+            name : fileName
         };
-        if(online){
-            sendAjaxRequest(fileObj, null, 'getFile', function(data, status){
-                if(status == 'success'){
-                    // console.log(data)
-                    callback(data);
-                    if(!data.shared)
-                        writeFileToTree(data.name, data.data, true);
-                }
-            }, callbackFailed);
-        }else if (file){
-            return callback(file, 'success');
-        } else {
-            alert('file could not be retrieved');
-        }
+
+        sendAjaxRequest(fileObj, null, 'getFile', function(data, status){
+            if(status == 'success'){
+                // console.log(data)
+                callback(data);
+                //if(!data.shared) writeFileToTree(data.name, data.data, true);
+            }
+        }, callbackFailed);
     };
-    this.getRelativeFile = function(fileName, relativeFile, callback, callbackFailed){
+    function getRelativeFile(fileName, relativeFile, callback, callbackFailed){
         if(relativeFile.substring(0,1) == '/'){
             //not a relative file, but a direct path
             getFile(relativeFile, callback, callbackFailed);
@@ -249,7 +242,8 @@ var FileSystem= function(){
                 // console.log(pathArray);
                 // console.log(relPathArray);
                 var first = true;
-                for (var i = pathArray.length - 2, j = 0; j < relPathArray.length; j++){
+		var i,j;
+                for (i = pathArray.length - 2, j = 0; j < relPathArray.length; j++){
                     if(first){
                         first = false;
                     } 
@@ -287,7 +281,7 @@ var FileSystem= function(){
                 // console.log(newPathArray);
                 
                 var newFilePath = '';
-                for (var i = 0; i < newPathArray.length; i++){
+                for (i = 0; i < newPathArray.length; i++){
                     newFilePath += '/'+newPathArray[i];
                 }
                 // console.log(newFilePath + ' is calculated')
@@ -305,7 +299,7 @@ var FileSystem= function(){
             }
         }
     };
-    this.saveFile = function(fileName, fileData, callback, callbackFailed){
+    function saveFile(fileName, fileData, callback, callbackFailed){
         var fileObj = {
             name : fileName, 
             data : fileData, 
@@ -313,12 +307,12 @@ var FileSystem= function(){
         };
         sendAjaxRequest(fileObj, null, 'saveFile', function(data, status){
             callback(data);
-            writeFileToTree(fileName, fileData);
-            updated = false;
+            //writeFileToTree(fileName, fileData);
+            //updated = false;
         }, callbackFailed);
         
     };
-    this.makeAutoSave = function(fileName, fileData, callback, callbackFailed){
+    function makeAutoSave(fileName, fileData, callback, callbackFailed){
         var fileObj = {
             name : fileName, 
             data : fileData, 
@@ -326,11 +320,11 @@ var FileSystem= function(){
         };
         sendAjaxRequest(fileObj, null, 'autoSaveFile', function(data, status){
             callback(data);
-            writeFileToTree(fileName, fileData);
-            updated = false;
+            //writeFileToTree(fileName, fileData);
+            //updated = false;
         }, callbackFailed);
     };
-    this.getAutoSave = function(fileName, callback, callbackFailed){
+    function getAutoSave(fileName, callback, callbackFailed){
         var fileObj = {
             name : fileName, 
             time : (new Date()).getTime()
@@ -342,24 +336,24 @@ var FileSystem= function(){
                 }
             }, callbackFailed);
     };
-    this.newFile = function(fileName, fileData, callback, callbackFailed){
+    function newFile(fileName, fileData, callback, callbackFailed){
         var fileObj = {
             name : fileName, 
             data : fileData, 
             time : (new Date()).getTime()
         };
         sendAjaxRequest(fileObj, null, 'saveFile', callback, callbackFailed);
-        updated=false;
+        //updated=false;
     };
-    this.newFolder = function(folderName, callback, callbackFailed){
+    function newFolder(folderName, callback, callbackFailed){
         var fileObj = {
             name : folderName, 
             time : (new Date()).getTime()
         };
         sendAjaxRequest(fileObj, null, 'newFolder', callback, callbackFailed);
-        updated=false;
+        //updated=false;
     };
-    this.renameFile = function(oldFileName, newFileName, callback, callbackFailed){
+    function renameFile(oldFileName, newFileName, callback, callbackFailed){
         var fileObj = {
             name : oldFileName, 
             time : (new Date()).getTime()
@@ -374,22 +368,22 @@ var FileSystem= function(){
                 callback(data);
         }, callbackFailed);
     };
-    this.deleteFile = function(fileName, callback, callbackFailed){
+    function deleteFile(fileName, callback, callbackFailed){
         var fileObj = {
             name : fileName, 
             time : (new Date()).getTime()
         };
         sendAjaxRequest(fileObj, null, 'deleteFile', callback, callbackFailed);
-        updated=false;
+        //updated=false;
     };
-    this.copyFile = function(fileName, folderDestination,  callback, callbackFailed){
+    function copyFile(fileName, folderDestination,  callback, callbackFailed){
         callbackFailed = callbackFailed || failResponse;
         var newFileName = fileName.split('/');
         // console.log(newFileName)
         newFileName = newFileName.pop();
         newFileName = folderDestination + newFileName;
         // console.log(newFileName);
-        self.getFile(fileName, function(oldFile){
+        getFile(fileName, function(oldFile){
 
         var count = 0;
         var newFileFront = newFileName.substring(0, newFileName.lastIndexOf('.'));
@@ -398,11 +392,11 @@ var FileSystem= function(){
         //still allows the user to copy the file, doesn't overwrite
         //but names off the file
         var newFileNameTemp = newFileName;
-        while(self.isFile(newFileNameTemp) && count <= 10){
+        while(isFile(newFileNameTemp) && count <= 10){
             newFileNameTemp = newFileFront + '-' + count + newFileType;
             count++;
         }
-        self.saveFile(newFileNameTemp, oldFile.data, function(newFile){
+        saveFile(newFileNameTemp, oldFile.data, function(newFile){
             if(newFile.status == 'success'){
                 callback(newFile);
             }
@@ -410,9 +404,9 @@ var FileSystem= function(){
         });
         }, callbackFailed);
     };
-    this.moveFile = function(fileName, folderDestination, callback, callbackFailed){
-        self.copyFile(fileName, folderDestination, function(newFile){
-            self.deleteFile(fileName, function(data){
+    function moveFile(fileName, folderDestination, callback, callbackFailed){
+        copyFile(fileName, folderDestination, function(newFile){
+            deleteFile(fileName, function(data){
                 if(data.status == 'success')
                     callback(newFile);
                 // console.log(data)
@@ -420,10 +414,10 @@ var FileSystem= function(){
             }, callbackFailed);
         }, callbackFailed);
     };
-    this.getBackup = function(fileName, callback, callbackFailed){
+    function getBackup(fileName, callback, callbackFailed){
         sendAjaxRequest({name:fileName, time: (new Date()).getTime()}, null, 'getBackup', callback, callbackFailed);
     };
-    this.getSharedFile = function(fileName, callback, callbackFailed){
+    function getSharedFile(fileName, callback, callbackFailed){
         sendAjaxRequest({name:'/shared/'+fileName, time: (new Date()).getTime()}, null, 'getFile', callback, callbackFailed);
     };
     function sendAjaxRequest(fileObj, otherFileObj, query, callbackFunction, failFunction){
@@ -450,7 +444,7 @@ var FileSystem= function(){
         });
         req.done(function(data, status){
             //check if status is successful
-            updated = true;
+            //updated = true;
             // console.log(data)
             callbackFunction(data, status);
         });
@@ -463,28 +457,28 @@ var FileSystem= function(){
         alert('failed response '+status+' '+error);
     }
 
-    this.getServerName = function(){
+    function getServerName(){
         return mServer;
     };
-    this.getUserName = function(){
+    function getUserName(){
         if(!mUsername)
             sendAjaxRequest({name:'/', time: (new Date()).getTime(), object: 'data'}, null, "getUser", function(data){
                 mUsername = data.user;
                 // console.log(data);
-                online = true;
+                //online = true;
                 return mUsername;
             });
         else
             return mUsername;
     };
-    this.isFile = function(fileName){
+    function isFile(fileName){
         // console.log(fileName+' check if in allfiles');
         if(fileName.substring(0,1) ==='/')
             fileName = fileName.substring(1);
         // console.log(allFiles.indexOf(fileName));
         return allFiles.indexOf(fileName) !== -1;
     };
-    this.isFolder = function(folderName){
+    function isFolder(folderName){
         // console.log(folderName+' check if in allFolders');
         if(folderName.substring(0,1) ==='/')
             folderName = folderName.substring(1);
@@ -492,5 +486,24 @@ var FileSystem= function(){
         return allFolders.indexOf(folderName) !== -1;
     };
 
-    return self;
-}();
+    return {getFileList: getFileList,
+            getSharedFileList: getSharedFileList,
+            getUserName: getUserName,
+            getServerName: getServerName,
+            getFile: getFile,
+            getSharedFile: getSharedFile,
+            getRelativefile: getRelativeFile,
+            isFile: isFile,
+            isFolder: isFolder,
+            saveFile: saveFile,
+            makeAutoSave: makeAutoSave,
+            getAutoSave: getAutoSave,
+            newFile: newFile,
+            deleteFile: deleteFile,
+            newFolder: newFolder,
+            moveFile: moveFile,
+            copyFile: copyFile,
+            renameFile: renameFile,
+            getBackup: getBackup
+           };
+}());

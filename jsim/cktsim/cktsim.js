@@ -23,9 +23,20 @@ var cktsim = (function() {
     //    "voltage source"	ports: nplus, nminus; properties: value=src, name
     //    "current source"	ports: nplus, nminus; properties: value=src, name
     //    "connect"             ports are all aliases for the same electrical node
-    //    "ground"              connections is list of aliases for gnd
+    //    "ground"              port: gnd
     // signals are just strings
     // src == {type: function_name, args: [number, ...]}
+
+    // handy for debugging :)
+    function print_netlist(netlist) {
+	$.each(netlist,function(index,c) {
+	    var connections = [];
+	    for (var port in c.connections) connections.push(port+"="+c.connections[port]);
+	    var properties = [];
+	    for (var prop in c.properties) properties.push(prop+"="+JSON.stringify(c.properties[prop]));
+	    console.log(c.type + ' ' + connections.join(' ') + '; ' + properties.join(' '));
+	});
+    }
 
     // DC Analysis
     //   netlist: JSON description of the circuit
@@ -147,9 +158,9 @@ var cktsim = (function() {
     //      until simulation is complete, results are undefined
     // results are associative array mapping node name -> array of voltages/currents
     //   includes _time_ -> array of simulation times at which values were measured
-    function transient_analysis(netlist, tstop, probe_names, progress_callback) {
+    function transient_analysis(netlist, tstop, probe_names, progress_callback, options) {
         if (netlist.length > 0 && tstop !== undefined) {
-            var ckt = new Circuit(netlist);
+            var ckt = new Circuit(netlist,options);
 
             var progress = {};
             progress.probe_names = probe_names, // node names for LTE check
@@ -193,7 +204,11 @@ var cktsim = (function() {
     var res_check_abs = Math.sqrt(i_abstol); // Loose Newton residue check
     var res_check_rel = Math.sqrt(reltol); // Loose Newton residue check
 
-    function Circuit(netlist) {
+    function Circuit(netlist,options) {
+	if (options.v_abstol) v_abstol = options.v_abstol;
+	if (options.i_abstol) { i_abstol = options.ia_abstol; res_check_abs = Math.sqrt(i_abstol); }
+	if (options.reltol) { reltol = options.reltol; res_check_rel = Math.sqrt(reltol); }
+
         this.node_map = {};
         this.ntypes = [];
         this.initial_conditions = []; // ic's for each element
@@ -286,10 +301,7 @@ var cktsim = (function() {
         for (i = netlist.length - 1; i >= 0; i -= 1) {
 	    if (netlist[i].type == 'ground') {
                 connections = netlist[i].connections;
-                for (j = 0; j < connections.length; j += 1) {
-                    c = connections[j];
-		    this.node_map[c] = this.gnd_node();
-		}
+		this.node_map[connections.gnd] = this.gnd_node();
 	    }
         }
 
@@ -1847,19 +1859,19 @@ var cktsim = (function() {
         }
 
         // post-processing for square wave
-        // square(v_init,v_plateau,freq,duty_cycle)
+        // square(v_init,v_plateau,freq,duty_cycle,rise_fall)
         else if (src.fun == 'square') {
             v1 = arg_value(src.args, 0, 0); // default init value: 0V
             v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
             freq = Math.abs(arg_value(src.args, 2, 1)); // default frequency: 1Hz
             var duty_cycle = Math.min(100, Math.abs(arg_value(src.args, 3, 50))); // default duty cycle: 0.5
-            src.args = [v1, v2, freq, duty_cycle]; // remember any defaulted values
+            var t_change = Math.abs(arg_value(src.args,4,1e-10)); 
+            src.args = [v1, v2, freq, duty_cycle,t_change]; // remember any defaulted values
 
             per = freq === 0 ? Infinity : 1 / freq;
-            var t_change = 0.01 * per; // rise and fall time
-            var t_pw = 0.01 * duty_cycle * 0.98 * per; // fraction of cycle minus rise and fall time
-            pwl_source(src, [0, v1, t_change, v2, t_change + t_pw,
-            v2, t_change + t_pw + t_change, v1, per, v1], true);
+            var t_pw = (.01 * duty_cycle) * (per - 2*t_change); // fraction of cycle minus rise and fall time
+            pwl_source(src, [0, v1, t_pw, v1, t_pw + t_change, v2, 2*t_pw + t_change,
+			     v2, 2*t_change + 2*t_pw, v1, per, v1], true);
         }
 
         // post-processing for triangle
@@ -2000,7 +2012,8 @@ var cktsim = (function() {
 	Circuit: Circuit,
         dc_analysis: dc_analysis,
         ac_analysis: ac_analysis,
-        transient_analysis: transient_analysis
+        transient_analysis: transient_analysis,
+	print_netlist: print_netlist
     };
     return module;
 }());
