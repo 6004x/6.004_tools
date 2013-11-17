@@ -32,3 +32,8 @@ swapreg:
         
         restore_all_regs(regs)
         JMP(xp)
+
+_IllegalInstruction:
+	// code to handle an actual illegal instruction goes here...
+	// for Lab #7, this code is supplied by lab7checkoff.uasm
+	HALT()
