@@ -1,15 +1,35 @@
 .help-holder {
     position: absolute;
-    top: 0px;
+    top: 0;
     right: 100px;
 }
 
 .help-request-button {
-    background-color: white;
     color: gray;
+    font-weight: bold;
+}
+
+.help-request-ui {
+    background-color: white;
     border-bottom-right-radius: 5px;
     border-bottom-left-radius: 5px;
     padding: 5px;
-    font-weight: bold;
     border: 2px solid gray;
+    border-top: 0;
+}
+
+
+#remote-mouse-pointer {
+    position: absolute;
+    pointer-events: none;
+    height: 10px;
+    width: 10px;
+    border-radius: 10px;
+    background-color: red;
+    opacity: 0.5;
+    -webkit-transition: top 50ms linear 0ms, left 50ms linear 0ms;
+    -webkit-transform: translate(-5px, -5px);
+    -moz-transition: top 50ms linear 0ms, left 50ms linear 0ms;
+    -moz-transform: translate(-5px, -5px);
+    transform: translate(-5px, -5px);
 }

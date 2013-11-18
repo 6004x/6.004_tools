@@ -11,16 +11,80 @@ Mentoring.Session = function(id, token, is_mentor) {
 
     var init = function() {
         mChannel = new Mentoring.CommChannel(mSessionID, mToken, mIsMentor);
+        window.mChannel = mChannel;
+        mChannel.on('message', handle_message);
+    };
+
+    var handle_message = function(channel, message) {
+        var kind = message.kind;
+        console.log('Received ' + kind + ' message.');
+        console.log(message);
+        if(_.has(mHandlers, kind)) {
+            mHandlers[kind](message);
+        } else {
+            self.trigger(kind, message);
+        }
+    };
+
+    this.getChannel = function() {
+        return mChannel;
+    };
+
+    this.isMentor = function() {
+        return mIsMentor;
     };
 
     this.startAudio = function(callback) {
         mChannel.startAudio(callback);
     };
+
+    this.beginNegotiation = function() {
+        // Hack: Google channel setup isn't instantaneous, so we will
+        // receive this before they start working.
+        // Delay for a second before beginning negotiations to
+        // ensure the other end actually gets the message.
+        _.delay(function() {
+            mChannel.sendMessage({
+                kind: 'negotiate',
+                height: window.innerHeight,
+                width: window.innerWidth
+            });
+            mChannel.attemptUpgrade();
+            console.log("Attempting channel upgrade to WebRTC.");
+        }, 1000);
+        self.trigger('negotiating');
+        console.log("Initiating negotiation.");
+    };
+
+    var mHandlers = {
+        negotiate: function(message) {
+            var final_height = Math.min(message.height, window.innerHeight);
+            var final_width = Math.min(message.width, window.innerWidth);
+            // Inform the other end
+            mChannel.sendMessage({
+                kind: 'negotiate_response',
+                width: final_width,
+                height: final_height
+            });
+            // Fix ourselves.
+            window.resizeTo(final_width, final_height);
+            self.trigger('ready');
+        },
+        negotiate_response: function(message) {
+            window.resizeTo(message.width, message.height);
+            self.trigger('ready');
+        },
+        servicing_request: function(message) {
+            self.beginNegotiation();
+        }
+    };
+
+    init();
 };
 
 Mentoring.Session.RequestHelp = function(username, success, failure) {
     gapi.client.helpQueue.createRequest({name: username, message: '', lab: 5}).execute(function(result) {
-        if(result.error) { 
+        if(result.error) {
             if(failure) {
                 failure(result.error);
             }
@@ -32,18 +96,30 @@ Mentoring.Session.RequestHelp = function(username, success, failure) {
     });
 };
 
-Mentoring.Session.ProvideHelp = function(username, session, success, failure) {
-    gapi.client.helpQueue.serviceRequest({id: session, mentor_name: username}).execute(function(result) {
+Mentoring.Session.ProvideHelp = function(username, session_id, success, failure) {
+    console.log("Servicing request " + session_id);
+    gapi.client.helpQueue.serviceRequest({id: session_id, mentor_name: username}).execute(function(result) {
         if(result.error) {
             if(failure) failure(result.error);
             return;
         }
-        var session = new Mentoring.Session(session, result.token, true);
+        var session = new Mentoring.Session(session_id, result.token, true);
         session.startAudio();
-        return session;
+        success(session);
     });
-}
+};
 
 Mentoring.Initialise = function() {
-    gapi.client.load('helpQueue', 'v0', function() {});
+    gapi.client.load('helpQueue', 'v0', function() {
+        if(Mentoring.OnInit) {
+            Mentoring.Initialised = true;
+            Mentoring.OnInit();
+        }
+    }, 'https://robust-arcadia.appspot.com/_ah/api');
+};
+Mentoring.Initialised = false;
+
+// This one needs to be global to make Google happy.
+window.initMentoringAPI = function() {
+    Mentoring.Initialise();
 };

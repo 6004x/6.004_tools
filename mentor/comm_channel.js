@@ -66,6 +66,11 @@ Mentoring.CommChannel = function(session_id, token, is_mentor) {
         var json = JSON.stringify(message);
         console.log('Sending: ' + json);
         callback = callback || _.identity;
+        console.log({
+            message: json,
+            session: mSessionID,
+            target: (mIsMentor ? 1 : 2)
+        });
         HelpQueue.relay({
             message: json,
             session: mSessionID,
@@ -79,6 +84,8 @@ Mentoring.CommChannel = function(session_id, token, is_mentor) {
     };
 
     var send_message = function(message, callback) {
+        console.log("Sending message:");
+        console.log(message);
         if(rtc_channel_ready()) {
             send_rtc_message(message);
             callback();
@@ -176,8 +183,10 @@ Mentoring.CommChannel = function(session_id, token, is_mentor) {
     var handle_rtc_channel_state_change = function(event) {
         if(event.type == "open") {
             self.trigger('upgrade', self);
+            console.log("Upgraded to WebRTC");
         } else if(event.type == "close") {
             self.trigger('downgrade', self);
+            console.log("Downgraded from WebRTC");
         }
     };
 
@@ -211,7 +220,7 @@ Mentoring.CommChannel = function(session_id, token, is_mentor) {
     };
 
     this.requestMic = function(success, failure) {
-        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigtor.mozGetUserMedia;
+        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
         if(!navigator.getUserMedia) return false;
         navigator.getUserMedia({video: false, audio: true}, function(stream) {
             mMediaStream = stream;
