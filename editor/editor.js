@@ -2,7 +2,7 @@
 // - `container` should be a DOM node or unique CSS selector
 // - `mode` should be one of 'uasm', 'tsim' or 'jsim' as appropriate.
 // - `restore_tabs` specifies whether tabs from previous sessions should be restored. Default true.
-var Editor = function(container, mode, restore_tabs) {
+var Editor = function(container, mode, mentor_mode) {
     var AUTOSAVE_TRIGGER_EVENTS = 30; // Number of events to trigger an autosave.
     var self = this; // Tracking 'this' can be finicky; use 'self' instead.
     var mContainer = $(container);
@@ -19,7 +19,7 @@ var Editor = function(container, mode, restore_tabs) {
     var mShowingTips = false;
     var mTipHolder = null;
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
-    var mShouldRestoreTabs = (restore_tabs === undefined ? true : !!restore_tabs);
+    var mMentorMode = (mentor_mode === undefined ? true : !!mentor_mode);
 
     var mMarkedLines  = []; // List of lines we need to clear things from when requested.
    
@@ -57,6 +57,12 @@ var Editor = function(container, mode, restore_tabs) {
         if(!document) return null;
         do_autosave(document); // We assume that whenever something calls this.content, autosaving would be nice.
         return document.cm.getValue();
+    };
+
+    this.isReadonly = function(filename) {
+        var document = try_get_document(filename);
+        if(!document) return null;
+        return document.readonly;
     };
 
     // Marks the given line in the given file as having an error, and displays it to the user.
@@ -216,7 +222,6 @@ var Editor = function(container, mode, restore_tabs) {
 
         // If we have no open documents, or we were explicitly asked to activate this document, do so.
         if(!_.size(mOpenDocuments) || activate) {
-            unfocusTab(mCurrentDocument);
             focusTab(doc);
         }
 
@@ -227,6 +232,8 @@ var Editor = function(container, mode, restore_tabs) {
         if(mExpectedHeight) self.setHeight(mExpectedHeight);
         // HACK: make sure something understands our window size.
         $(window).resize();
+
+        self.trigger('open', filename, content, is_readonly);
     };
 
     // Returns the filename of the currently focused document. If there is no such document, returns null.
@@ -281,12 +288,14 @@ var Editor = function(container, mode, restore_tabs) {
         } else {
             mSaveButtons.show();
         }
+        self.trigger('focus', doc.name);
     };
 
     var unfocusTab = function(doc) {
         if(!doc) return;
         doc.el.removeClass("active").hide();
         doc.tab.removeClass('active');
+        self.trigger('unfocus', doc.name);
     };
 
     var closeTab = function(doc, force) {
@@ -328,6 +337,7 @@ var Editor = function(container, mode, restore_tabs) {
         delete mOpenDocuments[doc.name];
         doc.el.remove();
         doc.tab.remove();
+        self.trigger('close', doc.name);
 
         store_tabs();
     };
@@ -352,7 +362,7 @@ var Editor = function(container, mode, restore_tabs) {
             value: content,
             tabindex: -1,
             mode: mSyntaxMode,
-            readOnly: is_readonly,
+            readOnly: is_readonly || mMentorMode,
             extraKeys: {
                 Tab: function() {
                     var marks = cm.getAllMarks();
@@ -486,7 +496,7 @@ var Editor = function(container, mode, restore_tabs) {
         }
 
         // Load any prior tabs we have or show some handy tips.
-        if(mShouldRestoreTabs)
+        if(!mMentorMode)
             if(!restore_tabs()) display_initial_tips();
     };
 

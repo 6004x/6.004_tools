@@ -23,7 +23,7 @@ Mentoring.CommChannel = function(session_id, token, is_mentor) {
         if(RTCPeerConnection) {
             mPeerConnection = new RTCPeerConnection(
                 {iceServers: [createIceServer(ICE_SERVER)]},
-                {optional: [{DtlsSrtpKeyAgreement: true}, { RtpDataChannels: true }]} // Theoretical magic for Chrome/Firefox interop
+                {optional: [{DtlsSrtpKeyAgreement: true}]} // Theoretical magic for Chrome/Firefox interop
             );
             mPeerConnection.onicecandidate = handle_ice_candidate;
             mPeerConnection.ondatachannel = handle_rtc_channel_created;
@@ -84,8 +84,7 @@ Mentoring.CommChannel = function(session_id, token, is_mentor) {
     };
 
     var send_message = function(message, callback) {
-        console.log("Sending message:");
-        console.log(message);
+        callback = callback || function(){};
         if(rtc_channel_ready()) {
             send_rtc_message(message);
             callback();

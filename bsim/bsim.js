@@ -40,7 +40,7 @@ $(function() {
     });
 
     // Make an editor
-    var editor = new Editor('#editor', 'uasm', !Mentoring.IsMentor());
+    var editor = new Editor('#editor', 'uasm', Mentoring.IsMentor());
 
     new Mentoring.UI('body', editor);
 
