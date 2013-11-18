@@ -1,7 +1,7 @@
 BSim.Beta = function() {
     "use strict";
     var self = this;
-    var mMemory = new BSim.Beta.Memory(); // TODO: it might make sense to use an Int32Array here.
+    var mMemory = new BSim.Beta.Memory();
     var mRegisters = new Int32Array(32);
     var mRunning = false; // Only true when calling run(); not executeCycle().
     var mPC = 0x80000000;

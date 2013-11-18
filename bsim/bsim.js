@@ -42,7 +42,25 @@ $(function() {
     // Make an editor
     var editor = new Editor('#editor', 'uasm', Mentoring.IsMentor());
 
-    new Mentoring.UI('body', editor, split);
+    var mentor_callback = function(){};
+    var student_callback = function(){};
+    var bsim_sync;
+    var beta;
+    if(Mentoring.IsMentor()) {
+        bsim_sync = new Mentoring.BSimSync.Mentor();
+        mentor_callback = function(session) {
+            bsim_sync.setSession(session);
+        };
+        beta = bsim_sync.getRemoteBeta();
+    } else {
+        beta = new BSim.Beta();
+        bsim_sync = null;
+        student_callback = function(session) {
+            bsim_sync = new Mentoring.BSimSync.Student(session, beta);
+        };
+    }
+
+    new Mentoring.UI('body', mentor_callback, student_callback, editor, split);
 
     if(!Mentoring.IsMentor()) {
         // Filesystem tree thing
@@ -111,8 +129,6 @@ $(function() {
             });
         }
     };
-
-    var beta = new BSim.Beta(80); // This starting number is basically irrelevant
 
     $('.regfile').each(function() {
         new BSim.RegfileView(this, beta);
