@@ -32,4 +32,9 @@
     -moz-transition: top 50ms linear 0ms, left 50ms linear 0ms;
     -moz-transform: translate(-5px, -5px);
     transform: translate(-5px, -5px);
+    z-index: 9999999;
+}
+
+.remote-highlight {
+    background-color: yellow;
 }

@@ -62,7 +62,7 @@ Mentoring.MouseRelay = function(session) {
     };
 
     var create_mouse_element = function() {
-        mMouseElement = $('<div id="remote-mouse-pointer">').appendTo('body');
+        mMouseElement = $('<div id="remote-mouse-pointer">').prependTo('body');
     };
 
     init();

@@ -32,18 +32,21 @@ var Editor = function(container, mode, mentor_mode) {
 
     // Focuses the tab for the given filename.
     this.focusTab = function(filename) {
+        // if(!_.has(mOpenDocuments, filename)) return;
         focusTab(mOpenDocuments[filename]);
     };
 
     // Unfocuses the tab for the given filename.
     // Note that calling this will cause *no* tab to be focused.
     this.unfocusTab = function(filename) {
+        if(!_.has(mOpenDocuments, filename)) return;
         unfocusTab(mOpenDocuments[filename]);
     };
 
     // Closes the tab for the given filename.
     // Focuses an adjacent tab (preferring the left tab), if any.
     this.closeTab = function(filename) {
+        if(!_.has(mOpenDocuments, filename)) return;
         closeTab(mOpenDocuments[filename]);
     };
 
@@ -64,6 +67,14 @@ var Editor = function(container, mode, mentor_mode) {
         if(!document) return null;
         return document.readonly;
     };
+
+    // You almost certainly don't want to use this. It is exposed for the benefit of
+    // the mentoring system, which needs more detail than this usefully exposes.
+    this.getCodemirror = function(filename) {
+        var document = try_get_document(filename);
+        if(!document) return null;
+        return document.cm;
+    }
 
     // Marks the given line in the given file as having an error, and displays it to the user.
     this.markErrorLine = function(filename, message, line, column) {
@@ -220,11 +231,6 @@ var Editor = function(container, mode, mentor_mode) {
 
         mContainer.append(editPane);
 
-        // If we have no open documents, or we were explicitly asked to activate this document, do so.
-        if(!_.size(mOpenDocuments) || activate) {
-            focusTab(doc);
-        }
-
         // Stash these away somewhere.
         mOpenDocuments[filename] = doc;
         store_tabs();
@@ -234,6 +240,11 @@ var Editor = function(container, mode, mentor_mode) {
         $(window).resize();
 
         self.trigger('open', filename, content, is_readonly);
+
+        // If we had no open documents, or we were explicitly asked to activate this document, do so.
+        if(_.size(mOpenDocuments) == 1 || activate) {
+            focusTab(doc);
+        }
     };
 
     // Returns the filename of the currently focused document. If there is no such document, returns null.
@@ -288,7 +299,7 @@ var Editor = function(container, mode, mentor_mode) {
         } else {
             mSaveButtons.show();
         }
-        self.trigger('focus', doc.name);
+        self.trigger('tab_focus', doc.name);
     };
 
     var unfocusTab = function(doc) {
