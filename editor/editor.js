@@ -1,7 +1,8 @@
 // Creates an editor in the given container for the given mode.
 // - `container` should be a DOM node or unique CSS selector
 // - `mode` should be one of 'uasm', 'tsim' or 'jsim' as appropriate.
-var Editor = function(container, mode) {
+// - `restore_tabs` specifies whether tabs from previous sessions should be restored. Default true.
+var Editor = function(container, mode, restore_tabs) {
     var AUTOSAVE_TRIGGER_EVENTS = 30; // Number of events to trigger an autosave.
     var self = this; // Tracking 'this' can be finicky; use 'self' instead.
     var mContainer = $(container);
@@ -18,6 +19,7 @@ var Editor = function(container, mode) {
     var mShowingTips = false;
     var mTipHolder = null;
     var mOpenDocuments = {}; // Mapping of document paths to editor instances.
+    var mShouldRestoreTabs = (restore_tabs === undefined ? true : !!restore_tabs);
 
     var mMarkedLines  = []; // List of lines we need to clear things from when requested.
    
@@ -484,7 +486,8 @@ var Editor = function(container, mode) {
         }
 
         // Load any prior tabs we have or show some handy tips.
-        if(!restore_tabs()) display_initial_tips();
+        if(mShouldRestoreTabs)
+            if(!restore_tabs()) display_initial_tips();
     };
 
     var do_save = function(document) {

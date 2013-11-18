@@ -40,9 +40,14 @@ $(function() {
     });
 
     // Make an editor
-    var editor = new Editor('#editor', 'uasm');
-    // Filesystem tree thing
-    Folders.setup('#filetree', editor, 'uasm');
+    var editor = new Editor('#editor', 'uasm', !Mentoring.IsMentor());
+
+    new Mentoring.UI('body', editor);
+
+    if(!Mentoring.IsMentor()) {
+        // Filesystem tree thing
+        Folders.setup('#filetree', editor, 'uasm');
+    }
 
     var do_assemble = function() {
         var filename = editor.currentTab();
@@ -140,8 +145,6 @@ $(function() {
     $('.program-controls').each(function() {
         new BSim.Controls(this, beta, editor, schematic);
     });
-
-    new Mentoring.UI('body');
 
     // Work around weird sizing bug.
     _.delay(function() {

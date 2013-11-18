@@ -10,14 +10,14 @@ Mentoring.MouseRelay = function(session) {
 
     var init = function() {
         console.log('mouse handler: ' + mSession.isMentor());
-        if(mSession.isMentor()) {
+        // if(mSession.isMentor()) {
             mChannel.on('upgrade', handle_upgrade);
             mChannel.on('downgrade', handle_downgrade);
             mSession.on('ready', handle_ready);
-        } else {
+        // } else {
             create_mouse_element();
             mSession.on('mouse', handle_mouse);
-        }
+        // }
     };
 
     var handle_ready = function() {
