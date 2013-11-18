@@ -125,6 +125,11 @@ var Mentoring = Mentoring || {};
             });
 
             mEditor.focusTab(message.active);
+
+            // Work around weird sizing bug.
+            _.delay(function() {
+                $(window).resize();
+            }, 20);
         };
 
         var handle_focus = function(message) {

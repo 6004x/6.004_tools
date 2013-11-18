@@ -67,11 +67,16 @@ Mentoring.Session = function(id, token, is_mentor) {
                 height: final_height
             });
             // Fix ourselves.
-            window.resizeTo(final_width, final_height);
+            var outer_height = final_height + (window.outerHeight - window.innerHeight);
+            var outer_width = final_width + (window.outerWidth - window.innerWidth);
+            window.resizeTo(outer_width, outer_height);
             self.trigger('ready');
         },
         negotiate_response: function(message) {
-            window.resizeTo(message.width, message.height);
+            // Fix ourselves.
+            var outer_height = message.height + (window.outerHeight - window.innerHeight);
+            var outer_width = message.width + (window.outerWidth - window.innerWidth);
+            window.resizeTo(outer_width, outer_height);
             self.trigger('ready');
         },
         servicing_request: function(message) {

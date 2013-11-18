@@ -5,12 +5,13 @@ var Mentoring = Mentoring || {};
         return decodeURI(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURI(sVar).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
     }
 
-    Mentoring.UI = function(holder, editor) {
+    Mentoring.UI = function(holder, editor, split) {
         var mHolder;
         var mUI;
         var mHelpButton;
         var mSession;
         var mEditor = editor;
+        var mSplitPane = split;
 
         var display_help_prompt = function() {
             var dialog = new ModalDialog();
@@ -72,6 +73,7 @@ var Mentoring = Mentoring || {};
             mSession.on('ready', handle_ready);
             new Mentoring.MouseRelay(session);
             Mentoring.EditorSync.Prepare(mSession, mEditor);
+            new Mentoring.PaneSync(session, mSplitPane);
             window.mSession = session; // for debugging
         };
 

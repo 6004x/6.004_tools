@@ -42,7 +42,7 @@ $(function() {
     // Make an editor
     var editor = new Editor('#editor', 'uasm', Mentoring.IsMentor());
 
-    new Mentoring.UI('body', editor);
+    new Mentoring.UI('body', editor, split);
 
     if(!Mentoring.IsMentor()) {
         // Filesystem tree thing
@@ -149,7 +149,7 @@ $(function() {
     // Work around weird sizing bug.
     _.delay(function() {
         $(window).resize();
-    }, 10);
+    }, 20);
 
     // // Convenient way of loading a file for testing and such.
     // var neuter = function(e) {
