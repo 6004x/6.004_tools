@@ -6,7 +6,7 @@ var connect = require("connect");
 var path = require('path');
 var qs = require('querystring');
 var rimraf = require('rimraf');
-var libraryHandler = require('./libraryHandler.js');
+//var libraryHandler = require('./libraryHandler.js');
 
 https.globalAgent.options.secureProtocol = 'SSLv3_method';
 
