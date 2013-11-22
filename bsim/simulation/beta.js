@@ -344,7 +344,7 @@ BSim.Beta = function() {
     // Mouse interrupt
     this.mouseInterrupt = function(x, y) {
         if(this.isOptionSet('tty')) {
-            this.mMouseCoords = ((y & 0xFFFF) << 16) | (x & 0xFFFF);
+            this.mMouseCoords = ((x & 0xFFFF) << 16) | (y & 0xFFFF);
             mPendingInterrupts |= INTERRUPT_MOUSE;
         }
     };
