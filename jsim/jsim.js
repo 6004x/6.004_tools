@@ -40,9 +40,9 @@ $(function() {
     });
     
     // set up the results pane
-    $('#simulation-pane').append($('<div class="btn-toolbar" id="graph-toolbar"></div>'),
-                                 $('<div id="results"></div>'),
-                                 $('<div id="graphScrollOuter"><div id="graphScrollInner"></div></div>')
+    $('#simulation-pane').append(//$('<div class="btn-toolbar" id="graph-toolbar"></div>'),
+                                 $('<div id="results"></div>')
+                                 //$('<div id="graphScrollOuter"><div id="graphScrollInner"></div></div>')
                                 );
     
     $('#results').data("current",null);
@@ -108,7 +108,7 @@ $(function() {
     },"Checkoff")]);
     
     // setup things
-    Plot.setup();
+    //Plot.setup();
     Checkoff.setEditor(editor);
     
     

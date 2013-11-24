@@ -1,31 +1,31 @@
 /***************************************************************************************
-****************************************************************************************
-Simulator.simulate is what both simulate buttons call:
-    simulate(text, filename, div, error_callback, type)
-args: -text: a string containing the text of a file to parse 
-      -filename: the name of the file the text comes from
-      -div: the div into which results should be inserted
-      -error_callback: a callback function called whenever there is an error in an
-                       asynchronous part of the code
-      -type: a string, either "device" or "gate"
-      
-simulate calls Parser.parse, then when the parser is done, it calls run_simulation:
-    run_simulation(data, div, type)
-args: -data: an object of the sort given by the parser (see parser comment)
-      -div and type are the same as above
-run_simulation calls the analysis functions in cktsim/gatesim, then calls the
-appropriate prepare_<type>_data function.
+ ****************************************************************************************
+ Simulator.simulate is what both simulate buttons call:
+ simulate(text, filename, div, error_callback, type)
+ args: -text: a string containing the text of a file to parse 
+ -filename: the name of the file the text comes from
+ -div: the div into which results should be inserted
+ -error_callback: a callback function called whenever there is an error in an
+ asynchronous part of the code
+ -type: a string, either "device" or "gate"
+ 
+ simulate calls Parser.parse, then when the parser is done, it calls run_simulation:
+ run_simulation(data, div, type)
+ args: -data: an object of the sort given by the parser (see parser comment)
+ -div and type are the same as above
+ run_simulation calls the analysis functions in cktsim/gatesim, then calls the
+ appropriate prepare_<type>_data function.
 
-prepare_(tran|ac|dc)_data takes the raw data that cktsim/gatesim generates along with 
-the list of nodes to plot and turns them into a list of objects of the sort that a plotting
-library uses: the definition of each object is marked with a big star comment and the label
-"series object" for easy editing. These functions then call the appropriate plot functions.
+ prepare_(tran|ac|dc)_data takes the raw data that cktsim/gatesim generates along with 
+ the list of nodes to plot and turns them into a list of objects of the sort that a plotting
+ library uses: the definition of each object is marked with a big star comment and the label
+ "series object" for easy editing. These functions then call the appropriate plot functions.
 
-Plot functions are all defined at the bottom of the module: they're really just dummy 
-functions that call functions of the same name in plot.js, e.g., Plot.tran_plot, etc.
+ Plot functions are all defined at the bottom of the module: they're really just dummy 
+ functions that call functions of the same name in plot.js, e.g., Plot.tran_plot, etc.
 
-****************************************************************************************
-***************************************************************************************/
+ ****************************************************************************************
+ ***************************************************************************************/
 
 var Simulator = (function(){
     var mAnalyses;
@@ -37,8 +37,8 @@ var Simulator = (function(){
     var mType;
     
     /********************
-    Called when either simulation button is pressed
-    ********************/
+     Called when either simulation button is pressed
+     ********************/
     function simulate(text, filename, div, error_callback, type){
         // type is "gate" or "device"
         // parse args: input string, filename, success callback, error callback, reset
@@ -47,12 +47,12 @@ var Simulator = (function(){
     }
     
     /*********************
-    Run simulation: Take parsed data and extract all the useful bits, then run the simulation
-    *********************/
+     Run simulation: Take parsed data and extract all the useful bits, then run the simulation
+     *********************/
     function run_simulation(parsed,div,type) {
         div.empty();  // we'll fill this with results
         mDiv = div;
-//        $('#graphScrollInner').width($('#graphScrollOuter').width());
+        //        $('#graphScrollInner').width($('#graphScrollOuter').width());
         
         var netlist = parsed.netlist;
         var plots = parsed.plots;
@@ -95,82 +95,85 @@ var Simulator = (function(){
             if (results){
                 tranProgress.hide();
                 mCurrent_results = results;
-//                $('#results').data("current",results);
+                //                $('#results').data("current",results);
                 Checkoff.setResults(mCurrent_results, mOptions);
                 
+                prepare_tran_data(plots);
+                /*
                 try{
                     prepare_tran_data(plots);
-                } catch (err) {
+                }
+                catch (err) {
                     tranProgress.hide();
                     div.prepend('<div class="alert alert-danger">Simulation error: '+err+
                                 '.<button class="close" data-dismiss="alert">&times;'+
                                 '</button></div>');
-                }
+                }*/
             }
             return tranHalt;
         }
         
         // run the simulation and prepare data
         try {
-//            $('#addPlotButton').data('button').enable();
+            //            $('#addPlotButton').data('button').enable();
             
             mCurrent_analysis = mAnalyses[0];
             switch (mCurrent_analysis.type) {
-                case 'tran':
-                    tranProgress.show();
-                    var progressTxt = tranProgress.find('span');
-                    try{
-                        if (mType == "device"){
-                            cktsim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
-                                                      [], tranCB, mOptions);
-                        } else {
-                            gatesim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
-                                                      [], tranCB, mOptions);
-                        }
+            case 'tran':
+                tranProgress.show();
+                var progressTxt = tranProgress.find('span');
+                /*try{*/
+                    if (mType == "device"){
+                        cktsim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
+                                                  [], tranCB, mOptions);
+                    } else {
+                        gatesim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
+                                                   [], tranCB, mOptions);
+                    }
+            /*} catch (err) {
+                    tranProgress.hide();
+                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                '.<button class="close" data-dismiss="alert">&times;</button></div>');
+                }*/
+                break;
+                
+            case 'ac':
+                if (mType == "device"){
+                    try {
+                        mCurrent_results = cktsim.ac_analysis(netlist, mCurrent_analysis.parameters.fstart,
+                                                              mCurrent_analysis.parameters.fstop,
+                                                              mCurrent_analysis.parameters.ac_source_name,
+                                                              mOptions);
+                        //                        $('#results').data("current",mCurrent_results);
+                        
+                        prepare_ac_data(plots);
                     } catch (err) {
-                        tranProgress.hide();
                         div.prepend('<div class="alert alert-danger">Simulation error: '+err+
                                     '.<button class="close" data-dismiss="alert">&times;</button></div>');
                     }
-                    break;
-                    
-                case 'ac':
-                    if (mType == "device"){
-                        try {
-                            mCurrent_results = cktsim.ac_analysis(netlist, mCurrent_analysis.parameters.fstart,
-                                                             mCurrent_analysis.parameters.fstop,
-                                                             mCurrent_analysis.parameters.ac_source_name,
-                                                             mOptions);
-    //                        $('#results').data("current",mCurrent_results);
-                            
-                            prepare_ac_data(plots);
-                        } catch (err) {
-                            div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                        '.<button class="close" data-dismiss="alert">&times;</button></div>');
-                        }
-                    } else {
-                        div.prepend('<div class="alert alert-danger">No AC analysis in gate-level simulation.'+
-                                    '<button class="close" data-dismiss="alert">&times;</button></div>');
+                } else {
+                    div.prepend('<div class="alert alert-danger">No AC analysis in gate-level simulation.'+
+                                '<button class="close" data-dismiss="alert">&times;</button></div>');
+                }
+                break;
+                
+            case 'dc':
+                if (mType == "device"){
+                    try {
+                        mCurrent_results = cktsim.dc_analysis(netlist,mCurrent_analysis.parameters.sweep1,
+                                                              mCurrent_analysis.parameters.sweep2,
+                                                              mOptions);
+                        
+                        prepare_dc_data(plots);
+                    } catch (err) {
+                        div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                    '.<button class="close" data-dismiss="alert">&times;</button></div>');
                     }
-                    break;
-                    
-                case 'dc':
-                    if (mType == "device"){
-                        try {
-                            mCurrent_results = cktsim.dc_analysis(netlist,mCurrent_analysis.parameters.sweep1,
-                                                                 mCurrent_analysis.parameters.sweep2,
-                                                                 mOptions);
-                            
-                            prepare_dc_data(plots);
-                        } catch (err) {
-                            div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                        '.<button class="close" data-dismiss="alert">&times;</button></div>');
-                        }
-                    } else {
-                        div.prepend('<div class="alert alert-danger">No DC analysis in gate-level simulation.'+
-                                    '<button class="close" data-dismiss="alert">&times;</button></div>');
-                    }
-                    break;
+                } else {
+                    div.prepend('<div class="alert alert-danger">No DC analysis in gate-level simulation.'+
+                                '<button class="close" data-dismiss="alert">&times;</button></div>');
+                }
+                break;
             }
         }
         catch (err) {
@@ -179,35 +182,25 @@ var Simulator = (function(){
     }
     
     /*********************
-    Helper functions
-    *********************/
+     Helper functions
+     *********************/
     
     // returns an alert when there are no values to plot for a node
     function get_novaldiv(node){
         var div = $('<div class="alert alert-danger">No values to plot for node '+node+
                     '<button class="close" type="button" data-dismiss="alert">&times;\
-</button></div>');
+                    </button></div>');
         return div;
-    }
-    
-    // adds a button to the given div that hides the plot and removes it from the list of plots
-    function addCloseBtn(div){
-        var closeBtn = $('<button class="close plot-close">&times;</button>');
-        closeBtn.on("click",function(){
-            div.hide();
-//            allPlots.splice(allPlots.indexOf(div.find('.placeholder').data("plot")),1);
-        });
-        div.prepend(closeBtn);
     }
     
     // returns a generic plot placeholder div
     function get_plotdiv(){
         var minHeight = 100;
-//        if (compactPlot){
-//            minHeight = 80;
-//        } else {
-//            minHeight = 130;
-//        }
+        //        if (compactPlot){
+        //            minHeight = 80;
+        //        } else {
+        //            minHeight = 130;
+        //        }
         return $('<div class="placeholder" style="width:100%;height:90%;min-height:'+
                  minHeight+'px"></div>');
     }
@@ -216,7 +209,7 @@ var Simulator = (function(){
     function logic(value, vil, vih){
         if (!vil) vil = 0.6;
         if (!vih) vih = 2.7;
-//        console.log("vil:",vil,"vih:",vih);
+        //        console.log("vil:",vil,"vih:",vih);
         
         if (value < vil) return "0";
         else if (value > vih) return "1";
@@ -249,127 +242,134 @@ var Simulator = (function(){
         return "0x"+new_vals.join('').toUpperCase();
     }
     
+    // handle resizing of simulation pane
+    $(window).resize(resize_sim_pane);
+
+    function resize_sim_pane() {
+        // limit the simulation pane's height to that of the editor pane
+        var sim_pane = $('#simulation-pane');
+        sim_pane.height($('#editor-pane').height());
+
+        var plots = $('.plot-container');
+        if (plots.length > 0) {
+            plots[0].resize(plots[0],sim_pane.width(),sim_pane.height());
+        }
+    }
+
     /***********************
-    Prepare data functions
-    ************************/
+     Prepare data functions
+     ************************/
     
     /***************
-    Transient analysis
-    ***************/
+     Transient analysis
+     ***************/
     function prepare_tran_data(plots){
         var results = mCurrent_results;
         
-        // this should never come up because this function is only called if results are defined
-//        if (results === undefined) {
-//            div.prepend('<div class="alert alert-danger">No results from the simulation.'+
-//                        '\<button class="close" data-dismiss="alert">&times;</button></div>');
-//            return;
-//        }
-        
+        function new_dataset(node) {
+            var values = [];
+                
+            // check of it's a function, e.g. if something like L() or betaop() was asked for
+            //                var fn_pttn = /([^\(]+)\((.+)\)$/;
+            //                var matched_array = node.match(fn_pttn);
+            if (_.isObject(node)){
+                //                    var fn_name = matched_array[1];
+                //                    var arg_nodes = matched_array[2].split(/[,\s]\s*/);
+                var fn = node;
+                    
+                if (fn.type == 'I'){
+                    // continue on
+                    values = results[fn.args[0]];
+                } else {
+                    if (fn.type.toUpperCase() != 'L' && !(fn.type in mPlotDefs)) {
+                        throw "No definition for plot function "+fn.type;
+                    } 
+                    values = results[fn.args[0]].slice(0);
+                    values = values.map(function(val,index){
+                        var tempval = [];
+                        for (var j = 0; j < fn.args.length; j += 1){
+                            tempval.push(results[fn.args[j]][index]);
+                        }
+                        var lval = hex_logic(tempval, mOptions.vil, mOptions.vih);
+                        
+                        if (fn.type == "L") {
+                            return lval;
+                        } else {
+                            // look up the definition of the plot function and return the
+                            // appropriate string; if the index is out of range return "???"
+                            var nval = parseInt(lval,16);
+                            if (mPlotDefs[fn.type][nval]) return mPlotDefs[fn.type][nval];
+                            else return "???";
+                        }
+                    });   
+                    
+                }
+            } else {
+                // if no function was asked for, just get node values
+                values = results[node];
+            }
+                
+            // no values to plot for any given node
+            if (values === undefined) return undefined;
+                
+            // boolean that records if the analysis asked for current through a node
+            var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
+            return {xvalues: results._time_,
+                    yvalues: values,
+                    name: node,
+                    xunits: 's',
+                    yunits: current ? 'A' : 'V'
+                   };
+        }
+
         // repeat for every set of plots
+        var dataseries = []; // 'dataseries' is the list of data objects to pass to a graph module
         for (var p = 0; p < plots.length; p += 1) {
             var plot_nodes = plots[p]; // the set of nodes that belong on one pair of axes
-            var dataseries = []; // 'dataseries' is the list of data objects to pass to a graph module
             
             if (mType == "gate" && plot_nodes.length > 1){
-//                plot_nodes = "L("+plot_nodes.join(' ')+")";
-                plot_nodes = [{type:"L",args:plot_nodes}]
+                //                plot_nodes = "L("+plot_nodes.join(' ')+")";
+                plot_nodes = [{type:"L",args:plot_nodes}];
             }
             
+
             // repeat for each node
             for (var i = 0; i < plot_nodes.length; i += 1) {
-                var node = plot_nodes[i];
-                
-                var values = [];
-                
-                // check of it's a function, e.g. if something like L() or betaop() was asked for
-//                var fn_pttn = /([^\(]+)\((.+)\)$/;
-//                var matched_array = node.match(fn_pttn);
-                if (_.isObject(node)){
-//                    var fn_name = matched_array[1];
-//                    var arg_nodes = matched_array[2].split(/[,\s]\s*/);
-                    var fn = node;
-                    
-                    if (fn.type == 'I'){
-                        // continue on
-                        values = results[fn.args[0]];
-                    } else {
-                        if (fn.type.toUpperCase() != 'L' && !(fn.type in mPlotDefs)) {
-                            throw "No definition for plot function "+fn.type;
-                        } 
-                        values = results[fn.args[0]].slice(0);
-                        values = values.map(function(val,index){
-                            var tempval = [];
-                            for (var j = 0; j < fn.args.length; j += 1){
-                                tempval.push(results[fn.args[j]][index]);
-                            }
-                            var lval = hex_logic(tempval, mOptions.vil, mOptions.vih);
-                            
-                            if (fn.type == "L") {
-                                return lval;
-                            } else {
-                                // look up the definition of the plot function and return the
-                                // appropriate string; if the index is out of range return "???"
-                                var nval = parseInt(lval,16);
-                                if (mPlotDefs[fn.type][nval]) return mPlotDefs[fn.type][nval];
-                                else return "???";
-                            }
-                        });   
-                        
-                    }
-                } else {
-                    // if no function was asked for, just get node values
-                    values = results[node];
-                }
-                
-                // no values to plot for any given node
-                if (values === undefined) {
-                    var novaldiv = get_novaldiv(node);
-                    mDiv.prepend(novaldiv);
-                    continue;
-                }
-                
-                var plotdata = [];
-                for (var j = 0; j < values.length; j += 1) {
-                    plotdata.push([results._time_[j], values[j]]);
-                }
-                
-                // boolean that records if the analysis asked for current through a node
-                var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
-                
-                /***************************** series object ************************************/
-                // add a series object to 'dataseries'
-                dataseries.push({
-                    label: node,
-                    data: plotdata,
-                    xUnits: 's',
-                    yUnits: current ? 'A' : 'V'
-                });
-                /***************************** series object ************************************/
+                var dataset = new_dataset(plot_nodes[i]);
+                if (dataset) dataseries.push(dataset);
             }
-            
-            if (dataseries.length === 0) {
-                continue;
-            }
-            
-//            var xmin = results._time_[0];
-//            var xmax = results._time_[plotdata.length-1];
-            
-            /************************ Plot function **********************************/
-            tran_plot(dataseries /* ... */); 
-            /************************ Plot function **********************************/
+        }
+
+        // called by plot.graph when user wants to add a plot
+        dataseries.add_plot = function (node,callback) {
+            var dataset = new_dataset(node);
+            if (dataset) callback(dataset);
+        };
+
+        if (dataseries.length !== 0) {
+            var container = plot.graph(dataseries);
+            mDiv.empty();
+            mDiv.append(container);
+
+            // add autocomplete to add plot input field
+            var node_list = [];
+            for (var node in results) if (node != '_time_') node_list.push(node);
+            node_list.sort();
+            $('#add-plot').typeahead({source: node_list});  // feature of bootstrap!
+
+            resize_sim_pane();
         }
     }
     
     /***************
-    AC analysis
-    ***************/
+     AC analysis
+     ***************/
     function prepare_ac_data(plots) {
         var results = mCurrent_results;
         
         if (results === undefined) {
             mDiv.prepend('<div class="alert alert-danger">No results from the simulation.'+
-                        '.<button class="close" data-dismiss="alert">&times;</button></div>');
+                         '.<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
         }
         
@@ -416,9 +416,9 @@ var Simulator = (function(){
                 /***************************** series object ************************************/
             }
             
-//            var xmin = mag_plots[0].data[0][0];
-//            var len = mag_plots[0].data.length;
-//            var xmax = mag_plots[0].data[len-1][0];
+            //            var xmin = mag_plots[0].data[0][0];
+            //            var len = mag_plots[0].data.length;
+            //            var xmax = mag_plots[0].data[len-1][0];
             
             /************************ Plot function **********************************/
             ac_plot(mag_plots, phase_plots /* ... */);
@@ -427,8 +427,8 @@ var Simulator = (function(){
     }
     
     /***************
-    DC analysis
-    ***************/
+     DC analysis
+     ***************/
     function prepare_dc_data(plots){
         var results = mCurrent_results;
         var analysis = mCurrent_analysis;
@@ -453,7 +453,7 @@ var Simulator = (function(){
                     x2 = results[index2]._sweep2_;
                     index2 += 1;
                 }
-        
+                
                 // no values to plot for the given node
                 if (values === undefined) {
                     var novaldiv = get_novaldiv(node);
@@ -481,30 +481,25 @@ var Simulator = (function(){
             }
         }
         
-//        var xmin = x[0];
-//        var xmax = x[values.length-1];
+        //        var xmin = x[0];
+        //        var xmax = x[values.length-1];
         
         /************************ Plot function **********************************/
         dc_plot(dataseries /* ... */);
         /************************ Plot function **********************************/
     }
     
-    function tran_plot(dataseries){
-//        console.log("data:",dataseries);
-        Plot.tran_plot(mDiv,dataseries);
-    }
-    
     function ac_plot(mdata,pdata){
-//        console.log("mdata:",mdata,"pdata:",pdata);
+        //        console.log("mdata:",mdata,"pdata:",pdata);
     }
     
     function dc_plot(dataseries){
-//        console.log("data:",dataseries);
+        //        console.log("data:",dataseries);
     }
     
     /*********************
-    Exports 
-    **********************/
+     Exports 
+     **********************/
     return {simulate:simulate,
             hex_logic:hex_logic
            };

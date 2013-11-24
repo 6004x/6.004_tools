@@ -88,8 +88,9 @@
 }
 
 #results {
-    overflow-y:scroll;
-    position:relative;
+    overflow: hidden;
+/*    overflow-y:scroll;*/
+/*    position:relative;*/
 /*    top:40px;*/
 /*    border-top: 1px solid #ddd;*/
     text-align:center;
@@ -102,3 +103,56 @@ span.wrong {
     font-weight:bold;
 }
 
+.plot-container {
+  background-color: #EEEEEE;
+  line-height: 1;
+}
+.plot-container:active, .plot-container:focus {
+  cursor: default;
+}
+.plot-canvas {
+  display: block;
+}
+.plot-toolbar {
+  line-height: 25px;
+  cursor: default;
+  margin-bottom: 5px;
+}
+.plot-tool {
+  padding: 2px;
+  border: 1px solid #EEEEEE;
+  vertical-align: middle;
+  font: small-caps small sans-serif;
+  opacity: 0.2;
+}
+.plot-tool-spacer {
+  display: inline;
+  padding-left: 1em;
+}
+.plot-tool-enabled {
+  opacity: 1.0;
+}
+.plot-tool-enabled:hover {
+  border-color: #000;
+}
+.plot-tool-enabled:active {
+  background-color: #CCCCCC;
+}
+.plot-scrollbar-wrapper {
+  height: 20px;
+}
+.plot-scrollbar {
+  height: 10px;
+  border: 1px solid #CCCCCC;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+.plot-scrollbar-thumb {
+  background-color: #888888;
+  border-radius: 4px;
+  height: 8px;
+  margin-top: 1px;
+  margin-bottom: 1px;
+  display: none;
+  cursor: pointer;
+}

@@ -1,30 +1,667 @@
-var Plot = (function(){    
-/**************************************************
-**************************************************
-Number formatting functions
-**************************************************
-**************************************************/
-    
-    /*****************
-    Engineering notation: formats a number in engineering notation
-        --args: -n: value to be formatted
-                -nplaces: the number of decimal places to keep
-                -trim: boolean, defaults to true; if true, removes trailing 0s and decimals
-        --returns: a string representing the value in engineering notation
-        
-    Written by Chris Terman (description by Stacey Terman)
-    *********************/
+var plot = (function() {
+
+    ///////////////////////////////////////////////////////////////////////////////
+    //
+    //  Waveform plotting
+    //
+    ///////////////////////////////////////////////////////////////////////////////
+
+    // return [first tick value >= vmin, tick interval]
+    function tick_interval(vmin,vmax,nticks) {
+        var log_vtick = Math.log((vmax - vmin)/Math.max(1,nticks))/Math.LN10;
+        var exponent = Math.floor(log_vtick);
+        var mantissa = Math.pow(10,log_vtick - exponent);  // between 1 and 10
+
+        // pick tick interval based on 1,2,5 progression of scope divisions
+        var interval;
+        if (mantissa >= 4.99) interval = 5;
+        else if (mantissa >= 1.99) interval = 2;
+        else interval = 1;
+        interval *= Math.pow(10,exponent);   // scale correctly
+
+        var vstart = Math.floor(vmin/interval) * interval;
+        if (vstart < vmin) vstart += interval;
+        return [vstart,interval];
+    }
+
+    var normal_style = 'rgb(0,0,0)'; // default drawing color
+    var background_style = 'rgb(238,238,238)';
+    var element_style = 'rgb(255,255,255)';
+    var grid_style = "rgb(220,220,220)";
+    var graph_font = '8pt sans-serif';
+    var graph_legend_font = '10pt sans-serif';
+
+    // dataseries is an array of objects that value the following attributes:
+    //   xvalues: array of xcoords
+    //   yvalues: array of ycoords
+    //   name: signal name to use in legend (optional)
+    //   offset: to be added to each yvalue (optional)
+    //   color: color to use when drawing graph
+    //   xunits: string for labeling xvalues (optional)
+    //   yunits: string for labeling yvalues (optional - if omitted assumed to be bits)
+    //   xlabel: string for labeling x axis (optional)
+    //   ylabel: string for labeling y axis (optional)
+    function graph(dataseries) {
+        // create container
+        var container = $('<div class="plot-container"></div>');
+        container[0].dataseries = dataseries;
+        dataseries.container = container[0];
+
+        // add toolbar
+        var toolbar = $('<div class="plot-toolbar"></div>');
+        var zoom = $('<img class="plot-tool" id="zoom">').attr('src',zoom_icon);
+        var zoomin = $('<img class="plot-tool plot-tool-enabled" id="zoomin">').attr('src',zoomin_icon);
+        var zoomout = $('<img class="plot-tool" id="zoomout">').attr('src',zoomout_icon);
+        var zoomsel = $('<img class="plot-tool" id="zoomsel">').attr('src',zoomsel_icon);
+        toolbar.append(zoom,zoomin,zoomout,zoomsel);
+
+        if (dataseries.add_plot) {
+            toolbar.append('<div class="plot-tool-spacer"></div>Add plot: ');
+            var add_plot = $('<input type="text" size="20" style="margin-bottom:0" id="add-plot">');
+            toolbar.append(add_plot);
+
+            add_plot.on('keypress',function (event) {
+                if (event.which == 13) {
+                    // pass callback to user's add_plot function
+                    // they should call it once for each new dataset
+                    dataseries.add_plot(add_plot.val(),function (dataset) {
+                        process_dataset(dataset);
+                        dataseries.push(dataset);
+                        do_plot(container[0], container.width(), container.height());
+                    });
+                }
+            });
+        }
+
+        container.append(toolbar);
+
+        // set up scroll bar
+        container.append('<div class="plot-scrollbar-wrapper"><div class="plot-scrollbar"><div class="plot-scrollbar-thumb"></div></div></div>');
+
+        // handlers for zoom tools
+        zoom.on('click',function () {
+            if (zoom.hasClass('plot-tool-enabled')) {
+                dataseries.sel0 = undefined;   // remove selection
+                dataseries.xstart = dataseries.xmin;
+                dataseries.xend = dataseries.xmax;
+                do_plot(container[0],container.width(),container.height());
+            }
+        });
+
+        function do_zoomin () {
+            dataseries.sel0 = undefined;   // remove selection
+            dataseries.xend -= (dataseries.xend - dataseries.xstart)/2;
+            do_plot(container[0],container.width(),container.height());
+        }
+
+        zoomin.on('click',function () {
+            if (zoomin.hasClass('plot-tool-enabled')) do_zoomin();
+        });
+
+        function do_zoomout () {
+            dataseries.sel0 = undefined;   // remove selection
+            dataseries.xend += (dataseries.xend - dataseries.xstart);
+            if (dataseries.xend > dataseries.xmax) {
+                dataseries.xstart = Math.max(dataseries.xmin, dataseries.xstart-(dataseries.xend-dataseries.xmax));
+                dataseries.xend = dataseries.xmax;
+            }
+            do_plot(container[0],container.width(),container.height());
+        }
+
+        zoomout.on('click',function () {
+            if (zoomout.hasClass('plot-tool-enabled')) do_zoomout();
+        });
+
+        zoomsel.on('click',function () {
+            if (zoomsel.hasClass('plot-tool-enabled') && dataseries.sel0 && dataseries.sel1) {
+                var x0 = dataseries[0].datax(dataseries.sel0);
+                var x1 = dataseries[0].datax(dataseries.sel1);
+                dataseries.xstart = Math.min(x0,x1);
+                dataseries.xend = Math.max(x0,x1);
+                dataseries.sel0 = undefined;   // all done with region!
+                dataseries.sel1 = undefined;
+                do_plot(container[0],container.width(),container.height());
+            }
+        });
+
+        function process_dataset(dataset) {
+            dataset.dataseries = dataseries;   // remember our parent
+
+            // remember min and max xvalues across all the datasets
+            var xvalues = dataset.xvalues;
+            if (dataseries.xmin === undefined || xvalues[0] < dataseries.xmin)
+                dataseries.xmin = xvalues[0];
+            if (dataseries.xmax === undefined || xvalues[xvalues.length - 1] > dataseries.xmax)
+                dataseries.xmax = xvalues[xvalues.length - 1];
+
+            // anotate each dataset with ymin and ymax
+            var ymin = 0, ymax = 1;  // defaults chosen for logical (bit) values
+            if (dataset.yunits) {
+                // if this is a real quantity (voltage, current), find max and min
+                $.each(dataset.yvalues,function (dindex,y) {
+                    if (dindex == 0 || y < ymin) ymin = y;
+                    if (dindex == 0 || y > ymax) ymax = y;
+                });
+            }
+            // expand y range by 10% to leave a margin above and below the waveform
+            if (ymin == ymax) {
+                // deal with degenerate case...
+                if (ymin === 0) { ymin = -0.5; ymax = 0.5; }
+                else {
+                    ymin = ymin > 0 ? 0.9 * ymin : 1.1 * ymin;
+                    ymax = ymax > 0 ? 1.1 * ymax : 0.9 * ymax;
+                }
+            } else {
+                var yextra = 0.2 * (ymax - ymin);
+                ymin -= yextra;
+                ymax += yextra;
+            }
+            dataset.ymin = ymin;
+            dataset.ymax = ymax;
+
+            // set up canvas for DOM, also one for background image
+            dataset.canvas = $('<canvas class="plot-canvas"></canvas>');
+            dataset.canvas[0].plot_dataset = dataset;  // for event processing
+
+            // handle click in close box
+            dataset.canvas.on('click',function (event) {
+                var pos = dataset.canvas.offset();
+                var gx = event.pageX - pos.left;
+                var gy = event.pageY - pos.top;
+
+                if (gx >= 5.5 && gx <= 15.5 && gy >= 5.5 && gy <= 15.5) {
+                    // remove dataset from DOM and dataseries
+                    dataseries.splice(dataseries.indexOf(dataset),1);
+                    dataset.canvas.remove();
+
+                    // replot remaining datasets
+                    do_plot(container[0],container.width(),container.height());
+                }
+            });
+
+            // double-click zooms in, shift double-click zooms out
+            dataset.canvas.on('dblclick',function (event) {
+                var pos = dataset.canvas.offset();
+                var gx = event.pageX - pos.left;
+                var gy = event.pageY - pos.top;
+
+                if (gx >= dataset.left && gx <= dataset.left + dataset.wplot &&
+                    gy >= dataset.top && gy <= dataset.top + dataset.hplot) {
+                    if (event.shiftKey) do_zoomout();
+                    else do_zoomin();
+                }
+            });
+
+            // use mouse wheel to pan (ie, move the scrollbar thumb)
+            dataset.canvas.on('mousewheel',function (event) {
+                var pos = dataset.canvas.offset();
+                var gx = event.pageX - pos.left;
+                var gy = event.pageY - pos.top;
+
+                if (gx >= dataset.left && gx <= dataset.left + dataset.wplot &&
+                    gy >= dataset.top && gy <= dataset.top + dataset.hplot) {
+                    event.preventDefault();
+                    dataseries.move_thumb(event.originalEvent.wheelDelta/10);
+                }
+            });
+
+            // dragging in plot creates a selection region
+            dataset.canvas.on('mousedown',function (event) {
+                var pos = dataset.canvas.offset();
+                var gx = event.pageX - pos.left;
+                var gy = event.pageY - pos.top;
+
+                // see if mouse is over plot region
+                if (gx >= dataset.left && gx <= dataset.left + dataset.wplot &&
+                    gy >= dataset.top && gy <= dataset.top + dataset.hplot) {
+                    dataseries.sel0 = dataseries.cursor;   // remember start of region
+                    dataseries.sel1 = undefined;
+                    dataseries.sel = true;
+                }
+
+                $(document).on('mouseup',function () {
+                    $(document).unbind('mouseup');
+                    dataseries.sel = undefined;      // we're done defining region
+                    graph_redraw(dataseries);
+                });
+            });
+
+            // track mouse to display vertical cursor & measurements
+            dataset.canvas.on('mousemove',function (event) {
+                var pos = dataset.canvas.offset();
+                var gx = event.pageX - pos.left;
+                var gy = event.pageY - pos.top;
+
+                // see if mouse is over plot region
+                if (gx >= dataset.left && gx <= dataset.left + dataset.wplot &&
+                    gy >= dataset.top && gy <= dataset.top + dataset.hplot) {
+                    dataseries.cursor = Math.floor(gx) + 0.5;
+                    if (dataseries.sel) dataseries.sel1 = dataseries.cursor;
+                } else dataseries.cursor = undefined;
+
+                graph_redraw(dataseries);
+            });
+
+            dataset.bg_image = $('<canvas></canvas>');
+
+            // handle retina devices properly
+            var context = dataset.canvas[0].getContext('2d');
+            var devicePixelRatio = window.devicePixelRatio || 1;
+            var backingStoreRatio = context.webkitBackingStorePixelRatio ||
+                    context.mozBackingStorePixelRatio ||
+                    context.msBackingStorePixelRatio ||
+                    context.oBackingStorePixelRatio ||
+                    context.backingStorePixelRatio || 1;
+            dataset.pixelRatio = devicePixelRatio / backingStoreRatio;
+
+            dataset.canvas.insertBefore(container.find('.plot-scrollbar-wrapper'));
+        }
+
+        // compute value bounds, set up canvas
+        $.each(dataseries,function (index,dataset) { process_dataset(dataset); });
+        dataseries.xstart = dataseries.xmin;   // set up initial xaxis bounds
+        dataseries.xend = dataseries.xmax;
+        dataseries.cursor = undefined;    // x-coord of mouse cursor over plot
+
+        // set up handlers for dragging scrollbar thumb
+        var thumb = container.find('.plot-scrollbar-thumb');
+        var scrollbar = container.find('.plot-scrollbar');
+
+        dataseries.move_thumb = function (dx) {
+            if (thumb.is(':hidden')) return;
+
+            var thumb_dx = (dataseries.xmax - dataseries.xmin)/scrollbar.width();
+            var width = dataseries.xend - dataseries.xstart;
+            dataseries.xstart = Math.max(dataseries.xmin,dataseries.xstart + dx*thumb_dx);
+            dataseries.xend = dataseries.xstart + width;
+
+            if (dataseries.xend > dataseries.xmax) {
+                dataseries.xend = dataseries.xmax;
+                dataseries.xstart = dataseries.xend - width;
+            }
+
+            thumb.css('margin-left',(dataseries.xstart - dataseries.xmin)/thumb_dx);
+
+            // replot after changing visible region
+            $.each(dataseries,function (index,dataset) {
+                dataset_plot(dataset);
+            });
+            graph_redraw(dataseries);
+        };
+
+        thumb.on('mousedown',function (event) {
+            //var thumb_value = parseInt(thumb.css('margin-left'));
+            //var thumb_max_value = scrollbar.width() - thumb.width();
+            //var thumb_dx = (dataseries.xmax - dataseries.xmin)/scrollbar.width();
+            //var thumb_width = thumb.width() * thumb_dx;
+            var mx = event.pageX;
+
+            $(document).on('mousemove',function (event) {
+                dataseries.move_thumb(event.pageX - mx);
+                mx = event.pageX;
+                /*
+                var dx = event.pageX - mx;
+                var value = Math.min(thumb_max_value,Math.max(0,thumb_value + dx));
+                thumb.css('margin-left',value);
+                dataseries.xstart = dataseries.xmin + value*thumb_dx;
+                dataseries.xend = dataseries.xstart + thumb_width;
+                do_plot(container[0],container.width(),container.height());
+                 */
+            });
+
+            $(document).on('mouseup',function (event) {
+                $(document).unbind('mousemove');
+                $(document).unbind('mouseup');
+            });
+        });
+
+        // set up resize handler
+        container[0].resize = do_plot;
+
+        // the initial plot
+        do_plot(container[0], 400, 300);
+
+        return container[0];
+    }
+
+    function do_plot(container,w,h) {
+        var dataseries = container.dataseries;
+        var plot_h = Math.floor((h - 30 - 20)/dataseries.length);  // height of each plot
+
+        $(container).width(w);
+        $(container).height(h);
+
+        // set dimensions of each canvas, figure out consistent margins
+        var left_margin = 55.5;
+        var right_margin = 19.5;
+        var top_margin = 5.5;
+        var bottom_margin = 15.5;
+        $.each(dataseries,function (index,dataset) {
+            //dataset.canvas.css('top',index*plot_h + 25);  // position canvas in container
+            dataset.canvas.width(w);
+            dataset.canvas.height(plot_h);
+            dataset.canvas[0].width = w*dataset.pixelRatio;
+            dataset.canvas[0].height = plot_h*dataset.pixelRatio;
+            // after changing dimension, have to reset context 
+            dataset.canvas[0].getContext('2d').scale(dataset.pixelRatio,dataset.pixelRatio);
+
+            dataset.bg_image[0].width = w*dataset.pixelRatio;
+            dataset.bg_image[0].height = plot_h*dataset.pixelRatio;
+            dataset.bg_image[0].getContext('2d').scale(dataset.pixelRatio,dataset.pixelRatio);
+
+            if (dataset.ylabel !== undefined) left_margin = 70.5;
+            if (dataset.xlabel !== undefined) bottom_margin = 35.5;
+        });
+
+        $(container).find('.plot-scrollbar').css('margin-left',left_margin).css('margin-right',right_margin);
+
+        // now that dimensions are set, do the plots
+        var wplot = w - left_margin - right_margin;
+        var hplot = plot_h - top_margin - bottom_margin;
+        var xscale = (dataseries.xend - dataseries.xstart)/wplot;
+        $.each(dataseries,function (index,dataset) {
+            // set up coordinate transforms
+            var yscale = (dataset.ymax - dataset.ymin)/hplot;
+            dataset.plotx = function(datax) {
+                return (datax - dataseries.xstart)/xscale + left_margin;
+            };
+            dataset.ploty = function(datay) {
+                return top_margin + (hplot - (datay - dataset.ymin)/yscale);
+            };
+            dataset.datax = function(plotx) {
+                return (plotx - left_margin)*xscale + dataseries.xstart;
+            };
+
+            // save margin and size info
+            dataset.left = left_margin;
+            dataset.top = top_margin;
+            dataset.wplot = wplot;
+            dataset.hplot = hplot;
+
+            dataset.color = '#268bd2';  // fixed color for now
+
+            // draw the plot
+            dataset_plot(dataset);
+        });
+        graph_redraw(dataseries);
+
+        // set up toolbar
+        var maxzoom = (dataseries.xstart == dataseries.xmin && dataseries.xend == dataseries.xmax);
+        $(container).find('#zoom').toggleClass('plot-tool-enabled',!maxzoom);
+        $(container).find('#zoomout').toggleClass('plot-tool-enabled',!maxzoom);
+
+        // set up scrollbar
+        $(container).find('.plot-scrollbar-thumb').toggle(!maxzoom);
+        if (!maxzoom) {
+            var thumb = $(container).find('.plot-scrollbar-thumb');
+            var scale = (dataseries.xmax - dataseries.xmin)/wplot;
+            var wthumb = (dataseries.xend - dataseries.xstart)/scale;
+            var xthumb = (dataseries.xstart - dataseries.xmin)/scale;
+            thumb.css('width',wthumb);
+            thumb.css('margin-left',xthumb);
+        }
+    }
+
+    // redraw the plot for a particular dataset by filling in background image
+    function dataset_plot(dataset) {
+        var xstart = dataset.dataseries.xstart;
+        var xend = dataset.dataseries.xend;
+
+        // compute info for drawing grids -- shoot for a grid line every 100 pixels
+        var xtick = tick_interval(xstart,xend,dataset.wplot/100);
+        xtick.push(xend);  // when to stop drawing x grid
+        var tick_length = 5;
+
+        // start by painting an opaque background for the plot itself
+        var c = dataset.bg_image[0].getContext('2d');
+
+        c.clearRect(0, 0, dataset.bg_image[0].width, dataset.bg_image[0].height);
+        //c.fillStyle = background_style;
+        //c.fillRect(0, 0, dataset.bg_image[0].width, dataset.bg_image[0].height);
+
+        c.fillStyle = element_style;
+        c.fillRect(dataset.left, dataset.top, dataset.wplot, dataset.hplot);
+
+        // draw xgrid and tick labels
+        c.strokeStyle = grid_style;
+        c.fillStyle = normal_style;
+        c.font = graph_font;
+        c.textAlign = 'center';
+        c.textBaseline = 'top';
+        var t,temp;
+        var xunits = dataset.xunits || '';
+        for (t = xtick[0]; t < xtick[2]; t += xtick[1]) {
+            temp = Math.floor(dataset.plotx(t)) + 0.5;
+
+            c.beginPath();
+            c.moveTo(temp,dataset.top); c.lineTo(temp,dataset.top + dataset.hplot);
+            c.stroke();
+            c.fillText(engineering_notation(t, 2)+xunits, temp, dataset.top + dataset.hplot);
+        }
+
+        if (dataset.yunits) {
+            var ytick = tick_interval(dataset.ymin,dataset.ymax,dataset.hplot/100);
+
+            // draw ygrid and tick labels
+            c.textAlign = 'right';
+            c.textBaseline = 'middle';
+            for (t = ytick[0]; t < dataset.ymax; t += ytick[1]) {
+                temp = Math.floor(dataset.ploty(t)) + 0.5;
+
+                c.beginPath();
+                c.moveTo(dataset.left,temp); c.lineTo(dataset.left + dataset.wplot,temp);
+                c.stroke();
+                c.fillText(engineering_notation(t, 2)+dataset.yunits,dataset.left-2,temp);
+            }
+            c.stroke();
+        }
+
+        // draw axis labels
+        c.font = graph_legend_font;
+        if (dataset.xlabel) {
+            c.textAlign = 'center';
+            c.textBaseline = 'bottom';
+            c.fillText(dataset.xlabel, dataset.left + dataset.wplot/2, dataset.bg_image[0].height-5);
+        }
+        if (dataset.ylabel) {
+            c.save();
+            c.textAlign = 'center';
+            c.textBaseline = 'top';
+            c.translate(10, dataset.top + dataset.hplot/2);
+            c.rotate(-Math.PI / 2);
+            c.fillText(dataset.ylabel, 0, 0);
+            c.restore();
+        }
+
+        c.save();
+        c.beginPath();
+        c.rect(dataset.left,dataset.top,dataset.wplot,dataset.hplot);
+        c.clip();   // clip waveform plot to waveform region of canvas
+        var i = search(dataset.xvalues,xstart);  // quickly find first index
+        if (dataset.yunits) {
+            // plot the analog waveform
+            c.strokeStyle = dataset.color;
+            c.lineWidth = 2;
+            var xv = dataset.xvalues[i];
+            var x = dataset.plotx(xv);
+            var y = dataset.ploty(dataset.yvalues[i]);
+            c.beginPath();
+            c.moveTo(x, y);
+            while (xv < xend) {
+                i += 1;
+                xv = dataset.xvalues[i];
+                if (xv === undefined) break;
+                var nx = dataset.plotx(xv);
+                var ny = dataset.ploty(dataset.yvalues[i]);
+                c.lineTo(nx, ny);
+                x = nx;
+                y = ny;
+                if (i % 100 == 99) {
+                    // too many lineTo's cause canvas to break
+                    c.stroke();
+                    c.beginPath();
+                    c.moveTo(x, y);
+                }
+            }
+            c.stroke();
+        } else {
+            // plot the digital waveform
+        }
+        c.restore();
+
+        // add plot border last so it's on top
+        c.lineWidth = 1;
+        c.strokeStyle = normal_style;
+        c.strokeRect(dataset.left, dataset.top, dataset.wplot, dataset.hplot);
+
+        // add close box
+        c.strokeRect(5.5,5.5,10,10);
+        c.beginPath();
+        c.moveTo(7.5,7.5); c.lineTo(13.5,13.5);
+        c.moveTo(13.5,7.5); c.lineTo(7.5,13.5);
+        c.stroke();
+
+        // add legend: translucent background with 5px padding, 15x15 color key, signal label
+        var left = dataset.left + 5;
+        var top = dataset.top + 5;
+        var w = c.measureText(dataset.name).width;
+        c.globalAlpha = 0.7;
+        c.fillStyle = element_style;
+        c.fillRect(left, top, w + 30, 25);
+        c.globalAlpha = 1.0;
+
+        c.fillStyle = dataset.color;
+        c.fillRect(left+5, top+5, 15, 15);
+        c.strokeRect(left+5, top+5, 15, 15);
+
+        c.fillStyle = normal_style;
+        c.textAlign = 'left';
+        c.textBaseline = 'bottom';
+        c.fillText(dataset.name, left + 25, top+20);
+
+        // remember where legend ends so we can add cursor readout later
+        dataset.legend_right = left + 25 + w;
+        dataset.legend_top = top;
+    }
+
+    function graph_redraw(dataseries) {
+        $(dataseries.container).find('#zoomsel').toggleClass('plot-tool-enabled',dataseries.sel0!==undefined && dataseries.sel1!==undefined);
+
+        // redraw each plot with cursor overlay
+        $.each(dataseries,function(index,dataset) {
+            var c = dataset.canvas[0].getContext('2d');
+            c.clearRect(0, 0, dataset.canvas.width(), dataset.canvas.height());
+            c.drawImage(dataset.bg_image[0], 0, 0, dataset.canvas.width(), dataset.canvas.height());
+
+            // show selection region, if any
+            if (dataseries.sel0 && dataseries.sel1) {
+                c.fillStyle = 'rgba(207,191,194,0.4)';
+                var xsel = Math.min(dataseries.sel0,dataseries.sel1);
+                var wsel = Math.abs(dataseries.sel0 - dataseries.sel1);
+                c.fillRect(xsel,dataset.top,wsel,dataset.hplot);
+
+                c.strokeStyle = 'rgba(207,191,194,0.8)';
+                c.lineWidth = 1;
+                c.beginPath();
+                c.moveTo(xsel,dataset.top); c.lineTo(xsel,dataset.top+dataset.hplot);
+                c.moveTo(xsel+wsel,dataset.top); c.lineTo(xsel+wsel,dataset.top+dataset.hplot);
+                c.stroke();
+            }
+
+            if (dataseries.cursor !== undefined) {
+                // overlay vertical plot cursor
+                c.lineWidth = 1;
+                c.strokeStyle = normal_style;
+                c.beginPath();
+                c.moveTo(dataseries.cursor,dataset.top);
+                c.lineTo(dataseries.cursor,dataset.top + dataset.hplot);
+                c.stroke();
+
+                // draw fiducial at intersector of cursor and curve
+                var x = dataset.datax(dataseries.cursor);  // convert cursor coord to x value
+                var i = search(dataset.xvalues,x);  // quickly find first index
+                // interpolate cursor's intersection with curve
+                var x1 = dataset.xvalues[i];
+                var y1 = dataset.yvalues[i];
+                var x2 = dataset.xvalues[i+1] || x1;
+                var y2 = dataset.yvalues[i+1] || y1;
+                var y = y1;
+                if (x1 != x2) y = y1 + ((x - x1)/(x2-x1))*(y2 - y1);
+
+                var gx = dataset.plotx(x);
+                var gy = dataset.ploty(y);
+                c.beginPath();
+                c.arc(gx,gy,5,0,2*Math.PI);
+                c.stroke();
+
+                // add x-axis label
+                var label = engineering_notation(x,1);
+                if (dataset.xunits) label += dataset.xunits;
+                c.font = graph_font;
+                c.textAlign = 'center';
+                c.textBaseline = 'top';
+                c.fillStyle = background_style;
+                c.fillText('\u2588\u2588\u2588\u2588\u2588', dataseries.cursor, dataset.top + dataset.hplot);
+                c.fillStyle = normal_style;
+                c.fillText(label, dataseries.cursor, dataset.top + dataset.hplot);
+
+                // now add label
+                if (dataset.yunits) {
+                    label = '='+engineering_notation(y,1) + dataset.yunits;
+                    c.font = graph_legend_font;
+
+                    // translucent background so graph doesn't obscure label
+                    var w = c.measureText(label).width;
+                    c.fillStyle = element_style;
+                    c.globalAlpha = 0.7;
+                    c.fillRect(dataset.legend_right,dataset.legend_top,w+5,25);
+
+                    // now plot the label itself
+                    c.textAlign = 'left';
+                    c.textBaseline = 'bottom';
+                    c.fillStyle = normal_style;
+                    c.globalAlpha = 1.0;
+                    c.fillText(label,dataset.legend_right,dataset.legend_top+20);
+                }
+            }
+        });
+    }
+
+    // find largest index in array such that array[index] <= val
+    // return 0 if all array elements are >= val
+    // assumes array contents are in increasing order
+    // uses a binary search
+    function search(array, val) {
+        var start = 0;
+        var end = array.length-1;
+        var index;
+        while (start < end) {
+            index = (start + end) >> 1;   // "middle" index
+            if (index == start) index = end;
+            if (array[index] <= val) start = index;
+            else end = index - 1;
+        }
+        return start;
+    }
+
+    var zoom_icon = 'data:image/gif;base64,R0lGODlhEAAQAMT/AAAAAP///zAwYT09bpGRqZ6et5iYsKWlvbi40MzM5cXF3czM5OHh5tTU2fDw84uMom49DbWKcfLy8g0NDcDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABQALAAAAAAQABAAAAVZICWOZFlOwCQF5pg2TDMJbDs1DqI8g2TjOsSC0DMBGEGF4UAz3RQ6wiFRLEkmj8WyUC0FBAMpNdWiBCQD8DWCKq98lEkEAiiTAJB53S7Cz/kuECuAIzWEJCEAIf5PQ29weXJpZ2h0IDIwMDAgYnkgU3VuIE1pY3Jvc3lzdGVtcywgSW5jLiBBbGwgUmlnaHRzIFJlc2VydmVkLg0KSkxGIEdSIFZlciAxLjANCgA7';
+
+    var zoomin_icon = 'data:image/gif;base64,R0lGODlhEAAQAMT/AAAAAP///zAwYT09boSEnIqKopiYsJ6etqurxL+/18XF3dnZ8sXF0OHh5tTU2ePj5piZr2EwAMKXfg0NDcDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABQALAAAAAAQABAAAAVXICWOZFkCE2CWaeMwwLCKQPNMBCQEa/0UAEXiIFhNHKmkYcA7MQgKwMGw2PUgiYkBsWuWBoJpNTWjBATgAECCKgfelHVkUh5NIpJ5XXTP7/kRcH9mgyUhADshACH+T0NvcHlyaWdodCAyMDAwIGJ5IFN1biBNaWNyb3N5c3RlbXMsIEluYy4gQWxsIFJpZ2h0cyBSZXNlcnZlZC4NCkpMRiBHUiBWZXIgMS4wDQoAOw==';
+
+    var zoomout_icon = 'data:image/gif;base64,R0lGODlhEAAQAMT/AAAAAP///zAwYT09bn19lYSEnJGRqZ6et5iYsJ6etqWlvbi40MzM5cXF3czM5Li4w+Hh5tTU2fDw84uMom49DbWKcQ0NDcDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABcALAAAAAAQABAAAAVX4CWOZFlagGWWaQQ9lrCKViQVxjQEay0RjYXDMFgBIKmkQsA7PQyLhEHB2PUmDoTisGuWBINpNTW7BAbggKWCKgfelzUFUB4BKJV5XXTP7/kUcH9mgyUhADshACH+T0NvcHlyaWdodCAyMDAwIGJ5IFN1biBNaWNyb3N5c3RlbXMsIEluYy4gQWxsIFJpZ2h0cyBSZXNlcnZlZC4NCkpMRiBHUiBWZXIgMS4wDQoAOw==';
+
+    var zoomsel_icon = 'data:image/gif;base64,R0lGODlhEAAQAIQBAAAAAP///zAwYT09bpGRqZ6et5iYsKWlvbi40MzM5cXF3czM5OHh5tTU2fDw84uMom49DbWKcfLy8g0NDf///////////////////////////////////////////////yH+EUNyZWF0ZWQgd2l0aCBHSU1QACH5BAEAAB8ALAAAAAAQABAAAAVY4CeOZFlOwCQF5pg2TDMJbIsCODBIdgMgCgSAsDMBGICgAnCgmSY+IAGQKJYkt5y1FBAMCIdqqvUJSAZebARFXvE+kwgEQCYBIHJ6XXSX710QK38jNYMkIQA7';
+
     function engineering_notation(n, nplaces, trim) {
-        
         if (n === 0) return '0';
         if (n === undefined) return 'undefined';
         if (trim === undefined) trim = true;
-    
+
         var sign = n < 0 ? -1 : 1;
         var log10 = Math.log(sign * n) / Math.LN10;
         var exp = Math.floor(log10 / 3); // powers of 1000
         var mantissa = sign * Math.pow(10, log10 - 3 * exp);
-    
+
         // keep specified number of places following decimal point
         var mstring = (mantissa + sign * 0.5 * Math.pow(10, - nplaces)).toString();
         var mlen = mstring.length;
@@ -40,7 +677,7 @@ Number formatting functions
             }
             if (endindex < mlen) mstring = mstring.substring(0, endindex);
         }
-    
+
         switch (exp) {
         case -5:
             return mstring + "f";
@@ -61,979 +698,11 @@ Number formatting functions
         case 3:
             return mstring + "G";
         }
-    
+
         // don't have a good suffix, so just print the number
         return n.toPrecision(nplaces);
     }
-    
-    /*******************
-    Suffix formatter: calls engineering_notation on a number with two decimal places specified
-    ********************/
-    function suffix_formatter(value,axis) {
-        var base = engineering_notation(value, 2);
-        if (axis && axis.options.units){ return base+axis.options.units; }
-        else { return base; }
-    }
-    
-/**************************************************
-**************************************************
-Graph setup functions 
-**************************************************
-**************************************************/
-    var compactPlot = true;
-    
-    /*********************
-    Interpolate: given a data series, infer the y value at a given x value
-        --args: -series: a data series of the sort returned by a flot plot object's
-                         getData() method
-                -x: the x value at which to calculate the y value
-                
-        --returns: the y value
-        
-    Code taken from flotcharts.org "Tracking Curves with Crosshair" example graph,
-    with slight modifications for style
-    ***********************/
-    function interpolate(series,x){
-        // find the closest point, x-wise
-        for (j = 0; j < series.data.length; j += 1) {
-            if (series.data[j][0] > x) {
-                break;
-            }
-        }
-        
-        // now interpolate
-        var y;
-        var p1 = series.data[j - 1];
-        var p2 = series.data[j];
-    
-        if (p1 == null) {
-            y = p2[1];
-        } else if (p2 == null) {
-            y = p1[1];
-        } else {
-            y = p1[1] + (p2[1] - p1[1]) * (x - p1[0]) / (p2[0] - p1[0]);
-        }
-        return y;
-    }
-    
-    /*****************
-    Graph setup: calls all the other setup functions. Consolidated for neatness.
-    ******************/
-    var allPlots = [];
-    
-    function graph_setup(div,plotObj){
-        allPlots.push(plotObj);
-        div.css("position","relative");
-        zoom_pan_setup(div,plotObj);
-        hover_setup(div,plotObj);
-        selection_setup(div,plotObj);    
-        set_plot_heights();
-    }
-    
-    /*********************
-    Resize functions: scale plots nicely when the window is resized
-    **********************/
-    $(window).resize(set_plot_heights);
-        
-    function set_plot_heights(){
-        // limit the simulation pane's height to that of the editor pane
-        $('#simulation-pane').height($('#editor-pane').height());
-        $('#results').height($('#simulation-pane').height() - $('#graph-toolbar').height() - 40);
-        $.each(allPlots,function(index,item){
-            
-            // allow extra space for margins
-            var margin_val;
-            try{
-                margin_val = $('.plot-wrapper').css("margin-bottom").match(/-?\d+/)[0];
-            } catch (err) {
-                margin_val = 0;
-            }
-            var placeholder = item.getPlaceholder();
-            
-            // plot height = total height / number of plots - margin space,
-            // bounded by min-height; -30 for scrollbar width
-            var plotHeight = ($('#results').height() - 30) / allPlots.length 
-            plotHeight -= margin_val;
-            placeholder.css("height",plotHeight);
-        });
-    }
-    
-    /**********************
-    Zoom/pan setup: sets up mousewheel and doubleclick panning/zooming
-    **********************/
-    function zoom_pan_setup(div,plotObj){
-        // mousewheel panning
-        plotObj.getPlaceholder().on("mousewheel",function(evt){
-            deltaX = evt.originalEvent.wheelDeltaX;
-            if (deltaX !== 0){
-                evt.preventDefault();
-                $.each(allPlots, function(index,item){
-                    item.clearSelection();
-                    item.pan({left:-1*evt.originalEvent.wheelDeltaX});
-                });
-            }
-        });
-        
-        // doubleclick zooming
-        plotObj.getPlaceholder().on("dblclick",function(evt){
-            evt.preventDefault();
-            
-            var center = {};
-            center.left = evt.pageX - plotObj.offset().left;
-            center.top = evt.pageY - plotObj.offset().top;
-            
-            $.each(allPlots, function(index,item){
-                item.clearSelection();
-                if (evt.shiftKey){
-                    item.zoomOut({center:center});
-                    return;
-                }
-                item.zoom({center:center});
-            });
-        });   
-    }
-    
-    /***********************
-    Hover setup: displays values when the graph is moused over
-    **********************/
-    function hover_setup(div,plotObj){
-        // on hover, set the crosshair position on all plots and call their showtooltip function
-        var updateMouseTimeout;
-        var latestPos;
-        plotObj.getPlaceholder().on("plothover", function(event,pos,item){
-            $(this).trigger("showPosTooltip",pos);
-            $.each(allPlots, function(index,value){
-                value.getPlaceholder().trigger("showPosTooltip",pos);
-                if (value != plotObj){
-                    value.setCrosshair(pos);
-                    if (compactPlot){
-                        value.getPlaceholder().trigger("hidePosTooltip");
-                    }
-                }
-            });  
-        });
-        
-        // showtooltip function: after an appropriate interval to prevent 
-        // awful lag, update the position tooltip
-        plotObj.getPlaceholder().on("showPosTooltip", function(event,pos){
-            latestPos = pos;
-            if (!updateMouseTimeout){
-                updateMouseTimeout = setTimeout(showMousePos, 50);
-            }
-        });
-        
-        /*******************
-        showMousePos: called when a hover event is received and updates displayed values
-        ********************/
-        function showMousePos(){
-            updateMouseTimeout = null;
-            pos = latestPos;
-            
-            var dataset = plotObj.getData();
-            var legendBoxes = plotObj.getPlaceholder().find('.legendValue');
-            
-            for (var i = 0; i < dataset.length; i += 1){
-                var series = dataset[i];
-                var y = interpolate(series,pos.x);
-                legendBoxes.eq(i).text(suffix_formatter(y)+series.yUnits);
-            }
-        }
-    }
-    
-    /************************
-    Selection setup: shows the range of values covered by a selection
-    (similar to hover setup above)
-    *************************/
-    function select_zoom(ranges){
-        if (ranges){
-            $.each(allPlots,function(index,item){
-                opts = item.getAxes.xaxis.options;
-                opts.min = ranges.xaxis.from;
-                opts.max = ranges.xaxis.to;
-                
-                item.setupGrid();
-                item.draw();
-            });
-        }
-    }
-    
-    function selection_setup(div,plotObj){
-        // create and position div to show range values
-        var rangeTextDiv = $("<div class='posText'><div class='xrange'></div></div>");
-        plotObj.getPlaceholder().append(rangeTextDiv);
-        rangeTextDiv.css("bottom",plotObj.getPlotOffset().bottom);
-        rangeTextDiv.css("left",plotObj.getPlotOffset().left + 5);
-        rangeTextDiv.hide();
-        
-        // when a selection is being made, if it's a valid selection, call each plot's
-        // showtooltip method
-        var updateSelTimeout;
-        var selRanges;
-        var hasSel;
-        
-        plotObj.getPlaceholder().on("plotselecting", function(event,ranges){
-            $.each(allPlots, function(index, value) {
-                if (value != plotObj){
-                    if (ranges){
-                        value.setSelection(ranges,true);
-                    }
-                }
-                value.getPlaceholder().trigger("showRangeTooltip",ranges);
-            }); 
-            hasSel = true;
-        });
-        
-        // whenever one plot's selection is cleared, clear the others' as well
-        plotObj.getPlaceholder().on("plotunselected",function(event,ranges){
-            $.each(allPlots, function(index, value){
-                value.clearSelection();
-            });
-            
-            clearTimeout(updateSelTimeout);
-            rangeTextDiv.hide();
-            hasSel = false;
-        });
-        
-        plotObj.getPlaceholder().on("plothover",function(){
-            if (hasSel && compactPlot){
-                rangeTextDiv.show();
-            }
-        });
-        
-        plotObj.getPlaceholder().on("mouseleave",function(){
-            if (compactPlot){
-                rangeTextDiv.hide();
-            }
-        });
-        
-        // showtooltip -- show the tooltip after an appropriate timeout to prevent
-        // awful lag
-        plotObj.getPlaceholder().on("showRangeTooltip",function(event,ranges){
-            if (!updateSelTimeout){
-                selRanges = ranges;
-                updateSelTimeout = setTimeout(showSelRange,50);
-            }
-        });
-        
-        /*****************
-        showSelRange: called when a 'selecting' event is received and updates displayed info
-        ******************/
-        var innerRangeTextDivs = {};
-        
-        function showSelRange(){
-            updateSelTimeout = null;
-            ranges = selRanges;
-            hasSel = true;
-            
-            // if the range is invalid, do nothing
-            if (!ranges){ 
-                hasSel = false;
-                return; 
-            }
-            
-            var xrange = ranges.xaxis.to - ranges.xaxis.from;
-            
-            // calculate the range for each series. Each series gets its own div in
-            // innerRangeTextDivs
-            var dataset = plotObj.getData();
-            for (i = 0; i < dataset.length; i += 1) {
-                var series = dataset[i];
-                
-                rangeTextDiv.find('.xrange').text("X range = "+suffix_formatter(xrange)+
-                                              series.xUnits);
-    
-                var y1 = interpolate(series, ranges.xaxis.from);
-                var y2 = interpolate(series, ranges.xaxis.to);
-                var yrange = y2-y1;
-                
-                var divText = series.label+" range = "+
-                    suffix_formatter(yrange)+series.yUnits;
-                var legendBoxes = plotObj.getPlaceholder().find('.legendCheckbox');
-                var toggleBox = legendBoxes.eq(i);
-                if (innerRangeTextDivs["series"+i]===undefined){
-                    var innerDiv = $("<div>"+divText+"</div>");
-                    innerRangeTextDivs["series"+i] = innerDiv;
-                    rangeTextDiv.append(innerRangeTextDivs["series"+i]);
-                } else {
-                    innerRangeTextDivs["series"+i].text(divText);
-                }
-                
-                if (toggleBox.prop("checked")){
-                    innerRangeTextDivs["series"+i].show();
-                } else {
-                    innerRangeTextDivs["series"+i].hide();
-                }
-            }
-            if (!compactPlot){
-                rangeTextDiv.show();
-            }
-        }
-    }
-    
-    /**********************
-    General setup
-    ***********************/
-    function general_setup(){
-        var tlbar = new Toolbar($('#graph-toolbar'));   
-        
-        var addPlotModal;
-        var addPlotDropdown;
-        var addPlotButton = new ToolbarButton('<i class="icon-plus"></i> Add Plot',function(){
-            
-            addPlotModal = new ModalDialog();
-            addPlotModal.setTitle("Add a New Plot");
-            var content =$("<div><p>Enter one or more node names, separated by spaces or commas,\
-    to plot on a single pair of axes.</p></div>");
-            var nodeList = [];
-            for (var item in current_results){
-                if (item != "contains" && item != "_time_") {
-                    nodeList.push(item);
-                }
-            }
-            addPlotModal.setContent(content);
-            addPlotModal.addButton("Cancel",'dismiss');
-            addPlotModal.addButton("Add Plot",addPlot,'btn-primary');
-            addPlotModal.inputBox({placeholder:'New nodes...',
-                                   callback:addPlot,
-                                   typeahead:nodeList
-                                  });
-            addPlotModal.show();
-        },"Add Plot");
-                               
-        function addPlot(){
-            gbf(function(item){
-                item.zoom({amount:1e-10});
-            })
-            
-            var newPlotRaw = addPlotModal.inputContent();
-            newPlot = [newPlotRaw.match(/[^,\s]+/g)];
-            addPlotModal.dismiss();
-            if (newPlot[0] == null) return;
-            
-            switch (current_analysis.type){
-                case 'tran':
-                    tran_plot(bigDiv,current_results,newPlot);
-                    break;
-                case 'ac':
-                    ac_plot(bigDiv,current_results,newPlot);
-                    break;
-                case 'dc':
-                    dc_plot(bigDiv, current_results, newPlot, current_analysis.parameters.sweep1,
-                       current_analysis.parameters.sweep2);
-                    break;
-            }
-        }
-        
-        tlbar.addButtonGroup([addPlotButton]);
-        addPlotButton.disable();
-        addPlotButton.setID("addPlotButton");
 
-        /**** set up zooming and panning buttons ****/
-        
-        // generic button function
-        function gbf(onclick_fn){
-            $.each(allPlots, function(index,item){
-                item.clearSelection();
-                onclick_fn(item);
-            });
-        }
-        
-        var resetZoomBtn = new ToolbarButton('icon-search',function(){
-            gbf(function(item){
-                item.zoom({amount:1e-10});
-            });
-        },"Reset Zoom");
-        
-        tlbar.addButtonGroup([
-            new ToolbarButton('icon-zoom-in',function(){
-                gbf(function(item){
-                    item.zoom();
-                });
-            },"Zoom In (Shortcut: double click)"),
-            resetZoomBtn,
-            new ToolbarButton('icon-zoom-out',function(){
-                gbf(function(item){
-                    item.zoomOut();
-                });
-            }, "Zoom Out (Shortcut: shift + double click)")
-        ]);  
-        
-        var selZoomButton = new ToolbarButton(
-            '<i class="icon-resize-full"></i> Zoom to Selection',zoomToSel,
-                                                "Zoom to Selection");
-        tlbar.addButtonGroup([selZoomButton]);
-        selZoomButton.disable();
-        
-        var selRanges;
-        function zoomToSel(){
-            ranges = selRanges;
-            if (ranges){
-                $.each(allPlots, function(index,item){
-                    var opts = item.getAxes().xaxis.options;
-                    opts.min = ranges.xaxis.from;
-                    opts.max = ranges.xaxis.to;
-                    
-                    item.setupGrid();
-                    item.draw();
-                    item.clearSelection();
-                });
-                $('#results').triggerHandler("plotzoom",allPlots[0]);
-            }
-        }
-        
-        $('#results').on("plotunselected",function(){
-            selZoomButton.disable();
-        });
-        
-        $('#results').on("plotselected",function(evt,ranges){
-            selZoomButton.enable();
-            selRanges = ranges;
-        });
-    }
-    
-    /*********************************
-    Scrollbar setup: sets up the scrollbar for panning
-    *********************************/
-    function scrollbar_setup(){
-        $('#results').on("plotzoom",function(evt,plot){
-            var xaxis = plot.getAxes().xaxis;
-            var new_range = xaxis.max - xaxis.min;
-            var max_range = xaxis.datamax - xaxis.datamin;
-            
-            var inv_fraction = max_range/new_range;
-            $('#graphScrollInner').width($('#graphScrollOuter').width() * inv_fraction);
-            
-            var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
-            var left_amt_px = $('#graphScrollInner').width() * left_fraction;
-            $('#graphScrollOuter').scrollLeft(left_amt_px);
-            
-        });
-        
-        var preventScroll = false;
-        $('#results').on("plotpan",function(evt,plot,args){
-            var xaxis = plot.getAxes().xaxis;
-            var max_range = xaxis.datamax - xaxis.datamin;
-            
-            var left_fraction = (xaxis.min - xaxis.datamin) / max_range;
-            
-            var left_amt_px = $('#graphScrollInner').width() * left_fraction;
-            
-            preventScroll = true;
-            $('#graphScrollOuter').scrollLeft(left_amt_px);
-        });
-        
-        var updateScrollTimeout = null;
-        $('#graphScrollOuter').on("scroll",function(evt){
-            if (!updateScrollTimeout){
-                setTimeout(function(){syncScroll(evt);},1)
-            }
-        });
-        
-        function syncScroll(evt){
-            updateScrollTimeout = null;
-            if (preventScroll){ 
-                preventScroll = false;
-                return; 
-            } else {
-                var left_amt_px = $('#graphScrollOuter').scrollLeft();
-                var left_frac = left_amt_px / $('#graphScrollInner').width();
-                
-                var xaxis_sample = allPlots[0].getAxes().xaxis;
-                var xrange = xaxis_sample.max - xaxis_sample.min;
-                var max_range = xaxis_sample.datamax - xaxis_sample.datamin;
-                var left_amt_graph = max_range * left_frac;
-                
-                $.each(allPlots,function(index,item){
-                    var xaxis = item.getAxes().xaxis;
-                    xaxis.options.min = left_amt_graph;
-                    xaxis.options.max = left_amt_graph + xrange;
-                    
-                    item.setupGrid();
-                    item.draw();
-                });
-            }
-        }
-    }
-    
-    
-    /**********************
-    Label formatter: sets up space to show values next to legend labels
-    ***********************/
-    function legendFormatter(label,series){
-        return '<table><tr><td>'+label+'</td><td>=</td>\
-<td class="legendValue">000.00'+series.yUnits+'</td></tr></table>'
-    }
-    
-    /*********************
-    Default graph options: each plot will need to specify axis labels and zoom and pan ranges. 
-        NB: this is an OBJECT
-    **********************/
-    var default_options = {
-        yaxis:{
-            color:"#545454",
-            tickColor:"#dddddd",
-            tickFormatter:suffix_formatter,
-            zoomRange:false,
-            panRange:false,
-            autoscaleMargin: 0.05,
-            axisLabelUseCanvas:true,
-            axisLabelColor:'rgb(84,84,84)',
-        },
-        xaxis:{
-            color:"#545454",
-            tickColor:"#dddddd",
-            tickFormatter:suffix_formatter,
-            labelHeight:1,
-            axisLabelUseCanvas:true,
-            axisLabelColor:'rgb(84,84,84)',
-            axisLabelPadding:5
-        },
-        series:{
-            shadowSize:0
-        },
-        crosshair:{
-            mode:"x",
-            color:"#916e75"
-        },
-        selection:{
-            mode:"x",
-            color:'#cfbfc2'
-        },
-        grid:{
-            hoverable:true,
-            autoHighlight:false,
-            backgroundColor:"white"
-        },
-        legend:{
-            labelFormatter:legendFormatter,
-            position:'nw',
-            backgroundOpacity:0.7
-        },
-        colors:['#268bd2','#dc322f','#859900','#b58900','#6c71c4','#d33682','#2aa198']
-    }
-    
-/****************************************************
-*****************************************************
-Graphing functions
-*****************************************************
-*****************************************************/
-    
-    // helper function that returns a new generic placeholder div
-    function get_plotdiv(){
-        var minHeight;
-        if (compactPlot){
-            minHeight = 80;
-        } else {
-            minHeight = 130;
-        }
-        return $('<div class="placeholder" style="width:100%;height:90%;\
-min-height:'+minHeight+'px"></div>');
-    }
-    
-    function get_novaldiv(node){
-        var div = $('<div class="alert alert-danger">No values to plot for node '+node+
-                    '<button class="close" type="button" data-dismiss="alert">&times;\
-</button></div>');
-        return div;
-    }
-    
-    function addCloseBtn(div){
-        var closeBtn = $('<button class="close plot-close">\u00D7</button>');
-        closeBtn.on("click",function(){
-            div.hide();
-            allPlots.splice(allPlots.indexOf(div.find('.placeholder').data("plot")),1);
-        });
-        div.prepend(closeBtn);
-    }
-    
-    /*********************
-    Tran_plot: plots a transient analysis
-        --args: -div: the div into which the plot will be placed
-                -results: results of the analysis as performed by cktsim.js
-                -plots: an array of arrays of nodes to be plotted. Each array
-                        represents nodes to be plotted on the same pair of axes
-                        
-    Preparing of data written by Chris Terman
-    *********************/
-    function tran_plot(div, dataseries) {
-//        if (results === undefined) {
-//            div.text("No results!");
-//            return;
-//        }
-        
-        // repeat for every set of plots
-//        for (var p = 0; p < plots.length; p += 1) {
-//            var plot_nodes = plots[p]; // the set of nodes that belong on one pair of axes
-//            var dataseries = []; // 'dataseries' is the list of objects that represent the 
-//                                 // data for the above set of nodes
-//            
-//            if (p == 0){
-//                dataseries.push({
-//                    label: 'time',
-//                    data: results._time_.map(function(val){return [val,val]}),
-//                    yUnits: 's',
-//                    color: 'rgba(0,0,0,0)'
-//                });
-//            }
-//            
-//            // repeat for each node
-//            for (var i = 0; i < plot_nodes.length; i += 1) {
-//                var node = plot_nodes[i];
-//                
-//                // get the results for the given node
-//                var values = results[node];
-//                if (values === undefined) {
-//                    var novaldiv = get_novaldiv(node);
-//                    div.prepend(novaldiv);
-//                    continue;
-//                }
-//                
-//                // 'plot' will be filled with data
-//                var plot = [];
-//                for (var j = 0; j < values.length; j += 1) {
-//                    plot.push([results._time_[j], values[j]]);
-//                }
-//                
-//                // boolean that records if the analysis asked for current through a node
-//                var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
-//                
-//                // add a series object to 'dataseries'
-//                dataseries.push({
-//                    label: node,
-//                    data: plot,
-//                    xUnits: 's',
-//                    yUnits: current ? 'A' : 'V'
-//                });
-//            }
-//            
-//            if (dataseries.length == 0 || (p == 0 && dataseries.length == 1)) {
-//                continue;
-//            }
-            
-            var xmin = dataseries[0].data[0][0];
-            var len = dataseries[0].data.length;
-            var xmax = dataseries[0].data[len-1][0];
-            
-            // prepare a div
-            var wdiv = $('<div class="plot-wrapper"></div>');
-            addCloseBtn(wdiv);
-//            if (compactPlot){
-//                wdiv.css("margin-bottom",'-10px');
-//            }
-//            var ldiv;
-//            if (compactPlot){
-//                ldiv = $('<div class="plot-legend"></div>');
-//                wdiv.append(ldiv);
-//            }
-            var plotdiv = get_plotdiv();
-            wdiv.append(plotdiv);
-            div.append(wdiv);
-            
-            // customize options
-            var options = $.extend(true,{},default_options);
-//            if (compactPlot) {
-//                options.xaxis.font = {color:'rgba(0,0,0,0)',
-//                                      size:1
-//                                     }
-//                options.yaxis.font = {color:'rgba(0,0,0,0)',
-//                                      size:1
-//                                     }
-//            } else {
-//                options.yaxis.axisLabel = current ? 'Amps (A)' : 'Volts (V)';
-//            }
-            options.xaxis.zoomRange = [null, (xmax-xmin)];
-            options.xaxis.panRange = [xmin, xmax];
-            
-            options.xaxis.units = 's';
-//            options.yaxis.units = current? 'A' : 'V';
-            
-        
-            // graph the data
-            var plotObj = $.plot(plotdiv,dataseries,options);
-            graph_setup(wdiv,plotObj);
-//        }
-    }
-    
-    /**************************
-    AC plot: plot an AC analysis. Arguments same as above.
-    *************************/
-    function ac_plot(div, results, plots) {
-        if (results === undefined) {
-            div.text("No results!");
-            return;
-        }
-        
-        // repeated for each set of nodes
-        for (var p = 0; p < plots.length; p += 1) {
-            var plot_nodes = plots[p];
-            var mplots = []; 
-            var pplots = [];
-            
-            // repeated for each node in the set
-            for (var i = 0; i < plot_nodes.length; i += 1) {
-                var node = plot_nodes[i];
-                if (results[node] === undefined) {
-                    var novaldiv = get_novaldiv(node);
-                    div.prepend(novaldiv);
-                    continue;
-                }
-                var magnitudes = results[node].magnitude;
-                var phases = results[node].phase;
-                
-                // 'mplot' will be filled with magnitude data; 'pplot' will be filled with
-                // phase data
-                var mplot = [];
-                var pplot = [];
-                for (var j = 0; j < magnitudes.length; j += 1) {
-                    var log_freq = Math.log(results._frequencies_[j]) / Math.LN10;
-                    mplot.push([log_freq, magnitudes[j]]);
-                    pplot.push([log_freq, phases[j]]);
-                }
-                
-                // push both series objects into their respective lists
-                mplots.push({
-                    label: "Node " + node,
-                    data: mplot,
-                    xUnits: ' log Hz',
-                    yUnits: ' dB'
-                });
-                pplots.push({
-                    label: "Node " + node,
-                    data: pplot,
-                    xUnits: ' log Hz',
-                    yUnits: ' deg'
-                });
-            }
-            
-            var xmin = mplots[0].data[0][0];
-            var len = mplots[0].data.length;
-            var xmax = mplots[0].data[len-1][0];
-            
-            // prepare divs for magnitude graph
-            var div1 = $('<div class="plot-wrapper"></div>');
-            addCloseBtn(div1);
-            var plotDiv = get_plotdiv();
-            div.append(div1);
-            div1.append(plotDiv);
-            
-            // customize options for magnitude graph
-            var options = $.extend(true, {}, default_options);
-            options.yaxis.axisLabel = 'Magnitude (dB)';
-            options.xaxis.axisLabel = 'Frequency (log Hz)';
-            options.xaxis.zoomRange = [null,(xmax-xmin)];
-            options.xaxis.panRange = [xmin, xmax];
-            
-            // graph magnitude
-            var plotObj = $.plot(plotDiv, mplots, options);
-            graph_setup(div1, plotObj);
-            
-            // prepare divs for phase graphs
-            var div2 = $('<div class="plot-wrapper"></div>');
-            addCloseBtn(div2);
-            plotDiv = get_plotdiv();
-            div.append(div2);
-            div2.append(plotDiv);
-            
-            // customize options for phase graph
-            options.yaxis.axisLabel = "Phase (degrees)";
-            options.yaxis.units = '\u00B0';
-            
-            // graph phase
-            var plotObj = $.plot(plotDiv, pplots, options);
-            graph_setup(div2, plotObj);
-        }
-    }
-    
-    /**************************
-    DC plot
-    **************************/
-    function dc_plot(div, results, plots, sweep1, sweep2){
-        if (sweep1 === undefined) return;
-    
-//        console.log("results:",results);
-        for (var p = 0; p < plots.length; p += 1) {
-            var node = plots[p][0];  // for now: only one value per plot
-            var dataseries = [];
-            var index2 = 0;
-            while (true) {
-                var values;
-                var x,x2;
-                if (sweep2 === undefined) {
-                    values = results[node];
-                    x = results['_sweep1_'];
-                } else {
-                    values = results[index2][node];
-                    x = results[index2]['_sweep1_'];
-                    x2 = results[index2]['_sweep2_'];
-                    index2 += 1;
-                }
-        
-                if (values === undefined) {
-                    var novaldiv = get_novaldiv(node);
-                    div.prepend(novaldiv);
-                    continue;
-                }
-                var plot = [];
-                for (var j = 0; j < values.length; j += 1) {
-                    plot.push([x[j],values[j]]);
-                }
-                var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
-                var name = current ? node : "Node " + node; 
-                if (sweep2 !== undefined) name += " with " + sweep2.source + "=" + x2;
-                
-                dataseries.push({label: name,
-                                 data: plot,
-                                 lineWidth: 5,
-                                 yUnits: current ? 'A' : 'V'
-                                });
-                if (sweep2 === undefined || index2 >= results.length) break;
-            }
-        }
-        
-        var xmin = x[0];
-        var xmax = x[values.length-1];
-        
-        var wdiv = $('<div class="plot-wrapper"></div>');
-        addCloseBtn(wdiv);
-        var plotdiv = get_plotdiv();
-        wdiv.append(plotdiv);
-        div.append(wdiv);
-        
-        var options = $.extend(true, {}, default_options);
-        options.xaxis.axisLabel = 'Volts (V)';
-        options.xaxis.units = 'V';
-        options.xaxis.zoomRange = [null,(xmax-xmin)];
-        options.xaxis.panRange = [xmin, xmax];
-        options.yaxis.axisLabel = current? 'Amps (A)' : 'Volts (V)';
-        options.yaxis.units = current? 'A' : 'V';
-        
-        var plotObj = $.plot(plotdiv, dataseries, options);
-        graph_setup(wdiv, plotObj);
-    }
-    
-    /******************************
-    Simulate: given a string, parse it and run the requested simulation(s)
-    
-    Modified from a function by Chris Terman
-    *******************************/
-//    var analyses;
-//    var current_analysis;
-//    var current_results;
-//    var bigDiv;
-//    
-//    function simulate(text, filename, div, error_callback){
-//        // input string, filename, callback
-//        Parser.parse(text, filename, function(data){run_simulation(data,div);},
-//                     error_callback,true);
-//    }
-//    
-//    function run_simulation(parsed,div) {
-//        div.empty();  // we'll fill this with results
-//        bigDiv = div;
-//        $('#graphScrollInner').width($('#graphScrollOuter').width());
-//        
-//        var netlist = parsed.netlist;
-//        analyses = parsed.analyses;
-//        var plots = parsed.plots;
-//        
-//        allPlots = [];
-//        
-//        if (netlist.length === 0) {
-//            div.html("</br>Empty netlist!");
-//            return;
-//        }
-//        if (analyses.length === 0) {
-//            div.html("</br>No analyses requested!");
-//            return;
-//        }
-//        if (plots.length === 0) {
-//            div.html("</br>No plots requested!");
-//            return;
-//        }
-//        
-//        if (plots.length >= 4){
-//            compactPlot = true;
-//        } else {
-//            compactPlot = false;
-//        }
-//        
-//        
-//        var tranProgress = $('<div><span></span></br></div>');
-//        tranProgress.hide();
-//        div.append(tranProgress);
-//        var tranHalt = false;
-//        var haltButton = $('<button class="btn btn-danger">Halt</button>');
-//        haltButton.tooltip({title:'Halt Simulation',delay:100,container:'body'});
-//        haltButton.on("click",function(){
-//            tranHalt = true;
-//        });
-//        tranProgress.append(haltButton);
-//        
-//        try {
-//            current_analysis = analyses[0];
-//            $('#addPlotButton').data('button').enable();
-//            switch (current_analysis.type) {
-//            case 'tran':
-//                tranProgress.show();
-//                var progressTxt = tranProgress.find('span');
-//                try{
-//                    cktsim.transient_analysis(netlist, current_analysis.parameters.tstop,
-//                                              [], function(pct_complete, results) {
-//                        progressTxt.text("Performing Transient Analysis... "+pct_complete+"%");
-//                        if (results){
-//                            tranProgress.hide();
-//                            current_results = results;
-//                            $('#results').data("current",results);
-//                            tran_plot(div, current_results, plots);
-//                        }
-//                        return tranHalt;
-//                    });
-//                } catch (err) {
-//                    tranProgress.hide();
-//                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-//                                '.\<button class="close" data-dismiss="alert">&times;</button></div>')
-//                }
-//                break;
-//            case 'ac':
-//                try {
-//                    current_results = cktsim.ac_analysis(netlist, current_analysis.parameters.fstart,
-//                                                     current_analysis.parameters.fstop,
-//                                                     current_analysis.parameters.ac_source_name);
-//                    $('#results').data("current",current_results);
-//                    ac_plot(div, current_results, plots);
-//                } catch (err) {
-//                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-//                                '.\<button class="close" data-dismiss="alert">&times;</button></div>');
-//                }
-//                break;
-//            case 'dc':
-//                try {
-//                    current_results = cktsim.dc_analysis(netlist,current_analysis.parameters.sweep1,
-//                                                         current_analysis.parameters.sweep2);
-//                    dc_plot(div, current_results, plots, current_analysis.parameters.sweep1,
-//                           current_analysis.parameters.sweep2);
-//                } catch (err) {
-//                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-//                                '.\<button class="close" data-dismiss="alert">&times;</button></div>');
-//                }
-////                console.log("dc results:",current_results);
-//                break;
-//            }
-//        }
-//        catch (err) {
-//            throw new Parser.CustomError(err,current_analysis.line,0);
-//        }
-//    }
-
-    
-    function setup(){
-        general_setup();
-        scrollbar_setup();
-    }
-/*********************
-Exports
-**********************/
-    return {setup:setup,
-            tran_plot:tran_plot};
-    
+    // module exports
+    return {graph: graph,tick_interval: tick_interval};
 }());
