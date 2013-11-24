@@ -95,11 +95,8 @@ var Simulator = (function(){
             if (results){
                 tranProgress.hide();
                 mCurrent_results = results;
-                //                $('#results').data("current",results);
                 Checkoff.setResults(mCurrent_results, mOptions);
                 
-                prepare_tran_data(plots);
-                /*
                 try{
                     prepare_tran_data(plots);
                 }
@@ -108,21 +105,20 @@ var Simulator = (function(){
                     div.prepend('<div class="alert alert-danger">Simulation error: '+err+
                                 '.<button class="close" data-dismiss="alert">&times;'+
                                 '</button></div>');
-                }*/
+                }
             }
             return tranHalt;
         }
         
         // run the simulation and prepare data
         try {
-            //            $('#addPlotButton').data('button').enable();
             
             mCurrent_analysis = mAnalyses[0];
             switch (mCurrent_analysis.type) {
             case 'tran':
                 tranProgress.show();
                 var progressTxt = tranProgress.find('span');
-                /*try{*/
+                try{
                     if (mType == "device"){
                         cktsim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
                                                   [], tranCB, mOptions);
@@ -130,11 +126,11 @@ var Simulator = (function(){
                         gatesim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
                                                    [], tranCB, mOptions);
                     }
-            /*} catch (err) {
+                } catch (err) {
                     tranProgress.hide();
                     div.prepend('<div class="alert alert-danger">Simulation error: '+err+
                                 '.<button class="close" data-dismiss="alert">&times;</button></div>');
-                }*/
+                }
                 break;
                 
             case 'ac':
@@ -144,7 +140,6 @@ var Simulator = (function(){
                                                               mCurrent_analysis.parameters.fstop,
                                                               mCurrent_analysis.parameters.ac_source_name,
                                                               mOptions);
-                        //                        $('#results').data("current",mCurrent_results);
                         
                         prepare_ac_data(plots);
                     } catch (err) {
@@ -501,6 +496,7 @@ var Simulator = (function(){
      Exports 
      **********************/
     return {simulate:simulate,
-            hex_logic:hex_logic
+            hex_logic:hex_logic,
+            resize: resize_sim_pane
            };
 }());

@@ -326,18 +326,21 @@ var plot = (function() {
 
     function do_plot(container,w,h) {
         var dataseries = container.dataseries;
-        var plot_h = Math.floor((h - 30 - 20)/dataseries.length);  // height of each plot
-
-        $(container).width(w);
-        $(container).height(h);
 
         // set dimensions of each canvas, figure out consistent margins
         var left_margin = 55.5;
         var right_margin = 19.5;
         var top_margin = 5.5;
         var bottom_margin = 15.5;
+
+        w = Math.max(150 + left_margin + right_margin,w);
+        var plot_h = Math.max(30 + top_margin + bottom_margin,
+                              Math.floor((h - 60)/dataseries.length));  // height of each plot
+
+        $(container).width(w);
+        $(container).height(h);
+
         $.each(dataseries,function (index,dataset) {
-            //dataset.canvas.css('top',index*plot_h + 25);  // position canvas in container
             dataset.canvas.width(w);
             dataset.canvas.height(plot_h);
             dataset.canvas[0].width = w*dataset.pixelRatio;
@@ -522,8 +525,8 @@ var plot = (function() {
         c.stroke();
 
         // add legend: translucent background with 5px padding, 15x15 color key, signal label
-        var left = dataset.left + 5;
-        var top = dataset.top + 5;
+        var left = dataset.left;
+        var top = dataset.top;
         var w = c.measureText(dataset.name).width;
         c.globalAlpha = 0.7;
         c.fillStyle = element_style;

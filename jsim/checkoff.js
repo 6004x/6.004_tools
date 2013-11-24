@@ -44,13 +44,6 @@ var Checkoff = (function(){
 //        console.log("checkoff statement:",mCheckoffStatement);
     }
     
-    /**************************
-    Get the results of the last simulation -- deprecated
-    **************************/
-//    function getResults(){
-//        mResults = $('#results').data("current"); 
-//    }
-    
     /************************
     Set results to the given results
     *************************/
@@ -80,7 +73,6 @@ var Checkoff = (function(){
     **************************/
     function testResults(){
         var failedModal;
-//        getResults();
         if (!mResults){
             failedModal = new FailedModal("No results to verify. Did you run the simulation?");
             failedModal.show();

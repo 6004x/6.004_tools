@@ -37,15 +37,12 @@ $(function() {
         if(widths[1] === 0) {
             editor.blur();
         }
+        Simulator.resize();
     });
     
     // set up the results pane
-    $('#simulation-pane').append(//$('<div class="btn-toolbar" id="graph-toolbar"></div>'),
-                                 $('<div id="results"></div>')
-                                 //$('<div id="graphScrollOuter"><div id="graphScrollInner"></div></div>')
-                                );
-    
-    $('#results').data("current",null);
+    //$('#simulation-pane').append('<div id="results"></div>');
+    //$('#results').data("current",null);
 
     // Make an editor
     var mode = 'jsim';
@@ -58,12 +55,9 @@ $(function() {
         editor.clearErrors();
         Checkoff.reset();
         var content = editor.content();
-        var div = $('#results');
-        if (!content){
-            return;
-        }
+        if (!content) return;
         var filename = editor.currentTab();
-        Simulator.simulate(content,filename,div,error_catcher,"device");
+        Simulator.simulate(content,filename,$('#simulation-pane'),error_catcher,"device");
     }
     
     function gls(){
@@ -71,12 +65,9 @@ $(function() {
         editor.clearErrors();
         Checkoff.reset();
         var content = editor.content();
-        var div = $('#results');
-        if (!content){
-            return;
-        }
+        if (!content) return;
         var filename = editor.currentTab();
-        Simulator.simulate(content,filename,div,error_catcher,"gate");
+        Simulator.simulate(content,filename,$('#simulation-pane'),error_catcher,"gate");
     }
     
     function error_catcher(err){

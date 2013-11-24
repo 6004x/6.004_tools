@@ -1,58 +1,6 @@
-.posText {
-    position:absolute;
-    background-color:white;
-    opacity: .75;
-    padding: 0px;
-    font-size:10pt;
-    text-align:left;
-/*    z-index:5;*/
-}
-
-.posText div {
-    min-width: 90px;
-    display: inline-block;
-    margin-left: 5px;
-    margin-right: 5px;
-}
-
 .placeholder {
     display:inline-block;
 }
-
-#graph-toolbar {
-    padding-left:15px;
-}
-
-#graphScrollOuter {
-/*    background-color:blue;*/
-    width:100%;
-    height:15px;
-    overflow-x:scroll;
-    overflow-y:hidden;
-}
-
-#graphScrollInner {
-    height:15px;
-    overflow:hidden;
-}
-
-.plot-close {
-    position:relative;
-    top:20px;
-    left:8px;
-    z-index:20;
-    margin-top:-20px;
-}
-
-.legend {
-    text-align:left
-}
-
-.legendCheckbox {
-    position:relative;
-    top: -4px;
-}
-
 .novalues {
     text-align:center;
     padding:5px;
@@ -62,50 +10,18 @@
     border-radius:5px;
     margin:5px;
 }
-
-.plot-wrapper {
-    padding-left:10px;
-    margin-bottom:7px;
-    margin-right:20px;
-    z-index:10;
-}
-
-.plot-wrapper.bg-alt {
-    background-color:#eee;
-}
-/*
-.close-btn {
-    z-index:1;
-    position:relative;
-    top:20px;
-}
-*/
-
 #simulation-pane {
-    position:relative;
-/*    overflow:scroll;*/
-/*    border: 1px solid #ddd;*/
-}
-
-#results {
-    overflow: hidden;
-/*    overflow-y:scroll;*/
-/*    position:relative;*/
-/*    top:40px;*/
-/*    border-top: 1px solid #ddd;*/
     text-align:center;
-/*    color:#aaa;*/
-/*    font-size:20pt;*/
 }
-
 span.wrong {
     color:red;
     font-weight:bold;
 }
-
 .plot-container {
   background-color: #EEEEEE;
   line-height: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .plot-container:active, .plot-container:focus {
   cursor: default;
@@ -117,6 +33,7 @@ span.wrong {
   line-height: 25px;
   cursor: default;
   margin-bottom: 5px;
+  white-space: nowrap;
 }
 .plot-tool {
   padding: 2px;
