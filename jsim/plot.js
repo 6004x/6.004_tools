@@ -88,28 +88,38 @@ var plot = (function() {
             }
         });
 
-        function do_zoomin () {
+        function do_zoom(xrange,plotx) {
             dataseries.sel0 = undefined;   // remove selection
-            dataseries.xend -= (dataseries.xend - dataseries.xstart)/2;
-            do_plot(container[0],container.width(),container.height());
-        }
 
-        zoomin.on('click',function () {
-            if (zoomin.hasClass('plot-tool-enabled')) do_zoomin();
-        });
+            // if not specified, assume user wants xstart to remain unchanged
+            if (plotx === undefined) plotx = dataseries[0].left;
 
-        function do_zoomout () {
-            dataseries.sel0 = undefined;   // remove selection
-            dataseries.xend += (dataseries.xend - dataseries.xstart);
+            // choose xstart so that datax at pixel location plotx will
+            // still be at location plotx after zooming in;
+            var dataset = dataseries[0];  // any dataset will do, pick the first one
+            var datax = dataset.datax(plotx); 
+            // plotx = ((datax - xstart)/new_width)*wplot + left_margin
+            // so solve for xstart given all the other values
+            var xstart = datax - ((plotx - dataset.left)/dataset.wplot)*xrange;
+            dataseries.xstart = Math.max(dataseries.xmin,xstart);
+            dataseries.xend = dataseries.xstart + xrange;
+
             if (dataseries.xend > dataseries.xmax) {
                 dataseries.xstart = Math.max(dataseries.xmin, dataseries.xstart-(dataseries.xend-dataseries.xmax));
                 dataseries.xend = dataseries.xmax;
             }
+            
             do_plot(container[0],container.width(),container.height());
-        }
+        };
+
+        zoomin.on('click',function () {
+            if (zoomin.hasClass('plot-tool-enabled'))
+                do_zoom((dataseries.xend - dataseries.xstart)/2);
+        });
 
         zoomout.on('click',function () {
-            if (zoomout.hasClass('plot-tool-enabled')) do_zoomout();
+            if (zoomout.hasClass('plot-tool-enabled'))
+                do_zoom((dataseries.xend - dataseries.xstart)*2);
         });
 
         zoomsel.on('click',function () {
@@ -187,8 +197,9 @@ var plot = (function() {
 
                 if (gx >= dataset.left && gx <= dataset.left + dataset.wplot &&
                     gy >= dataset.top && gy <= dataset.top + dataset.hplot) {
-                    if (event.shiftKey) do_zoomout();
-                    else do_zoomin();
+                    var xrange = dataset.dataseries.xend - dataset.dataseries.xstart;
+                    if (event.shiftKey) do_zoom(xrange*2,gx);
+                    else do_zoom(xrange/2,gx);
                 }
             });
 
@@ -201,7 +212,7 @@ var plot = (function() {
                 if (gx >= dataset.left && gx <= dataset.left + dataset.wplot &&
                     gy >= dataset.top && gy <= dataset.top + dataset.hplot) {
                     event.preventDefault();
-                    dataseries.move_thumb(event.originalEvent.wheelDelta/10);
+                    move_thumb(event.originalEvent.wheelDelta/10);
                 }
             });
 
@@ -267,7 +278,7 @@ var plot = (function() {
         var thumb = container.find('.plot-scrollbar-thumb');
         var scrollbar = container.find('.plot-scrollbar');
 
-        dataseries.move_thumb = function (dx) {
+        function move_thumb(dx) {
             if (thumb.is(':hidden')) return;
 
             var thumb_dx = (dataseries.xmax - dataseries.xmin)/scrollbar.width();
@@ -287,7 +298,7 @@ var plot = (function() {
                 dataset_plot(dataset);
             });
             graph_redraw(dataseries);
-        };
+        }
 
         thumb.on('mousedown',function (event) {
             //var thumb_value = parseInt(thumb.css('margin-left'));
@@ -297,7 +308,7 @@ var plot = (function() {
             var mx = event.pageX;
 
             $(document).on('mousemove',function (event) {
-                dataseries.move_thumb(event.pageX - mx);
+                move_thumb(event.pageX - mx);
                 mx = event.pageX;
                 /*
                 var dx = event.pageX - mx;
