@@ -79,7 +79,8 @@ var cktsim = (function() {
             var val1 = start1;
             var val2 = start2;
             var results = {
-                _sweep1_: []
+                _sweep1_: [],
+                _network_: ckt
             }; // remember sweep1 values as one of the"results
             var results2 = [];
             while (true) {
@@ -166,7 +167,7 @@ var cktsim = (function() {
             progress.probe_names = probe_names, // node names for LTE check
             progress.update_interval = 250; // in milliseconds
             progress.finish = function(results) {
-                progress_callback(undefined, results);
+                progress_callback(undefined, results._network_);
             };
             progress.stop_requested = false;
             progress.update = function(percent_complete) { // 0 - 100
@@ -226,6 +227,12 @@ var cktsim = (function() {
 
         if (netlist !== undefined) this.load_netlist(netlist);
     }
+
+    Circuit.prototype.history = function(node) {
+        if (this.result === undefined || this.result[node] === undefined)
+            return undefined;
+        return {xvalues: this.result._xvalues_, yvalues: this.result[node]};
+    };
 
     // index of ground node
     Circuit.prototype.gnd_node = function() {
@@ -538,18 +545,20 @@ var cktsim = (function() {
             // Note that a dc solution was computed
             this.diddc = true;
             // create solution dictionary
-            var result = {};
+            this.result = {};
             // capture node voltages
             for (var name in this.node_map) {
                 var index = this.node_map[name];
-                result[name] = (index == -1) ? 0 : this.solution[index];
+                this.result[name] = (index == -1) ? 0 : this.solution[index];
             }
             // capture branch currents from voltage sources
             for (var i = this.voltage_sources.length - 1; i >= 0; i -= 1) {
                 var v = this.voltage_sources[i];
-                result['I(' + v.name + ')'] = this.solution[v.branch];
+                this.result['I(' + v.name + ')'] = this.solution[v.branch];
             }
-            return result;
+
+            this.result._network_ = this;   // for later reference
+            return this.result;
         }
     };
 
@@ -824,19 +833,20 @@ var cktsim = (function() {
         }
 
         // analysis complete -- create solution dictionary
-        var result = [];
+        this.result = {};
         for (var name in this.node_map) {
             var index = this.node_map[name];
-            result[name] = (index == -1) ? 0 : this.response[index];
+            this.result[name] = (index == -1) ? 0 : this.response[index];
         }
         // capture branch currents from voltage sources
         for (i = this.voltage_sources.length - 1; i >= 0; i -= 1) {
             var v = this.voltage_sources[i];
-            result['I(' + v.name + ')'] = this.response[v.branch];
+            this.result['I(' + v.name + ')'] = this.response[v.branch];
         }
-        result._time_ = this.response[this.N];
+        this.result._xvalues_ = this.response[this.N];
+        this.result._network_ = this;   // for later reference
 
-        this.progress.finish(result);
+        this.progress.finish(this.result);
     };
 
     // AC analysis: npts/decade for freqs in range [fstart,fstop]
@@ -927,16 +937,17 @@ var cktsim = (function() {
         }
 
         // create solution dictionary
-        var result = {};
+        this.result = {};
         for (var name in this.node_map) {
             var index = this.node_map[name];
-            result[name] = {
+            this.result[name] = {
                 magnitude: (index == -1) ? 0 : response[index],
                 phase: (index == -1) ? 0 : response[index + N]
             };
         }
-        result._frequencies_ = response[2 * N];
-        return result;
+        this.result._xvalues_ = response[2 * N]; // frequencies
+        this.result._network_ = this;   // for later reference
+        return this.result;
     };
 
 

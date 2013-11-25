@@ -221,30 +221,14 @@ var gatesim = (function() {
         this.event_queue.removeItem(event);
     };
     
-    // return event list for specified node.  Each event has the following
-    // attributes:
-    //   time: time of the event in seconds
-    //   type: 0=contaminate event, 1 = propagate event
-    //   v: value of node after event
-    //   old_v: value of node before event
-    //   node: Node object
+    // return {xvalues: array, yvalues: array}, undefined if node has no events.
+    // yvalues are 0, 1, 2=X, 3=Z
     Network.prototype.history = function(node) {
         var n = this.node_map[node];
         if (n === undefined) return undefined;
-        else return n.history;
-    };
-
-    // return list of node's events, undefined if node has no events.
-    // event objects have the following attributes:
-    //   time: time of event
-    //   type: 0=contaminate 1=propagate
-    //   v: value of node after event (0=0, 1=1, 2=X, 3=Z)
-    //   old_v: value of node before event
-    //   node: corresponding Node object
-    Network.prototype.history = function(node) {
-        var n = this.node_map[node];
-        if (n === undefined) return undefined;
-        else return n.history;
+        return {xvalues: n.times,
+                yvalues: n.values.map(function (v) { return v % 4; })
+               };
     };
 
     ///////////////////////////////////////////////////////////////////////////////

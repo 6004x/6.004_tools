@@ -97,15 +97,15 @@ var Simulator = (function(){
                 mCurrent_results = results;
                 Checkoff.setResults(mCurrent_results, mOptions);
                 
-                try{
-                    prepare_tran_data(plots);
-                }
-                catch (err) {
+                /*try{*/
+                    prepare_tran_data(plots,results);
+                /*
+                } catch (err) {
                     tranProgress.hide();
                     div.prepend('<div class="alert alert-danger">Simulation error: '+err+
                                 '.<button class="close" data-dismiss="alert">&times;'+
                                 '</button></div>');
-                }
+                }*/
             }
             return tranHalt;
         }
@@ -118,7 +118,7 @@ var Simulator = (function(){
             case 'tran':
                 tranProgress.show();
                 var progressTxt = tranProgress.find('span');
-                try{
+                /*try{*/
                     if (mType == "device"){
                         cktsim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
                                                   [], tranCB, mOptions);
@@ -126,11 +126,12 @@ var Simulator = (function(){
                         gatesim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
                                                    [], tranCB, mOptions);
                     }
+                /*
                 } catch (err) {
                     tranProgress.hide();
                     div.prepend('<div class="alert alert-danger">Simulation error: '+err+
                                 '.<button class="close" data-dismiss="alert">&times;</button></div>');
-                }
+                } */
                 break;
                 
             case 'ac':
@@ -255,62 +256,23 @@ var Simulator = (function(){
      Prepare data functions
      ************************/
     
+    var colors = ['#268bd2','#dc322f','#859900','#b58900','#6c71c4','#d33682','#2aa198'];
+
     /***************
      Transient analysis
      ***************/
-    function prepare_tran_data(plots){
-        var results = mCurrent_results;
-        
+    function prepare_tran_data(plots,results){
+
         function new_dataset(node) {
-            var values = [];
-                
-            // check of it's a function, e.g. if something like L() or betaop() was asked for
-            //                var fn_pttn = /([^\(]+)\((.+)\)$/;
-            //                var matched_array = node.match(fn_pttn);
-            if (_.isObject(node)){
-                //                    var fn_name = matched_array[1];
-                //                    var arg_nodes = matched_array[2].split(/[,\s]\s*/);
-                var fn = node;
-                    
-                if (fn.type == 'I'){
-                    // continue on
-                    values = results[fn.args[0]];
-                } else {
-                    if (fn.type.toUpperCase() != 'L' && !(fn.type in mPlotDefs)) {
-                        throw "No definition for plot function "+fn.type;
-                    } 
-                    values = results[fn.args[0]].slice(0);
-                    values = values.map(function(val,index){
-                        var tempval = [];
-                        for (var j = 0; j < fn.args.length; j += 1){
-                            tempval.push(results[fn.args[j]][index]);
-                        }
-                        var lval = hex_logic(tempval, mOptions.vil, mOptions.vih);
-                        
-                        if (fn.type == "L") {
-                            return lval;
-                        } else {
-                            // look up the definition of the plot function and return the
-                            // appropriate string; if the index is out of range return "???"
-                            var nval = parseInt(lval,16);
-                            if (mPlotDefs[fn.type][nval]) return mPlotDefs[fn.type][nval];
-                            else return "???";
-                        }
-                    });   
-                    
-                }
-            } else {
-                // if no function was asked for, just get node values
-                values = results[node];
-            }
+            var values = results.history(node);
                 
             // no values to plot for any given node
             if (values === undefined) return undefined;
                 
             // boolean that records if the analysis asked for current through a node
             var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
-            return {xvalues: results._time_,
-                    yvalues: values,
+            return {xvalues: values.xvalues,
+                    yvalues: values.yvalues,
                     name: node,
                     xunits: 's',
                     yunits: current ? 'A' : 'V'
@@ -322,17 +284,25 @@ var Simulator = (function(){
         for (var p = 0; p < plots.length; p += 1) {
             var plot_nodes = plots[p]; // the set of nodes that belong on one pair of axes
             
-            if (mType == "gate" && plot_nodes.length > 1){
-                //                plot_nodes = "L("+plot_nodes.join(' ')+")";
-                plot_nodes = [{type:"L",args:plot_nodes}];
-            }
-            
-
             // repeat for each node
+            var dataset = {xvalues: [],
+                           yvalues: [],
+                           name: [],
+                           color: [],
+                           xunits: undefined,
+                           yunits: undefined,
+                           type: (mType == 'gate') ? 'digital' : 'analog'
+                          };
             for (var i = 0; i < plot_nodes.length; i += 1) {
-                var dataset = new_dataset(plot_nodes[i]);
-                if (dataset) dataseries.push(dataset);
+                var d = new_dataset(plot_nodes[i]);
+                dataset.xvalues.push(d.xvalues);
+                dataset.yvalues.push(d.yvalues);
+                dataset.name.push(d.name);
+                dataset.xunits = d.xunits;   // assume all nodes in plot have same units
+                dataset.yunits = d.yunits;
+                dataset.color.push(colors[i % colors.length]);
             }
+            dataseries.push(dataset);
         }
 
         // called by plot.graph when user wants to add a plot

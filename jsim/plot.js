@@ -31,16 +31,17 @@ var plot = (function() {
     var graph_font = '8pt sans-serif';
     var graph_legend_font = '10pt sans-serif';
 
-    // dataseries is an array of objects that value the following attributes:
-    //   xvalues: array of xcoords
-    //   yvalues: array of ycoords
-    //   name: signal name to use in legend (optional)
-    //   offset: to be added to each yvalue (optional)
-    //   color: color to use when drawing graph
+    // dataseries is an array of objects that have the following attributes:
+    //   xvalues: list of xcoord arrays
+    //   yvalues: list of ycoord arrays
+    //   name: list of signal names to use in legend (optional)
+    //   color: list of colors to use when drawing graph
     //   xunits: string for labeling xvalues (optional)
     //   yunits: string for labeling yvalues (optional - if omitted assumed to be bits)
     //   xlabel: string for labeling x axis (optional)
     //   ylabel: string for labeling y axis (optional)
+    //   add_plot: function(node_name) called when user wants to add a plot
+    //   type: 'digital' or 'analog'
     function graph(dataseries) {
         // create container
         var container = $('<div class="plot-container"></div>');
@@ -137,21 +138,29 @@ var plot = (function() {
         function process_dataset(dataset) {
             dataset.dataseries = dataseries;   // remember our parent
 
-            // remember min and max xvalues across all the datasets
-            var xvalues = dataset.xvalues;
-            if (dataseries.xmin === undefined || xvalues[0] < dataseries.xmin)
-                dataseries.xmin = xvalues[0];
-            if (dataseries.xmax === undefined || xvalues[xvalues.length - 1] > dataseries.xmax)
-                dataseries.xmax = xvalues[xvalues.length - 1];
+            // remember min and max xvalues across all the datasets:
+            // look through xvalues for each node in the dataset
+            $.each(dataset.xvalues,function (index,xvalues) {
+                if (dataseries.xmin === undefined || xvalues[0] < dataseries.xmin)
+                    dataseries.xmin = xvalues[0];
+                if (dataseries.xmax === undefined || xvalues[xvalues.length - 1] > dataseries.xmax)
+                    dataseries.xmax = xvalues[xvalues.length - 1];
+            });
 
             // anotate each dataset with ymin and ymax
-            var ymin = 0, ymax = 1;  // defaults chosen for logical (bit) values
-            if (dataset.yunits) {
-                // if this is a real quantity (voltage, current), find max and min
-                $.each(dataset.yvalues,function (dindex,y) {
-                    if (dindex == 0 || y < ymin) ymin = y;
-                    if (dindex == 0 || y > ymax) ymax = y;
+            var ymin,ymax;
+            if (dataset.type == 'analog') {
+                // if this is a real quantity (voltage, current), find max and min:
+                // look through yvalues for each node in the dataset
+                $.each(dataset.yvalues,function (dindex,yvalues) {
+                    $.each(yvalues,function (yindex, y) {
+                        if (ymin === undefined || y < ymin) ymin = y;
+                        if (ymax === undefined || y > ymax) ymax = y;
+                    });
                 });
+            } else {
+                ymin = 0;
+                ymax = 1;
             }
             // expand y range by 10% to leave a margin above and below the waveform
             if (ymin == ymax) {
@@ -392,8 +401,6 @@ var plot = (function() {
             dataset.wplot = wplot;
             dataset.hplot = hplot;
 
-            dataset.color = '#268bd2';  // fixed color for now
-
             // draw the plot
             dataset_plot(dataset);
         });
@@ -430,8 +437,6 @@ var plot = (function() {
         var c = dataset.bg_image[0].getContext('2d');
 
         c.clearRect(0, 0, dataset.bg_image[0].width, dataset.bg_image[0].height);
-        //c.fillStyle = background_style;
-        //c.fillRect(0, 0, dataset.bg_image[0].width, dataset.bg_image[0].height);
 
         c.fillStyle = element_style;
         c.fillRect(dataset.left, dataset.top, dataset.wplot, dataset.hplot);
@@ -453,7 +458,7 @@ var plot = (function() {
             c.fillText(engineering_notation(t, 2)+xunits, temp, dataset.top + dataset.hplot);
         }
 
-        if (dataset.yunits) {
+        if (dataset.type == 'analog') {
             var ytick = tick_interval(dataset.ymin,dataset.ymax,dataset.hplot/100);
 
             // draw ygrid and tick labels
@@ -491,35 +496,87 @@ var plot = (function() {
         c.beginPath();
         c.rect(dataset.left,dataset.top,dataset.wplot,dataset.hplot);
         c.clip();   // clip waveform plot to waveform region of canvas
-        var i = search(dataset.xvalues,xstart);  // quickly find first index
-        if (dataset.yunits) {
-            // plot the analog waveform
-            c.strokeStyle = dataset.color;
-            c.lineWidth = 2;
-            var xv = dataset.xvalues[i];
-            var x = dataset.plotx(xv);
-            var y = dataset.ploty(dataset.yvalues[i]);
-            c.beginPath();
-            c.moveTo(x, y);
-            while (xv < xend) {
-                i += 1;
-                xv = dataset.xvalues[i];
-                if (xv === undefined) break;
-                var nx = dataset.plotx(xv);
-                var ny = dataset.ploty(dataset.yvalues[i]);
-                c.lineTo(nx, ny);
-                x = nx;
-                y = ny;
-                if (i % 100 == 99) {
-                    // too many lineTo's cause canvas to break
-                    c.stroke();
-                    c.beginPath();
-                    c.moveTo(x, y);
+        // we need a separate plot for each node in the dataset
+        for (var dindex = 0; dindex < dataset.xvalues.length; dindex += 1) {
+            var xvalues = dataset.xvalues[dindex];
+            var yvalues = dataset.yvalues[dindex];
+            var i = search(xvalues,xstart);  // quickly find first index
+            var xv,x,y;
+            if (dataset.type == 'analog') {
+                // plot the analog waveform
+                c.strokeStyle = dataset.color[dindex] || '#268bd2';
+                c.lineWidth = 2;
+                xv = xvalues[i];
+                x = dataset.plotx(xv);
+                y = dataset.ploty(yvalues[i]);
+                c.beginPath();
+                c.moveTo(x, y);
+                while (xv < xend) {
+                    i += 1;
+                    xv = xvalues[i];
+                    if (xv === undefined) break;
+                    var nx = dataset.plotx(xv);
+                    var ny = dataset.ploty(yvalues[i]);
+                    c.lineTo(nx, ny);
+                    x = nx;
+                    y = ny;
+                    if (i % 100 == 99) {
+                        // too many lineTo's cause canvas to break
+                        c.stroke();
+                        c.beginPath();
+                        c.moveTo(x, y);
+                    }
                 }
+                c.stroke();
+            } else {
+                // plot the digital waveform
+                c.strokeStyle = dataset.color[dindex] || '#268bd2';
+                c.fillStyle = c.strokeStyle;
+                c.lineWidth = 2;
+                var y0 = dataset.ploty(0);
+                var y1 = dataset.ploty(1);
+                var yz = (y0 + y1)/2;
+
+                xv = xvalues[i];
+                x = dataset.plotx(xv);
+                y = yvalues[i];
+                c.beginPath();
+                while (xv < xend) {
+                    i += 1;
+                    xv = xvalues[i];
+                    if (xv === undefined) break;
+                    var nx = dataset.plotx(xv);
+
+                    if (y != 2) {
+                        y = (y==0) ? y0 : ((y==1) ? y1 : yz);
+                        c.moveTo(x,y);
+                        c.lineTo(nx,y);
+                    } else {
+                        c.rect(x,y0,nx-x,y1-y0);
+                    }
+
+                    x = nx;
+                    y = yvalues[i];
+                    if (i % 100 == 99) {
+                        // too many lineTo's cause canvas to break
+                        c.stroke();
+                        c.fill();
+                        c.beginPath();
+                    }
+                }
+
+                // last value
+                nx = dataset.plotx(xend);
+                if (y != 2) {
+                    y = (y==0) ? y0 : ((y==1) ? y1 : yz);
+                    c.moveTo(x,y);
+                    c.lineTo(nx,y);
+                } else {
+                    c.rect(x,y0,nx-x,y1-y0);
+                }
+                c.stroke();
+                c.fill();
             }
-            c.stroke();
-        } else {
-            // plot the digital waveform
         }
         c.restore();
 
@@ -538,24 +595,29 @@ var plot = (function() {
         // add legend: translucent background with 5px padding, 15x15 color key, signal label
         var left = dataset.left;
         var top = dataset.top;
-        var w = c.measureText(dataset.name).width;
-        c.globalAlpha = 0.7;
-        c.fillStyle = element_style;
-        c.fillRect(left, top, w + 30, 25);
-        c.globalAlpha = 1.0;
+        dataset.legend_right = [];
+        dataset.legend_top = [];
+        for (var dindex = 0; dindex < dataset.xvalues.length; dindex += 1) {
+            var w = c.measureText(dataset.name[dindex]).width;
+            c.globalAlpha = 0.7;
+            c.fillStyle = element_style;
+            c.fillRect(left, top, w + 30, 25);
+            c.globalAlpha = 1.0;
 
-        c.fillStyle = dataset.color;
-        c.fillRect(left+5, top+5, 15, 15);
-        c.strokeRect(left+5, top+5, 15, 15);
+            c.fillStyle = dataset.color[dindex];
+            c.fillRect(left+5, top+5, 15, 15);
+            c.strokeRect(left+5, top+5, 15, 15);
 
-        c.fillStyle = normal_style;
-        c.textAlign = 'left';
-        c.textBaseline = 'bottom';
-        c.fillText(dataset.name, left + 25, top+20);
+            c.fillStyle = normal_style;
+            c.textAlign = 'left';
+            c.textBaseline = 'bottom';
+            c.fillText(dataset.name[dindex], left + 25, top+20);
 
-        // remember where legend ends so we can add cursor readout later
-        dataset.legend_right = left + 25 + w;
-        dataset.legend_top = top;
+            // remember where legend ends so we can add cursor readout later
+            dataset.legend_right.push(left + 25 + w);
+            dataset.legend_top.push(top);
+            top += 20;
+        }
     }
 
     function graph_redraw(dataseries) {
@@ -591,22 +653,7 @@ var plot = (function() {
                 c.lineTo(dataseries.cursor,dataset.top + dataset.hplot);
                 c.stroke();
 
-                // draw fiducial at intersector of cursor and curve
                 var x = dataset.datax(dataseries.cursor);  // convert cursor coord to x value
-                var i = search(dataset.xvalues,x);  // quickly find first index
-                // interpolate cursor's intersection with curve
-                var x1 = dataset.xvalues[i];
-                var y1 = dataset.yvalues[i];
-                var x2 = dataset.xvalues[i+1] || x1;
-                var y2 = dataset.yvalues[i+1] || y1;
-                var y = y1;
-                if (x1 != x2) y = y1 + ((x - x1)/(x2-x1))*(y2 - y1);
-
-                var gx = dataset.plotx(x);
-                var gy = dataset.ploty(y);
-                c.beginPath();
-                c.arc(gx,gy,5,0,2*Math.PI);
-                c.stroke();
 
                 // add x-axis label
                 var label = engineering_notation(x,1);
@@ -619,23 +666,46 @@ var plot = (function() {
                 c.fillStyle = normal_style;
                 c.fillText(label, dataseries.cursor, dataset.top + dataset.hplot);
 
-                // now add label
-                if (dataset.yunits) {
-                    label = '='+engineering_notation(y,1) + dataset.yunits;
-                    c.font = graph_legend_font;
+                // draw fiducial at intersector of cursor and curve
+                if (dataset.type == 'analog') {
+                    for (var dindex = 0; dindex < dataset.xvalues.length; dindex += 1) {
+                        var xvalues = dataset.xvalues[dindex];
+                        var yvalues = dataset.yvalues[dindex];
+                        var i = search(xvalues,x);  // quickly find first index
+                        // interpolate cursor's intersection with curve
+                        var x1 = xvalues[i];
+                        var y1 = yvalues[i];
+                        var x2 = xvalues[i+1] || x1;
+                        var y2 = yvalues[i+1] || y1;
+                        var y = y1;
+                        if (x1 != x2) y = y1 + ((x - x1)/(x2-x1))*(y2 - y1);
 
-                    // translucent background so graph doesn't obscure label
-                    var w = c.measureText(label).width;
-                    c.fillStyle = element_style;
-                    c.globalAlpha = 0.7;
-                    c.fillRect(dataset.legend_right,dataset.legend_top,w+5,25);
+                        var gx = dataset.plotx(x);
+                        var gy = dataset.ploty(y);
+                        c.strokeStyle = dataset.color[dindex] || '#268bd2';
+                        c.beginPath();
+                        c.arc(gx,gy,5,0,2*Math.PI);
+                        c.stroke();
 
-                    // now plot the label itself
-                    c.textAlign = 'left';
-                    c.textBaseline = 'bottom';
-                    c.fillStyle = normal_style;
-                    c.globalAlpha = 1.0;
-                    c.fillText(label,dataset.legend_right,dataset.legend_top+20);
+                        // add y value readout in legend
+                        var lx = dataset.legend_right[dindex];
+                        var ly = dataset.legend_top[dindex];
+                        label = '='+engineering_notation(y,1) + dataset.yunits;
+                        c.font = graph_legend_font;
+
+                        // translucent background so graph doesn't obscure label
+                        var w = c.measureText(label).width;
+                        c.fillStyle = element_style;
+                        c.globalAlpha = 0.7;
+                        c.fillRect(lx,ly,w+5,25);
+
+                        // now plot the label itself
+                        c.textAlign = 'left';
+                        c.textBaseline = 'bottom';
+                        c.fillStyle = normal_style;
+                        c.globalAlpha = 1.0;
+                        c.fillText(label,lx,ly+20);
+                    }
                 }
             }
         });
