@@ -263,7 +263,7 @@ var Simulator = (function(){
      ***************/
     function prepare_tran_data(plots,results){
 
-        function new_dataset(node) {
+        function new_dataset(node,color) {
             var values = results.history(node);
                 
             // no values to plot for any given node
@@ -271,11 +271,13 @@ var Simulator = (function(){
                 
             // boolean that records if the analysis asked for current through a node
             var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
-            return {xvalues: values.xvalues,
-                    yvalues: values.yvalues,
-                    name: node,
+            return {xvalues: [values.xvalues],
+                    yvalues: [values.yvalues],
+                    name: [node],
+                    color: [color],
                     xunits: 's',
-                    yunits: current ? 'A' : 'V'
+                    yunits: current ? 'A' : 'V',
+                    type: (mType == 'gate') ? 'digital' : 'analog'
                    };
         }
 
@@ -294,20 +296,21 @@ var Simulator = (function(){
                            type: (mType == 'gate') ? 'digital' : 'analog'
                           };
             for (var i = 0; i < plot_nodes.length; i += 1) {
-                var d = new_dataset(plot_nodes[i]);
-                dataset.xvalues.push(d.xvalues);
-                dataset.yvalues.push(d.yvalues);
-                dataset.name.push(d.name);
+                var d = new_dataset(plot_nodes[i],colors[i % colors.length]);
+                if (d === undefined) continue;
+                dataset.xvalues.push(d.xvalues[0]);
+                dataset.yvalues.push(d.yvalues[0]);
+                dataset.name.push(d.name[0]);
                 dataset.xunits = d.xunits;   // assume all nodes in plot have same units
                 dataset.yunits = d.yunits;
-                dataset.color.push(colors[i % colors.length]);
+                dataset.color.push(d.color[0]);
             }
             dataseries.push(dataset);
         }
 
         // called by plot.graph when user wants to add a plot
         dataseries.add_plot = function (node,callback) {
-            var dataset = new_dataset(node);
+            var dataset = new_dataset(node,'#268bd2');
             if (dataset) callback(dataset);
         };
 
@@ -317,8 +320,7 @@ var Simulator = (function(){
             mDiv.append(container);
 
             // add autocomplete to add plot input field
-            var node_list = [];
-            for (var node in results) if (node != '_time_') node_list.push(node);
+            var node_list = results.node_list();
             node_list.sort();
             $('#add-plot').typeahead({source: node_list});  // feature of bootstrap!
 

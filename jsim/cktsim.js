@@ -234,6 +234,12 @@ var cktsim = (function() {
         return {xvalues: this.result._xvalues_, yvalues: this.result[node]};
     };
 
+    Circuit.prototype.node_list = function() {
+        var nlist = [];
+        for (var n in this.results) nlist.push(n);
+        return nlist;
+    };
+
     // index of ground node
     Circuit.prototype.gnd_node = function() {
         return -1;

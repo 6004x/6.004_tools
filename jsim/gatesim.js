@@ -7,8 +7,6 @@
 // Copyright (C) 2013 Massachusetts Institute of Technology
 // Chris Terman
 
-// this must be loaded *after* jade.js
-
 var gatesim = (function() {
 
     function dc_analysis(netlist, sweep1, sweep2, options) {
@@ -95,7 +93,7 @@ var gatesim = (function() {
             var type = component.type;
             var connections = component.connections;
             var properties = component.properties;
-	    counts[type] = (counts[type] || 0) + 1;
+            counts[type] = (counts[type] || 0) + 1;
 
             // convert node names to Nodes
             for (var c in connections) connections[c] = this.node(connections[c]);
@@ -173,38 +171,40 @@ var gatesim = (function() {
     // to let the UI update
     Network.prototype.simulate = function(tupdate) {
         var ecount = 0;
-        if (!this.progress.stop_requested) // halt when user clicks stop
-        while (this.time < this.tstop && !this.event_queue.empty()) {
-            var event = this.event_queue.pop();
-	    this.time = event.time;
-            event.node.process_event(event, false);
+        if (!this.progress.stop_requested) { // halt when user clicks stop
+            while (this.time < this.tstop && !this.event_queue.empty()) {
+                var event = this.event_queue.pop();
+                this.time = event.time;
+                event.node.process_event(event, false);
 
-            // check for coffee break every 1000 events
-            if (++ecount < 1000) continue;
-            else ecount = 0;
+                // check for coffee break every 1000 events
+                if (++ecount < 1000) continue;
+                else ecount = 0;
 
-            var t = new Date().getTime();
-            if (t >= tupdate) {
-                // update progress bar
-                var completed = Math.round(100 * this.time / this.tstop);
-                this.progress.update(completed);
+                var t = new Date().getTime();
+                if (t >= tupdate) {
+                    // update progress bar
+                    var completed = Math.round(100 * this.time / this.tstop);
+                    this.progress.update(completed);
 
-                // a brief break in the action to allow progress bar to update
-                // then pick up where we left off
-                var nl = this;
-                setTimeout(function() {
-                    try {
-                        nl.simulate(t + nl.progress.update_interval);
-                    }
-                    catch (e) {
-                        if (typeof e == 'string') nl.progress.finish(e);
-                        else throw e;
-                    }
-                }, 1);
+                    // a brief break in the action to allow progress bar to update
+                    // then pick up where we left off
+                    var nl = this;
+                    setTimeout(function() {
+                        try {
+                            nl.simulate(t + nl.progress.update_interval);
+                        }
+                        catch (e) {
+                            if (typeof e == 'string') nl.progress.finish(e);
+                            else throw e;
+                        }
+                    }, 1);
 
-                // our portion of the work is done
-                return;
+                    // our portion of the work is done
+                    return;
+                }
             }
+            this.time = this.tstop;
         }
 
         // simulation complete or interrupted
@@ -226,9 +226,18 @@ var gatesim = (function() {
     Network.prototype.history = function(node) {
         var n = this.node_map[node];
         if (n === undefined) return undefined;
-        return {xvalues: n.times,
-                yvalues: n.values.map(function (v) { return v % 4; })
-               };
+        var result = {xvalues: n.times,
+                      yvalues: n.values.map(function (v) { return v % 4; })
+                     };
+        result.xvalues.push(this.time);  // record node's final value
+        result.yvalues.push(n.v);
+        return result;
+    };
+
+    Network.prototype.node_list = function() {
+        var nlist = [];
+        for (var n in this.node_map) nlist.push(n);
+        return nlist;
     };
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -430,15 +439,15 @@ var gatesim = (function() {
         else if (event == this.pd_event) this.pd_event = undefined;
 
         if (this.v != event.v || force) {
-	    this.times.push(event.time);
-	    this.values.push(this.v*4 + event.v);   // remember both previous and new values
+            this.times.push(event.time);
+            this.values.push(this.v*4 + event.v);   // remember both previous and new values
 
+            //console.log(this.name + ": " + "01XZ"[this.v] + "->" + "01XZ"[event.v] + " @ " + (event.time * 1e9).toFixed(2));
             this.v = event.v;
-	    //console.log(this.name + ": " + "01XZ"[event.old_v] + "->" + "01XZ"[event.v] + " @ " + (event.time * 1e9).toFixed(2));
 
             // let fanouts know our value changed
             for (var i = this.fanouts.length - 1; i >= 0; i -= 1)
-            this.fanouts[i].process_event(event);
+                this.fanouts[i].process_event(event);
         }
     };
 
@@ -455,9 +464,9 @@ var gatesim = (function() {
         // add capacitances from drivers and fanout connections
         var i,d;
         for (i = 0; i < ndrivers; i += 1)
-        this.capacitance += this.drivers[i].capacitance(this);
+            this.capacitance += this.drivers[i].capacitance(this);
         for (i = 0; i < nfanouts; i += 1)
-        this.capacitance += this.fanouts[i].capacitance(this);
+            this.capacitance += this.fanouts[i].capacitance(this);
 
         // if there is only 1 driver and it's not a tristate output
         // then that device is the driver for this node
@@ -479,7 +488,7 @@ var gatesim = (function() {
                 // shorting together non-tristate outputs, so complain
                 var msg = 'Node ' + this.name + ' connects to more than one non-tristate output.  See devices: \n';
                 for (var j = 0; j < ndrivers; j += 1)
-                msg += this.drivers[j].name + '\n';
+                    msg += this.drivers[j].name + '\n';
                 throw msg;
             }
             // cons up a new node and have this device drive it
@@ -555,7 +564,7 @@ var gatesim = (function() {
         // figure out initial value from first t,v pair
         this.initial_value = this.tvpairs[1] <= this.vil ? V0 : (this.tvpairs[1] >= this.vih ? V1 : VX);
 
-	output.add_fanout(this);    // listen for our own events!
+        output.add_fanout(this);    // listen for our own events!
         output.add_driver(this);
     }
 
@@ -578,15 +587,16 @@ var gatesim = (function() {
         var time = this.network.time;
         var t,v;
 
-	// propagate events on source's output cause new events
-	// to be scheduled for *next* source transition
+        // propagate events on source's output cause new events
+        // to be scheduled for *next* source transition
         if (event.type == PROPAGATE) {
             t = this.next_contamination_time(time);
             if (t >= 0) this.output.c_event(t - time);
+            //console.log(this.output.name + ": "+(t * 1e9).toFixed(2) + ' -> contaminate');
 
             t = this.next_propagation_time(time);
             if (t.time > 0) this.output.p_event(t.time - time, t.value, 0, false);
-	    //console.log(this.output.name + ": "+(t.time * 1e9).toFixed(2) + ' -> ' + "01XZ"[t.value]);
+            //console.log(this.output.name + ": "+(t.time * 1e9).toFixed(2) + ' -> ' + "01XZ"[t.value]);
         }
     };
 
@@ -595,7 +605,7 @@ var gatesim = (function() {
         time += 1e-13;  // get past current time by epsilon
         var tlast = 0;
         var vlast = 0;
-        var npairs = this.tvpairs.length / 2;
+        var npairs = this.tvpairs.length;
         var et;
         for (var i = 0; i < npairs; i += 2) {
             var t = this.tvpairs[i];
@@ -621,7 +631,7 @@ var gatesim = (function() {
         time += 1e-13;  // get past current time by epsilon
         var tlast = 0;
         var vlast = 0;
-        var npairs = this.tvpairs.length / 2;
+        var npairs = this.tvpairs.length;
         var et;
         for (var i = 0; i < npairs; i += 2) {
             var t = this.tvpairs[i];
@@ -766,8 +776,8 @@ var gatesim = (function() {
         if (this.properties.cout === undefined) this.properties.cout = 0;
         if (this.properties.cin === undefined) this.properties.cin = 0;
         if (this.properties.tcd === undefined) this.properties.tcd = 0;
-        if (this.properties.tpdf === undefined) this.properties.tpdf = 0;
-        if (this.properties.tpdr === undefined) this.properties.tpdr = 0;
+        if (this.properties.tpdf === undefined) this.properties.tpdf = this.properties.tpd || 0;
+        if (this.properties.tpdr === undefined) this.properties.tpdr = this.properties.tpd || 0;
         if (this.properties.tr === undefined) this.properties.tr = 0;
         if (this.properties.tf === undefined) this.properties.tf = 0;
 
@@ -799,11 +809,11 @@ var gatesim = (function() {
             return table[in0.v][in1.v][in2.v][in3.v][in4.v][in5.v][4];
         };
         else this.logic_eval = function() {
-                // handles arbitrary numbers of inputs (eg, for BusTable).
-                var t = table;
-                for (var i = 0; i < inputs.length ; i+= 1) t = t[inputs[i].v];
-                return t[4];
-            };
+            // handles arbitrary numbers of inputs (eg, for BusTable).
+            var t = table;
+            for (var i = 0; i < inputs.length ; i+= 1) t = t[inputs[i].v];
+            return t[4];
+        };
     }
 
     LogicGate.prototype.initialize = function() {

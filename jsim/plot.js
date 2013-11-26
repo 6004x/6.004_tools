@@ -547,11 +547,11 @@ var plot = (function() {
                     if (xv === undefined) break;
                     var nx = dataset.plotx(xv);
 
-                    if (y != 2) {
+                    if (y != 2) {   // 0, 1, Z values are lines
                         y = (y==0) ? y0 : ((y==1) ? y1 : yz);
                         c.moveTo(x,y);
                         c.lineTo(nx,y);
-                    } else {
+                    } else {        // X values are filled rectangles
                         c.rect(x,y0,nx-x,y1-y0);
                     }
 
@@ -565,15 +565,7 @@ var plot = (function() {
                     }
                 }
 
-                // last value
-                nx = dataset.plotx(xend);
-                if (y != 2) {
-                    y = (y==0) ? y0 : ((y==1) ? y1 : yz);
-                    c.moveTo(x,y);
-                    c.lineTo(nx,y);
-                } else {
-                    c.rect(x,y0,nx-x,y1-y0);
-                }
+                // draw any remaining path
                 c.stroke();
                 c.fill();
             }
@@ -656,7 +648,7 @@ var plot = (function() {
                 var x = dataset.datax(dataseries.cursor);  // convert cursor coord to x value
 
                 // add x-axis label
-                var label = engineering_notation(x,1);
+                var label = engineering_notation(x,3);
                 if (dataset.xunits) label += dataset.xunits;
                 c.font = graph_font;
                 c.textAlign = 'center';
