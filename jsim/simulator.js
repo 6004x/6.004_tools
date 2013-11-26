@@ -263,54 +263,107 @@ var Simulator = (function(){
      ***************/
     function prepare_tran_data(plots,results){
 
-        function new_dataset(node,color) {
-            var values = results.history(node);
-                
-            // no values to plot for any given node
-            if (values === undefined) return undefined;
-                
-            // boolean that records if the analysis asked for current through a node
-            var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
-            return {xvalues: [values.xvalues],
-                    yvalues: [values.yvalues],
-                    name: [node],
-                    color: [color],
-                    xunits: 's',
-                    yunits: current ? 'A' : 'V',
-                    type: (mType == 'gate') ? 'digital' : 'analog'
+        function new_dataset(nlist) {
+            var dataset = {xvalues: [],
+                           yvalues: [],
+                           name: [],
+                           color: [],
+                           xunits: 's',
+                           yunits: (mType == 'gate') ? '' : 'V',
+                           type: []
                    };
+
+            for (var i = 0; i < nlist.length; i += 1) {
+                var node = nlist[i];
+                var values = results.history(node);
+                if (values === undefined) continue;
+
+                dataset.xvalues.push(values.xvalues);
+                dataset.yvalues.push(values.yvalues);
+                dataset.names.push(node);
+                dataset.color.push(colors[i % colors.length]);
+                if (node.length > 2 && node[0]=='I' && node[1]=='(')
+                    dataset.yunits = 'A';
+                dataset.type.push(mType == 'gate' ? 'digital' : 'analog');
+            }
+
+            if (dataset.xvalues.length > 0) return dataset;
+            return undefined;
         }
 
         // repeat for every set of plots
         var dataseries = []; // 'dataseries' is the list of data objects to pass to a graph module
         for (var p = 0; p < plots.length; p += 1) {
-            var plot_nodes = plots[p]; // the set of nodes that belong on one pair of axes
+            var dataset = new_dataset(plots[p].args);
             
-            // repeat for each node
-            var dataset = {xvalues: [],
-                           yvalues: [],
-                           name: [],
-                           color: [],
-                           xunits: undefined,
-                           yunits: undefined,
-                           type: (mType == 'gate') ? 'digital' : 'analog'
-                          };
-            for (var i = 0; i < plot_nodes.length; i += 1) {
-                var d = new_dataset(plot_nodes[i],colors[i % colors.length]);
-                if (d === undefined) continue;
-                dataset.xvalues.push(d.xvalues[0]);
-                dataset.yvalues.push(d.yvalues[0]);
-                dataset.name.push(d.name[0]);
-                dataset.xunits = d.xunits;   // assume all nodes in plot have same units
-                dataset.yunits = d.yunits;
-                dataset.color.push(d.color[0]);
+            // do required post-processing
+            if (plots[p].type !== undefined) {
+                // first merge all the nodes in the dataset into a single
+                // set of xvalues and yvalues, where each yvalue is an array of
+                // digital values from the component nodes
+                var xv = [];
+                var yv = [];
+                var vil = mOptions.vil || 0.2;
+                var vih = mOptions.vih || 0.8;
+                var nnodes = dataset.xvalues.length;  // number of nodes
+                for (var nindex = 0; nindex < nnodes; nindex += 1) {
+                    var xvalues = dataset.xvalues[i];
+                    var yvalues = dataset.yvalues[i];
+                    var nvalues = xvalues.length;
+                    var type = dataset.type[i];
+                    var i = 0;  // current index into merged values
+                    var last_y = 2;  // X value to start
+                    for (var vindex = 0; vindex < nvalues; vindex += 1) {
+                        var x = xvalues[vindex];
+                        var y = yvalues[vindex];
+
+                        // convert to a digital value if necessary
+                        if (type == 'analog') y = (y <= vil) ? 0 : ((y >= vih) ? 1 : 2);
+
+                        // skip over merged values till we find where x belongs
+                        while (i < xv.length) {
+                            if (xv[i] >= x) break;
+                            // add new bit to time point we're skipping over
+                            yv[i].push(last_y);  
+                            i += 1;
+                        }
+
+                        if (xv[i] && xv[i] == x) {
+                            // exact match of time with existing time point, so just add new bit
+                            yv[i].push(y);
+                        } else {
+                            // need to insert new time point
+                            var new_value;
+                            if (yv[i-1]) {
+                                // copy values from previous time point, update with new bit
+                                new_value = yv[i-1].slice(0);
+                                new_value[new_value.length - 1] = y;
+                            } else {
+                                // no previous time point, so create one full of X values
+                                new_value = new Array();
+                                // fill in the previous vindex bits with X
+                                for (var j = 0; j < vindex; j += 1) new_value.push(2);
+                                new_value.push(y);  // add the new bit
+                            }
+                            // insert new time point into xv and yv arrays
+                            xv.splice(i,0,x);
+                            yv.splice(i,0,new_value);
+                        }
+
+                        // all done! move to next value to merge
+                        last_y = y;    // needed to fill in entries we skip over
+                    }
+                }
             }
+
             dataseries.push(dataset);
         }
 
         // called by plot.graph when user wants to add a plot
         dataseries.add_plot = function (node,callback) {
-            var dataset = new_dataset(node,'#268bd2');
+            // parse "node" here to handle iterators, etc.
+
+            var dataset = new_dataset([node]);
             if (dataset) callback(dataset);
         };
 

@@ -149,19 +149,18 @@ var plot = (function() {
 
             // anotate each dataset with ymin and ymax
             var ymin,ymax;
-            if (dataset.type == 'analog') {
-                // if this is a real quantity (voltage, current), find max and min:
-                // look through yvalues for each node in the dataset
-                $.each(dataset.yvalues,function (dindex,yvalues) {
+            // if this is a real quantity (voltage, current), find max and min:
+            // look through yvalues for each node in the dataset
+            $.each(dataset.yvalues,function (dindex,yvalues) {
+                if (dataset.type[dindex] == 'analog') {
                     $.each(yvalues,function (yindex, y) {
                         if (ymin === undefined || y < ymin) ymin = y;
                         if (ymax === undefined || y > ymax) ymax = y;
                     });
-                });
-            } else {
-                ymin = 0;
-                ymax = 1;
-            }
+                }
+            });
+            if (ymin === undefined) { ymin = 0; ymax = 1; }  // digital waveform?
+
             // expand y range by 10% to leave a margin above and below the waveform
             if (ymin == ymax) {
                 // deal with degenerate case...
@@ -458,21 +457,17 @@ var plot = (function() {
             c.fillText(engineering_notation(t, 2)+xunits, temp, dataset.top + dataset.hplot);
         }
 
-        if (dataset.type == 'analog') {
-            var ytick = tick_interval(dataset.ymin,dataset.ymax,dataset.hplot/100);
-
-            // draw ygrid and tick labels
-            c.textAlign = 'right';
-            c.textBaseline = 'middle';
-            for (t = ytick[0]; t < dataset.ymax; t += ytick[1]) {
-                temp = Math.floor(dataset.ploty(t)) + 0.5;
-
-                c.beginPath();
-                c.moveTo(dataset.left,temp); c.lineTo(dataset.left + dataset.wplot,temp);
-                c.stroke();
-                c.fillText(engineering_notation(t, 2)+dataset.yunits,dataset.left-2,temp);
-            }
+        var ytick = tick_interval(dataset.ymin,dataset.ymax,dataset.hplot/100);
+        // draw ygrid and tick labels
+        c.textAlign = 'right';
+        c.textBaseline = 'middle';
+        for (t = ytick[0]; t < dataset.ymax; t += ytick[1]) {
+            temp = Math.floor(dataset.ploty(t)) + 0.5;
+            
+            c.beginPath();
+            c.moveTo(dataset.left,temp); c.lineTo(dataset.left + dataset.wplot,temp);
             c.stroke();
+            c.fillText(engineering_notation(t, 2)+dataset.yunits,dataset.left-2,temp);
         }
 
         // draw axis labels
@@ -501,12 +496,15 @@ var plot = (function() {
             var xvalues = dataset.xvalues[dindex];
             var yvalues = dataset.yvalues[dindex];
             var i = search(xvalues,xstart);  // quickly find first index
-            var xv,x,y;
-            if (dataset.type == 'analog') {
+            var xv = xvalues[i];
+            var x,y;
+
+            c.strokeStyle = dataset.color[dindex] || '#268bd2';
+            c.fillStyle = c.strokeStyle;
+            c.lineWidth = 2;
+
+            if (dataset.type[dindex] == 'analog') {
                 // plot the analog waveform
-                c.strokeStyle = dataset.color[dindex] || '#268bd2';
-                c.lineWidth = 2;
-                xv = xvalues[i];
                 x = dataset.plotx(xv);
                 y = dataset.ploty(yvalues[i]);
                 c.beginPath();
@@ -528,16 +526,12 @@ var plot = (function() {
                     }
                 }
                 c.stroke();
-            } else {
+            } else if (dataset.type[dindex] == 'digital') {
                 // plot the digital waveform
-                c.strokeStyle = dataset.color[dindex] || '#268bd2';
-                c.fillStyle = c.strokeStyle;
-                c.lineWidth = 2;
                 var y0 = dataset.ploty(0);
                 var y1 = dataset.ploty(1);
                 var yz = (y0 + y1)/2;
 
-                xv = xvalues[i];
                 x = dataset.plotx(xv);
                 y = yvalues[i];
                 c.beginPath();
@@ -568,6 +562,37 @@ var plot = (function() {
                 // draw any remaining path
                 c.stroke();
                 c.fill();
+            } else if (dataset.type[dindex] == 'string') {
+                // like digital except that value is a string
+                var y0 = dataset.ploty(0);
+                var y1 = dataset.ploty(1);
+                var ylabel = (y0 + y1)/2;
+                var w;
+
+                c.font = graph_font;
+                c.lineWidth = 1;
+                c.textAlign = 'center';
+                c.textBaseline = 'middle';
+
+                x = dataset.plotx(xv);
+                y = yvalues[i];
+                while (xv < xend) {
+                    i += 1;
+                    xv = xvalues[i];
+                    if (xv === undefined) break;
+                    var nx = dataset.plotx(xv);
+
+                    if (y === undefined) c.fillRect(x,y0,nx-x,y1-y0);
+                    else {
+                        c.strokeRect(x,y0,nx-x,y1-y0);
+                        // fill in value label if it fits
+                        w = c.measureText(y).width;
+                        if (w < nx-x) c.fillText(y,(nx + x)/2,ylabel);
+                    }
+
+                    x = nx;
+                    y = yvalues[i];
+                }
             }
         }
         c.restore();

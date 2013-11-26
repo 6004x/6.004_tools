@@ -398,12 +398,12 @@ var Parser = (function(){
     function read_plot(line){
         line.shift();
         var plot_list = [];
-        var plot_fn = {type:null,args:[]};
+        var plot_fn;
         var reading_fn = false;
         for (var i = 0; i < line.length; i += 1){
             if (line[i+1] && line[i+1].token == "("){
                 reading_fn = true;
-                plot_fn.type = line[i].token;
+                plot_fn = {type:line[i].token, args:[]};
                 continue;
             }
             
@@ -421,7 +421,7 @@ var Parser = (function(){
             } else if (line[i].type != "name"){
                 throw new CustomError("Node name expected.",line[i]);
             } else {
-                plot_list.push(line[i].token);
+                plot_list.push({type: undefined, args: [line[i].token]});
             }   
         }
         
