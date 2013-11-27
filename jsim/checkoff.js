@@ -86,9 +86,15 @@ var Checkoff = (function(){
             return;
         }
         
-        var mistake = runVerify();
-//        console.log("mistake:",mistake);
-        if (!mistake){
+        var mistake;
+        try {
+            runVerify();  // will throw VerifyError
+        } catch (e) {
+            if (e instanceof VerifyError) mistake = e;
+            else throw e;
+        }
+
+        if (mistake === undefined){
             var passedModal = new ModalDialog();
             passedModal.setTitle("Checkoff Succeeded!");
             passedModal.setText("Verification succeeded!");
@@ -97,190 +103,129 @@ var Checkoff = (function(){
                                   function(){show_checkoff_form(passedModal)},
                                   'btn-primary');
             passedModal.show();
+        } else if (mistake.msg == 'Verify error') {
+            failedModal = new ModalDialog();
+            failedModal.setTitle("Checkoff Failed!");
+            failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
+<p><table class='table'><tr><td>Node(s):</td><td>"+mistake.nodes+"</tr>\
+<tr><td>Time:</td><td>"+engineering_notation(mistake.time,2)+"s</td></tr>\
+<tr><td>Expected Logic Value:</td><td>"+mistake.exp+"</td></tr>\
+<tr><td>Actual Logic Value:</td><td>"+mistake.given+"</td></tr></table></p>");
+            failedModal.addButton("Dismiss",'dismiss');
+            failedModal.show();
         } else {
-            if (mistake.verifyError){
-                failedModal = new FailedModal(mistake.msg);
-                failedModal.show();
-            } else {
-                failedModal = new ModalDialog();
-                failedModal.setTitle("Checkoff Failed!");
-                failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
-    <p><table class='table'><tr><td>Node(s):</td><td>"+mistake.nodes+"</tr>\
-    <tr><td>Time:</td><td>"+engineering_notation(mistake.time,2)+"s</td></tr>\
-    <tr><td>Expected Logic Value:</td><td>"+mistake.exp+"</td></tr>\
-    <tr><td>Actual Logic Value:</td><td>"+mistake.given+"</td></tr></table></p>");
-    
-                failedModal.addButton("Dismiss",'dismiss');
-                
-                failedModal.show();
-            }
+            failedModal = new FailedModal(mistake.msg);
+            failedModal.show();
         }
     }
     
-    
-    /*************************
-    Find Time Index: given a time, returns the index of the closest sampled time that is less than 
-    the given time
-    *************************/
-    function findTimeIndex(time, start_index){
-        var times = mResults._time_;
-        for (var i = start_index; i < times.length; i += 1){
-            if (times[i] > time){
-                if (i == start_index) return start_index;
-                else return i-1;
-            }
+    // find largest index in array such that array[index] <= val
+    // return 0 if all array elements are >= val
+    // assumes array contents are in increasing order
+    // uses a binary search
+    function search(array, val) {
+        var start = 0;
+        var end = array.length-1;
+        var index;
+        while (start < end) {
+            index = (start + end) >> 1;   // "middle" index
+            if (index == start) index = end;
+            if (array[index] <= val) start = index;
+            else end = index - 1;
         }
-	return undefined;
+        return start;
     }
-    
-    /**************************
-    Run Verify: runs the stored verify statements
-    **************************/
+
+    // our very own Error object
+    function VerifyError(msg,time,nodes,exp,given) {
+        this.msg = msg;
+        this.time = time;
+        this.nodes = nodes;
+        this.exp = exp;
+        this.given = given;
+    }
+
+    // Run Verify: runs the stored verify statements
     function runVerify(){
-        var checksum = 0;
+        var checksum = 2536038;
+
+        // start by collecting all the verification info from all the .verify statements
+
+        var history = {}; // simulation history for each checked node from all .verify
+        var checks = [];  // list of {time, nodes, expected} from all .verify
         for (var v = 0; v < mVerify_statements.length; v += 1){
             var vobj = mVerify_statements[v];
             
             if (vobj.type == "memory"){
-                var mem_mistake = verify_memory(vobj);
-                if (mem_mistake) return mem_mistake;
+                verify_memory(vobj);  // may throw VerifyError...
                 continue;
             }
-            
-            var time_indices = [];
-            var time_steps = [];
-            var nodes = vobj.nodes.slice(0);
-            var results = {};
-            var index;
-            var node;
-            
-            for (var i = 0; i < nodes.length; i += 1){
-                results[nodes[i]] = [];
-            }
-            
-            if (vobj.type == "periodic"){
-                time_steps.push(vobj.tstart);
-                index = findTimeIndex(vobj.tstart,0);
-                time_indices.push(index);
-                for (node in results){
-                    if (!(node in mResults)){
-                        return {verifyError:true,
-                                msg:"Verify error: No results for node "+node+
-                                ". (This indicates an error in the checkoff file)."};
-                    }
-                    results[node].push(mResults[node][index]);
+
+            // collect the history for all the nodes to be verified
+            $.each(vobj.nodes,function (index,node) {
+                var h = mResults.history(node);
+                if (h === undefined) throw VerifyError('No results for node '+node);
+                if (mResults.result_type() == 'analog') {
+                    // convert results to digital domain (0, 1, X)
+                    var vil = mOptions.vil || 0.2;
+                    var vih = mOptions.vih || 0.8;
+                    h.yvalues = h.values.map(function(v){ return (v < vil) ? 0 : ((v >= vih) ? 1 : 2); });
                 }
-                for (i = 1; i < vobj.values.length; i += 1){
-                    time_steps.push(vobj.tstart + vobj.tstep * i);
-                    index = findTimeIndex(vobj.tstart + vobj.tstep * i, time_indices[i-1]);
-                    time_indices.push(index);
-                    for (node in results){
-                        results[node].push(mResults[node][index]);
-                    }
-                }
-            }
-            if (vobj.type == "tvpairs"){
-                for (i = 0; i < vobj.values.length; i += 1){
-                    time_steps.push(vobj.values[i].time);
-                    
-                    var temp_index = (i === 0) ? 0 : time_indices[i-1];
-                    index = findTimeIndex(vobj.values[i].time,temp_index);
-                    time_indices.push(index);
-                    for (node in results){
-                        results[node].push(mResults[node][index]);
-                    }
-                }
-            }
-                
-            var base;
-            var base_prefix;
-            // change decimal numbers to hex automatically because otherwise it's a huge pain
-            if (vobj.display_base == 'hex' || vobj.display_base == 'dec') {
-                base = 16;
-                base_prefix = '0x';
-            } else if (vobj.display_base == 'oct') {
-                base = 8;
-                base_prefix = '0';
-            } else if (vobj.display_base == 'bin') {
-                base = 2;
-                base_prefix = '0b';
-            }/* else {
-                base = 10;
-                base_prefix = '';
-            }*/
-                
-            var mistake = false;
-            for (i = 0; i < vobj.values.length; i += 1){
-                var expectedVal;
-                if (vobj.type == "periodic"){
-                    expectedVal = vobj.values[i];
-                } else if (vobj.type == "tvpairs"){
-                    expectedVal = vobj.values[i].value;
-                }
-                
-                // checksum: (i+1)*((int)(time*1e12) + (int)expect)
-                checksum += ((i + 1) * (Math.floor(time_steps[i]*1e12) + Math.floor(expectedVal)));
-//                console.log("checksum term:",(i+1)*(Math.floor(time_steps[i]*1e12) + Math.floor(expectedVal)));
-//                console.log("i + 1:",i+1);
-//                console.log("cumulative checksum:",checksum);
-                    
-                expectedVal = expectedVal.toString(base).split("");
-                    
-                var nodeVals = [];
-                var valAtTime = [];
-                for (var j = 0; j < nodes.length; j += 1){
-                    nodeVals.push(logic(results[nodes[j]][i]));
-                }
-                    
-                if (base == 2){
-                    valAtTime = nodeVals.slice(0);
-                } else if (base == 8){
-                    // three binary digits equal one octal digit
-                    // break into threes from the end
-                    while (nodeVals.length > 0){
-                        valAtTime.unshift(nodeVals.splice(-3,3));
-                    }
-                    for (j = 0; j < valAtTime.length; j += 1){
-                        valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(8);
-                        if (valAtTime[j] == "NaN") valAtTime[j] = "X";
-                    }
-                } else if (base == 16){
-                    // four binary digits equal one hexadecimal digit
-                    // break into fours from the end
-                    while (nodeVals.length > 0){
-                        valAtTime.unshift(nodeVals.splice(-4,4));
-                    }
-                    for (j = 0; j < valAtTime.length; j += 1){
-                        valAtTime[j] = parseInt(valAtTime[j].join(''),2).toString(16);
-                        if (valAtTime[j] == "NaN") valAtTime[j] = "X";
-                    }
-                }
-                    
-                while (expectedVal.length < valAtTime.length){
-                    expectedVal.unshift("0");
-                }
-                    
-                for (var k = 0; k < valAtTime.length; k += 1){
-                    if (expectedVal[k] != valAtTime[k]){
-                        mistake = true;
-                        valAtTime[k] = "<span class='wrong'>"+valAtTime[k]+"</span>";
-                    }
-                }
-                    
-                if (mistake){
-                    return {time:time_steps[i],
-                            nodes:nodes,
-                            exp:base_prefix+expectedVal.join(''),
-                            given:base_prefix+valAtTime.join('')};
-                }
-            }
+                history[node] = h;
+            });
+
+            // add the checks performed by this .verify to our master list
+            $.each(vobj.values,function (index,v) {
+                checks.push({time: v.time, nodes: vobj.nodes, expected: v.values});
+                // do something about computing checksum?
+            });
         }
-        checksum += 2536038;
-//        console.log("expected checksum:",mCheckoffStatement.checksum.value,"actual:",checksum);
-        // if there are no mistakes, return null
-        return null;
-    }
-    
+
+        // sort the checks by increasing time, so we'll do earlier checks across all nodes
+        // before checking any later values
+        checks.sort(function(a,b) { return a.time - b.time; });
+
+        // run through all checks, now ordered by increasing time
+        $.each(checks,function(index,check) {
+            // get node values at check.time
+            var values = check.nodes.map(function (node) {
+                var h = history[node];
+                if (h === undefined) return undefined;
+                var index = search(h.xvalues,check.time);
+                return h.yvalues[index];    // only 0, 1 or X (=2)
+            });
+
+            // compare values and expect, reporting any differences
+            var error = false;
+            var last = values.length - 1;
+            var e = check.expected;
+            for (var i = 0; i < values.length; i += 1) {
+                // check starting with LSB since that makes it easy
+                // to effectively pad check.expected with high-order 0's
+                if (values[last - i] != (e & 1)) {
+                    error = true;
+                    break;
+                }
+                e >>= 1;
+            }
+
+            if (error) {
+                var exp = [];
+                var given = [];
+                for (var j = 0; j < values.length; j += 1) {
+                    var v = "01X"[values[j]];
+                    var e = "01"[(check.expected >> (last - j)) & 1];
+                    exp.push(e);
+                    if (v != e) given.push('<span class="wrong">'+v+'</span>');
+                    else given.push(v);
+                }
+                throw VerifyError('Verify error',check.time,check.nodes,
+                                  exp.join(''),given.join(''));
+            }
+        });
+
+        // report bogus checksum here?
+    };
     
     function verify_memory(vobj){
         // vobj has attributes:
@@ -290,26 +235,6 @@ var Checkoff = (function(){
         //      contents: <the expected contents of the memory>
         //      display_base: 'hex', 'octal', or 'binary'
         //      token: <the first token of the memory line for error throwing>
-    }
-    
-    /*************************
-    Turn into a logic value: 
-    V_il = 0.6
-    V_ih = 2.7
-    **************************/
-//    var vil = 0.6;
-//    var vih = 2.7;
-    function logic(number){
-        var vil, vih;
-        if (mOptions.vil) vil = mOptions.vil;
-        else vil = 0.6;
-        if (mOptions.vih) vih = mOptions.vih;
-        else vih = 2.7;
-        
-        
-        if (number < vil) return 0;
-        else if (number > vih) return 1;
-        else return "X";
     }
     
     function complete_checkoff(old){

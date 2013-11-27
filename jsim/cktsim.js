@@ -234,6 +234,8 @@ var cktsim = (function() {
         return {xvalues: this.result._xvalues_, yvalues: this.result[node]};
     };
 
+    Circuit.prototype.result_type = function() { return 'analog'; };
+
     Circuit.prototype.node_list = function() {
         var nlist = [];
         for (var n in this.results) nlist.push(n);

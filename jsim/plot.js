@@ -220,7 +220,7 @@ var plot = (function() {
                 if (gx >= dataset.left && gx <= dataset.left + dataset.wplot &&
                     gy >= dataset.top && gy <= dataset.top + dataset.hplot) {
                     event.preventDefault();
-                    move_thumb(event.originalEvent.wheelDelta/10);
+                    move_thumb(event.originalEvent.wheelDelta > 0 ? 1 : -1);
                 }
             });
 
@@ -587,7 +587,10 @@ var plot = (function() {
                         c.strokeRect(x,y0,nx-x,y1-y0);
                         // fill in value label if it fits
                         w = c.measureText(y).width;
-                        if (w < nx-x) c.fillText(y,(nx + x)/2,ylabel);
+                        // center in visible portion of waveform
+                        var x0 = Math.max(dataset.left,x);
+                        var x1 = Math.min(dataset.left + dataset.wplot,nx);
+                        if (w < x1 - x0) c.fillText(y,(x0 + x1)/2,ylabel);
                     }
 
                     x = nx;

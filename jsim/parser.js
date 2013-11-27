@@ -772,8 +772,8 @@ var Parser = (function(){
         // a list of nodes whose values will be checked
         var nodes = [];
         var i = 1;
-        var raw_values;
-        var fn = {args:[]};
+        var raw_values;    // list of unprocess verify args
+        var fn = {type: undefined, args:[]};   // type is 'tvpairs' or 'periodic'
         var fn_token;
         var reading_fn = false;
         while (true) {
@@ -809,101 +809,27 @@ var Parser = (function(){
             i += 1;
         }
         
-        if (raw_values.length === 0){
-            return;
-        }
+        if (raw_values.length === 0) return;
         
-        // picks out the name of the function and its args, if any
-        // fn_array[1] is the name
-        // fn_array[2] is the entire contents of the parentheses
-        // fn_array[3] is the first arg
-        // fn_array[4] is the second arg
-        //        var fn_pattern = /(\w+)\((([^,]+),\s*([^,]+))?\)/;
-        //        var fn_array = fn.token.match(fn_pattern);
-        ////        console.log("matched:",fn_array);
-        //        
-        //        if (!fn_array){
-        //            throw new CustomError("Ill-formed .verify function statement",fn_token);
-        //        }
-        //        
-        //        var fn_name = fn_array[1];
-        //        if (fn_name != 'periodic' && fn_name != 'tvpairs'){
-        //            throw new CustomError("Invalid verify function: 'periodic' or 'tvpairs' expected",fn_token);
-        //        }
-        
-        //        fn = fn.join('');
-        // picks out the name of the function and its args, if any
-        // fn_array[1] is the name
-        // fn_array[2] is the entire contents of the parentheses
-        // fn_array[3] is the first arg
-        // fn_array[4] is the second arg
-        //        var fn_pattern = /(\w+)\((([^,]+),\s*([^,]+))?\)/;
-        //        var fn_array = fn.match(fn_pattern);
-        //        console.log("matched:",fn_array);
-        
-        //        if (!fn_array){
-        //            throw new CustomError("Ill-formed .verify function statement",fn_token);
-        //        }
-        
-        //        var fn_name = fn_array[1];
-        if (fn.type != 'periodic' && fn.type != 'tvpairs'){
+        var values = [];
+        if (fn.type == "tvpairs"){
+            for (i = 0; i < raw_values.length; i += 2){
+                values.push({time:raw_values[i].token.value,value:raw_values[i+1].token.value});
+            }
+        } else if (fn.type == "periodic") {
+            var t = fn.args[0];
+            for (i = 0; i < raw_values.length; i += 1){
+                values.push({time:t,value:raw_values[i].token.value});
+                t += fn.args[1];
+            }
+        } else {
             throw new CustomError("Invalid verify function: 'periodic' or 'tvpairs' expected",fn_token);
         }
         
-        // find what base the values are given in so that the same base can be used to display errors
-        var display_base = raw_values[0].base;
-        //        var display_base;
-        //        var temp_index = fn_name == "periodic" ? 0 : 1;
-        //        if (/^0x/i.test(raw_values[temp_index].token)) display_base = 'hex';
-        //        else if (/^0b/i.test(raw_values[temp_index].token)) display_base = 'binary';
-        //        else if (/^0/i.test(raw_values[temp_index].token) && !(/^0$/.test(raw_values[temp_index].token))) display_base = 'octal';
-        //        else display_base = 'binary';
-        //        
-        //        // parse values
-        //        for (i = 0; i < raw_values.length; i += 1){
-        //            var newval;
-        ////            try{
-        ////                newval = parse_number(raw_values[i].token);
-        ////            } catch (err) {
-        ////                throw new CustomError("Number expected.",raw_values[i]);
-        ////            }
-        //            if (raw_values[i].type  != "number"){
-        //                throw new CustomError("Number expected.", raw_values[i]);
-        //            } else {
-        //                raw_values[i] = raw_values[i].token;
-        //            }
-        //        }
-        raw_values = raw_values.map(function(thing){return thing.token;})
-        var values;
-        var tstart;
-        var tstep;
-        if (fn.type == "periodic"){
-            
-            tstart = fn.args[0];
-            tstep = fn.args[1];
-            //            try{
-            //                tstart = parse_number(fn_array[3]);
-            //                tstep = parse_number(fn_array[4]);
-            //            } catch (err){
-            //                throw new CustomError("Number expected",fn);
-            //            }
-            values = raw_values.slice(0);
-        }
-        
-        if (fn.type == "tvpairs"){
-            values = [];
-            for (i = 0; i < raw_values.length; i += 2){
-                values.push({time:raw_values[i],value:raw_values[i+1]});
-            }
-        }
-        
-        var fn_obj = {type:fn.type,
-                      nodes:nodes,
-                      tstart:tstart,
-                      tstep:tstep,
+        var fn_obj = {nodes:nodes,
                       token:fn_token, // for throwing errors later
                       values:values,
-                      display_base:display_base
+                      display_base:raw_values[0].base
                      };
         Checkoff.addVerify(fn_obj);
         

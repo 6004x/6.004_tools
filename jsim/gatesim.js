@@ -234,6 +234,8 @@ var gatesim = (function() {
         return result;
     };
 
+    Network.prototype.result_type = function() { return 'digital'; };
+
     Network.prototype.node_list = function() {
         var nlist = [];
         for (var n in this.node_map) nlist.push(n);
