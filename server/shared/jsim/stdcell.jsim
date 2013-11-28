@@ -49,19 +49,19 @@ Gbuffer_8 buffer a z size=43 tcd=20ps tpd=70ps tr=280 tf=150 cin=.020pf
 .ends
 
 .subckt inverter a z
-Ginverter inverter a z size=10 tcd=5ps tpd=20ps tr=2300 tf=1200 cin=.007pf
+Ginverter inv a z size=10 tcd=5ps tpd=20ps tr=2300 tf=1200 cin=.007pf
 .ends
 
 .subckt inverter_2 a z
-Ginterter_2 nand a z size=13 tcd=9ps tpd=20ps tr=1100 tf=600 cin=.013pf
+Ginverter_2 inv a z size=13 tcd=9ps tpd=20ps tr=1100 tf=600 cin=.013pf
 .ends
 
 .subckt inverter_4 a z
-Ginverter_4 inverter a z size=20 tcd=9ps tpd=20ps tr=560 tf=300 cin=.027pf
+Ginverter_4 inv a z size=20 tcd=9ps tpd=20ps tr=560 tf=300 cin=.027pf
 .ends
 
 .subckt inverter_8 a z
-Ginverter_8 inverter a z size=56 tcd=20ps tpd=110ps tr=280 tf=150 cin=.009pf
+Ginverter_8 inv a z size=56 tcd=20ps tpd=110ps tr=280 tf=150 cin=.009pf
 .ends
 
 .subckt tristate e a z
@@ -174,24 +174,6 @@ Gxor2 xor2 a b z size=27 tcd=30ps tpd=140ps tr=4500 tf=2500 cin=.006pf
 
 .subckt xnor2 a b z
 Gxnor2 xnor2 a b z size=27 tcd=30ps tpd=140ps tr=4500 tf=2500 cin=.006pf
-.ends
-
-/********************************************************************************
-********************************************************************************
-***
-***  AOI/OAI gates
-***
-********************************************************************************
-********************************************************************************/
-
-.subckt aoi21 a1 a2 b z
-Ginternal and2 a1 a2 a cin=.005pf lenient=1
-Gaoi21 nor2 a b z size=13 tcd=20ps tpd=70ps tr=6800 tf=2700 cin=.005pf lenient=1
-.ends
-
-.subckt oai21 a1 a2 b z
-Ginternal or2 a1 a2 a cin=.005pf lenient=1
-Goai21 nand2 a b z size=17 tcd=20ps tpd=70ps tr=6700 tf=2700 cin=.005pf lenient=1
 .ends
 
 /********************************************************************************
