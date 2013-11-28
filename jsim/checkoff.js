@@ -108,9 +108,9 @@ var Checkoff = (function(){
             failedModal.setTitle("Checkoff Failed!");
             failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
 <p><table class='table'><tr><td>Node(s):</td><td>"+mistake.nodes+"</tr>\
-<tr><td>Time:</td><td>"+engineering_notation(mistake.time,2)+"s</td></tr>\
-<tr><td>Expected Logic Value:</td><td>"+mistake.exp+"</td></tr>\
-<tr><td>Actual Logic Value:</td><td>"+mistake.given+"</td></tr></table></p>");
+<tr><td>Time:</td><td>"+engineering_notation(mistake.time,3)+"s</td></tr>\
+<tr><td>Expected:</td><td>"+mistake.exp+"</td></tr>\
+<tr><td>Actual:</td><td>"+mistake.given+"</td></tr></table></p>");
             failedModal.addButton("Dismiss",'dismiss');
             failedModal.show();
         } else {
@@ -151,20 +151,18 @@ var Checkoff = (function(){
 
         // start by collecting all the verification info from all the .verify statements
 
-        var history = {}; // simulation history for each checked node from all .verify
-        var checks = [];  // list of {time, nodes, expected} from all .verify
-        for (var v = 0; v < mVerify_statements.length; v += 1){
-            var vobj = mVerify_statements[v];
-            
+        var history = {}; // simulation history for each checked node
+        var checks = [];  // list of checks: {time, nodes, expected} 
+        $.each(mVerify_statements,function (vindex,vobj) {
             if (vobj.type == "memory"){
                 verify_memory(vobj);  // may throw VerifyError...
-                continue;
+                return;
             }
 
             // collect the history for all the nodes to be verified
             $.each(vobj.nodes,function (index,node) {
                 var h = mResults.history(node);
-                if (h === undefined) throw VerifyError('No results for node '+node);
+                if (h === undefined) throw new VerifyError('No results for node '+node);
                 if (mResults.result_type() == 'analog') {
                     // convert results to digital domain (0, 1, X)
                     var vil = mOptions.vil || 0.2;
@@ -176,12 +174,12 @@ var Checkoff = (function(){
 
             // add the checks performed by this .verify to our master list
             $.each(vobj.values,function (index,v) {
-                checks.push({time: v.time, nodes: vobj.nodes, expected: v.values});
+                checks.push({time: v.time, nodes: vobj.nodes, expected: v.value});
                 // do something about computing checksum?
             });
-        }
+        });
 
-        // sort the checks by increasing time, so we'll do earlier checks across all nodes
+        // sort the checks by time, so we'll do earlier checks across all nodes
         // before checking any later values
         checks.sort(function(a,b) { return a.time - b.time; });
 
@@ -195,7 +193,7 @@ var Checkoff = (function(){
                 return h.yvalues[index];    // only 0, 1 or X (=2)
             });
 
-            // compare values and expect, reporting any differences
+            // compare values and expect flagging any errors
             var error = false;
             var last = values.length - 1;
             var e = check.expected;
@@ -210,17 +208,19 @@ var Checkoff = (function(){
             }
 
             if (error) {
+                // report detected error, showing expected and actual bit-by-bit
                 var exp = [];
                 var given = [];
                 for (var j = 0; j < values.length; j += 1) {
                     var v = "01X"[values[j]];
                     var e = "01"[(check.expected >> (last - j)) & 1];
                     exp.push(e);
+                    // color code errors for easy spotting
                     if (v != e) given.push('<span class="wrong">'+v+'</span>');
                     else given.push(v);
                 }
-                throw VerifyError('Verify error',check.time,check.nodes,
-                                  exp.join(''),given.join(''));
+                throw new VerifyError('Verify error',check.time,check.nodes,
+                                      exp.join(''),given.join(''));
             }
         });
 

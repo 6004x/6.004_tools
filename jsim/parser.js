@@ -814,12 +814,12 @@ var Parser = (function(){
         var values = [];
         if (fn.type == "tvpairs"){
             for (i = 0; i < raw_values.length; i += 2){
-                values.push({time:raw_values[i].token.value,value:raw_values[i+1].token.value});
+                values.push({time:raw_values[i].token,value:raw_values[i+1].token});
             }
         } else if (fn.type == "periodic") {
             var t = fn.args[0];
             for (i = 0; i < raw_values.length; i += 1){
-                values.push({time:t,value:raw_values[i].token.value});
+                values.push({time:t,value:raw_values[i].token});
                 t += fn.args[1];
             }
         } else {
@@ -934,14 +934,8 @@ var Parser = (function(){
             obj.connections.push(line[i].token);
         }
         
-        var end = line.length;
-        //        try{
-        //            obj.properties.value = parse_number(line[end-1].token);
-        //        } catch (err) {
-        //            throw new CustomError("Number expected", line[end-1]);
-        //        }
-        if (line[end-1].type != "number"){
-            throw new CustomError("Number expected",line[end-1].line,line[end-1].column);
+        if (line[3].type != "number"){
+            throw new CustomError("Number expected",line[3].line,line[3].column);
         }
         obj.properties.value = line[3];
         

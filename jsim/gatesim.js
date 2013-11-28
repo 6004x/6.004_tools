@@ -95,11 +95,12 @@ var gatesim = (function() {
             var properties = component.properties;
             counts[type] = (counts[type] || 0) + 1;
 
+            var name = properties.name;
+
             // convert node names to Nodes
             for (var c in connections) connections[c] = this.node(connections[c]);
 
             // process the component
-            var name = properties.name;
             if (type in logic_gates) {
                 var info = logic_gates[type]; // [input-list,output,table]
                 // build input and output lists using terminal names
@@ -368,7 +369,7 @@ var gatesim = (function() {
             // replace item to be removed with last element of heap
             // then sift it up to where it belongs
             var lastelt = this.nodes.pop();
-            if (this.nodes.length) {
+            if (item !== lastelt) {
                 this.nodes[pos] = lastelt;
                 this._siftup(pos);
             }
@@ -439,12 +440,14 @@ var gatesim = (function() {
         // update event pointers
         if (event == this.cd_event) this.cd_event = undefined;
         else if (event == this.pd_event) this.pd_event = undefined;
+        else console.log('unknown event!',this.name,this.network.time);
 
         if (this.v != event.v || force) {
             this.times.push(event.time);
             this.values.push(this.v*4 + event.v);   // remember both previous and new values
 
-            //console.log(this.name + ": " + "01XZ"[this.v] + "->" + "01XZ"[event.v] + " @ " + (event.time * 1e9).toFixed(2));
+            //if (this.name == 'Xalu.shiftout[17]') console.log(this.name + ": " + "01XZ"[this.v] + "->" + "01XZ"[event.v] + " @ " + (event.time * 1e9).toFixed(3));
+
             this.v = event.v;
 
             // let fanouts know our value changed
@@ -823,7 +826,7 @@ var gatesim = (function() {
             // gates with no inputs will produce a constant output, so
             // figure that out now and process the appropriate event
             var v = this.logic_eval();
-            this.output.process_event(new Event(0, PROPAGATE, this.output, v), true);
+            this.output.p_event(0,v,0,false);
         }
     };
 
