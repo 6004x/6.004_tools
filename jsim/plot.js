@@ -40,7 +40,7 @@ var plot = (function() {
     //   yunits: string for labeling yvalues (optional - if omitted assumed to be bits)
     //   xlabel: string for labeling x axis (optional)
     //   ylabel: string for labeling y axis (optional)
-    //   add_plot: function(node_name) called when user wants to add a plot
+    //   add_plot: function(string) called when user wants to add a plot
     //   type: 'digital' or 'analog'
     function graph(dataseries) {
         // create container
@@ -63,13 +63,14 @@ var plot = (function() {
 
             add_plot.on('keypress',function (event) {
                 if (event.which == 13) {
-                    // pass callback to user's add_plot function
-                    // they should call it once for each new dataset
-                    dataseries.add_plot(add_plot.val(),function (dataset) {
-                        process_dataset(dataset);
-                        dataseries.push(dataset);
-                        do_plot(container[0], container.width(), container.height());
+                    // call user to add plots to dataseries
+                    dataseries.add_plot(add_plot.val());
+                    // process any new datasets
+                    $.each(dataseries,function (dindex,dataset) {
+                        if (dataset.dataseries === undefined) 
+                            process_dataset(dataset);
                     });
+                    do_plot(container[0], container.width(), container.height());
                 }
             });
         }

@@ -396,11 +396,10 @@ var Parser = (function(){
      Read plot: which nodes to plot
      *********************/
     function read_plot(line){
-        line.shift();
         var plot_list = [];
         var plot_fn;
         var reading_fn = false;
-        for (var i = 0; i < line.length; i += 1){
+        for (var i = 1; i < line.length; i += 1){
             if (line[i+1] && line[i+1].token == "("){
                 reading_fn = true;
                 plot_fn = {type:line[i].token, args:[]};
@@ -427,6 +426,7 @@ var Parser = (function(){
         
         if (plot_list.length > 0){
             plots.push(plot_list);
+            return plot_list;   // for external customers :)
         } else {
             throw new CustomError("No nodes specified.",line[0]);
         }
@@ -1754,9 +1754,16 @@ var Parser = (function(){
      ****************************/
 
     // tokenize contents, build netlist, send it to the callback
+    function xparse(input_string, filename, callback, error_callback) {
+        parse(input_string,filename,
+              function(tokens) { callback(interpret(tokens)); },
+              function(e) { error_callback(e) });
+    }
+
+    // tokenize contents, send it to the callback
     // complication: reading include files is asynchronous, so the processing state is
     // organized to allow for processing to resume after an async file operation is complete.
-    function xparse(input_string, filename, callback, error_callback) {
+    function parse(input_string, filename, callback, error_callback) {
         var included_files = [];   // list of included files
         var tokens = [];  // list of accumulated tokens
 
@@ -1881,9 +1888,8 @@ var Parser = (function(){
             // so can code it up in a straightforward fashion
             try {
                 tokens = iter_expand(tokens);
-                var netlist = interpret(tokens);
-                callback(netlist);
-            } catch(err){
+                callback(tokens);
+            } catch(err) {
                 error_callback(err);
                 return;
             }
@@ -1942,11 +1948,22 @@ var Parser = (function(){
         tokenize();  // start the ball rolling
     }
     
+    // for external use: parse string as a plot specification, return list of plot objs
+    function parse_plot(s,callback) {
+        parse(s,'',
+              function(tokens) {
+                  tokens.splice(0,0,{}); // add a dummy token in front
+                  tokens.pop();  // remove NL token at end
+                  callback(read_plot(tokens));
+              },
+              function() { callback(undefined); });
+    }
 
     /***************************
      Exports
      ****************************/
     return {parse:xparse, //tokenize,
+            parse_plot: parse_plot,
             CustomError:CustomError,
             //            parse_number:parse_number
            };

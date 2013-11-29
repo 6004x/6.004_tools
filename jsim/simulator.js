@@ -291,9 +291,7 @@ var Simulator = (function(){
             return undefined;
         }
 
-        // repeat for every set of plots
-        var dataseries = []; // 'dataseries' is the list of data objects to pass to a graph module
-        $.each(plots,function(p,plist) {
+        function process_plist(plist) {
             // construct a list of nodes to be plotted
             var nlist = [];
             $.each(plist,function(pindex,plot) {
@@ -302,6 +300,7 @@ var Simulator = (function(){
 
             // build the dataset for that list
             var dataset = new_dataset(nlist);
+            if (dataset === undefined) return;
             
             // do required post-processing
             if (plist[0].type !== undefined) {
@@ -370,8 +369,16 @@ var Simulator = (function(){
                     }
 
                     if (y !== undefined) {
-                        // for now format as hex number
-                        y = "0x" + ("0000000000000000" + y.toString(16)).substr(-Math.ceil(nnodes/4));
+                        if (plist[0].type in mPlotDefs) {
+                            var v = mPlotDefs[plist[0].type][y];
+                            if (v) y = v;
+                            else {
+                                y = "0x" + ("0000000000000000" + y.toString(16)).substr(-Math.ceil(nnodes/4));
+                            }
+                        } else if (plist[0].type == 'L') {
+                            // for now format as hex number
+                            y = "0x" + ("0000000000000000" + y.toString(16)).substr(-Math.ceil(nnodes/4));
+                        } else throw "No definition for plot function "+plist[0].type;
                     }
                     yv[vindex] = y;
                 }
@@ -384,14 +391,20 @@ var Simulator = (function(){
             }
 
             dataseries.push(dataset);
+        }
+
+        // repeat for every set of plots
+        var dataseries = []; // 'dataseries' is the list of data objects to pass to a graph module
+        $.each(plots,function(p,plist) {
+            process_plist(plist);
         });
 
         // called by plot.graph when user wants to add a plot
         dataseries.add_plot = function (node,callback) {
             // parse "node" here to handle iterators, etc.
-
-            var dataset = new_dataset([node]);
-            if (dataset) callback(dataset);
+            Parser.parse_plot(node,function(plist) {
+                if (plist) process_plist(plist);  // will push to dataseries
+            });
         };
 
         if (dataseries.length !== 0) {
