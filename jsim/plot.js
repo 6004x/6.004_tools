@@ -663,6 +663,15 @@ var plot = (function() {
                 c.moveTo(xsel,dataset.top); c.lineTo(xsel,dataset.top+dataset.hplot);
                 c.moveTo(xsel+wsel,dataset.top); c.lineTo(xsel+wsel,dataset.top+dataset.hplot);
                 c.stroke();
+
+                if (dataseries.sel0 !== dataseries.sel1) {
+                    c.fillStyle = 'rgb(207,191,194)';
+                    c.font = graph_font;
+                    c.textAlign = 'left';
+                    c.textBaseline = 'top';
+                    var delta = Math.abs(dataset.datax(dataseries.sel0) - dataset.datax(dataseries.sel1));
+                    c.fillText('dx='+engineering_notation(delta,3),xsel+wsel+2,dataset.top);
+                }
             }
 
             if (dataseries.cursor !== undefined) {

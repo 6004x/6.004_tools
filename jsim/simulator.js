@@ -263,6 +263,7 @@ var Simulator = (function(){
      ***************/
     function prepare_tran_data(plots,results){
 
+        // build dataset from a list of nodes
         function new_dataset(nlist) {
             var dataset = {xvalues: [],
                            yvalues: [],
@@ -291,110 +292,144 @@ var Simulator = (function(){
             return undefined;
         }
 
+        var dataseries = []; // list of datasets to pass to graph module
+
+        // run through list of .plot requests for a particular graph
+        // (actually we cheat and plot each request in a separate graph)
         function process_plist(plist) {
-            // construct a list of nodes to be plotted
-            var nlist = [];
             $.each(plist,function(pindex,plot) {
-                nlist.push.apply(nlist,plot.args);
-            });
+                // build the dataset for that list
+                var dataset = new_dataset(plot.args);
+                if (dataset === undefined) return;
 
-            // build the dataset for that list
-            var dataset = new_dataset(nlist);
-            if (dataset === undefined) return;
-            
-            // do required post-processing
-            if (plist[0].type !== undefined) {
-                // first merge all the nodes in the dataset into a single
-                // set of xvalues and yvalues, where each yvalue is an array of
-                // digital values from the component nodes
-                var xv = [];
-                var yv = [];
-                var vil = mOptions.vil || 0.2;
-                var vih = mOptions.vih || 0.8;
-                var nnodes = dataset.xvalues.length;  // number of nodes
-                var i,nindex,vindex,x,y,last_y,xvalues,yvalues,nvalues,type;
-                for (nindex = 0; nindex < nnodes; nindex += 1) {
-                    xvalues = dataset.xvalues[nindex];
-                    yvalues = dataset.yvalues[nindex];
-                    nvalues = xvalues.length;
-                    type = dataset.type[nindex];
-                    i = 0;  // current index into merged values
-                    last_y = 2;  // X value to start
-                    for (vindex = 0; vindex < nvalues; vindex += 1) {
-                        x = xvalues[vindex];
-                        y = yvalues[vindex];
+                var fn = plot.type;
+                // do required post-processing
+                if (fn !== undefined) {
+                    // first merge all the nodes in the dataset into a single
+                    // set of xvalues and yvalues, where each yvalue is an array of
+                    // digital values from the component nodes
+                    var xv = [];
+                    var yv = [];
+                    var vil = mOptions.vil || 0.2;
+                    var vih = mOptions.vih || 0.8;
+                    var nnodes = dataset.xvalues.length;  // number of nodes
+                    var i,nindex,vindex,x,y,last_y,xvalues,yvalues,nvalues,type;
+                    for (nindex = 0; nindex < nnodes; nindex += 1) {
+                        xvalues = dataset.xvalues[nindex];
+                        yvalues = dataset.yvalues[nindex];
+                        nvalues = xvalues.length;
+                        type = dataset.type[nindex];
+                        i = 0;  // current index into merged values
+                        last_y = 2;  // X value to start
+                        for (vindex = 0; vindex < nvalues; vindex += 1) {
+                            x = xvalues[vindex];
+                            y = yvalues[vindex];
 
-                        // convert to a digital value if necessary
-                        if (type == 'analog') y = (y <= vil) ? 0 : ((y >= vih) ? 1 : 2);
+                            // convert to a digital value if necessary
+                            if (type == 'analog') y = (y <= vil) ? 0 : ((y >= vih) ? 1 : 2);
 
-                        // skip over merged values till we find where x belongs
-                        while (i < xv.length) {
-                            if (xv[i] >= x) break;
-                            // add new bit to time point we're skipping over
-                            yv[i][nindex] = last_y;  
-                            i += 1;
-                        }
-
-                        if (xv[i] && xv[i] == x) {
-                            // exact match of time with existing time point, so just add new bit
-                            yv[i][nindex] = y;
-                        } else {
-                            // need to insert new time point, copy previous time point, if any
-                            // otherwise make a new one from scratch
-                            var new_value;
-                            if (yv[i-1]) new_value = yv[i-1].slice(0);
-                            else new_value = new Array();
-                            new_value[nindex] = y;
-                            // insert new time point into xv and yv arrays
-                            xv.splice(i,0,x);
-                            yv.splice(i,0,new_value);
-                        }
-
-                        // all done! move to next value to merge
-                        last_y = y;    // needed to fill in entries we skip over
-                    }
-                }
-
-                // convert the yv's to integers or undefined, then format as specified
-                for (vindex = 0; vindex < yv.length; vindex += 1) {
-                    yvalues = yv[vindex];
-                    y = 0;
-                    for (nindex = 0; nindex < yvalues.length; nindex += 1) {
-                        i = yvalues[nindex];
-                        if (i === 0 || i == 1) y = y*2 + i;
-                        else {
-                            y = undefined;
-                            break;
-                        }
-                    }
-
-                    if (y !== undefined) {
-                        if (plist[0].type in mPlotDefs) {
-                            var v = mPlotDefs[plist[0].type][y];
-                            if (v) y = v;
-                            else {
-                                y = "0x" + ("0000000000000000" + y.toString(16)).substr(-Math.ceil(nnodes/4));
+                            // skip over merged values till we find where x belongs
+                            while (i < xv.length) {
+                                if (xv[i] >= x) break;
+                                // add new bit to time point we're skipping over
+                                yv[i][nindex] = last_y;  
+                                i += 1;
                             }
-                        } else if (plist[0].type == 'L') {
-                            // for now format as hex number
-                            y = "0x" + ("0000000000000000" + y.toString(16)).substr(-Math.ceil(nnodes/4));
-                        } else throw "No definition for plot function "+plist[0].type;
+
+                            if (xv[i] && xv[i] == x) {
+                                // exact match of time with existing time point, so just add new bit
+                                yv[i][nindex] = y;
+                            } else {
+                                // need to insert new time point, copy previous time point, if any
+                                // otherwise make a new one from scratch
+                                var new_value;
+                                if (yv[i-1]) new_value = yv[i-1].slice(0);
+                                else new_value = new Array();
+                                new_value[nindex] = y;
+                                // insert new time point into xv and yv arrays
+                                xv.splice(i,0,x);
+                                yv.splice(i,0,new_value);
+                            }
+
+                            // all done! move to next value to merge
+                            last_y = y;    // needed to fill in entries we skip over
+                        }
                     }
-                    yv[vindex] = y;
+
+                    // convert the yv's to integers or undefined, then format as specified
+                    for (vindex = 0; vindex < yv.length; vindex += 1) {
+                        yvalues = yv[vindex];
+                        y = 0;
+                        for (nindex = 0; nindex < yvalues.length; nindex += 1) {
+                            i = yvalues[nindex];
+                            if (i === 0 || i == 1) y = y*2 + i;
+                            else {
+                                y = undefined;
+                                break;
+                            }
+                        }
+
+                        if (y !== undefined) {
+                            if (fn in mPlotDefs) {
+                                var v = mPlotDefs[fn][y];
+                                if (v) y = v;
+                                else {
+                                    // use hex if for some reason plotDef didn't supply a string
+                                    y = "0x" + ("0000000000000000" + y.toString(16)).substr(-Math.ceil(nnodes/4));
+                                }
+                            } else if (fn == 'L') {
+                                // for now format as hex number
+                                y = "0x" + ("0000000000000000" + y.toString(16)).substr(-Math.ceil(nnodes/4));
+                            } else throw "No definition for plot function "+fn;
+                        }
+                        yv[vindex] = y;
+                    }
+
+                    // see if we can use iterator notation for args: all args are of the
+                    // form foo[n] with a consistent step between successive n.
+                    var args = plot.args;
+                    var aname,afirst,alast,astep;
+                    for (i = 0; i < args.length; i += 1) {
+                        var m = args[i].match(/(\w*)\[(\d+)\]/);  // look for foo[17]
+                        if (m != null) {
+                            if (aname == undefined || aname==m[1]) {
+                                aname = m[1];  // in case aname was undefined
+                                var index = parseInt(m[2]);
+                                if (afirst === undefined) {
+                                    afirst = alast = index;
+                                    continue;
+                                } else {
+                                    var step = index - alast;
+                                    alast = index;
+                                    if (astep === undefined) {
+                                        astep = step;
+                                        continue;
+                                    } else if (astep == step) continue;
+                                }
+                            }
+                        }
+                        aname = undefined;
+                        break;
+                    }
+                    if (aname && afirst && astep) {
+                        var arg = aname + '[' + afirst + ':' + alast;
+                        if (astep != 1 && astep != -1) arg += ':' + Math.abs(astep);
+                        arg += ']';
+                        args = [arg];
+                    };
+
+                    dataset.xvalues = [xv];
+                    dataset.yvalues = [yv];
+                    dataset.type = ['string'];
+                    dataset.yunits = '';
+                    dataset.name = [fn + '(' + args.join(',') + ')'];
                 }
 
-                dataset.xvalues = [xv];
-                dataset.yvalues = [yv];
-                dataset.type = ['string'];
-                dataset.yunits = '';
-                dataset.name = [plist[0].type + '(' + plist[0].args.join(',') + ')'];
-            }
-
-            dataseries.push(dataset);
+                dataseries.push(dataset);
+            });
         }
 
         // repeat for every set of plots
-        var dataseries = []; // 'dataseries' is the list of data objects to pass to a graph module
         $.each(plots,function(p,plist) {
             process_plist(plist);
         });
