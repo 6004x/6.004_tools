@@ -328,6 +328,9 @@ var Simulator = (function(){
                             // convert to a digital value if necessary
                             if (type == 'analog') y = (y <= vil) ? 0 : ((y >= vih) ? 1 : 2);
 
+                            // don't bother if node already has this logic value
+                            if (y == last_y) continue;
+
                             // skip over merged values till we find where x belongs
                             while (i < xv.length) {
                                 if (xv[i] >= x) break;
@@ -387,36 +390,7 @@ var Simulator = (function(){
 
                     // see if we can use iterator notation for args: all args are of the
                     // form foo[n] with a consistent step between successive n.
-                    var args = plot.args;
-                    var aname,afirst,alast,astep;
-                    for (i = 0; i < args.length; i += 1) {
-                        var m = args[i].match(/(\w*)\[(\d+)\]/);  // look for foo[17]
-                        if (m != null) {
-                            if (aname == undefined || aname==m[1]) {
-                                aname = m[1];  // in case aname was undefined
-                                var index = parseInt(m[2]);
-                                if (afirst === undefined) {
-                                    afirst = alast = index;
-                                    continue;
-                                } else {
-                                    var step = index - alast;
-                                    alast = index;
-                                    if (astep === undefined) {
-                                        astep = step;
-                                        continue;
-                                    } else if (astep == step) continue;
-                                }
-                            }
-                        }
-                        aname = undefined;
-                        break;
-                    }
-                    if (aname && afirst && astep) {
-                        var arg = aname + '[' + afirst + ':' + alast;
-                        if (astep != 1 && astep != -1) arg += ':' + Math.abs(astep);
-                        arg += ']';
-                        args = [arg];
-                    };
+                    var args = Parser.iterator_notation(plot.args);
 
                     dataset.xvalues = [xv];
                     dataset.yvalues = [yv];

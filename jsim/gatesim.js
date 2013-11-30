@@ -112,14 +112,10 @@ var gatesim = (function() {
                 this.devices.push(d);
                 this.device_map[name] = d;
             }
-            else if (type == 'dlatch') {
-                throw "Device "+type+" not yet implemented in gatesim";
-            }
-            else if (type == 'dlatchn') {
-                throw "Device "+type+" not yet implemented in gatesim";
-            }
-            else if (type == 'dreg') {
-                throw "Device "+type+" not yet implemented in gatesim";
+            else if (type == 'dreg' || type == 'dlatch' || type == 'dlatchn') {
+                d = new Storage(this, name, type, connections, properties);
+                this.devices.push(d);
+                this.device_map[name] = d;
             }
             else if (type == 'memory') {
                 throw "Device "+type+" not yet implemented in gatesim";
@@ -452,8 +448,12 @@ var gatesim = (function() {
 
             // let fanouts know our value changed
             for (var i = this.fanouts.length - 1; i >= 0; i -= 1)
-                this.fanouts[i].process_event(event);
+                this.fanouts[i].process_event(event,this);
         }
+    };
+
+    Node.prototype.last_event_time = function () {
+        return this.times[this.times.length - 1];
     };
 
     Node.prototype.finalize = function() {
@@ -563,7 +563,6 @@ var gatesim = (function() {
             this.tvpairs = [0, v.args[0]];   // single t,v pair
         } else if (v.type == 'pwl') {
             this.tvpairs = v.args;
-            this.initial_value = v.args[1];
         } else throw "Unrecognized source type "+v.type;
 
         // figure out initial value from first t,v pair
@@ -588,7 +587,7 @@ var gatesim = (function() {
     };
 
     // figure out next event for source -- triggered by last event!
-    Source.prototype.process_event = function(event) {
+    Source.prototype.process_event = function(event,cause) {
         var time = this.network.time;
         var t,v;
 
@@ -842,7 +841,7 @@ var gatesim = (function() {
     };
 
     // evaluation of output values triggered by an event on the input
-    LogicGate.prototype.process_event = function(event) {
+    LogicGate.prototype.process_event = function(event,cause) {
         var onode = this.output;
         var v;
         if (event.type == CONTAMINATE) {
@@ -880,6 +879,92 @@ var gatesim = (function() {
                 }
                 onode.p_event(tpd, v, drive, this.lenient);
             }
+        }
+    };
+
+    ///////////////////////////////////////////////////////////////////////////////
+    //
+    //  Storage elements: dreg, dlatch, dlatchn
+    //
+    ///////////////////////////////////////////////////////////////////////////////
+
+    function Storage(network, name, type, connections, properties) {
+        this.network = network;
+        this.name = name;
+        this.type = type;
+
+        this.d = connections.d;
+        this.clk = connections.clk;
+        this.q = connections.q;
+
+        this.d.add_fanout(this);
+        this.clk.add_fanout(this);
+        this.clk.add_driver(this);
+        //this.clk.set_clock();   // special treatment during timing analysis
+
+        this.properties = properties;
+        this.lenient = properties.lenient !== undefined && properties.lenient !== 0;
+        if (this.properties.cout === undefined) this.properties.cout = 0;
+        if (this.properties.cin === undefined) this.properties.cin = 0;
+        if (this.properties.tcd === undefined) this.properties.tcd = 0;
+        if (this.properties.tpdf === undefined) this.properties.tpdf = this.properties.tpd || 0;
+        if (this.properties.tpdr === undefined) this.properties.tpdr = this.properties.tpd || 0;
+        if (this.properties.tr === undefined) this.properties.tr = 0;
+        if (this.properties.ts === undefined) this.properties.ts = 0;
+        if (this.properties.th === undefined) this.properties.th = 0;
+    }
+
+    Storage.prototype.initialize = function() {
+	this.min_setup = undefined;
+	this.min_setup_time = undefined;
+        this.state = VX;
+    };
+
+    Storage.prototype.capacitance = function(node) {
+        if (this.q == node) return this.properties.cout;
+        else return this.properties.cin;
+    };
+
+    // is node a tristate output of this device?
+    Storage.prototype.tristate = function(node) { return false; };
+
+    // evaluation of output values triggered by an event on the input
+    Storage.prototype.process_event = function(event,cause) {
+        if (this.type == 'dreg') {
+	    if (this.clk.v == V0) this.state = this.d.v;
+	    else if (this.clk == cause) {
+	        if (this.clk.v == V1) {  // rising clock edge!
+		    // track minimum setup time we see
+                    var now = this.network.time;
+                    var d_time = this.d.last_event_time();
+		    var tsetup = this.network.time - d_time;
+		    if (now > 0 && d_time && tsetup < this.min_setup) {
+		        this.min_setup = tsetup;
+		        this.min_setup_time = now;
+		    }
+		    // report setup time violations?
+
+		    // for lenient dreg's, q output is propagated only
+		    // when new output value differs from current one
+		    if (!this.lenient || this.state != this.q.v)
+		        this.q.c_event(this.properties.tcd);
+
+		    this.q.p_event((this.state == V0) ? this.properties.tpdf : this.properties.tpdr,
+				   this.state,
+				   (this.state == V0) ? this.properties.tf : this.properties.tr,
+				   this.lenient);
+	        } else {
+		    // X on clock won't contaminate value in master if we're
+		    // a lenient register and master == D
+		    if (!this.lenient || this.state != this.d.v) this.state = VX;
+
+		    // send along to Q if we're not lenient or if master != Q
+		    if (!this.lenient || this.state != this.q.v)
+		        this.q.p_event(Math.min(this.properties.tpdf,this.properties.tpdr),
+                                       VX,0,this.lenient);
+	        }
+	    }
+        } else {
         }
     };
 

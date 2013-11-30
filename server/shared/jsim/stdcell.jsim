@@ -201,9 +201,13 @@ Gmux4 mux4 s0 s1 d0 d1 d2 d3 z size=66 tcd=40ps tpd=190ps tr=4500 tf=2500 cin=.0
 ********************************************************************************/
 
 .subckt dreg d clk q
-Gdreg dreg d clk q size=56 tcd=30ps tpd=190ps tr=4300 tf=2500 cin=.002pf ts=200ps th=25ps
+Gdreg dreg d clk q size=56 tcd=30ps tpd=190ps tr=4300 tf=2500 cin=.002pf ts=200ps th=25ps lenient=1
 .ends
 
 .subckt dlatch d clk q
-Gdlatch dlatch d clk q size=36 tcd=30ps tpd=190ps tr=4300 tf=2500 cin=.002pf
+Gdlatch dlatch d clk q size=36 tcd=30ps tpd=190ps tr=4300 tf=2500 cin=.002pf ts=200ps th=25ps lenient=1
+.ends
+
+.subckt dlatchn d clk q
+Gdlatch dlatchn d clk q size=36 tcd=30ps tpd=190ps tr=4300 tf=2500 cin=.002pf ts=200ps th=25ps lenient=1
 .ends

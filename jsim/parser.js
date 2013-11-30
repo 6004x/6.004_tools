@@ -1959,11 +1959,48 @@ var Parser = (function(){
               function() { callback(undefined); });
     }
 
+    // see if we can use iterator notation for args: all elements of nlist are of the
+    // form foo[n] with a consistent step between successive n.  Returns nlist, possibly
+    // updated to have a single element foo[start:stop:step].
+    function iterator_notation(nlist) {
+        var aname,afirst,alast,astep;
+        for (var i = 0; i < nlist.length; i += 1) {
+            var m = nlist[i].match(/(\w*)\[(\d+)\]/);  // look for foo[17]
+            if (m != null) {
+                if (aname == undefined || aname==m[1]) {
+                    aname = m[1];  // in case aname was undefined
+                    var index = parseInt(m[2]);
+                    if (afirst === undefined) {
+                        afirst = alast = index;
+                        continue;
+                    } else {
+                        var step = index - alast;
+                        alast = index;
+                        if (astep === undefined) {
+                            astep = step;
+                            continue;
+                        } else if (astep == step) continue;
+                    }
+                }
+            }
+            aname = undefined;
+            break;
+        }
+        if (aname && afirst && astep) {
+            var arg = aname + '[' + afirst + ':' + alast;
+            if (astep != 1 && astep != -1) arg += ':' + Math.abs(astep);
+            arg += ']';
+            nlist = [arg];
+        }
+        return nlist;
+    }
+
     /***************************
      Exports
      ****************************/
     return {parse:xparse, //tokenize,
             parse_plot: parse_plot,
+            iterator_notation: iterator_notation,
             CustomError:CustomError,
             //            parse_number:parse_number
            };

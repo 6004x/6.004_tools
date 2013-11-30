@@ -219,7 +219,7 @@ var Checkoff = (function(){
                     if (v != e) given.push('<span class="wrong">'+v+'</span>');
                     else given.push(v);
                 }
-                throw new VerifyError('Verify error',check.time,check.nodes,
+                throw new VerifyError('Verify error',check.time,Parser.iterator_notation(check.nodes),
                                       exp.join(''),given.join(''));
             }
         });

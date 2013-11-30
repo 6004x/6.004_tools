@@ -613,7 +613,7 @@ var plot = (function() {
         c.moveTo(13.5,7.5); c.lineTo(7.5,13.5);
         c.stroke();
 
-        // add legend: translucent background with 5px padding, 15x15 color key, signal label
+        // add legend: translucent background with 5px padding, 10x10 color key, signal label
         var left = dataset.left;
         var top = dataset.top;
         dataset.legend_right = [];
@@ -622,22 +622,22 @@ var plot = (function() {
             var w = c.measureText(dataset.name[dindex]).width;
             c.globalAlpha = 0.7;
             c.fillStyle = element_style;
-            c.fillRect(left, top, w + 30, 25);
+            c.fillRect(left, top, w + 30, 20);
             c.globalAlpha = 1.0;
 
             c.fillStyle = dataset.color[dindex];
-            c.fillRect(left+5, top+5, 15, 15);
-            c.strokeRect(left+5, top+5, 15, 15);
+            c.fillRect(left+5, top+5, 10, 10);
+            c.strokeRect(left+5, top+5, 10, 10);
 
             c.fillStyle = normal_style;
             c.textAlign = 'left';
             c.textBaseline = 'bottom';
-            c.fillText(dataset.name[dindex], left + 25, top+20);
+            c.fillText(dataset.name[dindex], left + 20, top+18);
 
             // remember where legend ends so we can add cursor readout later
-            dataset.legend_right.push(left + 25 + w);
+            dataset.legend_right.push(left + 20 + w);
             dataset.legend_top.push(top);
-            top += 20;
+            top += 15;
         }
     }
 
@@ -727,14 +727,14 @@ var plot = (function() {
                         var w = c.measureText(label).width;
                         c.fillStyle = element_style;
                         c.globalAlpha = 0.7;
-                        c.fillRect(lx,ly,w+5,25);
+                        c.fillRect(lx,ly,w+5,20);
 
                         // now plot the label itself
                         c.textAlign = 'left';
                         c.textBaseline = 'bottom';
                         c.fillStyle = normal_style;
                         c.globalAlpha = 1.0;
-                        c.fillText(label,lx,ly+20);
+                        c.fillText(label,lx,ly+18);
                     }
                 }
             }
