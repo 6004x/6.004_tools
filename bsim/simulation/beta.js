@@ -398,26 +398,28 @@ BSim.Beta = function() {
         mCurrentStepWords = [];
         mCurrentStepRegisters = {};
 
-        mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
-        // Continue on with instructions as planned.
-        var instruction = this.readWord(mPC);
-        var old_pc = mPC;
-        mPC += 4; // Increment this early so that we have the right reference for exceptions.
-        if(instruction === 0) {
-            mPC -= 4;
-            return false;
-        }
-        var decoded = this.decodeInstruction(instruction);
-        var op = BSim.Beta.Opcodes[decoded.opcode];
-        if(!op) {
-            // Illegal opcode.
-            return this.handleIllegalInstruction(decoded);
-        }
-        if(op.privileged && !(mPC & SUPERVISOR_BIT)) {
-            return this.handleIllegalInstruction(decoded);
-        }
-        if(!mRunning) this.trigger('change:pc', mPC);
+        //cjt: move try up here so that instruction fetch errors are caught
         try {
+            mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
+            // Continue on with instructions as planned.
+            var instruction = this.readWord(mPC);
+            var old_pc = mPC;
+            mPC += 4; // Increment this early so that we have the right reference for exceptions.
+            if(instruction === 0) {
+                mPC -= 4;
+                return false;
+            }
+            var decoded = this.decodeInstruction(instruction);
+            var op = BSim.Beta.Opcodes[decoded.opcode];
+            if(!op) {
+                // Illegal opcode.
+                return this.handleIllegalInstruction(decoded);
+            }
+            if(op.privileged && !(mPC & SUPERVISOR_BIT)) {
+                return this.handleIllegalInstruction(decoded);
+            }
+            if(!mRunning) this.trigger('change:pc', mPC);
+            //cjt: previous location of try
             var ret = null;
             if(op.has_literal) {
                 ret = op.exec.call(this, decoded.ra, decoded.literal, decoded.rc);
@@ -438,6 +440,7 @@ BSim.Beta = function() {
             return ret;
         } catch(e) {
             if(e instanceof BSim.Beta.RuntimeError) {
+                e.message += ' [PC = 0x'+BSim.Common.FormatWord(mPC)+']';
                 this.trigger('error', e);
                 this.setPC(old_pc, true);
                 return false;
