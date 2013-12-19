@@ -277,56 +277,42 @@ var Folders = (function(){
             _.each(files, function(file) {
                 var fileName = file.name;
                 var path = file.path;
-                var collapseName = 'sharedcollapse'+(path).replace(/(\/|\s)/g, '_');
-                
-                //collapseName is name without whitespace
-                if(fileName.indexOf('~') > -1){
-                    //metadata, ignore
-                    // //console.log(name);
-                } else {
-                    //if the name does not have a period, then it is a file and not a folder
-                    var listVar=$('<li>').addClass('file_name')
-                            .attr('data-path', path)
-                            .append($('<span>'+fileName+'</span>'));
 
-                    var deleteButton = buildListButton('icon-trash', deleteFile, 'file_button', 'Delete');
-                    var renameButton = buildListButton('icon-pencil', renameFile, 'file_button', 'Rename');
-                    // var downloadButton = buildListButton('icon-download-alt', null, 'file_button', 'Download');
+                var listVar=$('<li>').addClass('file_name')
+                        .attr('data-path', path)
+                        .append($('<span>'+fileName+'</span>'));
 
-                    var fileButtonDiv = addDiv('file_button_div');
+                var deleteButton = buildListButton('icon-trash', deleteFile, 'file_button', 'Delete');
+                var renameButton = buildListButton('icon-pencil', renameFile, 'file_button', 'Rename');
+                // var downloadButton = buildListButton('icon-download-alt', null, 'file_button', 'Download');
 
-                    var timeOut;
-                    fileButtonDiv.append(renameButton, deleteButton);
+                var fileButtonDiv = addDiv('file_button_div');
+                fileButtonDiv.append(renameButton, deleteButton);
+                listVar.append(fileButtonDiv);
+                listVar.click(function(e){
+                    getFile(path);
+                });
+                parentNode.append(listVar);
 
-                    listVar.append(fileButtonDiv);
-
-                    listVar.click(function(e){
-                        getFile(path);
-                    });
-                    
-                    parentNode.append(listVar);
-
-                    function cloneFileName(e){
-                        var current = $(e.currentTarget);
-                        var div = $('<div>').append(current.text()).addClass('dragging_div file_name');
-                        parentNode.append(div);
-                        return div;
-                    }
-                    listVar.draggable({
-                        'containment' : '.file_paths',
-                        'cursor' : 'move',
-                        'delay' : 300,
-                        'helper' : cloneFileName,
-                        'distance' : 10,
-                        'revert' : 'invalid',
-                        'zIndex' : 100,
-                        'cursorAt' : {'left' : 20},
-                        'drag' : function(e, ui){
-
-                        }
-                    });
-                    
+                function cloneFileName(e){
+                    var current = $(e.currentTarget);
+                    var div = $('<div>').append(current.text()).addClass('dragging_div file_name');
+                    parentNode.append(div);
+                    return div;
                 }
+                listVar.draggable({
+                    'containment' : '.file_paths',
+                    'cursor' : 'move',
+                    'delay' : 300,
+                    'helper' : cloneFileName,
+                    'distance' : 10,
+                    'revert' : 'invalid',
+                    'zIndex' : 100,
+                    'cursorAt' : {'left' : 20},
+                    'drag' : function(e, ui){
+
+                    }
+                });
             });
         }
         var levelShared = 0;
@@ -436,27 +422,17 @@ var Folders = (function(){
             });
             _.each(files, function(file) {
                 var fileName = file.name;
-                var path = '/shared/' + file.path;
-                var collapseName = 'collapse'+(path).replace(/(\/|\s)/g, '_');
-                
-                //collapseName is name without whitespace
-                if(fileName.indexOf('~') > -1){
-                    //metadata, ignore
-                    // //console.log(name);
-                } else {
-                    //if the name does not have a period, then it is a file and not a folder
-                    var listVar=$('<li>').addClass('file_name shared_file_name')
-                            .attr('data-path', path)
-                            .append($('<span>'+fileName+'</span>'));
+                var path = '/shared' + file.path;
 
+                var listVar=$('<li>').addClass('file_name shared_file_name')
+                        .attr('data-path', path)
+                        .append($('<span>'+fileName+'</span>'));
+
+                listVar.click(function(e){
+                    getFile(path);
+                });
                     
-                    listVar.click(function(e){
-                        getFile(path);
-                    });
-                    
-                    parentNode.append(listVar);
-                    
-                }
+                parentNode.append(listVar);
             });
         }
     }
