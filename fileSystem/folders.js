@@ -575,6 +575,7 @@ var Folders = (function(){
             e.stopPropagation();
         });
 
+        /*cjt
         //filling in text box with default value
         var count = 0;
         var defaultName = defaultText.substring(0, defaultText.lastIndexOf('.'));
@@ -587,6 +588,8 @@ var Folders = (function(){
             newFileNameTemp = defaultName + '-' + count + defaultType;
             count++;
         }
+         */
+        var newFileNameTemp = defaultText;
 
 	
         input.val(newFileNameTemp);
@@ -707,11 +710,7 @@ var Folders = (function(){
 		
                 return false;
             } 
-            var newFileName = '';
-            if(fileName.indexOf('.') < 0)
-                newFileName=file_path+fileName+'.'+editMode;
-            else
-                newFileName=file_path+fileName;
+            var newFileName = (file_path != '') ? file_path+'/'+fileName : fileName;
             //checks that there is not already another file with that name.
             if (FileSystem.isFile(newFileName)){
                 actions.showError(' file already exists ');
@@ -732,7 +731,7 @@ var Folders = (function(){
 
                 return false;
             }
-            var folderPath = file_path + folderName;
+            var folderPath = (file_path != '') ? file_path+'/'+folderName : folderName;
             
             //check hopefully there is not another folder already with that name. 
             if(FileSystem.isFolder(folderPath)) {

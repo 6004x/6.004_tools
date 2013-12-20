@@ -4,7 +4,9 @@
 
 var FileSystem= (function(){
     var server_url = 'https://computationstructures.appspot.com/';
-    var shared_url = 'http://horus.csail.mit.edu/~cjt/cs/tools/';
+    var shared_url = 'http://horus.csail.mit.edu/~cjt/cs/tools';
+    var saved_file_list = [];
+    var saved_folder_list = [];
 
     function server_request(url,data,callback) {
         $.ajax(server_url+url, {
@@ -21,6 +23,19 @@ var FileSystem= (function(){
             error: function(jqXHR,status,error) {
                 // provide error as a json response
                 if (callback) callback({_error: 'Server '+status+' '+error});
+            }
+        });
+    }
+
+    function shared_request(url,dataType,succeed,fail) {
+        $.ajax(shared_url+url, {
+            type: 'GET',
+            dataType: dataType,
+            success: function(response) {
+                succeed(response);
+            },
+            error: function(jqXHR,status,error) {
+                if (fail) fail('Server '+status+' '+error);
             }
         });
     }
@@ -68,6 +83,7 @@ var FileSystem= (function(){
     function build_tree(flist,root_name) {
         var root = {name: root_name || '???', path: '', folders: {}, files: {}};
 
+        flist.sort();  // keep names in order
         $.each(flist,function (index,fname) {
             // current folder starts at the root
             var dir = root;
@@ -77,15 +93,18 @@ var FileSystem= (function(){
             var components = fname.split("/");
             $.each(components,function (nindex,name) {
                 if (nindex == components.length - 1) {
-                    // last component is the file name, add to current folder
-                    dir.files[name] = {name: name, path: dir.path + '/' + name};
+                    if (name.length > 0) {
+                        // last component is the file name, add to current folder
+                        dir.files[name] = {name: name, path: (dir.path != '') ? dir.path+'/'+ name : name};
+                    }
                 } else {
                     // see if already have a (sub)folder of this name
                     var child = dir.folders[name];
                     if (child === undefined) {
                         // if not create a new folder, save in parent
-                        child = {name: name, path: dir.path + '/' + name, folders: {}, files: {}};
+                        child = {name: name, path: (dir.path != '') ? dir.path+'/'+name : name, folders: {}, files: {}};
                         dir.folders[name] = child;
+                        saved_folder_list.push(child.path);
                     }
                     // descend a level in the folder tree
                     dir = child;
@@ -104,6 +123,7 @@ var FileSystem= (function(){
                            {'action': 'list'},
                            function (response) {
                                if (response._error === undefined) {
+                                   saved_file_list = response.list;  // remember for later reference
                                    var tree = build_tree(response.list);
                                    succeed(tree,sessionStorage.getItem('user'));
                                } else {
@@ -115,57 +135,123 @@ var FileSystem= (function(){
     }
 
     function getSharedFileList(succeed,fail) {
-        $.ajax(shared_url+'shared.json', {
-            type: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                var tree = build_tree(response.list,'shared');
-                succeed(tree);
-            },
-            error: function(jqXHR,status,error) {
-                if (fail) fail('Server '+status+' '+error);
-            }
-        });
+        shared_request('/shared.json','json',
+                       function(response) { succeed(build_tree(response.list,'shared')); },fail);
     }
 
     function getUserName() {
         return sessionStorage.getItem('user');
     }
 
-    function isFolder() {
+    function isFolder(filename) {
+        return saved_folder_list.indexOf(filename) != -1;
     }
 
-    function newFolder() {
+    function newFolder(filename,succeed,fail) {
+        server_request('file/'+filename+'/',
+                       {action: 'save',contents: ''},
+                       function(response){
+                           if (response._error) {
+                               if (fail) fail(response._error);
+                           } else {
+                               if (saved_folder_list.indexOf(filename) == -1)
+                                   saved_folder_list.push(filename);
+                               succeed();
+                           }
+                       });
     }
 
-    function isFile() {
+    function isFile(filename) {
+        return saved_file_list.indexOf(filename) != -1;
     }
 
-    function newFile() {
+    function newFile(filename,contents,succeed,fail) {
+        server_request('file/'+filename,
+                       {action: 'save',contents: contents},
+                       function(response){
+                           if (response._error) {
+                               if (fail) fail(response._error);
+                           } else {
+                               if (saved_file_list.indexOf(filename) == -1)
+                                   saved_file_list.push(filename);
+                               succeed({name: filename, data: contents});
+                           }
+                       });
     }
 
-    function deleteFile() {
+    function deleteFile(filename,succeed,fail) {
+        server_request('file/'+filename,
+                       {action: 'delete'},
+                       function(response){
+                           if (response._error) {
+                               if (fail) fail(response._error);
+                           } else {
+                               var index = saved_file_list.indexOf(filename);
+                               if (index != -1) saved_file_list.splice(index,1);
+                               succeed();
+                           }
+                       });
     }
 
     function moveFile() {
+        console.log('moveFile',JSON.stringify(arguments));
     }
 
     function copyFile() {
+        console.log('copyFile',JSON.stringify(arguments));
     }
 
     function renameFile() {
+        console.log('renameFile',JSON.stringify(arguments));
     }
 
     function getFile(filename,succeed,fail) {
+        if (filename.match(/^\/shared/))
+            shared_request(filename,'text',function(response) {
+                succeed({name: filename, data: response, shared: true});
+            },fail);
+        else server_request('file/'+filename,
+                            {action: 'load'},
+                            function(response){
+                                if (response._error) {
+                                    if (fail) fail(response._error);
+                                } else {
+                                    succeed({name: filename,
+                                             data: response.file,
+                                             autosave: response.autosave,
+                                             shared: false});
+                                }
+                            });
     }
 
-    function getBackup() {
+    function getBackup(filename,succeed,fail) {
+        server_request('file/'+filename,
+                       {action: 'load'},
+                       function(response){
+                           if (response._error || response.backup === undefined) {
+                               if (fail) fail(response._error);
+                           } else succeed({name: filename, data: response.backup});
+                       });
     }
 
-    function makeAutoSave() {
+    function makeAutoSave(filename,contents,succeed,fail) {
+        server_request('file/'+filename,
+                       {action: 'autosave',contents: contents},
+                       function(response){
+                           if (response._error) {
+                               if (fail) fail(response._error);
+                           } else succeed({name: filename, data: contents});
+                       });
     }
 
-    function saveFile() {
+    function saveFile(filename,contents,succeed,fail) {
+        server_request('file/'+filename,
+                       {action: 'save',contents: contents},
+                       function(response){
+                           if (response._error) {
+                               if (fail) fail(response._error);
+                           } else succeed({name: filename, data: contents});
+                       });
     }
 
     return {getFileList: getFileList,
