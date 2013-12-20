@@ -193,16 +193,23 @@ var FileSystem= (function(){
                        });
     }
 
-    function moveFile() {
-        console.log('moveFile',JSON.stringify(arguments));
-    }
+    function renameFile(old_filename,new_filename,succeed,fail) {
+        server_request('file/'+old_filename,
+                       {action: 'rename',path: new_filename},
+                       function(response){
+                           if (response._error) {
+                               if (fail) fail(response._error);
+                           } else {
+                               var index = saved_file_list.indexOf(old_filename);
+                               if (index != -1) saved_file_list.splice(index,1);
 
-    function copyFile() {
-        console.log('copyFile',JSON.stringify(arguments));
-    }
+                               index = saved_file_list.indexOf(new_filename);
+                               if (index == -1) saved_file_list.push(new_filename);
 
-    function renameFile() {
-        console.log('renameFile',JSON.stringify(arguments));
+                               // finish up by returning contents of new file
+                               getFile(new_filename,succeed,fail);
+                           }
+                       });
     }
 
     function getFile(filename,succeed,fail) {
@@ -264,8 +271,6 @@ var FileSystem= (function(){
             isFile: isFile,
             newFile: newFile,
             deleteFile: deleteFile,
-            moveFile: moveFile,
-            copyFile: copyFile,
             renameFile: renameFile,
 
             getBackup: getBackup,

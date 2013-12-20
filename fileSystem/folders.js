@@ -18,17 +18,9 @@ var Folders = (function(){
         }); 
     }
 
-    var isLoadingFileList = false;
     function getFileList(callback, parentNode, sharedNode){
-
         parentNode = parentNode || rootNode.find('.file_paths');
         sharedNode = sharedNode ||  rootNode.find('.shared_file_paths');
-        if(isLoadingFileList) return;
-        isLoadingFileList = true;
-
-        //clears out the old filelist
-        
-        //FileSystem keeps track of the username
 
         //fetch the filelist from server, then add the files to the filesystem.
         FileSystem.getFileList( function(data){
@@ -47,9 +39,7 @@ var Folders = (function(){
                 }
             };
             addFiles(root, parentNode);
-            isLoadingFileList = false;
             FileSystem.getUserName();
-            callback(true);
             FileSystem.getSharedFileList(function(sharedFileList){
                 sharedNode.empty();
                 //console.log(sharedFileList);
@@ -67,7 +57,7 @@ var Folders = (function(){
                 };
                 addSharedFiles(sharedRoot, sharedNode);
             });
-            
+            callback(true);
         }, function(jqXHR,status,errorThrown){
 	    console.log(status);
 	    console.log(errorThrown);
@@ -270,7 +260,14 @@ var Folders = (function(){
                         var folderDestination = $(e.target).data('path');
                         //console.log('file dragged ' + filePath);
                         //console.log('dropped at ' + folderDestination);
-                        dragFile(filePath, folderDestination, 'move');
+
+                        var new_name = filePath.split('/').pop();  // start with old file name
+                        if (folderDestination != '') new_name = folderDestination + '/' + new_name;
+
+                        FileSystem.renameFile(filePath, new_name , function(data){
+                            displayFile(data);
+                            refresh();
+                        });
                     }
                 });
             });
@@ -422,7 +419,7 @@ var Folders = (function(){
             });
             _.each(files, function(file) {
                 var fileName = file.name;
-                var path = '/shared' + file.path;
+                var path = '/shared/' + file.path;
 
                 var listVar=$('<li>').addClass('file_name shared_file_name')
                         .attr('data-path', path)

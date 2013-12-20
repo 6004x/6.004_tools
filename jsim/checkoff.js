@@ -167,7 +167,7 @@ var Checkoff = (function(){
                     // convert results to digital domain (0, 1, X)
                     var vil = mOptions.vil || 0.2;
                     var vih = mOptions.vih || 0.8;
-                    h.yvalues = h.values.map(function(v){ return (v < vil) ? 0 : ((v >= vih) ? 1 : 2); });
+                    h.yvalues = h.yvalues.map(function(v){ return (v < vil) ? 0 : ((v >= vih) ? 1 : 2); });
                 }
                 history[node] = h;
             });
