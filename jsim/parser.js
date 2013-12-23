@@ -2069,6 +2069,21 @@ var Parser = (function(){
 			     v2, 2*t_change + 2*t_pw, v1, per, v1], true);
         }
 
+        // post-processing for clock (like square except you specify period)
+        // clock(v_init,v_plateau,period,duty_cycle,rise_fall)
+        else if (src.fun == 'clock') {
+            v1 = arg_value(src.args, 0, 0); // default init value: 0V
+            v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
+            per = Math.abs(arg_value(src.args, 2, 100e-9)); // default period 100ns
+            var duty_cycle = Math.min(100, Math.abs(arg_value(src.args, 3, 50))); // default duty cycle: 0.5
+            var t_change = Math.abs(arg_value(src.args,4,0.1e-9));   // default rise/fall: .1ns
+            src.args = [v1, v2, per, duty_cycle,t_change]; // remember any defaulted values
+
+            var t_pw = (.01 * duty_cycle) * (per - 2*t_change); // fraction of cycle minus rise and fall time
+            pwl_source(src, [0, v1, t_pw, v1, t_pw + t_change, v2, 2*t_pw + t_change,
+			     v2, 2*t_change + 2*t_pw, v1, per, v1], true);
+        }
+
         // post-processing for triangle
         // triangle(v_init,v_plateau,freq)
         else if (src.fun == 'triangle') {

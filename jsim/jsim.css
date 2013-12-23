@@ -73,3 +73,9 @@ span.wrong {
   display: none;
   cursor: pointer;
 }
+.timing-analysis {
+  overflow: auto;
+  font-family: monospace;
+  white-space: pre;
+  text-align: left;
+}

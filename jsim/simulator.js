@@ -246,6 +246,8 @@ var Simulator = (function(){
         var sim_pane = $('#simulation-pane');
         sim_pane.height($('#editor-pane').height());
 
+        $('.timing-analysis').height(sim_pane.height());
+
         var plots = $('.plot-container');
         if (plots.length > 0) {
             plots[0].resize(plots[0],sim_pane.width(),sim_pane.height());
@@ -566,11 +568,52 @@ var Simulator = (function(){
         //        console.log("data:",dataseries);
     }
     
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    //
+    //  Timing analysis
+    //
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+
+    function timing_analysis(text, filename, div, error_callback){
+        // parse args: input string, filename, success callback, error callback, reset
+        Parser.parse(text, filename, function(data){run_timing_analysis(filename,data,div);},
+                     error_callback, true);
+    }
+
+    function run_timing_analysis(filename,parsed,div) {
+        div.empty();  // we'll fill this with results
+        mDiv = div;
+        
+        var netlist = parsed.netlist;
+        mOptions = parsed.options;
+        
+        if (netlist.length === 0) {
+            div.prepend('<div class="alert alert-danger"> Empty netlist.'+
+                        '<button class="close" data-dismiss="alert">&times;</button></div>');
+            return;
+        }
+
+        //try {
+            var result = gatesim.timing_analysis(netlist,mOptions);
+            var header = "Timing analysis for "+filename+" at "+(new Date().toTimeString());
+            div.prepend($('<div class="timing-analysis"></div>').append(header,result));
+        /*
+        } catch (e) {
+            div.prepend('<div class="alert alert-danger">'+e+
+                        '<button class="close" data-dismiss="alert">&times;</button></div>');
+            return;
+        }*/
+
+    };
+
     /*********************
      Exports 
      **********************/
     return {simulate:simulate,
             hex_logic:hex_logic,
-            resize: resize_sim_pane
+            resize: resize_sim_pane,
+            timing_analysis: timing_analysis
            };
 }());

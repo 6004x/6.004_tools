@@ -69,6 +69,15 @@ $(function() {
         var filename = editor.currentTab();
         Simulator.simulate(content,filename,$('#simulation-pane'),error_catcher,"gate");
     }
+
+    function ta(){
+        $('#split_pane').click();
+        editor.clearErrors();
+        var content = editor.content();
+        if (!content) return;
+        var filename = editor.currentTab();
+        Simulator.timing_analysis(content,filename,$('#simulation-pane'),error_catcher);
+    }
     
     function error_catcher(err){
         if (err instanceof Parser.CustomError){
@@ -88,7 +97,10 @@ $(function() {
     editor.addButtonGroup([new ToolbarButton('<img src="simulate.png" style="position:relative;bottom:1px">',
                                              dls, 'Device-level Simulation'),
                            new ToolbarButton('<img src="gatesim.png" style="position:relative;bottom:2px">',
-                                             gls, 'Gate-level Simulation')]);
+                                             gls, 'Gate-level Simulation'),
+                           new ToolbarButton('<img src="timing_analysis.png" style="position:relative;bottom:2px">',
+                                             ta, 'Timing Analysis')
+                          ]);
     
     editor.addButtonGroup([new ToolbarButton('Checkoff',function(){
         try{
