@@ -226,7 +226,7 @@ var Parser = (function(){
      Interpret: turns a token array into a hierarchal representation then calls the flattening functions
      ***************************/
     function interpret(token_array){
-        globals = [];
+        globals = ['gnd'];
         plots = [];
         options = {};
         analyses = [];
@@ -1995,13 +1995,197 @@ var Parser = (function(){
         return nlist;
     }
 
+    ///////////////////////////////////////////////////////////////////////////////
+    //
+    //  Source parsing
+    //
+    ///////////////////////////////////////////////////////////////////////////////
+
+    // argument is an object with type and args attributes describing the source's value
+    //    type: one of dc,step,square,triangle,sin,pulse,pwl,pwl_repeating
+    //    args: list of numbers
+
+    // returns an object with the following attributes:
+    //   fun -- name of source function
+    //   args -- list of argument values
+    //   value(t) -- compute source value at time t
+    //   period -- repeat period for periodic sources (0 if not periodic)
+
+    function parse_source(v) {
+        // generic parser: parse v as either <value> or <fun>(<value>,...)
+        var src = {};
+	src.fun = v.type;
+	src.args = v.args;
+        src.period = 0; // Default not periodic
+        src.value = function(t) {
+            return 0;
+        }; // overridden below
+
+        var v1,v2,freq,per,td,tr,tf;
+
+        // post-processing for constant sources
+        // dc(v)
+        if (src.fun == 'dc') {
+            var val = arg_value(src.args, 0, 0);
+            src.args = [val];
+            src.value = function(t) {
+                return val;
+            }; // closure
+        }
+
+        // post-processing for impulse sources
+        // impulse(height,width)
+        else if (src.fun == 'impulse') {
+            var h = arg_value(src.args, 0, 1); // default height: 1
+            var w = Math.abs(arg_value(src.args, 2, 1e-9)); // default width: 1ns
+            src.args = [h, w]; // remember any defaulted values
+            pwl_source(src, [0, 0, w / 2, h, w, 0], false);
+        }
+
+        // post-processing for step sources
+        // step(v_init,v_plateau,t_delay,t_rise)
+        else if (src.fun == 'step') {
+            v1 = arg_value(src.args, 0, 0); // default init value: 0V
+            v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
+            td = Math.max(0, arg_value(src.args, 2, 0)); // time step starts
+            tr = Math.abs(arg_value(src.args, 3, 0.1e-9)); // default rise/fall time: .1ns
+            src.args = [v1, v2, td, tr]; // remember any defaulted values
+            pwl_source(src, [td, v1, td + tr, v2], false);
+        }
+
+        // post-processing for square wave
+        // square(v_init,v_plateau,freq,duty_cycle,rise_fall)
+        else if (src.fun == 'square') {
+            v1 = arg_value(src.args, 0, 0); // default init value: 0V
+            v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
+            freq = Math.abs(arg_value(src.args, 2, 1)); // default frequency: 1Hz
+            var duty_cycle = Math.min(100, Math.abs(arg_value(src.args, 3, 50))); // default duty cycle: 0.5
+            var t_change = Math.abs(arg_value(src.args,4,0.1e-9));   // default rise/fall: .1ns
+            src.args = [v1, v2, freq, duty_cycle,t_change]; // remember any defaulted values
+
+            per = freq === 0 ? Infinity : 1 / freq;
+            var t_pw = (.01 * duty_cycle) * (per - 2*t_change); // fraction of cycle minus rise and fall time
+            pwl_source(src, [0, v1, t_pw, v1, t_pw + t_change, v2, 2*t_pw + t_change,
+			     v2, 2*t_change + 2*t_pw, v1, per, v1], true);
+        }
+
+        // post-processing for triangle
+        // triangle(v_init,v_plateau,freq)
+        else if (src.fun == 'triangle') {
+            v1 = arg_value(src.args, 0, 0); // default init value: 0V
+            v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
+            freq = Math.abs(arg_value(src.args, 2, 1)); // default frequency: 1s
+            src.args = [v1, v2, freq]; // remember any defaulted values
+
+            per = freq === 0 ? Infinity : 1 / freq;
+            pwl_source(src, [0, v1, per / 2, v2, per, v1], true);
+        }
+
+        // post-processing for pwl and pwlr sources
+        // pwl[r](t1,v1,t2,v2,...)
+        else if (src.fun == 'pwl' || src.fun == 'pwl_repeating') {
+            pwl_source(src, src.args, src.fun == 'pwl_repeating');
+        }
+
+        // post-processing for pulsed sources
+        // pulse(v_init,v_plateau,t_delay,t_width,t_rise,t_fall,t_period)
+        else if (src.fun == 'pulse') {
+            v1 = arg_value(src.args, 0, 0); // default init value: 0V
+            v2 = arg_value(src.args, 1, 1); // default plateau value: 1V
+            td = Math.max(0, arg_value(src.args, 2, 0)); // time pulse starts
+            var pw = Math.abs(arg_value(src.args, 3, 1e9)); // default pulse width: "infinite"
+            tr = Math.abs(arg_value(src.args, 4, 0.1e-9)); // default rise time: .1ns
+            tf = Math.abs(arg_value(src.args, 5, 0.1e-9)); // default rise time: .1ns
+            per = Math.abs(arg_value(src.args, 6, 1e9)); // default period: "infinite"
+            src.args = [v1, v2, td, tr, tf, pw, per];
+
+            var t1 = td; // time when v1 -> v2 transition starts
+            var t2 = t1 + tr; // time when v1 -> v2 transition ends
+            var t3 = t2 + pw; // time when v2 -> v1 transition starts
+            var t4 = t3 + tf; // time when v2 -> v1 transition ends
+
+            pwl_source(src, [t1, v1, t2, v2, t3, v2, t4, v1, per, v1], true);
+        }
+
+        // post-processing for sinusoidal sources
+        // sin(freq_hz,v_offset,v_amplitude,t_delay,phase_offset_degrees)
+        else if (src.fun == 'sin') {
+            freq = Math.abs(arg_value(src.args, 0, 1)); // default frequency: 1Hz
+            src.period = 1.0 / freq;
+            var voffset = arg_value(src.args, 1, 0); // default offset voltage: 0V
+            var va = arg_value(src.args, 2, 1); // default amplitude: -1V to 1V
+            td = Math.max(0, arg_value(src.args, 3, 0)); // default time delay: 0sec
+            var phase = arg_value(src.args, 4, 0); // default phase offset: 0 degrees
+            src.args = [voffset, va, freq, td, phase];
+
+            phase /= 360.0;
+
+            // return value of source at time t
+            src.value = function(t) { // closure
+                if (t < td) return voffset + va * Math.sin(2 * Math.PI * phase);
+                else return voffset + va * Math.sin(2 * Math.PI * (freq * (t - td) + phase));
+            };
+        }
+
+        // object has all the necessary info to compute the source value
+        src.dc = src.value(0); // DC value is value at time 0
+        return src;
+    }
+
+    function pwl_source(src, tv_pairs, repeat) {
+        var nvals = tv_pairs.length;
+        src.tvpairs = tv_pairs;
+        if (repeat) src.period = tv_pairs[nvals - 2]; // Repeat period of source
+        if (nvals % 2 == 1) nvals -= 1; // make sure it's even!
+
+        if (nvals <= 2) {
+            // handle degenerate case
+            src.value = function(t) {
+                return nvals == 2 ? tv_pairs[1] : 0;
+            };
+        }
+        else {
+            src.value = function(t) { // closure
+                // make time periodic if values are to be repeated
+                if (repeat) t = Math.fmod(t, tv_pairs[nvals - 2]);
+                var last_t = tv_pairs[0];
+                var last_v = tv_pairs[1];
+                if (t > last_t) {
+                    var next_t, next_v;
+                    for (var i = 2; i < nvals; i += 2) {
+                        next_t = tv_pairs[i];
+                        next_v = tv_pairs[i + 1];
+                        if (next_t > last_t) // defend against bogus tv pairs
+                            if (t < next_t) return last_v + (next_v - last_v) * (t - last_t) / (next_t - last_t);
+                        last_t = next_t;
+                        last_v = next_v;
+                    }
+                }
+                return last_v;
+            };
+        }
+    }
+
+    // helper function: return args[index] if present, else default_v
+    function arg_value(args, index, default_v) {
+        var result = args[index];
+        if (result === undefined) result = default_v;
+        return result;
+    }
+
+    // we need fmod in the Math library!
+    Math.fmod = function(numerator, denominator) {
+        var quotient = Math.floor(numerator / denominator);
+        return numerator - quotient * denominator;
+    };
+
     /***************************
      Exports
      ****************************/
     return {parse:xparse, //tokenize,
             parse_plot: parse_plot,
             iterator_notation: iterator_notation,
-            CustomError:CustomError,
-            //            parse_number:parse_number
+            CustomError: CustomError,
+            parse_source: parse_source
            };
 }());

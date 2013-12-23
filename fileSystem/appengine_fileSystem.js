@@ -4,6 +4,7 @@
 
 var FileSystem= (function(){
     var server_url = 'https://computationstructures.appspot.com/';
+//    var shared_url = 'http://computationstructures.org/tools';
     var shared_url = 'http://horus.csail.mit.edu/~cjt/cs/tools';
     var saved_file_list = [];
     var saved_folder_list = [];
@@ -44,7 +45,7 @@ var FileSystem= (function(){
     function validate_user(callback) {
         // if user has already signed in, life is easy
         var user = sessionStorage.getItem('user');
-        if (user !== undefined) {
+        if (user) {
             callback(user);
             return;
         }

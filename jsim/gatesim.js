@@ -558,12 +558,27 @@ var gatesim = (function() {
         this.vil = network.options.vil || 0.1;
         this.vih = network.options.vih || 0.9;
 
-        var v = properties.value;
-        if (v.type == 'dc') {
+        var v = Parser.parse_source(properties.value);
+        if (v.fun == 'sin') throw "Can't use sin() sources in gate-level simulation";
+
+        if (v.fun == 'dc') {
             this.tvpairs = [0, v.args[0]];   // single t,v pair
-        } else if (v.type == 'pwl') {
-            this.tvpairs = v.args;
-        } else throw "Unrecognized source type "+v.type;
+            this.period = 0;
+        } else {
+            this.tvpairs = v.tvpairs;
+            this.period = v.period;
+
+            // for periodic source, construct two periods of tvpairs so that
+            // it's easy to search for next transition when it's in the next
+            // period.
+            if (this.period !== 0) {
+                this.tvpairs = this.tvpairs.slice(0);  // copy tv pairs
+                for (var i = 0; i < v.tvpairs.length; i += 2) {
+                    this.tvpairs.push(v.tvpairs[i] + this.period);  // time in the next period
+                    this.tvpairs.push(v.tvpairs[i+1]);   // voltage
+                }
+            }
+        }
 
         // figure out initial value from first t,v pair
         this.initial_value = this.tvpairs[1] <= this.vil ? V0 : (this.tvpairs[1] >= this.vih ? V1 : VX);
@@ -605,8 +620,17 @@ var gatesim = (function() {
     };
 
     // return time of next contamination event for pwl source
-    Source.prototype.next_contamination_time = function(time) {
-        time += 1e-13;  // get past current time by epsilon
+    Source.prototype.next_contamination_time = function(xtime) {
+        xtime += 1e-13;  // get past current time by epsilon
+
+        // handle periodic sources
+        var time = xtime;   // time we'll be searching for in tvpairs
+        var tbase = 0;      // time at beginning of period
+        if (this.period !== 0) {
+            time = Math.fmod(time,this.period);
+            tbase = xtime - time;
+        }
+
         var tlast = 0;
         var vlast = 0;
         var npairs = this.tvpairs.length;
@@ -617,11 +641,11 @@ var gatesim = (function() {
             if (i > 0 && time <= t) {
                 if (vlast >= this.vih && v < this.vih) {
                     et = tlast + (t - tlast)*(this.vih - vlast)/(v - vlast);
-                    if (et > time) return et;
+                    if (et > time) return tbase+et;
                 }
                 else if (vlast <= this.vil && v > this.vil) {
                     et = tlast + (t - tlast)*(this.vil - vlast)/(v - vlast);
-                    if (et > time) return et;
+                    if (et > time) return tbase+et;
                 }
             }
             tlast = t;
@@ -631,8 +655,17 @@ var gatesim = (function() {
     };
 
     // return {time:t, value: v} of next propagation event for pwl source
-    Source.prototype.next_propagation_time = function (time) {
-        time += 1e-13;  // get past current time by epsilon
+    Source.prototype.next_propagation_time = function (xtime) {
+        xtime += 1e-13;  // get past current time by epsilon
+
+        // handle periodic sources
+        var time = xtime;   // time we'll be searching for in tvpairs
+        var tbase = 0;      // time at beginning of period
+        if (this.period !== 0) {
+            time = Math.fmod(time,this.period);
+            tbase = xtime - time;
+        }
+
         var tlast = 0;
         var vlast = 0;
         var npairs = this.tvpairs.length;
@@ -643,11 +676,11 @@ var gatesim = (function() {
             if (i > 0 && time <= t) {
                 if (vlast < this.vih && v >= this.vih) {
                     et = tlast + (t - tlast)*(this.vih - vlast)/(v - vlast);
-                    if (et > time) return {time: et, value: V1};
+                    if (et > time) return {time: tbase+et, value: V1};
                 }
                 else if (vlast > this.vil && v <= this.vil) {
                     et = tlast + (t - tlast)*(this.vil - vlast)/(v - vlast);
-                    if (et > time) return {time: et, value: V0};
+                    if (et > time) return {time: tbase+et, value: V0};
                 }
             }
             tlast = t;
@@ -899,7 +932,7 @@ var gatesim = (function() {
 
         this.d.add_fanout(this);
         this.clk.add_fanout(this);
-        this.clk.add_driver(this);
+        this.q.add_driver(this);
         //this.clk.set_clock();   // special treatment during timing analysis
 
         this.properties = properties;
@@ -915,8 +948,8 @@ var gatesim = (function() {
     }
 
     Storage.prototype.initialize = function() {
-	this.min_setup = undefined;
-	this.min_setup_time = undefined;
+        this.min_setup = undefined;
+        this.min_setup_time = undefined;
         this.state = VX;
     };
 
@@ -931,39 +964,41 @@ var gatesim = (function() {
     // evaluation of output values triggered by an event on the input
     Storage.prototype.process_event = function(event,cause) {
         if (this.type == 'dreg') {
-	    if (this.clk.v == V0) this.state = this.d.v;
-	    else if (this.clk == cause) {
-	        if (this.clk.v == V1) {  // rising clock edge!
-		    // track minimum setup time we see
+            // if CLK is 0, master latch (ie, state) follows D input
+            if (this.clk.v == V0) this.state = this.d.v;
+            // otherwise we only care about event if CLK is changing
+            else if (this.clk == cause) {
+                if (this.clk.v == V1) {  // rising clock edge!
+                    // track minimum setup time we see
                     var now = this.network.time;
                     var d_time = this.d.last_event_time();
-		    var tsetup = this.network.time - d_time;
-		    if (now > 0 && d_time && tsetup < this.min_setup) {
-		        this.min_setup = tsetup;
-		        this.min_setup_time = now;
-		    }
-		    // report setup time violations?
+                    var tsetup = this.network.time - d_time;
+                    if (now > 0 && d_time && tsetup < this.min_setup) {
+                        this.min_setup = tsetup;
+                        this.min_setup_time = now;
+                    }
+                    // report setup time violations?
 
-		    // for lenient dreg's, q output is propagated only
-		    // when new output value differs from current one
-		    if (!this.lenient || this.state != this.q.v)
-		        this.q.c_event(this.properties.tcd);
+                    // for lenient dreg's, q output is propagated only
+                    // when new output value differs from current one
+                    if (!this.lenient || this.state != this.q.v)
+                        this.q.c_event(this.properties.tcd);
 
-		    this.q.p_event((this.state == V0) ? this.properties.tpdf : this.properties.tpdr,
-				   this.state,
-				   (this.state == V0) ? this.properties.tf : this.properties.tr,
-				   this.lenient);
-	        } else {
-		    // X on clock won't contaminate value in master if we're
-		    // a lenient register and master == D
-		    if (!this.lenient || this.state != this.d.v) this.state = VX;
+                    this.q.p_event((this.state == V0) ? this.properties.tpdf : this.properties.tpdr,
+                                   this.state,
+                                   (this.state == V0) ? this.properties.tf : this.properties.tr,
+                                   this.lenient);
+                } else {
+                    // X on clock won't contaminate value in master if we're
+                    // a lenient register and master == D
+                    if (!this.lenient || this.state != this.d.v) this.state = VX;
 
-		    // send along to Q if we're not lenient or if master != Q
-		    if (!this.lenient || this.state != this.q.v)
-		        this.q.p_event(Math.min(this.properties.tpdf,this.properties.tpdr),
+                    // send along to Q if we're not lenient or if master != Q
+                    if (!this.lenient || this.state != this.q.v)
+                        this.q.p_event(Math.min(this.properties.tpdf,this.properties.tpdr),
                                        VX,0,this.lenient);
-	        }
-	    }
+                }
+            }
         } else {
         }
     };

@@ -96,14 +96,14 @@
                         state.in_args = true;
                         return 'variable';
                     }
-                    if(stream.match(/^\.(checkoff|connect|dc|ac|end|global|include|model|mverify|op|options|plot|plotdef|subckt|ends|temp|tempdir|tran|verify|gsubckt)\b/i)) {
+                    if(stream.match(/^\.(checkoff|connect|dc|ac|end|ends|global|include|mverify|options|plot|plotdef|subckt|tran|verify)\b/i)) {
                         state.in_args = true;
                         return 'keyword';
                     }
                     if(stream.match(/^[WRNPCLVIO][a-z0-9_:\$\[\]\.]+/i)) {
                         state.in_args = true;
                         return 'variable-3';
-                    } else if(stream.match(/^X[a-z0-9_:\$\[\]\.]+/i)) {
+                    } else if(stream.match(/^[GX][a-z0-9_:\$\[\]\.]+/i)) {
                         state.subckt_name = true;
                         return 'variable-3';
                     }

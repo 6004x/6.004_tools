@@ -269,7 +269,7 @@ var Checkoff = (function(){
             size: "FIX_ME",
             figure_of_merit: "FIX_ME",
             time: "FIX_ME",
-            version: 'JSim3.0.0',
+            version: 'JSim3.1.0',
             circuits: _.map(mEditor.filenames(), function(f) {
                 return '============== source: ' + f + '\n' + mEditor.content(f) + '\n==============\n';
             }).join('')
