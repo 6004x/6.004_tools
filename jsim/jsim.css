@@ -75,7 +75,12 @@ span.wrong {
 }
 .timing-analysis {
   overflow: auto;
-  font-family: monospace;
+  cjt-font-family: monospace;
   white-space: pre;
   text-align: left;
+}
+.timing-analysis hr {
+  color: black;
+  background-color: black;
+  border: 1px solid black;
 }

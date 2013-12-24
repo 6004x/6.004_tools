@@ -65,36 +65,57 @@ var gatesim = (function() {
             return "Oops, timing analysis failed:\n"+e;
         }
 
+        var div_counter = 0;
         function describe_tpd(from,to,tpd,result) {
             if (tpd.length == 0) return result;
 
-            result += '\n=====================================================\n\n';
-            result += 'Worst-case tPDs from '+from+' to '+to+'\n';
+            result += '<p><hr><p>';
+            result += 'Worst-case t<sub>PD</sub> from '+from+' to '+to+'\n';
 
             // sort by pd_sum, longest first
             tpd.sort(function(tinfo1,tinfo2){ return tinfo2.pd_sum - tinfo1.pd_sum; });
             for (var i = 0; i < maxpaths && i < tpd.length; i += 1) {
                 tinfo = tpd[i];
-                result += '\n  tPD from '+tinfo.get_tpd_source().name+" to "+tinfo.node.name+" ("+(tinfo.pd_sum*1e9).toFixed(3)+"ns):\n";
+                result += '<p>  t<sub>PD</sub> from '+tinfo.get_tpd_source().name+' to '+tinfo.node.name+' ('+(tinfo.pd_sum*1e9).toFixed(3)+'ns):';
+                result += ' <button onclick="$(\'#detail'+div_counter+'\').toggle()">Details</button>\n<div id="detail'+div_counter+'" style="display:none;">';
                 result += tinfo.describe_tpd();
+                result += '<br></div>';
+                div_counter += 1;
             }
 
             return result;
         }
 
-        // process worst-case combinational paths from inputs to top-level outputs
         var result = '';
-        var i,node,tinfo;
-        var tpd = [];
-        $.each(analysis.timing,function (node,tinfo) {
-            // only interested in top-level outputs
-            if (tinfo.node.is_output() && !tinfo.get_tpd_source().clock)
-                tpd.push(tinfo);
-        });
-        result = describe_tpd('inputs','top-level outputs',tpd,result);
+        var i,node,tinfo,tpd;
 
         // report timing constraints for each clock
         $.each(analysis.clocks,function (index,clk) {
+            // collect timing info at each device controlled by clk
+            var th_violations = [];
+            tpd = [];
+            $.each(clk.fanouts,function (index,device) {
+                tinfo = device.get_clock_info(clk);
+                if (tinfo !== undefined) {
+                    var src = tinfo.get_tpd_source();
+                    if (src == clk) tpd.push(tinfo);
+                    if (!src.is_input() && tinfo.cd_sum < 0) th_violations.push(tinfo);
+                }
+            });
+
+            // report clk->clk timing contraints
+            result = describe_tpd(clk.name+'\u2191',clk.name+'\u2191',tpd,result);
+
+            // report hold-time violations, if any
+            if (th_violations.length > 0) {
+                result += '<p><hr><p>';
+                result += 'Hold-time violations for '+clk.name+'\u2191:\n';
+                $.each(th_violations,function (index,tinfo) {
+                    result += '\n  tCD from '+tinfo.get_tcd_source().name+" to "+tinfo.cd_link.node.name+" violates hold time by "+(tinfo.cd_sum*1e9).toFixed(3)+"ns:\n";
+                    result += tinfo.describe_tcd();
+                });
+            }
+
             // get tPDs from clk to top-level outputs
             tpd = [];
             $.each(analysis.timing,function (node,tinfo) {
@@ -102,32 +123,17 @@ var gatesim = (function() {
                 if (tinfo.get_tpd_source() == clk && tinfo.node.is_output())
                     tpd.push(tinfo);
             });
-            result = describe_tpd('inputs','top-level outputs',tpd,result);
-            
-            // collect timing info at each device controlled by clk
-            var th_violations = [];
-            tpd = [];
-            $.each(clk.fanouts,function (index,device) {
-                tinfo = device.get_clock_info(clk);
-                if (tinfo !== undefined) {
-                    if (tinfo.get_tpd_source() == clk) tpd.push(tinfo);
-                    if (tinfo.cd_sum < 0) th_violations.push(tinfo);
-                }
-            });
-
-            // report hold-time violations, if any
-            if (th_violations.length > 0) {
-                result += '\n=====================================================\n\n';
-                result += 'Hold-time violations for '+clk.name+':\n';
-                $.each(th_violations,function (index,tinfo) {
-                    result += '\n  tCD from '+tinfo.get_tcd_source().name+" to "+tinfo.cd_link.node.name+" violates hold time by "+(tinfo.cd_sum*1e9).toFixed(3)+"ns:\n";
-                    result += tinfo.describe_tcd();
-                });
-            }
-
-            // report clk->clk timing contraints
-            result = describe_tpd(clk.name,clk.name,tpd,result);
+            result = describe_tpd(clk.name+'\u2191','top-level outputs',tpd,result);
         });
+
+        // report worst-case combinational paths from inputs to top-level outputs
+        tpd = [];
+        $.each(analysis.timing,function (node,tinfo) {
+            // only interested in top-level outputs
+            if (tinfo.node.is_output() && !tinfo.get_tpd_source().clock)
+                tpd.push(tinfo);
+        });
+        result = describe_tpd('inputs','top-level outputs',tpd,result);
 
         return result;
     }

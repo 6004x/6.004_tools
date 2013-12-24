@@ -97,15 +97,14 @@ var Simulator = (function(){
                 mCurrent_results = results;
                 Checkoff.setResults(mCurrent_results, mOptions);
                 
-                /*try{*/
+                try {
                     prepare_tran_data(plots,results);
-                /*
                 } catch (err) {
                     tranProgress.hide();
                     div.prepend('<div class="alert alert-danger">Simulation error: '+err+
                                 '.<button class="close" data-dismiss="alert">&times;'+
                                 '</button></div>');
-                }*/
+                }
             }
             return tranHalt;
         }
@@ -595,17 +594,16 @@ var Simulator = (function(){
             return;
         }
 
-        //try {
+        try {
             var result = gatesim.timing_analysis(netlist,mOptions);
             var header = "Timing analysis for "+filename+" at "+(new Date().toTimeString());
             div.prepend($('<div class="timing-analysis"></div>').append(header,result));
-        /*
         } catch (e) {
             div.prepend('<div class="alert alert-danger">'+e+
                         '<button class="close" data-dismiss="alert">&times;</button></div>');
             return;
-        }*/
-
+        }
+        resize_sim_pane();
     };
 
     /*********************
