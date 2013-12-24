@@ -76,7 +76,7 @@ var gatesim = (function() {
             tpd.sort(function(tinfo1,tinfo2){ return tinfo2.pd_sum - tinfo1.pd_sum; });
             for (var i = 0; i < maxpaths && i < tpd.length; i += 1) {
                 tinfo = tpd[i];
-                result += '<p>  t<sub>PD</sub> from '+tinfo.get_tpd_source().name+' to '+tinfo.node.name+' ('+(tinfo.pd_sum*1e9).toFixed(3)+'ns):';
+                result += '<p>  t<sub>PD</sub> from '+tinfo.get_tpd_source().name+' to '+tinfo.name+' ('+(tinfo.pd_sum*1e9).toFixed(3)+'ns):';
                 result += ' <button onclick="$(\'#detail'+div_counter+'\').toggle()">Details</button>\n<div id="detail'+div_counter+'" style="display:none;">';
                 result += tinfo.describe_tpd();
                 result += '<br></div>';
@@ -97,7 +97,7 @@ var gatesim = (function() {
             $.each(clk.fanouts,function (index,device) {
                 tinfo = device.get_clock_info(clk);
                 if (tinfo !== undefined) {
-                    var src = tinfo.get_tpd_source();
+                    var src = tinfo.get_tpd_source().node;
                     if (src == clk) tpd.push(tinfo);
                     if (!src.is_input() && tinfo.cd_sum < 0) th_violations.push(tinfo);
                 }
@@ -111,7 +111,7 @@ var gatesim = (function() {
                 result += '<p><hr><p>';
                 result += 'Hold-time violations for '+clk.name+'\u2191:\n';
                 $.each(th_violations,function (index,tinfo) {
-                    result += '\n  tCD from '+tinfo.get_tcd_source().name+" to "+tinfo.cd_link.node.name+" violates hold time by "+(tinfo.cd_sum*1e9).toFixed(3)+"ns:\n";
+                    result += '\n  tCD from '+tinfo.get_tcd_source().name+" to "+tinfo.cd_link.name+" violates hold time by "+(tinfo.cd_sum*1e9).toFixed(3)+"ns:\n";
                     result += tinfo.describe_tcd();
                 });
             }
@@ -120,7 +120,7 @@ var gatesim = (function() {
             tpd = [];
             $.each(analysis.timing,function (node,tinfo) {
                 // only interested in top-level outputs
-                if (tinfo.get_tpd_source() == clk && tinfo.node.is_output())
+                if (tinfo.get_tpd_source().node == clk && tinfo.node.is_output())
                     tpd.push(tinfo);
             });
             result = describe_tpd(clk.name+'\u2191','top-level outputs',tpd,result);
@@ -130,7 +130,7 @@ var gatesim = (function() {
         tpd = [];
         $.each(analysis.timing,function (node,tinfo) {
             // only interested in top-level outputs
-            if (tinfo.node.is_output() && !tinfo.get_tpd_source().clock)
+            if (tinfo.node.is_output() && !tinfo.get_tpd_source().node.clock)
                 tpd.push(tinfo);
         });
         result = describe_tpd('inputs','top-level outputs',tpd,result);
@@ -660,7 +660,7 @@ var gatesim = (function() {
     Node.prototype.get_timing_info = function() {
         if (this.timing_info === undefined) {
             if (this.is_input()) {
-                this.timing_info = new TimingInfo(this);
+                this.timing_info = new TimingInfo(this.name,this);
             } else {
                 if (this.in_progress)
                     throw "Combinational cycle detected:\n  "+this.name;
@@ -1057,7 +1057,7 @@ var gatesim = (function() {
     LogicGate.prototype.get_timing_info = function(output) {
         var tr = this.properties.tpdr + this.properties.tr*output.capacitance;
         var tf = this.properties.tpdf + this.properties.tf*output.capacitance;
-        var tinfo = new TimingInfo(output,this,this.properties.tcd,Math.max(tr,tf));
+        var tinfo = new TimingInfo(output.name,output,this,this.properties.tcd,Math.max(tr,tf));
 
         // loop through inputs looking for min/max paths
         for (var i = 0; i < this.inputs.length ; i+= 1) {
@@ -1097,14 +1097,15 @@ var gatesim = (function() {
 
         this.properties = properties;
         this.lenient = properties.lenient !== undefined && properties.lenient !== 0;
-        if (this.properties.cout === undefined) this.properties.cout = 0;
-        if (this.properties.cin === undefined) this.properties.cin = 0;
-        if (this.properties.tcd === undefined) this.properties.tcd = 0;
-        if (this.properties.tpdf === undefined) this.properties.tpdf = this.properties.tpd || 0;
-        if (this.properties.tpdr === undefined) this.properties.tpdr = this.properties.tpd || 0;
-        if (this.properties.tr === undefined) this.properties.tr = 0;
-        if (this.properties.ts === undefined) this.properties.ts = 0;
-        if (this.properties.th === undefined) this.properties.th = 0;
+        this.cout = this.properties.cout || 0;
+        this.cin = this.properties.cin || 0;
+        this.tcd = this.properties.tcd || 0;
+        this.tpdf = this.properties.tpdf || this.properties.tpd || 0;
+        this.tpdr = this.properties.tpdr || this.properties.tpd || 0;
+        this.tr = this.properties.tr || 0;
+        this.tf = this.properties.tf || 0;
+        this.ts = this.properties.ts || 0;
+        this.th = this.properties.th || 0;
     }
 
     Storage.prototype.initialize = function() {
@@ -1114,8 +1115,8 @@ var gatesim = (function() {
     };
 
     Storage.prototype.capacitance = function(node) {
-        if (this.q == node) return this.properties.cout;
-        else return this.properties.cin;
+        if (this.q == node) return this.cout;
+        else return this.cin;
     };
 
     // is node a tristate output of this device?
@@ -1144,11 +1145,11 @@ var gatesim = (function() {
                     // for lenient dreg's, q output is propagated only
                     // when new output value differs from current one
                     if (!this.lenient || this.state != this.q.v)
-                        this.q.c_event(this.properties.tcd);
+                        this.q.c_event(this.tcd);
 
-                    this.q.p_event((this.state == V0) ? this.properties.tpdf : this.properties.tpdr,
+                    this.q.p_event((this.state == V0) ? this.tpdf : this.tpdr,
                                    this.state,
-                                   (this.state == V0) ? this.properties.tf : this.properties.tr,
+                                   (this.state == V0) ? this.tf : this.tr,
                                    this.lenient);
                 } else {
                     // X on clock won't contaminate value in master if we're
@@ -1157,7 +1158,7 @@ var gatesim = (function() {
 
                     // send along to Q if we're not lenient or if master != Q
                     if (!this.lenient || this.state != this.q.v)
-                        this.q.p_event(Math.min(this.properties.tpdf,this.properties.tpdr),
+                        this.q.p_event(Math.min(this.tpdf,this.tpdr),
                                        VX,0,this.lenient);
                 }
             }
@@ -1182,14 +1183,14 @@ var gatesim = (function() {
                     }
                 }
                 // schedule contamination event with specified delay
-                this.q.c_event(this.properties.tcd);
+                this.q.c_event(this.tcd);
             } else {
                 // avoid scheduling PROPAGATE events if we can...
                 if (!this.lenient || v != this.q.v || this.q.cd_event !== undefined || this.q.pd_event !== undefined) {
                     var drive,tpd;
-                    if (v == V1) { tpd = this.properties.tpdr; drive = this.properties.tr; }
-                    else if (v == V0) { tpd = this.properties.tpdf; drive = this.properties.tf; }
-                    else { tpd = Math.min(this.properties.tpdr,this.properties.tpdf); drive = 0; }
+                    if (v == V1) { tpd = this.tpdr; drive = this.tr; }
+                    else if (v == V0) { tpd = this.tpdf; drive = this.tf; }
+                    else { tpd = Math.min(this.tpdr,this.tpdf); drive = 0; }
                     this.q.p_event(tpd,v,drive,this.lenient);
                 }
             }
@@ -1197,11 +1198,14 @@ var gatesim = (function() {
     };
 
     Storage.prototype.get_timing_info = function(output) {
-        var tr = this.properties.tpdr + this.properties.tr*output.capacitance;
-        var tf = this.properties.tpdf + this.properties.tf*output.capacitance;
-        var tinfo = new TimingInfo(output,this,this.properties.tcd,Math.max(tr,tf));
+        var tr = this.tpdr + this.tr*output.capacitance;
+        var tf = this.tpdf + this.tf*output.capacitance;
+        var tinfo = new TimingInfo(output.name,output,this,this.tcd,Math.max(tr,tf));
 
-        tinfo.set_delays(this.clk.get_timing_info());
+        var cinfo = $.extend({},this.clk.get_timing_info());  // make a copy
+        cinfo.name = cinfo.name + '\u2191';  // add rising edge indicator to name
+        tinfo.set_delays(cinfo);
+
         if (this.type != 'dreg') {
             // latch timing also depends on D input
             tinfo.set_delays(this.d.get_timing_info());
@@ -1213,7 +1217,7 @@ var gatesim = (function() {
     Storage.prototype.get_clock_info = function(clk) {
         if (this.type == 'dreg') {
             // account for setup and hold times
-            var tinfo = new TimingInfo(clk,this,-this.properties.th,this.properties.ts);
+            var tinfo = new TimingInfo(clk.name+'\u2191',clk,this,-this.th,this.ts);
             tinfo.set_delays(this.d.get_timing_info());
             return tinfo;
         };
@@ -1222,11 +1226,18 @@ var gatesim = (function() {
 
     ///////////////////////////////////////////////////////////////////////////////
     //
+    //  Memories
+    //
+    ///////////////////////////////////////////////////////////////////////////////
+
+    ///////////////////////////////////////////////////////////////////////////////
+    //
     //  Timing info generated during timing analysis
     //
     ///////////////////////////////////////////////////////////////////////////////
 
-    function TimingInfo(node,device,tcd,tpd) {
+    function TimingInfo(name,node,device,tcd,tpd) {
+        this.name = name;  // name to use in reports (sometimes differs from node.name)
         this.node = node;  // associated node
         this.device = device;  // what device determined this info
 
@@ -1242,13 +1253,13 @@ var gatesim = (function() {
     TimingInfo.prototype.get_tcd_source = function () {
         var t = this;
         while (t.cd_link !== undefined) t = t.cd_link;
-        return t.node;
+        return {node: t.node, name: t.name};
     };
 
     TimingInfo.prototype.get_tpd_source = function () {
         var t = this;
         while (t.pd_link !== undefined) t = t.pd_link;
-        return t.node;
+        return {node: t.node, name: t.name};
     };
 
     // using timing info from an input, updated timing info for associated node
@@ -1283,7 +1294,7 @@ var gatesim = (function() {
         else result = '';
 
         var driver_name = (this.device !== undefined) ? ' ['+this.device.name+']' : '';
-        result += '    + '+format_float(this.tpd*1e9,6,3)+"ns = "+format_float(this.pd_sum*1e9,6,3)+"ns "+this.node.name+driver_name+'\n';
+        result += '    + '+format_float(this.tpd*1e9,6,3)+"ns = "+format_float(this.pd_sum*1e9,6,3)+"ns "+this.name+driver_name+'\n';
         return result;
     };
 
@@ -1296,7 +1307,7 @@ var gatesim = (function() {
         var driver_name = (this.device !== undefined) ? ' ['+this.device.name+']' : '';
         // when calculating hold time violations, tcd for register is negative...
         result += '    '+(this.tcd < 0 ? '-' : '+');
-        result += ' '+format_float(Math.abs(this.tcd)*1e9,6,3)+"ns = "+format_float(this.cd_sum*1e9,6,3)+"ns "+this.node.name+driver_name+'\n';
+        result += ' '+format_float(Math.abs(this.tcd)*1e9,6,3)+"ns = "+format_float(this.cd_sum*1e9,6,3)+"ns "+this.name+driver_name+'\n';
         return result;
     };
 

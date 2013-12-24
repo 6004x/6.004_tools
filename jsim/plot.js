@@ -212,6 +212,16 @@ var plot = (function() {
                 }
             });
 
+            // use arrow keys to pan (ie, move the scrollbar thumb)  [doesn't work?]
+            dataset.canvas.on('mouseenter',function (event) { dataset.canvas.focus(); });
+            dataset.canvas.on('mouseleave',function (event) { dataset.canvas.blur(); });
+            dataset.canvas.on('keypress',function (event) {
+                if (event.which == 37) move_thumb(1);
+                else if (event.which == 39) move_thumb(-1);
+                else return;
+                event.prevent_default();
+            });
+
             // use mouse wheel to pan (ie, move the scrollbar thumb)
             dataset.canvas.on('mousewheel',function (event) {
                 var pos = dataset.canvas.offset();
@@ -221,7 +231,7 @@ var plot = (function() {
                 if (gx >= dataset.left && gx <= dataset.left + dataset.wplot &&
                     gy >= dataset.top && gy <= dataset.top + dataset.hplot) {
                     event.preventDefault();
-                    move_thumb(event.originalEvent.wheelDelta > 0 ? 1 : -1);
+                    move_thumb(event.originalEvent.wheelDelta > 0 ? -1 : 1);
                 }
             });
 

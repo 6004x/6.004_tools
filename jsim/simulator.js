@@ -422,10 +422,11 @@ var Simulator = (function(){
             mDiv.empty();
             mDiv.append(container);
 
+            //cjt for some reason with typeahead one can't type "L(xxx)" ???
             // add autocomplete to add plot input field
-            var node_list = results.node_list();
-            node_list.sort();
-            $('#add-plot').typeahead({source: node_list});  // feature of bootstrap!
+            //var node_list = results.node_list();
+            //node_list.sort();
+            //$('#add-plot').typeahead({source: node_list});  // feature of bootstrap!
 
             resize_sim_pane();
         }
@@ -596,7 +597,7 @@ var Simulator = (function(){
 
         try {
             var result = gatesim.timing_analysis(netlist,mOptions);
-            var header = "Timing analysis for "+filename+" at "+(new Date().toTimeString());
+            var header = "<b>Timing analysis for "+filename+" at "+(new Date().toTimeString())+"</b>";
             div.prepend($('<div class="timing-analysis"></div>').append(header,result));
         } catch (e) {
             div.prepend('<div class="alert alert-danger">'+e+

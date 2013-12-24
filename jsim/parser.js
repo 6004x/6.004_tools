@@ -1295,20 +1295,7 @@ var Parser = (function(){
      Instance: instance of user-specified subcircuit
      *******************************/
     function read_instance(line){
-        //        var props = [];
-        //        if (line.length >= 4){
-        //            try{
-        //                while (line[line.length-2].token == "="){
-        //                    props.push(line.slice(-3));
-        //                    line = line.slice(0,-3);
-        //                }
-        //            } catch (err) {}
-        //        }
-
         var inst = line[1].token;
-        //        if (!(inst.token in subcircuits)){
-        //            throw new CustomError("Can't find definition for subcircuit "+inst.token, inst);
-        //        }
         
         if (inst == "$memory"){
             var mem = read_memory(line);
@@ -1338,36 +1325,6 @@ var Parser = (function(){
                 i += 1;
             }
         }
-        //        
-        //        var parent_props = subcircuits[inst].properties;
-        //        for (var item in parent_props){
-        //            if (item != "name"){
-        //                obj.properties[item] = parent_props[item];
-        //            }
-        //        }
-        
-        //        for (var i = 1; i < line.length; i += 1){
-        //            if (line[i].type != "name"){
-        //                throw new CustomError("Node name expected", line[i]);
-        //            }
-        //            obj.connections.push(line[i].token);
-        //        }
-        //        for (i = 0; i < props.length; i += 1){
-        //            if (props[i][2].type != "number"){
-        //                throw new CustomError("Number expected",
-        //                                props[2].line,props[2].column)
-        //            }
-        //            if (!(props[i][0].token in obj.properties)){
-        //                throw new CustomError("Subcircuit "+inst+" has no property "+
-        //                                      props[i][0].token, props[i][0]);
-        //            }
-        //            try{
-        //                obj.properties[props[i][0].token] = parse_number(props[i][2].token);
-        //            } catch (err) {
-        //                throw new CustomError("Number expected", props[i][2]);
-        //            }
-        //            obj.properties[props[i][0].token] = props[i][2].token;
-        //        }
         return obj;
     }
     
@@ -1445,94 +1402,19 @@ var Parser = (function(){
             }
         }
         
-        /*
-         // parse property values
-         for (var p = 0; p < prop_tokens.length; p += 1){
-         var prop = prop_tokens[p];
-         
-         if (prop[0].type != "name") {
-         throw new CustomError("Property name expected",prop[0]);
-         }
-         
-         switch (prop[0].token.toLowerCase()){
-         case "width":
-         var w;
-         //                    try {
-         //                        w = parse_number(prop[2].token);
-         //                    } catch (err) {
-         //                        throw new CustomError("Number expected.",prop[2]);
-         //                    }
-         if (prop[2].type != "number"){
-         throw new CustomError("Number expected.",prop[2]);
-         } else {
-         w = prop[2].token;
-         }
-         
-         if (w < 1 || w > 32) {
-         throw new CustomError("Memory width must be between 1 and 32, inclusive.",prop[2]);
-         }
-         obj.properties.width = w;
-         break;
-         case "nlocations":
-         var nloc;
-         //                    try {
-         //                        nloc = parse_number(prop[2].token);
-         //                    } catch (err) {
-         //                        throw new CustomError("Number expected.",prop[2]);
-         //                    }
-         if (prop[2].type != "number"){
-         throw new CustomError("Number expected.",prop[2]);
-         } else {
-         nloc = prop[2].token;
-         }
-         
-         if (nloc < 1 || nloc > Math.pow(2,20)) {
-         throw new CustomError("Number of locations must be between 1 and 2^20.",prop[2]);
-         }
-         obj.properties.nlocations = nloc;
-         break;
-         case "file":
-         obj.properties.contents = [];
-         var filename = prop[2].token;
-         FileSystem.getFile(filename, 
-         function(file_obj){
-         // success callback
-         set_memory_contents(obj, file_obj.data, prop[0]);
-         }, 
-         function(){
-         // error callback
-         error_cb(new CustomError("Could not get file "+filename, prop[2]));
-         });
-         break;
-         case "contents":
-         obj.properties.contents = [];
-         set_memory_contents(obj, prop[2].token.match(/\((.+)\)/)[1], prop[0]);
-         break;
-         default:
-         throw new CustomError("Invalid property name.",prop[0]);
-         }
-         }
-         */
-        
-        if (obj.properties.width === undefined) throw new CustomError("Memory width must be specified.",
-                                                                      line[0]);
-        if (obj.properties.nlocations === undefined) throw new CustomError("Number of memory locations\
-                                                                           must be specified.",line[0]);
-        if (obj.properties.contents === undefined) throw new CustomError("Memory contents must be specified.",
-                                                                         line[0]);
+        if (obj.properties.width === undefined)
+            throw new CustomError("Memory width must be specified.",line[0]);
+        if (obj.properties.nlocations === undefined) 
+            throw new CustomError("Number of memory locations must be specified.",line[0]);
+        //if (obj.properties.contents === undefined) throw new CustomError("Memory contents must be specified.",line[0]);
         
         // parse ports
         var naddr = Math.ceil(Math.log(obj.properties.nlocations)/Math.LN2);
-        //        console.log("number of addresses:",naddr);
         var wi = obj.properties.width;
-        
-        //        var ports = line.slice(2);
-        var port_size = 3 + naddr + wi; // number of parameters in the port specifications:
-        // oe clk wen a(naddr-1) ... a(0) d(w-1) ... d(0)
-        //        console.log("ports:",ports,"port size:",port_size);
+        var port_size = 3 + naddr + wi;
         if (ports.length % port_size !== 0){
             throw new CustomError("Invalid memory port specification. Each port should have "+port_size+
-                                  " parameters: oe clk wen a(#addresses-1) ... a(0) d(width-1) ... d(0)",
+                                  " parameters: oe clk wen <"+naddr+" address signals> <"+wi+" data signals>",
                                   ports[0]);
         }
         
