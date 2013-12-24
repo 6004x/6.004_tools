@@ -126,7 +126,7 @@ var gatesim = (function() {
             }
 
             // report clk->clk timing contraints
-            result = describe_tpd(clk.name,clk.name,tpd,result);
+            result = describe_tpd(clk.name+'\u2191',clk.name+'\u2191',tpd,result);
         });
 
         return result;
@@ -1195,7 +1195,6 @@ var gatesim = (function() {
         var tf = this.properties.tpdf + this.properties.tf*output.capacitance;
         var tinfo = new TimingInfo(output,this,this.properties.tcd,Math.max(tr,tf));
 
-        // timing is with respect to CLK/gate input
         tinfo.set_delays(this.clk.get_timing_info());
         if (this.type != 'dreg') {
             // latch timing also depends on D input
