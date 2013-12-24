@@ -6,6 +6,7 @@ var FileSystem= (function(){
     var server_url = 'https://computationstructures.appspot.com/';
 //    var shared_url = 'http://computationstructures.org/tools';
     var shared_url = 'http://horus.csail.mit.edu/~cjt/cs/tools';
+//    var shared_url = 'http://localhost/~cjt/cs/tools';
     var saved_file_list = [];
     var saved_folder_list = [];
 
