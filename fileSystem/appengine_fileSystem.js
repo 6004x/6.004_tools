@@ -263,6 +263,10 @@ var FileSystem= (function(){
                        });
     }
 
+    function downloadZipURL(succeed,fail) {
+        return server_url+'file/?action=zip';
+    }
+
     return {getFileList: getFileList,
             getSharedFileList: getSharedFileList,
             getUserName: getUserName,
@@ -278,6 +282,8 @@ var FileSystem= (function(){
             getBackup: getBackup,
             getFile: getFile,
             makeAutoSave: makeAutoSave,
-            saveFile: saveFile
+            saveFile: saveFile,
+
+            downloadZipURL: downloadZipURL
            };
 }());

@@ -147,6 +147,7 @@ var gatesim = (function() {
     function Network(netlist, options) {
         this.N = 0;
         this.node_map = {};
+        this.aliases = {};
         this.nodes = [];
         this.devices = []; // list of devices
         this.device_map = {}; // name -> device
@@ -159,6 +160,9 @@ var gatesim = (function() {
 
     // return Node object for specified name, create if necessary
     Network.prototype.node = function(name) {
+        // resolve name to canonical name
+        while (this.aliases[name] !== undefined) name = this.aliases[name];
+        // find Node in node_map or create a new Node
         var n = this.node_map[name];
         if (n === undefined) {
             n = new Node(name, this);
@@ -171,11 +175,54 @@ var gatesim = (function() {
 
     // load circuit from JSON netlist: [[device,[connections,...],{prop: value,...}]...]
     Network.prototype.load_netlist = function(netlist) {
+        var network = this;
+        network.N = 0;
+        network.node_map = {};
+        network.aliases = {};
+        network.nodes = [];
+        network.devices = []; // list of devices
+        network.device_map = {}; // name -> device
+
+        // handle all the ground connections
+        network.gnd = network.node('gnd');
+        network.devices.push(new Source(network, 'gnd', network.gnd, {name: 'gnd', value: {type: 'dc', args: []}}));
+        $.each(netlist,function (i,component) {
+	    if (component.type == 'ground') {
+		network.node_map[component.connections.gnd] = network.gnd;
+	    }
+        });
+
+        // "connect a b ..." makes a, b, ... aliases for the same node
+        $.each(netlist,function (i,component) {
+            var c;
+            if (component.type == 'connect') {
+                var connections = component.connections;
+                if (connections.length <= 1) return;
+		// see if any of the connected nodes is a ground node.
+		// if so, make it the canonical name. Otherwise just choose
+		// connections[0] as the canonical name.
+                var cname = connections[0];
+                for (var j = 1; j < connections.length; j += 1) {
+                    c = connections[j];
+		    if (network.node_map[c] !== undefined) {
+			cname = c;
+			break;
+		    }
+		}
+                while (network.aliases[cname] !== undefined) cname = network.aliases[cname];  // follow alias chain
+		// so make all the other connected nodes aliases for the canonical name
+                for (j = 1; j < connections.length; j += 1) {
+                    c = connections[j];
+                    while (network.aliases[c] !== undefined) c = network.aliases[c];  // follow alias chain
+                    network.aliases[c] = cname;
+                }
+            }
+        });
+
         // process each component in the JSON netlist (see schematic.js for format)
         var counts = {};
-        var n,d;
-        for (var i = netlist.length - 1; i >= 0; i -= 1) {
-            var component = netlist[i];
+        $.each(netlist,function (i,component) {
+            var n,d;
             var type = component.type;
             var connections = component.connections;
             var properties = component.properties;
@@ -184,53 +231,62 @@ var gatesim = (function() {
             var name = properties.name;
 
             // convert node names to Nodes
-            for (var c in connections) connections[c] = this.node(connections[c]);
+            for (var c in connections) connections[c] = network.node(connections[c]);
 
             // process the component
             if (type in logic_gates) {
                 var info = logic_gates[type]; // [input-list,output,table]
-                // build input and output lists using terminal names
-                // in info array
+                // build input and output lists using terminal names in info array
                 var inputs = [];
-                for (var j = 0; j < info[0].length; j += 1) inputs.push(connections[info[0][j]]);
+                $.each(info[0],function (j,cname) { inputs.push(connections[cname]); });
                 // create a new device
-                d = new LogicGate(this, type, name, info[2], inputs, connections[info[1]], properties);
-                this.devices.push(d);
-                this.device_map[name] = d;
+                d = new LogicGate(network, type, name, info[2], inputs, connections[info[1]], properties);
+                network.devices.push(d);
+                network.device_map[name] = d;
             }
             else if (type == 'dreg' || type == 'dlatch' || type == 'dlatchn') {
-                d = new Storage(this, name, type, connections, properties);
-                this.devices.push(d);
-                this.device_map[name] = d;
+                d = new Storage(network, name, type, connections, properties);
+                network.devices.push(d);
+                network.device_map[name] = d;
             }
             else if (type == 'memory') {
-                throw "Device "+type+" not yet implemented in gatesim";
+                // convert node names to Nodes
+                $.each(properties.ports, function (i, port) {
+                    $.each(port.addr, function (j,name) { port.addr[j] = network.node(name); });
+                    $.each(port.data, function (j,name) { port.data[j] = network.node(name); });
+                    port.clk = network.node(port.clk);
+                    port.wen = network.node(port.wen);
+                    port.oe = network.node(port.oe);
+                });
+
+                d = new Memory(network, name, properties);
+                network.devices.push(d);
+                network.device_map[name] = d;
+            }
+            else if (type == 'connect') {
+                // handled above
             }
             else if (type == 'ground') {
-                // gnd node -- drive with a 0-input OR gate (output = 0)
-                n = connections.gnd;
-                if (n.drivers.length > 0) continue; // already handled this one
-                n.v = V0;   // should be set by initialization of LogicGate that drives this node
-                this.devices.push(new Source(this, 'gnd', n, {name: 'gnd', value: {type: 'dc', args: []}}));
+                // handled above
             }
             else if (type == 'constant0' || type == 'constant1') {
                 n = connections.z;
-                if (n.drivers.length > 0) continue; // already handled this one
+                if (n.drivers.length > 0) return; // already handled this one
                 n.v = (type == 'constant0' ? V0 : V1);   // should be set by initialization of LogicGate that drives this node
-                this.devices.push(new LogicGate(this, type, name, type == 'constant0' ? LTable:HTable, [], n, properties));
+                network.devices.push(new LogicGate(network, type, name, type == 'constant0' ? LTable:HTable, [], n, properties));
             }
             else if (type == 'voltage source') {
                 n = connections.nplus; // hmmm.
-                if (n.drivers.length > 0) continue; // already handled this one
-                this.devices.push(new Source(this, name,  n, properties));
+                if (n.drivers.length > 0) return; // already handled this one
+                network.devices.push(new Source(network, name,  n, properties));
             }
             else throw 'Unrecognized gate: ' + type;
-        }
+        });
 
         // give each Node a chance to finalize itself
-        for (n in this.node_map) this.node_map[n].finalize();
+        $.each(network.node_map, function (n,node) { node.finalize(); });
 
-        var msg = this.N.toString() + ' nodes';
+        var msg = network.N.toString() + ' nodes';
         for (d in counts) msg += ', ' + counts[d].toString() + ' ' + d;
         console.log(msg);
     };
@@ -309,6 +365,7 @@ var gatesim = (function() {
     // return {xvalues: array, yvalues: array}, undefined if node has no events.
     // yvalues are 0, 1, 2=X, 3=Z
     Network.prototype.history = function(node) {
+        while (this.aliases[node] !== undefined) node = this.aliases[node];
         var n = this.node_map[node];
         if (n === undefined) return undefined;
         var result = {xvalues: n.times,
@@ -1229,6 +1286,62 @@ var gatesim = (function() {
     //  Memories
     //
     ///////////////////////////////////////////////////////////////////////////////
+
+    function Memory(network, name, properties) {
+        var mem = this;
+        mem.network = network;
+        mem.name = name;
+
+        mem.width = properties.width;
+        if (mem.width === undefined || mem.width <= 0)
+            throw "Memory "+name+" must have width > 0.";
+        mem.nlocations = properties.nlocations;
+        if (mem.nlocations === undefined || mem.nlocations <= 0)
+            throw "Memory "+name+" must have > 0 locations.";
+        mem.ports = properties.ports || [];
+
+        // create useful lists so we can answer questions about our terminal nodes
+        mem.wen_inputs = [];
+        mem.clk_inputs = [];
+        mem.oe_inputs = [];
+        mem.addr_inputs = [];
+        mem.tristate_outputs = [];   
+        $.each(mem.ports, function (i,port) {
+            if (mem.wen_inputs.indexOf(port.wen) != -1) mem.wen_inputs.push(port.wen);
+            if (mem.clk_inputs.indexOf(port.clk) != -1) mem.clk_inputs.push(port.clk);
+            if (mem.oe_inputs.indexOf(port.oe) != -1) mem.oe_inputs.push(port.oe);
+            $.each(port.addr, function (j, dnode) {
+                if (mem.addr_inputs.indexOf(node) != -1) mem.addr_inputs.push(dnode);
+            });
+            $.each(port.data, function (j, dnode) {
+                if (mem.tristate_outputs.indexOf(node) != -1) mem.tristate_outputs.push(dnode);
+            });
+        });
+    }
+
+    Memory.prototype.initialize = function() {
+    };
+
+    Memory.prototype.capacitance = function(node) {
+        return 0;
+    };
+
+    // is node a tristate output of this device?
+    Memory.prototype.tristate = function(node) {
+        return this.tristate_outputs.indexOf(node) != -1;
+    };
+
+    // evaluation of output values triggered by an event on the input
+    Memory.prototype.process_event = function(event,cause) {
+    };
+
+    Memory.prototype.get_timing_info = function(output) {
+        return undefined;
+    };
+
+    Memory.prototype.get_clock_info = function(clk) {
+        return undefined;
+    };
 
     ///////////////////////////////////////////////////////////////////////////////
     //

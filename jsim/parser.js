@@ -1425,21 +1425,20 @@ var Parser = (function(){
         }
         
         obj.properties.ports = [];
+        var new_port;
         while (ports.length > 0){
-            var new_port = {};
+            new_port = {};
             new_port.oe = check_shift(ports);
             new_port.clk = check_shift(ports);
             new_port.wen = check_shift(ports);
-            var address_inputs = [];
+            new_port.addr = [];
             for (var a = 0; a < naddr; a += 1){
-                address_inputs.push(check_shift(ports));
+                new_port.addr.push(check_shift(ports));
             }
-            new_port.address_inputs = address_inputs;
-            var data_inputs = [];
+            new_port.data = [];
             for (var d = 0; d < wi; d += 1){
-                data_inputs.push(check_shift(ports));
+                new_port.data.push(check_shift(ports));
             }
-            new_port.data_inputs = data_inputs;
             obj.properties.ports.push(new_port);
         }
         
@@ -1536,15 +1535,18 @@ var Parser = (function(){
             }
         }
         
-        
-        
-        var nports = dev_obj.ports.length;
-        var nknex = dev_obj.connections.length;
-        if (nknex % nports !== 0 && dev_obj.type != "memory"){
-            throw new CustomError("Expected a multiple of "+nports+" connections",
-                                  {line:dev_obj.line,column:0,origin_file:dev_obj.file});
+        var ndevices;
+        if (dev_obj.type == 'memory') {
+            ndevices = 1;
+        } else {
+            var nports = dev_obj.ports.length;
+            var nknex = dev_obj.connections.length;
+            if (nknex % nports !== 0 && dev_obj.type != "memory"){
+                throw new CustomError("Expected a multiple of "+nports+" connections",
+                                      {line:dev_obj.line,column:0,origin_file:dev_obj.file});
+            }
+            ndevices = nknex/nports;
         }
-        var ndevices = nknex/nports;
         var local_props = {};
         for (item in dev_obj.properties){
             local_props[item] = dev_obj.properties[item];

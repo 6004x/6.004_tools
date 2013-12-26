@@ -775,10 +775,18 @@ var Folders = (function(){
     function addButtons(buttonDiv){
         var toolbar = new Toolbar(buttonDiv);
         toolbar.addButtonGroup([
-            new ToolbarButton('icon-refresh', function(){refresh();}, 'Refresh')/*,
-										new ToolbarButton('icon-off', _.identity, 'Off is not implemented')*/
+            new ToolbarButton('icon-refresh', function () { refresh(); }, 'Refresh')
         ]);
-
+        toolbar.addButtonGroup([
+            new ToolbarButton('icon-download',function () {
+                // use an iframe to trigger browser's action when receiving a .zip file
+                var iframe = $('<iframe class="zip"></iframe>').attr('src',FileSystem.downloadZipURL());
+                $('body').append(iframe);  // start the access...
+                // wait a bit, then remove iframe since it's job is done... a kludge
+                // the .ready function seems to return too soon...
+                setTimeout(function () { $('.zip').remove(); }, 5000);
+            },'Download ZIP archive')
+        ]);
     }
 
     function setup(root, editorN, mode){
