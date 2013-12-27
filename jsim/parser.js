@@ -646,7 +646,7 @@ var Parser = (function(){
                    properties:{},
                    devices:[]
                   };
-        if (line[0].token == "_top_level_" || line[0].token == "$memory"){
+        if (line[0].token == "_top_level_"){
             throw new CustomError("Reserved name",line[0]);
         }
         line.shift();
@@ -1296,12 +1296,6 @@ var Parser = (function(){
      *******************************/
     function read_instance(line){
         var inst = line[1].token;
-        
-        if (inst == "$memory"){
-            var mem = read_memory(line);
-            return mem;
-        }
-        
         var obj = {type:"instance",
                    connections:[],
                    ports:[],//subcircuits[inst].ports,
@@ -1465,6 +1459,12 @@ var Parser = (function(){
      Gate: built-in gate device
      ************************/
     function read_gate(line){
+        // deal with memory components separately
+        if (line[1].token == "memory"){
+            var mem = read_memory(line);
+            return mem;
+        }
+
         var props = [];
         if (line.length >= 4){
             try{
@@ -1535,34 +1535,45 @@ var Parser = (function(){
             }
         }
         
-        var ndevices;
-        if (dev_obj.type == 'memory') {
-            ndevices = 1;
-        } else {
-            var nports = dev_obj.ports.length;
-            var nknex = dev_obj.connections.length;
-            if (nknex % nports !== 0 && dev_obj.type != "memory"){
-                throw new CustomError("Expected a multiple of "+nports+" connections",
-                                      {line:dev_obj.line,column:0,origin_file:dev_obj.file});
-            }
-            ndevices = nknex/nports;
+        /***** helper function *******/
+        function find_connection(signal) {
+            if (globals.indexOf(signal) != -1) return signal;  // global signal
+            var si = parent_obj.ports.indexOf(signal);  // port signal
+            if (si != -1) return parent_obj.connections[si];
+            else return prefix+signal;   // otherwise, it's a local signal
         }
+
         var local_props = {};
         for (item in dev_obj.properties){
             local_props[item] = dev_obj.properties[item];
             // this is where expressions would be evaluated, with parent properties
             // giving values of expression symbols.
         }
-        
-        /***** helper function *******/
-        function addAffixes(name,index){
-            if (prefix !== ""){
-                name = prefix + "." + name;
+
+        var ndevices;
+        if (dev_obj.type == 'memory') {
+            ndevices = 1;
+
+            // update port connections
+            $.each(local_props.ports,function (i,port) {
+                port.clk = find_connection(port.clk);
+                port.wen = find_connection(port.wen);
+                port.oe = find_connection(port.oe);
+                $.each(port.addr, function (j,node) {
+                    port.addr[j] = find_connection(node);
+                });
+                $.each(port.data, function (j,node) {
+                    port.data[j] = find_connection(node);
+                });
+            });
+        } else {
+            var nports = dev_obj.ports.length;
+            var nknex = dev_obj.connections.length;
+            if (nknex % nports !== 0){
+                throw new CustomError("Expected a multiple of "+nports+" connections",
+                                      {line:dev_obj.line,column:0,origin_file:dev_obj.file});
             }
-            if (ndevices != 1){
-                name = name + "#" + index;
-            }
-            return name;
+            ndevices = nknex/nports;
         }
         
         // the ith device will take the ith element from each bucket as its ports
@@ -1580,15 +1591,7 @@ var Parser = (function(){
             for (var j = 0; j < buckets.length; j += 1){
                 // j is the port number
                 var signal = buckets[j][dev_index];
-                
-                if (globals.indexOf(signal) != -1){
-                    local_connections.push(signal);
-                } else if (parent_obj.ports.indexOf(signal) != -1) {
-                    var si = parent_obj.ports.indexOf(signal);
-                    local_connections.push(parent_obj.connections[si]);
-                } else {
-                    local_connections.push(prefix+signal); //addAffixes(signal,dev_index));
-                } 
+                local_connections.push(find_connection(signal));
             }
             
             new_obj.properties = {};

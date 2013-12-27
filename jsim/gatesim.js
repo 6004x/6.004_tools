@@ -155,7 +155,7 @@ var gatesim = (function() {
         this.options = options;
         this.debug_level = options.debug || 0;
 
-        if (netlist !== undefined) this.load_netlist(netlist);
+        if (netlist !== undefined) this.load_netlist(netlist, options);
     }
 
     // return Node object for specified name, create if necessary
@@ -174,7 +174,7 @@ var gatesim = (function() {
     };
 
     // load circuit from JSON netlist: [[device,[connections,...],{prop: value,...}]...]
-    Network.prototype.load_netlist = function(netlist) {
+    Network.prototype.load_netlist = function(netlist, options) {
         var network = this;
         network.N = 0;
         network.node_map = {};
@@ -182,6 +182,7 @@ var gatesim = (function() {
         network.nodes = [];
         network.devices = []; // list of devices
         network.device_map = {}; // name -> device
+        network.size = 0;
 
         // handle all the ground connections
         network.gnd = network.node('gnd');
@@ -259,7 +260,7 @@ var gatesim = (function() {
                     port.oe = network.node(port.oe);
                 });
 
-                d = new Memory(network, name, properties);
+                d = new Memory(network, name, properties, options);
                 network.devices.push(d);
                 network.device_map[name] = d;
             }
@@ -1002,17 +1003,18 @@ var gatesim = (function() {
         this.properties = properties;
 
         this.lenient = properties.lenient !== undefined && properties.lenient !== 0;
+        this.cout = properties.cout || 0;
+        this.cin = properties.cin || 0;
+        this.tcd = properties.tcd || 0;
+        this.tpdf = properties.tpdf || properties.tpd || 0;
+        this.tpdr = properties.tpdr || properties.tpd || 0;
+        this.tr = properties.tr || 0;
+        this.tf = properties.tf || 0;
+
+        if (this.properties.size !== undefined) network.size += this.properties.size;
 
         for (var i = 0; i < inputs.length ; i+= 1) inputs[i].add_fanout(this);
         output.add_driver(this);
-
-        if (this.properties.cout === undefined) this.properties.cout = 0;
-        if (this.properties.cin === undefined) this.properties.cin = 0;
-        if (this.properties.tcd === undefined) this.properties.tcd = 0;
-        if (this.properties.tpdf === undefined) this.properties.tpdf = this.properties.tpd || 0;
-        if (this.properties.tpdr === undefined) this.properties.tpdr = this.properties.tpd || 0;
-        if (this.properties.tr === undefined) this.properties.tr = 0;
-        if (this.properties.tf === undefined) this.properties.tf = 0;
 
         var in0 = inputs[0];
         var in1 = inputs[1];
@@ -1059,8 +1061,8 @@ var gatesim = (function() {
     };
 
     LogicGate.prototype.capacitance = function(node) {
-        if (this.output == node) return this.properties.cout;
-        else return this.properties.cin;
+        if (this.output == node) return this.cout;
+        else return this.cin;
     };
 
     // is node a tristate output of this device?
@@ -1088,22 +1090,22 @@ var gatesim = (function() {
             }
 
             // schedule contamination event with specified delay
-            onode.c_event(this.properties.tcd);
+            onode.c_event(this.tcd);
         }
         else if (event.type == PROPAGATE) {
             v = this.logic_eval();
             if (!this.lenient || v != onode.v || onode.cd_event !== undefined || onode.pd_event !== undefined) {
                 var drive, tpd;
                 if (v == V1) {
-                    tpd = this.properties.tpdr;
-                    drive = this.properties.tr;
+                    tpd = this.tpdr;
+                    drive = this.tr;
                 }
                 else if (v == V0) {
-                    tpd = this.properties.tpdf;
-                    drive = this.properties.tf;
+                    tpd = this.tpdf;
+                    drive = this.tf;
                 }
                 else {
-                    tpd = Math.min(this.properties.tpdr, this.properties.tpdf);
+                    tpd = Math.min(this.tpdr, this.tpdf);
                     drive = 0;
                 }
                 onode.p_event(tpd, v, drive, this.lenient);
@@ -1112,9 +1114,9 @@ var gatesim = (function() {
     };
 
     LogicGate.prototype.get_timing_info = function(output) {
-        var tr = this.properties.tpdr + this.properties.tr*output.capacitance;
-        var tf = this.properties.tpdf + this.properties.tf*output.capacitance;
-        var tinfo = new TimingInfo(output.name,output,this,this.properties.tcd,Math.max(tr,tf));
+        var tr = this.tpdr + this.tr*output.capacitance;
+        var tf = this.tpdf + this.tf*output.capacitance;
+        var tinfo = new TimingInfo(output.name,output,this,this.tcd,Math.max(tr,tf));
 
         // loop through inputs looking for min/max paths
         for (var i = 0; i < this.inputs.length ; i+= 1) {
@@ -1154,15 +1156,17 @@ var gatesim = (function() {
 
         this.properties = properties;
         this.lenient = properties.lenient !== undefined && properties.lenient !== 0;
-        this.cout = this.properties.cout || 0;
-        this.cin = this.properties.cin || 0;
-        this.tcd = this.properties.tcd || 0;
-        this.tpdf = this.properties.tpdf || this.properties.tpd || 0;
-        this.tpdr = this.properties.tpdr || this.properties.tpd || 0;
-        this.tr = this.properties.tr || 0;
-        this.tf = this.properties.tf || 0;
-        this.ts = this.properties.ts || 0;
-        this.th = this.properties.th || 0;
+        this.cout = properties.cout || 0;
+        this.cin = properties.cin || 0;
+        this.tcd = properties.tcd || 0;
+        this.tpdf = properties.tpdf || properties.tpd || 0;
+        this.tpdr = properties.tpdr || properties.tpd || 0;
+        this.tr = properties.tr || 0;
+        this.tf = properties.tf || 0;
+        this.ts = properties.ts || 0;
+        this.th = properties.th || 0;
+
+        if (this.properties.size !== undefined) network.size += this.properties.size;
     }
 
     Storage.prototype.initialize = function() {
@@ -1287,43 +1291,131 @@ var gatesim = (function() {
     //
     ///////////////////////////////////////////////////////////////////////////////
 
-    function Memory(network, name, properties) {
+    function Memory(network, name, properties, options) {
         var mem = this;
         mem.network = network;
         mem.name = name;
 
+        // set up properties
         mem.width = properties.width;
         if (mem.width === undefined || mem.width <= 0)
             throw "Memory "+name+" must have width > 0.";
         mem.nlocations = properties.nlocations;
         if (mem.nlocations === undefined || mem.nlocations <= 0)
             throw "Memory "+name+" must have > 0 locations.";
-        mem.ports = properties.ports || [];
+        mem.filename = properties.filename;
+        mem.contents = properties.contents;
+        if (mem.filename !== undefined && mem.contents !== undefined)
+            throw "Memory "+name+" can't specify both a filename and contents.";
 
-        // create useful lists so we can answer questions about our terminal nodes
-        mem.wen_inputs = [];
-        mem.clk_inputs = [];
-        mem.oe_inputs = [];
-        mem.addr_inputs = [];
-        mem.tristate_outputs = [];   
+        mem.lenient = properties.lenient !== undefined && properties.lenient !== 0;
+        mem.cout = properties.cout || options.mem_cout || 0;
+        mem.cin = properties.cin || options.mem_cin || 0;
+        mem.tcd = properties.tcd || options.mem_tcd || 0;
+        mem.tr = properties.tr || options.mem_tr || 0;
+        mem.tf = properties.tf || options.mem_tf || 0;
+        mem.ts = properties.ts || options.mem_ts || 0;
+        mem.th = properties.th || options.mem_th || 0;
+
+        // tPD depends on number of memory locations
+        // local properties take precedence over global options
+        if (mem.nlocations > 1024) {          // dram
+            mem.tpdf = properties.tpdf || properties.tpd || options.mem_tpd_dram || 0;
+            mem.tpdr = properties.tpdr || properties.tpd || options.mem_tpd_dram || 0;
+        } else if (mem.nlocations > 128) {   // sram
+            mem.tpdf = properties.tpdf || properties.tpd || options.mem_tpd_sram || 0;
+            mem.tpdr = properties.tpdr || properties.tpd || options.mem_tpd_sram || 0;
+        } else {                             // regfile
+            mem.tpdf = properties.tpdf || properties.tpd || options.mem_tpd_regfile || 0;
+            mem.tpdr = properties.tpdr || properties.tpd || options.mem_tpd_regfile || 0;
+        }
+
+        // set up fanouts and drivers
+        mem.ports = properties.ports || [];
+        mem.tristate_outputs = [];   // remember which nodes memory can drive
+        mem.n_read_ports = 0;
+        mem.n_write_ports = 0;
+        mem.naddr = 0;
         $.each(mem.ports, function (i,port) {
-            if (mem.wen_inputs.indexOf(port.wen) != -1) mem.wen_inputs.push(port.wen);
-            if (mem.clk_inputs.indexOf(port.clk) != -1) mem.clk_inputs.push(port.clk);
-            if (mem.oe_inputs.indexOf(port.oe) != -1) mem.oe_inputs.push(port.oe);
-            $.each(port.addr, function (j, dnode) {
-                if (mem.addr_inputs.indexOf(node) != -1) mem.addr_inputs.push(dnode);
-            });
-            $.each(port.data, function (j, dnode) {
-                if (mem.tristate_outputs.indexOf(node) != -1) mem.tristate_outputs.push(dnode);
+            // we listen to clk, wen, oe and addr signals
+            port.clk.add_fanout(mem);
+            port.wen.add_fanout(mem);
+            port.oe.add_fanout(mem);
+            $.each(port.addr, function (j, node) { node.add_fanout(mem); });
+            mem.naddr = port.addr.length;
+
+            $.each(port.data, function (j, node) {
+                // if there's a possibility of a write, we listen to data nodes
+                if (port.clk != network.gnd || port.wen != network.gnd) {
+                    node.add_fanout(mem);
+                    mem.n_write_ports += 1;
+                }
+
+                // if there's a possibility of a read, add data nodes as drivers
+                if (port.oe != network.gnd) {
+                    node.add_driver(mem);
+                    if (mem.tristate_outputs.indexOf(node) != -1) mem.tristate_outputs.push(node);
+                    mem.n_read_ports += 1;
+                }
             });
         });
+
+        // allocate internal storage array, one location per bit since we're lazy
+        mem.bits = new Uint8Array(mem.nlocations * mem.width);  // array of memory bits
+
+        // compute size
+        var cell;   // size of each storage cell (not including access fet)
+        if (mem.n_read_ports == 1 && mem.n_write_ports == 0)  // ROM
+            cell = 0;
+        else if (mem.nlocations <= 1024)   // SRAM
+            cell = options.mem_size_sram || 5;
+        else cell = 0; // DRAM
+
+        // add 1 access fet per port
+        cell += mem.ports.length * (options.mem_size_access || 1);
+
+        // start with storage cell area = number of bits * cell size
+        // (1 access fet per port + size of storage cell)
+        var size = (mem.nlocations * mem.width) * cell;
+
+        // size of address buffers
+        size += mem.ports.length * mem.naddr * (options.mem_size_address_buffer || 20);
+
+        // size of address decoders (assuming 4-input ands)
+        size += mem.ports.length * mem.naddr * (options.mem_size_address_decoder || 20);
+
+        // size of tristate output drivers
+        size += mem.n_read_ports * mem.width * (options.mem_size_output_buffer || 30);
+
+        // size of write data drivers
+        size += mem.n_write_ports * mem.width * (options.mem_size_write_buffer || 20);
+
+        network.size += size;
     }
 
     Memory.prototype.initialize = function() {
     };
 
     Memory.prototype.capacitance = function(node) {
-        return 0;
+        var mem = this;
+        var c = 0;
+        // check each port to see if node is connected to one of its terminals
+        $.each(mem.ports, function (i,port) {
+            if (port.clk == node) c += mem.cin;
+            if (port.wen == node) c += mem.cin;
+            if (port.oe == node) c += mem.cin;
+            $.each(port.addr, function (j, dnode) { if (dnode == node) c += mem.cin; });
+            $.each(port.data, function (j, dnode) {
+                if (dnode == node) {
+                    // if there's a possibility of a write, data node is an input
+                    if (port.clk != mem.network.gnd || port.wen != mem.network.gnd) c += mem.cin;
+
+                    // if there's a possibility of a read, data node is an output
+                    if (port.oe != mem.network.gnd) c += mem.cout;
+                }
+            });
+        });
+        return c;
     };
 
     // is node a tristate output of this device?
