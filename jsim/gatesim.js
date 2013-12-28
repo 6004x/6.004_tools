@@ -63,7 +63,7 @@ var gatesim = (function() {
         try {
             analysis = network.get_timing_info();
         } catch (e) {
-            return "Oops, timing analysis failed:\n"+e;
+            return "\n\nOops, timing analysis failed:\n"+e;
         }
 
         var div_counter = 0;
@@ -288,8 +288,10 @@ var gatesim = (function() {
         // give each Node a chance to finalize itself
         $.each(network.node_map, function (n,node) { node.finalize(); });
 
-        var msg = network.N.toString() + ' nodes';
+        var msg = 'Size = '+network.size+' u**2 (';
+        msg += network.N.toString() + ' nodes';
         for (d in counts) msg += ', ' + counts[d].toString() + ' ' + d;
+        msg += ')';
         console.log(msg);
     };
 
@@ -1061,9 +1063,13 @@ var gatesim = (function() {
         }
     };
 
+    // capacitance contribution from this device for node
     LogicGate.prototype.capacitance = function(node) {
-        if (this.output == node) return this.cout;
-        else return this.cin;
+	var c = 0;
+	for (var i = 0; i < this.inputs.length; i += 1)
+	    if (this.inputs[i] == node) c += this.cin;
+	if (this.output == node) c += this.cout;
+	return c;
     };
 
     // is node a tristate output of this device?
@@ -1176,9 +1182,13 @@ var gatesim = (function() {
         this.state = VX;
     };
 
+    // capacitance contribution from this device for node
     Storage.prototype.capacitance = function(node) {
-        if (this.q == node) return this.cout;
-        else return this.cin;
+        var c = 0;
+        if (this.q == node) c += this.cout;
+        if (this.d == node) c += this.cin;
+        if (this.clk == node) c += this.cin;
+        return c;
     };
 
     // is node a tristate output of this device?
@@ -1313,11 +1323,11 @@ var gatesim = (function() {
         mem.lenient = properties.lenient !== undefined && properties.lenient !== 0;
         mem.cout = properties.cout || options.mem_cout || 0;
         mem.cin = properties.cin || options.mem_cin || .1e-12;
-        mem.tcd = properties.tcd || options.mem_tcd || 0;
-        mem.tr = properties.tr || options.mem_tr || 1000;  // ns/pf
-        mem.tf = properties.tf || options.mem_tf || 1000;  // ns/pf
-        mem.ts = properties.ts || options.mem_ts || 0;
-        mem.th = properties.th || options.mem_th || 0;
+        mem.tcd = properties.tcd || options.mem_tcd || .2e-9;
+        mem.tr = properties.tr || options.mem_tr || 1000;
+        mem.tf = properties.tf || options.mem_tf || 1000;
+        mem.ts = properties.ts || options.mem_ts || (2*mem.tcd);
+        mem.th = properties.th || options.mem_th || mem.tcd;
 
         // tPD depends on number of memory locations
         // local properties take precedence over global options
@@ -1573,11 +1583,52 @@ var gatesim = (function() {
     };
 
     Memory.prototype.get_timing_info = function(output) {
-        return undefined;
+        var tr = this.tpdr + this.tr*output.capacitance;
+        var tf = this.tpdf + this.tf*output.capacitance;
+        var tinfo = new TimingInfo(output.name,output,this,this.tcd,Math.max(tr,tf));
+
+        // look for read ports with data connections to output
+        for (var i = 0; i < this.ports.length; i += 1) {
+            var port = this.ports[i];
+            if (!port.read_port) continue;
+            // is output connected to this port?
+            if (port.data.indexOf(output) != -1) {
+                // check timing of OE
+                tinfo.set_delays(port.oe.get_timing_info());
+                // check timing of address inputs
+                for (var j = 0; j < this.naddr; j += 1)
+                    tinfo.set_delays(port.addr[j].get_timing_info());
+            }
+        }
+
+        return tinfo;
     };
 
     Memory.prototype.get_clock_info = function(clk) {
-        return undefined;
+        var tinfo,i,j,port;
+
+        // look for write ports clocked by clk
+        for (i = 0; i < this.ports.length; i += 1) {
+            port = this.ports[i];
+            if (!port.write_port || port.clk != clk) continue;
+
+            if (tinfo === undefined) {
+                tinfo = new TimingInfo(clk.name+'\u2191',clk,this,-this.th,this.ts);
+            }
+
+            // check timing of write enable
+            tinfo.set_delays(port.wen.get_timing_info());
+
+            // check timing of address inputs
+            for (j = 0; j < this.naddr; j += 1)
+                tinfo.set_delays(port.addr[j].get_timing_info());
+
+            // check timing of data inputs
+            for (j = 0; j < this.width; j += 1)
+                tinfo.set_delays(port.data[j].get_timing_info());
+        }
+
+        return tinfo;
     };
 
     ///////////////////////////////////////////////////////////////////////////////
