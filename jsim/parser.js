@@ -439,7 +439,7 @@ var Parser = (function(){
         if (line[1].type != "name"){
             throw new CustomError("Invalid plot definition name",line[1]);
         }
-        var defs = line.slice(2).map(function(item){return item.token});
+        var defs = line.slice(2).map(function(item){return item.token;});
         plotdefs[line[1].token] = defs;
         //        console.log("plotdefs:",plotdefs);
     }
@@ -1445,14 +1445,13 @@ var Parser = (function(){
         var values = data.split(/\s+/);
         var contents = [];
         for (var v = 0; v < values.length; v += 1){
-            try{
+            try {
                 contents.push(parse_number(values[v]));
             } catch (err) {
-                throw new CustomError("Number expected.",err_token);
+                throw new CustomError("Number expected in memory file.",err_token);
             }
         }
         mem_obj.properties.contents = contents.slice(0);
-        //        console.log("obj:",mem_obj);
     }
     
     /***********************

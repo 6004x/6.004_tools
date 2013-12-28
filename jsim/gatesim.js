@@ -39,7 +39,8 @@ var gatesim = (function() {
             progress.update = function(percent_complete) { // 0 - 100
                 // invoke the callback which will return true if the
                 // simulation should halt.
-                if (progress_callback(percent_complete, undefined, undefined)) progress.stop_requested = true;
+                if (progress_callback(percent_complete, undefined, undefined))
+                    progress.stop_requested = true;
             };
 
             network.initialize(progress, tstop);
@@ -1196,10 +1197,14 @@ var gatesim = (function() {
                     // track minimum setup time we see
                     var now = this.network.time;
                     var d_time = this.d.last_event_time();
-                    var tsetup = this.network.time - d_time;
-                    if (now > 0 && d_time && tsetup < this.min_setup) {
-                        this.min_setup = tsetup;
-                        this.min_setup_time = now;
+                    if (d_time !== undefined) {
+                        if (now > 0) {
+                            var tsetup = this.network.time - d_time;
+                            if (this.min_setup === undefined || tsetup < this.min_setup) {
+                                this.min_setup = tsetup;
+                                this.min_setup_time = now;
+                            }
+                        }
                     }
                     // report setup time violations?
 
@@ -1245,7 +1250,7 @@ var gatesim = (function() {
                 }
                 // schedule contamination event with specified delay
                 this.q.c_event(this.tcd);
-            } else {
+            } else if (event.type == PROPAGATE) {
                 // avoid scheduling PROPAGATE events if we can...
                 if (!this.lenient || v != this.q.v || this.q.cd_event !== undefined || this.q.pd_event !== undefined) {
                     var drive,tpd;
@@ -1303,31 +1308,34 @@ var gatesim = (function() {
         mem.nlocations = properties.nlocations;
         if (mem.nlocations === undefined || mem.nlocations <= 0)
             throw "Memory "+name+" must have > 0 locations.";
-        mem.filename = properties.filename;
         mem.contents = properties.contents;
-        if (mem.filename !== undefined && mem.contents !== undefined)
-            throw "Memory "+name+" can't specify both a filename and contents.";
 
         mem.lenient = properties.lenient !== undefined && properties.lenient !== 0;
         mem.cout = properties.cout || options.mem_cout || 0;
-        mem.cin = properties.cin || options.mem_cin || 0;
+        mem.cin = properties.cin || options.mem_cin || .1e-12;
         mem.tcd = properties.tcd || options.mem_tcd || 0;
-        mem.tr = properties.tr || options.mem_tr || 0;
-        mem.tf = properties.tf || options.mem_tf || 0;
+        mem.tr = properties.tr || options.mem_tr || 1000;  // ns/pf
+        mem.tf = properties.tf || options.mem_tf || 1000;  // ns/pf
         mem.ts = properties.ts || options.mem_ts || 0;
         mem.th = properties.th || options.mem_th || 0;
 
         // tPD depends on number of memory locations
         // local properties take precedence over global options
         if (mem.nlocations > 1024) {          // dram
-            mem.tpdf = properties.tpdf || properties.tpd || options.mem_tpd_dram || 0;
-            mem.tpdr = properties.tpdr || properties.tpd || options.mem_tpd_dram || 0;
+            mem.tpdf = properties.tpdf || properties.tpd ||
+                options.mem_tpdf_dram || options.mem_tpd_dram || 40e-9;
+            mem.tpdr = properties.tpdr || properties.tpd ||
+                options.mem_tpdr_dram || options.mem_tpd_dram || 40e-8;
         } else if (mem.nlocations > 128) {   // sram
-            mem.tpdf = properties.tpdf || properties.tpd || options.mem_tpd_sram || 0;
-            mem.tpdr = properties.tpdr || properties.tpd || options.mem_tpd_sram || 0;
+            mem.tpdf = properties.tpdf || properties.tpd ||
+                options.mem_tpdf_sram || options.mem_tpd_sram || 2e-9;
+            mem.tpdr = properties.tpdr || properties.tpd ||
+                options.mem_tpdr_sram || options.mem_tpd_sram || 2e-9;
         } else {                             // regfile
-            mem.tpdf = properties.tpdf || properties.tpd || options.mem_tpd_regfile || 0;
-            mem.tpdr = properties.tpdr || properties.tpd || options.mem_tpd_regfile || 0;
+            mem.tpdf = properties.tpdf || properties.tpd ||
+                options.mem_tpdf_regfile || options.mem_tpd_regfile || .1e-9;
+            mem.tpdr = properties.tpdr || properties.tpd ||
+                options.mem_tpdr_regfile || options.mem_tpd_regfile || .1e-9;
         }
 
         // set up fanouts and drivers
@@ -1349,6 +1357,7 @@ var gatesim = (function() {
                 if (port.clk != network.gnd || port.wen != network.gnd) {
                     node.add_fanout(mem);
                     mem.n_write_ports += 1;
+                    port.write_port = true;
                 }
 
                 // if there's a possibility of a read, add data nodes as drivers
@@ -1356,6 +1365,7 @@ var gatesim = (function() {
                     node.add_driver(mem);
                     if (mem.tristate_outputs.indexOf(node) != -1) mem.tristate_outputs.push(node);
                     mem.n_read_ports += 1;
+                    port.read_port = true;
                 }
             });
         });
@@ -1370,30 +1380,129 @@ var gatesim = (function() {
         else if (mem.nlocations <= 1024)   // SRAM
             cell = options.mem_size_sram || 5;
         else cell = 0; // DRAM
-
         // add 1 access fet per port
         cell += mem.ports.length * (options.mem_size_access || 1);
 
         // start with storage cell area = number of bits * cell size
         // (1 access fet per port + size of storage cell)
         var size = (mem.nlocations * mem.width) * cell;
-
         // size of address buffers
         size += mem.ports.length * mem.naddr * (options.mem_size_address_buffer || 20);
-
         // size of address decoders (assuming 4-input ands)
         size += mem.ports.length * mem.naddr * (options.mem_size_address_decoder || 20);
-
         // size of tristate output drivers
         size += mem.n_read_ports * mem.width * (options.mem_size_output_buffer || 30);
-
         // size of write data drivers
         size += mem.n_write_ports * mem.width * (options.mem_size_write_buffer || 20);
 
         network.size += size;
     }
 
+    // set all memory locations to X
+    Memory.prototype.clear_memory = function () {
+        var nbits = this.nlocations * this.width;
+        for (var i = 0; i < nbits; i += 1) this.bits[i] = VX;
+    };
+
     Memory.prototype.initialize = function() {
+        this.min_setup = undefined;     // min observed setup time on inputs
+        this.min_setup_time = undefined;  // when min observed setup was observer
+
+        this.clear_memory();  // start with all X's
+
+        // did user specify initial contents?
+        if (this.contents !== undefined) {
+            var nlocations = Math.min(this.nlocations,this.contents.length);
+            for (var i = 0; i < nlocations; i += 1) {
+                var word = this.contents[i];
+                for (var j = 0; j < this.width; j += 1, word >>= 1)
+                    this.bits[i*this.width + j] = word & 1;
+            }
+        }
+    };
+
+    Memory.prototype.update_min_setup = function(node) {
+        var now = this.network.time;
+        if (now > 0) {
+            var ntime = node.last_event_time();
+            if (ntime !== undefined) {
+                var tsetup = now - ntime;
+                if (this.min_setup === undefined || tsetup < this.min_setup) {
+                    this.min_setup = tsetup;
+                    this.min_setup_time = now;
+                }
+            }
+        }
+    };
+
+    // compute address from a port's addr signals, -1 if invalid.
+    // set update to true to update min setup time
+    Memory.prototype.address = function(port,update) {
+        var addr = 0;
+        var node,v;
+        for (var i = 0; i < this.naddr; i += 1) {
+            node = port.addr[i];
+            if (update) this.update_min_setup(node);
+            v = node.v;
+            if (v == VX || v == VZ) addr = -1;
+            else if (addr >= 0) {
+                addr <<= 1;
+                if (v == V1) addr |= 1;
+            }
+        }
+        return addr;
+    };
+
+    // return true if this a read port that is affecting its outputs
+    Memory.prototype.active_read_port = function(port,cause) {
+        // make sure it's a read port
+        if (!port.read_port) return false;
+
+        // port is active if OE just changed or OE != 0 and
+        // some address input just changed
+        if (cause == port.oe) return true;
+        if (port.oe.v != V0 && port.addr.indexOf(cause) != -1) return true;
+        return false;
+    };
+
+    // schedule propagtion events for data terminals of a read port
+    Memory.prototype.update_read_port = function(port) {
+        var addr = this.address(port,false);
+        var table = TristateBufferTable[port.oe.v];  // model of tristate driver
+        for (var i = 0; i < this.width; i += 1) {
+            // MSB of data comes first in the array of data nodes
+            var bit = (this.width - 1) - i;
+            var v = (addr < 0 || addr >= this.nlocations) ? VX : this.bits[addr*this.width + bit];
+            v = table[v][4];   // run it through the tristate driver, get result
+            var drive,tpd;
+            if (v == V1) { tpd = this.tpdr; drive = this.tr; }
+            else if (v == V0) { tpd = this.tpdf; drive = this.tf; }
+            else { tpd = Math.min(this.tpdr,this.tpdf); drive = 0; }
+            port.data[i].p_event(tpd,v,drive,this.lenient);
+        }
+    };
+
+    // memory location has changed, update read ports looking at that location
+    Memory.prototype.location_changed = function(addr) {
+        for (var i = 0; i < this.ports.length; i += 1) {
+            var port = this.ports[i];
+            if (port.read_port && port.oe.v != V0) {
+                var paddr = this.address(port);
+                // check for address match (X's always match)
+                if (addr < 0 || paddr < 0 || paddr == addr)
+                    this.update_read_port(port);
+            }
+        };
+    };
+
+    // return true if this a write port that should capture a new data value
+    Memory.prototype.active_write_port = function(port,cause) {
+        // make sure it's a write port
+        if (!port.write_port) return false;
+
+        if (this.network.time === 0) return false;
+        if (cause == port.clk && port.clk.v != V0 && port.wen.v != V0) return true;
+        return false;
     };
 
     Memory.prototype.capacitance = function(node) {
@@ -1425,6 +1534,42 @@ var gatesim = (function() {
 
     // evaluation of output values triggered by an event on the input
     Memory.prototype.process_event = function(event,cause) {
+        var i,bit,port;
+
+        if (event.type == CONTAMINATE) {
+            // look for port outputs affected by cause node
+            for (i = 0; i < this.ports.length; i += 1) {
+                port = this.ports[i];
+                // only read ports have outputs to contaminate
+                if (this.active_read_port(port,cause)) {
+                    // data pins on port are affected by cause
+                    for (bit = 0; bit < this.width; bit += 1)
+                        port.data[bit].c_event(this.tcd);
+                }
+            };
+        } else if (event.type == PROPAGATE) {   // PROPAGATE event
+            // look for port outputs affected by cause node
+            for (i = 0; i < this.ports.length; i += 1) {
+                port = this.ports[i];
+
+                if (this.active_read_port(port,cause))
+                    this.update_read_port(port);
+
+                if (this.active_write_port(port,cause)) {
+                    var addr = this.address(port,true);
+                    // will write store a value or X?
+                    var valid = (port.clk.v == V1) && (port.wen.v == V1);
+                    // write appropriate location(s)
+                    if (addr < 0) this.clear_memory();
+                    else if (addr < this.nlocations) {
+                        for (bit = 0; bit < this.width; bit += 1)
+                            // MSB of data comes first in the array of data nodes
+                            this.bits[addr*this.width + (this.width - 1) - bit] = valid ? port.data[bit].v : VX;
+                    }
+                    this.location_changed(addr);
+                }
+            };
+        }
     };
 
     Memory.prototype.get_timing_info = function(output) {

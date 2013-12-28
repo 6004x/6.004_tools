@@ -277,7 +277,7 @@ var Simulator = (function(){
             for (var i = 0; i < nlist.length; i += 1) {
                 var node = nlist[i];
                 var values = results.history(node);
-                if (values === undefined) continue;
+                if (values === undefined) throw "Cannot get history for node: "+node;
 
                 dataset.xvalues.push(values.xvalues);
                 dataset.yvalues.push(values.yvalues);
@@ -363,7 +363,7 @@ var Simulator = (function(){
                     for (vindex = 0; vindex < yv.length; vindex += 1) {
                         yvalues = yv[vindex];
                         y = 0;
-                        for (nindex = 0; nindex < yvalues.length; nindex += 1) {
+                        for (nindex = 0; nindex < nnodes; nindex += 1) {
                             i = yvalues[nindex];
                             if (i === 0 || i == 1) y = y*2 + i;
                             else {
