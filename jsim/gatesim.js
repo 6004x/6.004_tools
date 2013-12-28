@@ -288,7 +288,7 @@ var gatesim = (function() {
         // give each Node a chance to finalize itself
         $.each(network.node_map, function (n,node) { node.finalize(); });
 
-        var msg = 'Size = '+network.size+' u**2 (';
+        var msg = 'Size = '+network.size+' micron^2 (';
         msg += network.N.toString() + ' nodes';
         for (d in counts) msg += ', ' + counts[d].toString() + ' ' + d;
         msg += ')';
@@ -1362,22 +1362,22 @@ var gatesim = (function() {
             $.each(port.addr, function (j, node) { node.add_fanout(mem); });
             mem.naddr = port.addr.length;
 
-            $.each(port.data, function (j, node) {
-                // if there's a possibility of a write, we listen to data nodes
-                if (port.clk != network.gnd || port.wen != network.gnd) {
-                    node.add_fanout(mem);
-                    mem.n_write_ports += 1;
-                    port.write_port = true;
-                }
+            // if there's a possibility of a write, we listen to data nodes
+            if (port.clk != network.gnd || port.wen != network.gnd) {
+                mem.n_write_ports += 1;
+                port.write_port = true;
+                $.each(port.data, function (j, node) { node.add_fanout(mem); });
+            }
 
-                // if there's a possibility of a read, add data nodes as drivers
-                if (port.oe != network.gnd) {
+            // if there's a possibility of a read, add data nodes as drivers
+            if (port.oe != network.gnd) {
+                mem.n_read_ports += 1;
+                port.read_port = true;
+                $.each(port.data, function (j, node) {
                     node.add_driver(mem);
                     if (mem.tristate_outputs.indexOf(node) != -1) mem.tristate_outputs.push(node);
-                    mem.n_read_ports += 1;
-                    port.read_port = true;
-                }
-            });
+                });
+            }
         });
 
         // allocate internal storage array, one location per bit since we're lazy
@@ -1405,6 +1405,7 @@ var gatesim = (function() {
         // size of write data drivers
         size += mem.n_write_ports * mem.width * (options.mem_size_write_buffer || 20);
 
+        //console.log('mem '+mem.name+' '+size+' '+cell);
         network.size += size;
     }
 
