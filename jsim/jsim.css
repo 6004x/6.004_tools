@@ -84,3 +84,22 @@ span.wrong {
   background-color: black;
   border: 1px solid black;
 }
+.size-table {
+    font-size: small;
+    border-collapse: collapse;
+    border: 1px solid black;
+}
+.size-table th {
+    border: 1px solid black;
+    padding-left: 3px;
+    padding-right: 3px;
+}
+.size-table td {
+    border: 1px solid black;
+    padding-left: 3px;
+    padding-right: 3px;
+}
+.size-table .number {
+    text-align: right;
+}
+

@@ -183,7 +183,9 @@ var gatesim = (function() {
         network.nodes = [];
         network.devices = []; // list of devices
         network.device_map = {}; // name -> device
-        network.size = 0;
+        network.size = 0;     // total size
+        network.counts = {};  // counts by device type
+        network.sizes = {};   // sizes by device type
 
         // handle all the ground connections
         network.gnd = network.node('gnd');
@@ -222,13 +224,11 @@ var gatesim = (function() {
         });
 
         // process each component in the JSON netlist (see schematic.js for format)
-        var counts = {};
         $.each(netlist,function (i,component) {
             var n,d;
             var type = component.type;
             var connections = component.connections;
             var properties = component.properties;
-            counts[type] = (counts[type] || 0) + 1;
 
             var name = properties.name;
 
@@ -242,14 +242,10 @@ var gatesim = (function() {
                 var inputs = [];
                 $.each(info[0],function (j,cname) { inputs.push(connections[cname]); });
                 // create a new device
-                d = new LogicGate(network, type, name, info[2], inputs, connections[info[1]], properties);
-                network.devices.push(d);
-                network.device_map[name] = d;
+                new LogicGate(network, type, name, info[2], inputs, connections[info[1]], properties);
             }
             else if (type == 'dreg' || type == 'dlatch' || type == 'dlatchn') {
-                d = new Storage(network, name, type, connections, properties);
-                network.devices.push(d);
-                network.device_map[name] = d;
+                new Storage(network, name, type, connections, properties);
             }
             else if (type == 'memory') {
                 // convert node names to Nodes
@@ -261,9 +257,7 @@ var gatesim = (function() {
                     port.oe = network.node(port.oe);
                 });
 
-                d = new Memory(network, name, properties, options);
-                network.devices.push(d);
-                network.device_map[name] = d;
+                new Memory(network, name, properties, options);
             }
             else if (type == 'connect') {
                 // handled above
@@ -275,24 +269,78 @@ var gatesim = (function() {
                 n = connections.z;
                 if (n.drivers.length > 0) return; // already handled this one
                 n.v = (type == 'constant0' ? V0 : V1);   // should be set by initialization of LogicGate that drives this node
-                network.devices.push(new LogicGate(network, type, name, type == 'constant0' ? LTable:HTable, [], n, properties));
+                new LogicGate(network, type, name, type == 'constant0' ? LTable:HTable, [], n, properties);
             }
             else if (type == 'voltage source') {
                 n = connections.nplus; // hmmm.
                 if (n.drivers.length > 0) return; // already handled this one
-                network.devices.push(new Source(network, name,  n, properties));
+                new Source(network, name,  n, properties);
             }
             else throw 'Unrecognized gate: ' + type;
         });
 
         // give each Node a chance to finalize itself
         $.each(network.node_map, function (n,node) { node.finalize(); });
+    };
 
-        var msg = 'Size = '+network.size+' micron^2 (';
-        msg += network.N.toString() + ' nodes';
-        for (d in counts) msg += ', ' + counts[d].toString() + ' ' + d;
-        msg += ')';
-        console.log(msg);
+    Network.prototype.report = function() {
+        var network = this;
+        var result = $('<div></div>');
+
+        // Benmark = 1e-10/(size_in_m**2 * simulation_time_in_s)
+        var benmark = 1e-10/((network.size*1e-12) * network.time);
+        result.append('Benmark: '+benmark.toFixed(2));
+
+        // min observed setup time
+        var min_setup = undefined;
+        var min_setup_time = undefined;
+        var min_setup_device = undefined;
+        $.each(network.devices,function (i,device) {
+            if (device.min_setup) {
+                if (min_setup === undefined || device.min_setup < min_setup) {
+                    min_setup = device.min_setup;
+                    min_setup_time = device.min_setup_time;
+                    min_setup_device = device.name;
+                }
+            }
+        });
+        if (min_setup) {
+            result.append('<p>Min observed setup time: '+(min_setup*1e9).toFixed(2)+'ns at time='+(min_setup_time*1e9).toFixed(0)+'ns for device '+min_setup_device);
+        }
+
+        // table of component counts and sizes
+        var tbl = $('<table class="size-table"><tr><th>Component</th><th>Count</th><th>Size (\u03BC\u00B2)</th></tr></table>');
+        tbl.append('<tr><td><i>nodes</i></td><td class="number">'+this.N+'</td><td></td></tr>');
+
+        var total = 0;
+        var types = [];
+        $.each(network.counts,function (type,count) {
+            types.push(type);
+            total += count;
+        });
+        types.sort();
+        var size,total = 0;
+        $.each(types,function (i,type) {
+            total += network.counts[type];
+            size = network.sizes[type];
+            if (size === undefined) size = '';
+            tbl.append('<tr><td>'+type+'</td><td class="number">'+network.counts[type]+'</td><td class="number">'+size+'</td></tr>');
+        });
+        tbl.append('<tr><td><b>Totals</b></td><td class="number"><b>'+total+'</b></td><td class="number"><b>'+network.size+'</b></td></tr>');
+        result.append('<p>',tbl);
+
+        return result;
+    };
+
+    Network.prototype.add_component = function(device) {
+        var type = device.type;
+        this.devices.push(device);
+        this.counts[type] = (this.counts[type] || 0) + 1;
+        if (device.name) this.device_map[device.name] = device;
+        if (device.size) {
+            this.size += device.size;
+            this.sizes[type] = (this.sizes[type] || 0) + device.size;
+        }
     };
 
     // initialize for simulation, queue initial events
@@ -747,6 +795,7 @@ var gatesim = (function() {
     ///////////////////////////////////////////////////////////////////////////////
 
     function Source(network, name, output, properties) {
+        this.type = 'voltage source';
         this.network = network;
         this.name = name;
         this.output = output;
@@ -781,6 +830,8 @@ var gatesim = (function() {
 
         output.add_fanout(this);    // listen for our own events!
         output.add_driver(this);
+
+        network.add_component(this);
     }
 
     Source.prototype.initialize = function() {
@@ -1004,6 +1055,7 @@ var gatesim = (function() {
         this.inputs = inputs;
         this.output = output;
         this.properties = properties;
+        this.size = properties.size || 0;
 
         this.lenient = properties.lenient !== undefined && properties.lenient !== 0;
         this.cout = properties.cout || 0;
@@ -1013,8 +1065,6 @@ var gatesim = (function() {
         this.tpdr = properties.tpdr || properties.tpd || 0;
         this.tr = properties.tr || 0;
         this.tf = properties.tf || 0;
-
-        if (this.properties.size !== undefined) network.size += this.properties.size;
 
         for (var i = 0; i < inputs.length ; i+= 1) inputs[i].add_fanout(this);
         output.add_driver(this);
@@ -1052,6 +1102,8 @@ var gatesim = (function() {
             for (var i = 0; i < inputs.length ; i+= 1) t = t[inputs[i].v];
             return t[4];
         };
+
+        network.add_component(this);
     }
 
     LogicGate.prototype.initialize = function() {
@@ -1146,6 +1198,7 @@ var gatesim = (function() {
         this.network = network;
         this.name = name;
         this.type = type;
+        this.size = properties.size || 0;
 
         this.d = connections.d;
         this.clk = connections.clk;
@@ -1173,7 +1226,7 @@ var gatesim = (function() {
         this.ts = properties.ts || 0;
         this.th = properties.th || 0;
 
-        if (this.properties.size !== undefined) network.size += this.properties.size;
+        network.add_component(this);
     }
 
     Storage.prototype.initialize = function() {
@@ -1308,6 +1361,7 @@ var gatesim = (function() {
 
     function Memory(network, name, properties, options) {
         var mem = this;
+        mem.type = 'memory';
         mem.network = network;
         mem.name = name;
 
@@ -1395,18 +1449,17 @@ var gatesim = (function() {
 
         // start with storage cell area = number of bits * cell size
         // (1 access fet per port + size of storage cell)
-        var size = (mem.nlocations * mem.width) * cell;
+        mem.size = (mem.nlocations * mem.width) * cell;
         // size of address buffers
-        size += mem.ports.length * mem.naddr * (options.mem_size_address_buffer || 20);
+        mem.size += mem.ports.length * mem.naddr * (options.mem_size_address_buffer || 20);
         // size of address decoders (assuming 4-input ands)
-        size += mem.ports.length * mem.naddr * (options.mem_size_address_decoder || 20);
+        mem.size += mem.ports.length * mem.naddr * (options.mem_size_address_decoder || 20);
         // size of tristate output drivers
-        size += mem.n_read_ports * mem.width * (options.mem_size_output_buffer || 30);
+        mem.size += mem.n_read_ports * mem.width * (options.mem_size_output_buffer || 30);
         // size of write data drivers
-        size += mem.n_write_ports * mem.width * (options.mem_size_write_buffer || 20);
+        mem.size += mem.n_write_ports * mem.width * (options.mem_size_write_buffer || 20);
 
-        //console.log('mem '+mem.name+' '+size+' '+cell);
-        network.size += size;
+        network.add_component(this);
     }
 
     // set all memory locations to X

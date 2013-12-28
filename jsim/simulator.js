@@ -90,21 +90,25 @@ var Simulator = (function(){
         tranProgress.append(haltButton);
         
         // transient analysis callback function
-        function tranCB (pct_complete, results) {
+        function tranCB (pct_complete, results, msg) {
             progressTxt.text("Performing Transient Analysis... "+pct_complete+"%");
-            if (results){
+
+            function error(err) {
+                tranProgress.hide();
+                div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                            '.<button class="close" data-dismiss="alert">&times;'+
+                            '</button></div>');
+            }
+
+            if (msg) error(msg);
+            else if (results) {
                 tranProgress.hide();
                 mCurrent_results = results;
                 Checkoff.setResults(mCurrent_results, mOptions);
                 
                 try {
                     prepare_tran_data(plots,results);
-                } catch (err) {
-                    tranProgress.hide();
-                    div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                '.<button class="close" data-dismiss="alert">&times;'+
-                                '</button></div>');
-                }
+                } catch (err) { error(err); }
             }
             return tranHalt;
         }
@@ -421,6 +425,10 @@ var Simulator = (function(){
             mDiv.empty();
             mDiv.append(container);
 
+            var stat_button = $('<button style="margin-left:10px;">Stats</button>');
+            $('.plot-toolbar').append(stat_button);
+            stat_button.on('click',function () { do_stats(results); });
+
             //cjt for some reason with typeahead one can't type "L(xxx)" ???
             // add autocomplete to add plot input field
             //var node_list = results.node_list();
@@ -431,6 +439,15 @@ var Simulator = (function(){
         }
     }
     
+    function do_stats(network) {
+        if (network.report) {
+            var d = new ModalDialog();
+            d.setTitle('Simulation Results');
+            d.setContent(network.report());
+            d.show();
+        }
+    }
+
     /***************
      AC analysis
      ***************/
