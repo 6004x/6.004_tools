@@ -22,6 +22,10 @@ BSim.Beta.Memory = function() {
         mMemory = new Uint32Array(mOriginalMemory);
     };
 
+    this.contents = function() {
+        return mMemory;
+    };
+
     this.readWord = function(address) {
         address >>= 2;
         if(address < 0 || address >= mMemory.length) {

@@ -428,6 +428,14 @@ var gatesim = (function() {
         return result;
     };
 
+    // return contents of named memory as an array of values
+    Network.prototype.get_memory = function(mem_name) {
+        var mem = this.device_map[mem_name];
+
+        if (mem !== undefined && mem.type == 'memory') return mem.get_contents();
+        else return undefined;
+    };
+
     Network.prototype.result_type = function() { return 'digital'; };
 
     Network.prototype.node_list = function() {
@@ -1262,7 +1270,7 @@ var gatesim = (function() {
                     var d_time = this.d.last_event_time();
                     if (d_time !== undefined) {
                         if (now > 0) {
-                            var tsetup = this.network.time - d_time;
+                            var tsetup = now - d_time;
                             if (this.min_setup === undefined || tsetup < this.min_setup) {
                                 this.min_setup = tsetup;
                                 this.min_setup_time = now;
@@ -1462,8 +1470,25 @@ var gatesim = (function() {
         network.add_component(this);
     }
 
+    // return contents of memory as an array.
+    // array element will be undefined if any bits in corresponding word are X.
+    Memory.prototype.get_contents = function() {
+        var result = [];
+        for (var i = 0; i < this.nlocations; i += 1) {
+            var word = 0;
+            for (var j = 0; j < this.width; j += 1) {
+                var v = this.bits[i*this.width + (this.width-1-j)];
+                if (v == VX) { word = undefined; break; }
+                word *= 2;
+                if (v == V1) word += 1;
+            }
+            result[i] = word;
+        }
+        return result;
+    };
+
     // set all memory locations to X
-    Memory.prototype.clear_memory = function () {
+    Memory.prototype.clear_memory = function() {
         var nbits = this.nlocations * this.width;
         for (var i = 0; i < nbits; i += 1) this.bits[i] = VX;
     };
@@ -1485,7 +1510,7 @@ var gatesim = (function() {
         }
     };
 
-    Memory.prototype.update_min_setup = function(node) {
+    Memory.prototype.update_from_node = function(node) {
         var now = this.network.time;
         if (now > 0) {
             var ntime = node.last_event_time();
@@ -1499,14 +1524,20 @@ var gatesim = (function() {
         }
     };
 
+    Memory.prototype.update_min_setup = function(port) {
+        this.update_from_node(port.wen);
+        var i;
+        for (i = 0; i < this.naddr; i += 1) this.update_from_node(port.addr[i]);
+        for (i = 0; i < this.width; i += 1) this.update_from_node(port.data[i]);
+    };
+
     // compute address from a port's addr signals, -1 if invalid.
     // set update to true to update min setup time
-    Memory.prototype.address = function(port,update) {
+    Memory.prototype.address = function(port) {
         var addr = 0;
         var node,v;
         for (var i = 0; i < this.naddr; i += 1) {
             node = port.addr[i];
-            if (update) this.update_min_setup(node);
             v = node.v;
             if (v == VX || v == VZ) addr = -1;
             else if (addr >= 0) {
@@ -1531,7 +1562,7 @@ var gatesim = (function() {
 
     // schedule propagtion events for data terminals of a read port
     Memory.prototype.update_read_port = function(port) {
-        var addr = this.address(port,false);
+        var addr = this.address(port);
         var table = TristateBufferTable[port.oe.v];  // model of tristate driver
         for (var i = 0; i < this.width; i += 1) {
             // MSB of data comes first in the array of data nodes
@@ -1620,7 +1651,7 @@ var gatesim = (function() {
                     this.update_read_port(port);
 
                 if (this.active_write_port(port,cause)) {
-                    var addr = this.address(port,true);
+                    var addr = this.address(port);
                     // will write store a value or X?
                     var valid = (port.clk.v == V1) && (port.wen.v == V1);
                     // write appropriate location(s)
@@ -1631,6 +1662,7 @@ var gatesim = (function() {
                             this.bits[addr*this.width + (this.width - 1) - bit] = valid ? port.data[bit].v : VX;
                     }
                     this.location_changed(addr);
+                    this.update_min_setup(port);
                 }
             };
         }

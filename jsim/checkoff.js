@@ -113,6 +113,16 @@ var Checkoff = (function(){
 <tr><td>Actual:</td><td>"+mistake.given+"</td></tr></table></p>");
             failedModal.addButton("Dismiss",'dismiss');
             failedModal.show();
+        } else if (mistake.msg == 'Verify memory error') {
+            failedModal = new ModalDialog();
+            failedModal.setTitle("Checkoff Failed!");
+            failedModal.setContent("<p><div class='text-error'>Memory verification error:</div></p>\
+<p><table class='table'><tr><td>Memory:</td><td>"+mistake.nodes+"</tr>\
+<tr><td>Location:</td><td>"+mistake.time+"</td></tr>\
+<tr><td>Expected:</td><td>"+mistake.exp+"</td></tr>\
+<tr><td>Actual:</td><td>"+mistake.given+"</td></tr></table></p>");
+            failedModal.addButton("Dismiss",'dismiss');
+            failedModal.show();
         } else {
             failedModal = new FailedModal(mistake.msg);
             failedModal.show();
@@ -227,14 +237,29 @@ var Checkoff = (function(){
         // report bogus checksum here?
     };
     
+    // vobj has attributes:
+    //      type: "memory"
+    //      mem_name: <the name of the memory instance>
+    //      startaddress: <the address to start verification at>
+    //      contents: <the expected contents of the memory>
+    //      display_base: 'hex', 'octal', or 'binary'
+    //      token: <the first token of the memory line for error throwing>
     function verify_memory(vobj){
-        // vobj has attributes:
-        //      type: "memory"
-        //      mem_name: <the name of the memory instance>
-        //      startaddress: <the address to start verification at>
-        //      contents: <the expected contents of the memory>
-        //      display_base: 'hex', 'octal', or 'binary'
-        //      token: <the first token of the memory line for error throwing>
+        var mem = mResults.get_memory(vobj.mem_name);
+
+        if (mem === undefined) {
+            throw new VerifyError('Cannot get contents of memory '+vobj.mem_name);
+        }
+
+        var start = vobj.startaddress;
+        for (var i = 0; i < vobj.contents.length; i += 1) {
+            var got = mem[start+i];
+            if (vobj.contents[i] != got) {
+                throw new VerifyError('Verify memory error',start+i,vobj.mem_name,
+                                      vobj.contents[i].toString(vobj.display_base),
+                                      got ? got.toString(vobj.display_base) : 'undefined');
+            }
+        }
     }
     
     function complete_checkoff(old){

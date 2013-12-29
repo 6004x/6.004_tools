@@ -841,35 +841,19 @@ var Parser = (function(){
         if (line[1].type != "name") throw new CustomError("Memory name expected.",line[1]);
         obj.mem_name = line[1].token;
         
-        try {
-            obj.startaddress = parse_number(line[2].token);
-            if (obj.startaddress < 0) throw "Invalid memory start address.";
-        } catch (err) {
-            throw new CustomError(err,line[2]);
-        }
+        if (line[2].type != "number")
+            throw new CustomError("Number expected.",line[2]);
+        obj.startaddress = line[2].token;
+        if (obj.startaddress < 0) throw "Invalid memory start address.";
         
-        var contents = [];
+        obj.contents = [];
         for (var i = 3; i < line.length; i += 1) {
-            //            try{
-            //                contents.push(parse_number(line[i].token));
-            //            } catch (err) {
-            //                throw new CustomError("Number expected.",line[i]);
-            //            }
-            if (line[i].type != "number" && line[i].token != "(" && line[i].token != ")"){
+            if (line[i].type != "number")
                 throw new CustomError("Number expected.", line[i]);
-            } else {
-                contents.push(line[i]);
-            }
+            obj.contents.push(line[i].token);
         }
-        obj.contents = contents.map(function(thing){return thing.token;});
-        
-        //        var display_base;
-        //        if (/^0x/i.test(line[3].token)) display_base = 'hex';
-        //        else if (/^0b/i.test(line[3].token)) display_base = 'binary';
-        //        else if (/^0/i.test(line[3].token) && !(/^0$/.test(line[3].token))) display_base = 'octal';
-        //        else display_base = 'binary';
-        
-        obj.display_base = contents[0].base;
+
+        obj.display_base = 16;
         obj.token = line[0];
         
         // obj has attributes:

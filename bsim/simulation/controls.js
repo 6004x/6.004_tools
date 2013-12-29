@@ -11,6 +11,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
     var mStepButton = null;
     var mVerifyButton = null;
     var mViewChange = null;
+    var mSaveMemory = null;
 
     var mToolbar = null;
 
@@ -138,6 +139,26 @@ BSim.Controls = function(container, beta, editor, schematic) {
         BSim.SchematicView.Scale();
     };
 
+    var handle_save_memory = function() {
+        var mem = mBeta.getMemory().contents();
+
+        // convert memory contents to ascii hex numbers
+        var i,hex = [];
+        for (i = 0; i < mem.length; i += 1) {
+            hex.push("0x" + ("0000000" + mem[i].toString(16)).substr(-8));
+        }
+
+        // format with 8 locations per line
+        var text = [];
+        for (i = 0; i < hex.length; i += 8) {
+            text.push("+ "+hex.slice(i,Math.min(i+8,hex.length)).join(' '));
+        }
+        text = text.join('\n');
+
+        // Save to the file "memory.contents"
+        FileSystem.saveFile('memory.contents',text,function () {});
+    };
+
     var initialise = function() {
         mResetButton = new ToolbarButton('icon-fast-backward', handle_reset, 'Reset Simulation');
         mUndoButton = new ToolbarButton('icon-step-backward', handle_undo, 'Step Back');
@@ -146,12 +167,14 @@ BSim.Controls = function(container, beta, editor, schematic) {
         mStepButton = new ToolbarButton('icon-step-forward', handle_step, 'Step Forward');
         mVerifyButton = new ToolbarButton('Checkoff', handle_checkoff);
         mViewChange = new ToolbarButton(mContainer.parents('#schematic-view').length ? "Programmer's View" : 'Schematic View', change_view);
+        mSaveMemory = new ToolbarButton('icon-file', handle_save_memory, "Save memory contents");
 
         mToolbar = new Toolbar(mContainer);
 
         mToolbar.addButtonGroup([mResetButton, mUndoButton, mStepButton, mRunButton, mFastRunButton]);
         mToolbar.addButtonGroup([mVerifyButton]);
         mToolbar.addButtonGroup([mViewChange]);
+        mToolbar.addButtonGroup([mSaveMemory]);
 
         mBeta.on('run:start', beta_run_start);
         mBeta.on('run:stop', beta_run_stop);
