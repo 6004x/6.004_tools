@@ -159,10 +159,41 @@ var gatesim = (function() {
         if (netlist !== undefined) this.load_netlist(netlist, options);
     }
 
+    // find anchor of alias chain
+    Network.prototype.unalias = function (name) {
+        while (this.aliases[name] !== undefined) name = this.aliases[name];
+        return name;
+    };
+
+    // make name1 and name2 refer to the same node
+    Network.prototype.make_alias = function (name1,name2) {
+        name1 = this.unalias(name1);   // strip away the masks!
+        name2 = this.unalias(name2);
+        if (name1 == name2) return;    // already aliased!
+
+        // are the names at the top level of the hierarchy?
+        var top_level_1 = (name1.indexOf('.') == -1);
+        var top_level_2 = (name2.indexOf('.') == -1);
+
+        // figure out which name becomes the anchor of the alias chain:
+        // gnd is always the anchor
+        // top level names are preferred to hierarchical names
+        // otherwise simply chose the shorter of the two names
+        var winner,loser;
+        if (name1 == 'gnd') { winner = name1; loser = name2; }
+        else if (name2 == 'gnd') { winner = name2; loser = name1; }
+        else if (top_level_1 && !top_level_2) { winner = name1; loser = name2; }
+        else if (top_level_2 && !top_level_1) { winner = name2; loser = name1; }
+        else if (name1.length <= name2.length) { winner = name1; loser = name2; }
+        else { winner = name2; loser = name1; }
+
+        this.aliases[loser] = winner;  // loser now points to winner as the anchor
+    };
+
     // return Node object for specified name, create if necessary
     Network.prototype.node = function(name) {
-        // resolve name to canonical name
-        while (this.aliases[name] !== undefined) name = this.aliases[name];
+        name = this.unalias(name);  // resolve name to canonical name
+
         // find Node in node_map or create a new Node
         var n = this.node_map[name];
         if (n === undefined) {
@@ -198,28 +229,14 @@ var gatesim = (function() {
 
         // "connect a b ..." makes a, b, ... aliases for the same node
         $.each(netlist,function (i,component) {
-            var c;
             if (component.type == 'connect') {
-                var connections = component.connections;
-                if (connections.length <= 1) return;
-		// see if any of the connected nodes is a ground node.
-		// if so, make it the canonical name. Otherwise just choose
-		// connections[0] as the canonical name.
-                var cname = connections[0];
-                for (var j = 1; j < connections.length; j += 1) {
-                    c = connections[j];
-		    if (network.node_map[c] !== undefined) {
-			cname = c;
-			break;
-		    }
-		}
-                while (network.aliases[cname] !== undefined) cname = network.aliases[cname];  // follow alias chain
-		// so make all the other connected nodes aliases for the canonical name
-                for (j = 1; j < connections.length; j += 1) {
-                    c = connections[j];
-                    while (network.aliases[c] !== undefined) c = network.aliases[c];  // follow alias chain
-                    network.aliases[c] = cname;
-                }
+                // collect all the names to be aliased
+                var c = [];
+                $.each(component.connections,function (id,name) { c.push(name); });
+
+                // do pair-wise aliasing with first name on list
+                for (var j = 1; j < c.length; j += 1)
+                    network.make_alias(c[0],c[j]);
             }
         });
 
@@ -252,6 +269,9 @@ var gatesim = (function() {
                 $.each(properties.ports, function (i, port) {
                     $.each(port.addr, function (j,name) { port.addr[j] = network.node(name); });
                     $.each(port.data, function (j,name) { port.data[j] = network.node(name); });
+                    // make a separate list of output nodes so that tristate buses can successfully
+                    // insert BUS devices on the outputs without affecting the input ndoes
+                    port.data_out = port.data.slice(0);
                     port.clk = network.node(port.clk);
                     port.wen = network.node(port.wen);
                     port.oe = network.node(port.oe);
@@ -366,7 +386,7 @@ var gatesim = (function() {
             while (this.time < this.tstop && !this.event_queue.empty()) {
                 var event = this.event_queue.pop();
                 this.time = event.time;
-                event.node.process_event(event, false);
+                event.node.process_event(event);
 
                 // check for coffee break every 1000 events
                 if (++ecount < 1000) continue;
@@ -417,7 +437,7 @@ var gatesim = (function() {
     // return {xvalues: array, yvalues: array}, undefined if node has no events.
     // yvalues are 0, 1, 2=X, 3=Z
     Network.prototype.history = function(node) {
-        while (this.aliases[node] !== undefined) node = this.aliases[node];
+        node = this.unalias(node);  // find actual node referred to
         var n = this.node_map[node];
         if (n === undefined) return undefined;
         var result = {xvalues: n.times,
@@ -650,25 +670,26 @@ var gatesim = (function() {
         this.drivers.push(device);
     };
 
-    Node.prototype.process_event = function(event, force) {
+    Node.prototype.process_event = function(event) {
         // update event pointers
         if (event == this.cd_event) this.cd_event = undefined;
         else if (event == this.pd_event) this.pd_event = undefined;
         else console.log('unknown event!',this.name,this.network.time);
 
-        if (this.v != event.v || force) {
+        if (this.v != event.v) {
+            // record changes in node's value
             this.times.push(event.time);
             this.values.push(this.v*4 + event.v);   // remember both previous and new values
+        }
 
-            if (this.network.debug_level > 0) console.log(this.name + ": " + "01XZ"[this.v] + "->" + "01XZ"[event.v] + " @ " + event.time + [" contamination"," propagation"][event.type]);
+        if (this.network.debug_level > 0) console.log(this.name + ": " + "01XZ"[this.v] + "->" + "01XZ"[event.v] + " @ " + event.time + [" contamination"," propagation"][event.type]);
 
-            this.v = event.v;
+        this.v = event.v;
 
-            // let fanouts know our value changed
-            for (var i = this.fanouts.length - 1; i >= 0; i -= 1) {
-                if (this.network.debug_level > 1) console.log ("Evaluating ("+"cp"[event.type]+") "+this.fanouts[i].name+" @ "+event.time);
-                this.fanouts[i].process_event(event,this);
-            }
+        // let fanouts know about event
+        for (var i = this.fanouts.length - 1; i >= 0; i -= 1) {
+            if (this.network.debug_level > 1) console.log ("Evaluating ("+"cp"[event.type]+") "+this.fanouts[i].name+" @ "+event.time);
+            this.fanouts[i].process_event(event,this);
         }
     };
 
@@ -683,7 +704,9 @@ var gatesim = (function() {
         // interconnect capacitance
         var ndrivers = this.drivers.length;
         var nfanouts = this.fanouts.length;
-        if (ndrivers === 0 && nfanouts > 0) throw 'Node ' + this.name + ' is not connected to any output.';
+        if (ndrivers === 0 && nfanouts > 0) {
+            throw 'Node ' + this.name + ' is not connected to any output.';
+        }
         if (this.capacitance === 0) this.capacitance = c_intercept + c_slope * (ndrivers + nfanouts);
 
         // add capacitances from drivers and fanout connections
@@ -693,15 +716,11 @@ var gatesim = (function() {
         for (i = 0; i < nfanouts; i += 1)
             this.capacitance += this.fanouts[i].capacitance(this);
 
-        // if there is only 1 driver and it's not a tristate output
-        // then that device is the driver for this node
+        // if there is only 1 driver then that device is the driver for this node
         if (ndrivers == 1) {
-            d = this.drivers[0];
-            if (!d.tristate(this)) {
-                this.driver = d;
-                this.drivers = undefined;
-                return;
-            }
+            this.driver = this.drivers[0];
+            this.drivers = undefined;
+            return;
         }
 
         // handle tristates and multiple drivers by adding a special BUS
@@ -1484,8 +1503,8 @@ var gatesim = (function() {
 
     Memory.prototype.change_output_node = function(old_node,new_node) {
         $.each(this.ports,function (i, port) {
-            $.each(port.data,function (j,dnode) {
-               if (dnode == old_node) port.data[j] = new_node;
+            $.each(port.data_out,function (j,dnode) {
+               if (dnode == old_node) port.data_out[j] = new_node;
             });
         });
     };
@@ -1593,7 +1612,7 @@ var gatesim = (function() {
             if (v == V1) { tpd = this.tpdr; drive = this.tr; }
             else if (v == V0) { tpd = this.tpdf; drive = this.tf; }
             else { tpd = Math.min(this.tpdr,this.tpdf); drive = 0; }
-            port.data[i].p_event(tpd,v,drive,this.lenient);
+            port.data_out[i].p_event(tpd,v,drive,this.lenient);
         }
     };
 
@@ -1675,12 +1694,19 @@ var gatesim = (function() {
                     // will write store a value or X?
                     var valid = (port.clk.v == V1) && (port.wen.v == V1);
                     // write appropriate location(s)
+                    //var word = [];
                     if (addr < 0) this.clear_memory();
                     else if (addr < this.nlocations) {
-                        for (bit = 0; bit < this.width; bit += 1)
+                        for (bit = 0; bit < this.width; bit += 1) {
+                            var v = valid ? port.data[bit].v : VX;
+                            //word[bit] = "01XZ".charAt(v);
                             // MSB of data comes first in the array of data nodes
-                            this.bits[addr*this.width + (this.width - 1) - bit] = valid ? port.data[bit].v : VX;
+                            this.bits[addr*this.width + (this.width - 1) - bit] = v;
+                        }
                     }
+
+                    //if (this.name == 'Gmem') console.log('write @ '+(this.network.time*1e9).toFixed(1)+', addr=0x'+(4*addr).toString(16)+', valid='+valid+', value='+word.join(''));
+
                     this.location_changed(addr);
                     this.update_min_setup(port);
                 }
@@ -1698,7 +1724,7 @@ var gatesim = (function() {
             var port = this.ports[i];
             if (!port.read_port) continue;
             // is output connected to this port?
-            if (port.data.indexOf(output) != -1) {
+            if (port.data_out.indexOf(output) != -1) {
                 // check timing of OE
                 tinfo.set_delays(port.oe.get_timing_info());
                 // check timing of address inputs
@@ -1800,7 +1826,7 @@ var gatesim = (function() {
         if (this.pd_link !== undefined) result = this.pd_link.describe_tpd();
         else result = '';
 
-        var driver_name = (this.device !== undefined) ? ' ['+this.device.name+']' : '';
+        var driver_name = (this.device !== undefined) ? ' ['+this.device.name+' '+this.device.type+']' : '';
         result += '    + '+format_float(this.tpd*1e9,6,3)+"ns = "+format_float(this.pd_sum*1e9,6,3)+"ns "+this.name+driver_name+'\n';
         return result;
     };

@@ -1835,7 +1835,7 @@ var Parser = (function(){
     function iterator_notation(nlist) {
         var aname,afirst,alast,astep;
         for (var i = 0; i < nlist.length; i += 1) {
-            var m = nlist[i].match(/([\w\.]*)\[(\d+)\]/);  // look for foo[17]
+            var m = nlist[i].match(/([\w$\.]*)\[(\d+)\]/);  // look for foo[17]
             if (m != null) {
                 if (aname == undefined || aname==m[1]) {
                     aname = m[1];  // in case aname was undefined

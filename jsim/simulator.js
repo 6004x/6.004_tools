@@ -132,7 +132,6 @@ var Simulator = (function(){
                 } catch (err) {
                     tranProgress.hide();
                     div.prepend('<div class="alert alert-danger">Simulation error: '+err+
-                                '<p>'+err.stack.replace('\n','<br>')+
                                 '.<button class="close" data-dismiss="alert">&times;</button></div>');
                 }
                 break;
@@ -325,7 +324,7 @@ var Simulator = (function(){
                         nvalues = xvalues.length;
                         type = dataset.type[nindex];
                         i = 0;  // current index into merged values
-                        last_y = 2;  // X value to start
+                        last_y = undefined;
                         for (vindex = 0; vindex < nvalues; vindex += 1) {
                             x = xvalues[vindex];
                             y = yvalues[vindex];
@@ -351,7 +350,7 @@ var Simulator = (function(){
                                 // need to insert new time point, copy previous time point, if any
                                 // otherwise make a new one from scratch
                                 var new_value;
-                                if (yv[i-1]) new_value = yv[i-1].slice(0);
+                                if (i > 0 && yv[i-1]) new_value = yv[i-1].slice(0);
                                 else new_value = new Array();
                                 new_value[nindex] = y;
                                 // insert new time point into xv and yv arrays

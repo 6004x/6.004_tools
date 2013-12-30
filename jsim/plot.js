@@ -593,9 +593,9 @@ var plot = (function() {
                     if (xv === undefined) break;
                     var nx = dataset.plotx(xv);
 
+                    c.strokeRect(x,y0,nx-x,y1-y0);
                     if (y === undefined) c.fillRect(x,y0,nx-x,y1-y0);
                     else {
-                        c.strokeRect(x,y0,nx-x,y1-y0);
                         // fill in value label if it fits
                         w = c.measureText(y).width;
                         // center in visible portion of waveform
