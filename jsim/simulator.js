@@ -121,7 +121,7 @@ var Simulator = (function(){
             case 'tran':
                 tranProgress.show();
                 var progressTxt = tranProgress.find('span');
-                try{
+                try {
                     if (mType == "device"){
                         cktsim.transient_analysis(netlist, mCurrent_analysis.parameters.tstop,
                                                   [], tranCB, mOptions);
@@ -132,6 +132,7 @@ var Simulator = (function(){
                 } catch (err) {
                     tranProgress.hide();
                     div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                '<p>'+err.stack.replace('\n','<br>')+
                                 '.<button class="close" data-dismiss="alert">&times;</button></div>');
                 }
                 break;

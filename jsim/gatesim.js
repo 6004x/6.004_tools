@@ -717,7 +717,7 @@ var gatesim = (function() {
                 throw msg;
             }
             // cons up a new node and have this device drive it
-            var n = new Node(this.network, this.name + '%' + i.toString());
+            var n = this.network.node(this.name + '%' + i.toString());
             n.capacitance = this.capacitance; // each driver has to drive all the capacitance
             inputs.push(n);
             d.change_output_node(this, n);
@@ -725,9 +725,9 @@ var gatesim = (function() {
         }
 
         // now add the BUS device to drive the current node
+        this.capacitance = 0;  // already accounted for on BUS inputs
         this.driver = new LogicGate(this.network, 'BUS', this.name + '%bus', BusTable, inputs, this, {}, true);
         this.drivers = undefined; // finalization complete
-        this.network.devices.push(this.driver);
     };
 
     // schedule contamination event for this node
@@ -841,6 +841,10 @@ var gatesim = (function() {
 
         network.add_component(this);
     }
+
+    Source.prototype.change_output_node = function(old_node,new_node) {
+        if (this.output == old_node) this.output = new_node;
+    };
 
     Source.prototype.initialize = function() {
         if (this.initial_value != VX)
@@ -1114,6 +1118,10 @@ var gatesim = (function() {
         network.add_component(this);
     }
 
+    LogicGate.prototype.change_output_node = function(old_node,new_node) {
+        if (this.output == old_node) this.output = new_node;
+    };
+
     LogicGate.prototype.initialize = function() {
         if (this.inputs.length === 0) {
             // gates with no inputs will produce a constant output, so
@@ -1236,6 +1244,10 @@ var gatesim = (function() {
 
         network.add_component(this);
     }
+
+    Storage.prototype.change_output_node = function(old_node,new_node) {
+        if (this.q == old_node) this.q = new_node;
+    };
 
     Storage.prototype.initialize = function() {
         this.min_setup = undefined;
@@ -1437,7 +1449,7 @@ var gatesim = (function() {
                 port.read_port = true;
                 $.each(port.data, function (j, node) {
                     node.add_driver(mem);
-                    if (mem.tristate_outputs.indexOf(node) != -1) mem.tristate_outputs.push(node);
+                    if (mem.tristate_outputs.indexOf(node) == -1) mem.tristate_outputs.push(node);
                 });
             }
         });
@@ -1470,6 +1482,14 @@ var gatesim = (function() {
         network.add_component(this);
     }
 
+    Memory.prototype.change_output_node = function(old_node,new_node) {
+        $.each(this.ports,function (i, port) {
+            $.each(port.data,function (j,dnode) {
+               if (dnode == old_node) port.data[j] = new_node;
+            });
+        });
+    };
+
     // return contents of memory as an array.
     // array element will be undefined if any bits in corresponding word are X.
     Memory.prototype.get_contents = function() {
@@ -1479,7 +1499,7 @@ var gatesim = (function() {
             for (var j = 0; j < this.width; j += 1) {
                 var v = this.bits[i*this.width + (this.width-1-j)];
                 if (v == VX) { word = undefined; break; }
-                word *= 2;
+                word *= 2;    // logical operations limit result to 32 bits
                 if (v == V1) word += 1;
             }
             result[i] = word;
@@ -1541,8 +1561,8 @@ var gatesim = (function() {
             v = node.v;
             if (v == VX || v == VZ) addr = -1;
             else if (addr >= 0) {
-                addr <<= 1;
-                if (v == V1) addr |= 1;
+                addr *= 2;  // logical operations limit result to 32 bits
+                if (v == V1) addr += 1;
             }
         }
         return addr;
