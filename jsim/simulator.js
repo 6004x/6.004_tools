@@ -333,7 +333,8 @@ var Simulator = (function(){
                             if (type == 'analog') y = (y <= vil) ? 0 : ((y >= vih) ? 1 : 2);
 
                             // don't bother if node already has this logic value
-                            if (y == last_y) continue;
+                            // unless it's the final time point, which we need to keep
+                            if (vindex != nvalues-1 && y == last_y) continue;
 
                             // skip over merged values till we find where x belongs
                             while (i < xv.length) {
@@ -343,14 +344,14 @@ var Simulator = (function(){
                                 i += 1;
                             }
 
-                            if (xv[i] && xv[i] == x) {
+                            if (xv[i] == x) {
                                 // exact match of time with existing time point, so just add new bit
                                 yv[i][nindex] = y;
                             } else {
                                 // need to insert new time point, copy previous time point, if any
                                 // otherwise make a new one from scratch
                                 var new_value;
-                                if (i > 0 && yv[i-1]) new_value = yv[i-1].slice(0);
+                                if (i > 0) new_value = yv[i-1].slice(0);  // copy previous one
                                 else new_value = new Array();
                                 new_value[nindex] = y;
                                 // insert new time point into xv and yv arrays
@@ -361,6 +362,13 @@ var Simulator = (function(){
                             // all done! move to next value to merge
                             last_y = y;    // needed to fill in entries we skip over
                         }
+
+                        // propagate final value through any remaining elements
+                        while (i < xv.length) {
+                            // add new bit to time point we're skipping over
+                            yv[i][nindex] = last_y;  
+                            i += 1;
+                        }
                     }
 
                     // convert the yv's to integers or undefined, then format as specified
@@ -370,14 +378,14 @@ var Simulator = (function(){
                         for (nindex = 0; nindex < nnodes; nindex += 1) {
                             i = yvalues[nindex];
                             if (i === 0 || i == 1) y = y*2 + i;
-                            else {
-                                y = undefined;
-                                break;
-                            }
+                            else if (i == 3) y = -1;  // < 0 means Z
+                            else { y = undefined; break; }
                         }
 
                         if (y !== undefined) {
-                            if (fn in mPlotDefs) {
+                            if (y < 0) {
+                                y = -1;  // indicate Z value for bus
+                            } else if (fn in mPlotDefs) {
                                 var v = mPlotDefs[fn][y];
                                 if (v) y = v;
                                 else {

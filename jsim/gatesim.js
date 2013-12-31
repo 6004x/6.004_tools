@@ -440,12 +440,13 @@ var gatesim = (function() {
         node = this.unalias(node);  // find actual node referred to
         var n = this.node_map[node];
         if (n === undefined) return undefined;
-        var result = {xvalues: n.times,
-                      yvalues: n.values.map(function (v) { return v % 4; })
-                     };
-        result.xvalues.push(this.time);  // record node's final value
-        result.yvalues.push(n.v);
-        return result;
+
+        // record node's final value if not already there
+        if (n.times[n.times.length - 1] != this.time) {
+            n.times.push(this.time);  
+            n.values.push(n.v);
+        }
+        return {xvalues: n.times, yvalues: n.values};
     };
 
     // return contents of named memory as an array of values
@@ -679,7 +680,7 @@ var gatesim = (function() {
         if (this.v != event.v) {
             // record changes in node's value
             this.times.push(event.time);
-            this.values.push(this.v*4 + event.v);   // remember both previous and new values
+            this.values.push(event.v);
         }
 
         if (this.network.debug_level > 0) console.log(this.name + ": " + "01XZ"[this.v] + "->" + "01XZ"[event.v] + " @ " + event.time + [" contamination"," propagation"][event.type]);
@@ -1611,6 +1612,7 @@ var gatesim = (function() {
             var drive,tpd;
             if (v == V1) { tpd = this.tpdr; drive = this.tr; }
             else if (v == V0) { tpd = this.tpdf; drive = this.tf; }
+            else if (v == VZ) { tpd = 0; drive = 0; }  // going HI-Z is fast :)
             else { tpd = Math.min(this.tpdr,this.tpdf); drive = 0; }
             port.data_out[i].p_event(tpd,v,drive,this.lenient);
         }

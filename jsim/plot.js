@@ -30,6 +30,7 @@ var plot = (function() {
     var grid_style = "rgb(220,220,220)";
     var graph_font = '8pt sans-serif';
     var graph_legend_font = '10pt sans-serif';
+    var value_font = '8pt Consolas,"Courier New",monospace';
 
     // dataseries is an array of objects that have the following attributes:
     //   xvalues: list of xcoord arrays
@@ -508,7 +509,7 @@ var plot = (function() {
             var yvalues = dataset.yvalues[dindex];
             var i = search(xvalues,xstart);  // quickly find first index
             var xv = xvalues[i];
-            var x,y;
+            var x,y,y0,y1;
 
             c.strokeStyle = dataset.color[dindex] || '#268bd2';
             c.fillStyle = c.strokeStyle;
@@ -520,8 +521,9 @@ var plot = (function() {
                 y = dataset.ploty(yvalues[i]);
                 c.beginPath();
                 c.moveTo(x, y);
-                while (xv < xend) {
+                while (xv <= xend) {
                     i += 1;
+                    if (i > xvalues.length) break;
                     xv = xvalues[i];
                     if (xv === undefined) break;
                     var nx = dataset.plotx(xv);
@@ -539,15 +541,16 @@ var plot = (function() {
                 c.stroke();
             } else if (dataset.type[dindex] == 'digital') {
                 // plot the digital waveform
-                var y0 = dataset.ploty(0);
-                var y1 = dataset.ploty(1);
+                y0 = dataset.ploty(0);
+                y1 = dataset.ploty(1);
                 var yz = (y0 + y1)/2;
 
                 x = dataset.plotx(xv);
                 y = yvalues[i];
                 c.beginPath();
-                while (xv < xend) {
+                while (xv <= xend) {
                     i += 1;
+                    if (i > xvalues.length) break;
                     xv = xvalues[i];
                     if (xv === undefined) break;
                     var nx = dataset.plotx(xv);
@@ -575,33 +578,41 @@ var plot = (function() {
                 c.fill();
             } else if (dataset.type[dindex] == 'string') {
                 // like digital except that value is a string
-                var y0 = dataset.ploty(0);
-                var y1 = dataset.ploty(1);
+                y0 = dataset.ploty(0);
+                y1 = dataset.ploty(1);
                 var ylabel = (y0 + y1)/2;
                 var w;
 
-                c.font = graph_font;
+                c.font = value_font;
                 c.lineWidth = 1;
                 c.textAlign = 'center';
                 c.textBaseline = 'middle';
 
                 x = dataset.plotx(xv);
                 y = yvalues[i];
-                while (xv < xend) {
+                while (xv <= xend) {  // stop at end of plot window
                     i += 1;
+                    if (i > xvalues.length) break;  // past end of data...
                     xv = xvalues[i];
                     if (xv === undefined) break;
                     var nx = dataset.plotx(xv);
 
-                    c.strokeRect(x,y0,nx-x,y1-y0);
-                    if (y === undefined) c.fillRect(x,y0,nx-x,y1-y0);
-                    else {
-                        // fill in value label if it fits
-                        w = c.measureText(y).width;
-                        // center in visible portion of waveform
-                        var x0 = Math.max(dataset.left,x);
-                        var x1 = Math.min(dataset.left + dataset.wplot,nx);
-                        if (w < x1 - x0) c.fillText(y,(x0 + x1)/2,ylabel);
+                    if (typeof y == 'number') {  // indicates a Z value
+                        c.beginPath();
+                        c.moveTo(x,ylabel);
+                        c.lineTo(nx,ylabel);
+                        c.stroke();
+                    } else {
+                        c.strokeRect(x,y0,nx-x,y1-y0);
+                        if (y === undefined) c.fillRect(x,y0,nx-x,y1-y0);
+                        else {
+                            // fill in value label if it fits
+                            w = c.measureText(y).width;
+                            // center in visible portion of waveform
+                            var x0 = Math.max(dataset.left,x);
+                            var x1 = Math.min(dataset.left + dataset.wplot,nx);
+                            if (w < x1 - x0) c.fillText(y,(x0 + x1)/2,ylabel);
+                        }
                     }
 
                     x = nx;
