@@ -737,7 +737,7 @@ var gatesim = (function() {
                 throw msg;
             }
             // cons up a new node and have this device drive it
-            var n = this.network.node(this.name + '%' + i.toString());
+            var n = this.network.node(this.name + '$' + i.toString());
             n.capacitance = this.capacitance; // each driver has to drive all the capacitance
             inputs.push(n);
             d.change_output_node(this, n);
@@ -777,6 +777,9 @@ var gatesim = (function() {
         var t = this.network.time + tpd + drive * this.capacitance;
 
         if (this.pd_event) {
+            // an earlier arriving input may have already determined the
+            // value of this node, so leave that event in place if we're
+            // a lenient gate
             if (lenient && this.pd_event.v == v && t >= this.pd_event.time) return;
             this.network.remove_event(this.pd_event);
         }
@@ -1089,7 +1092,11 @@ var gatesim = (function() {
         this.properties = properties;
         this.size = properties.size || 0;
 
-        this.lenient = properties.lenient !== undefined && properties.lenient !== 0;
+        // by default logic gates aren't lenient
+        this.lenient = (properties.lenient === undefined) ? false : properties.lenient !== 0;
+        // but devices with 0 or 1 inputs are lenient by definition!
+        if (inputs.length < 2) this.lenient = true;
+
         this.cout = properties.cout || 0;
         this.cin = properties.cin || 0;
         this.tcd = properties.tcd || 0;
@@ -1166,10 +1173,24 @@ var gatesim = (function() {
         else return false;
     };
 
+    // show what logic gate is thinking at this moment
+    LogicGate.prototype.describe = function(prefix) {
+        var inputs = [];
+        for (var k = 0; k < this.inputs.length; k += 1) {
+            inputs.push(this.inputs[k].name+"="+"01XZ".charAt(this.inputs[k].v));
+        }
+        var output = "01XZ".charAt(this.logic_eval());
+        console.log((prefix||'')+this.name+":"+this.type+"("+inputs.join(',')+")="+output+
+                   " @ "+(this.network.time*1e9).toFixed(3));
+        console.log("    output "+this.output.name+"="+"01XZ".charAt(this.output.v)+" @ "+
+                   (this.output.last_event_time()*1e9).toFixed(3));
+    };
+
     // evaluation of output values triggered by an event on the input
     LogicGate.prototype.process_event = function(event,cause) {
         var onode = this.output;
         var v;
+
         if (event.type == CONTAMINATE) {
             // a lenient gate won't contaminate the output under the right circumstances
             if (this.lenient) {
@@ -1188,23 +1209,16 @@ var gatesim = (function() {
             onode.c_event(this.tcd);
         }
         else if (event.type == PROPAGATE) {
+            // always forward propagate events to the output so
+            // downstream gates will get a chance to recover from
+            // an earlier contamination event.
             v = this.logic_eval();
-            if (!this.lenient || v != onode.v || onode.cd_event !== undefined || onode.pd_event !== undefined) {
-                var drive, tpd;
-                if (v == V1) {
-                    tpd = this.tpdr;
-                    drive = this.tr;
-                }
-                else if (v == V0) {
-                    tpd = this.tpdf;
-                    drive = this.tf;
-                }
-                else {
-                    tpd = Math.min(this.tpdr, this.tpdf);
-                    drive = 0;
-                }
-                onode.p_event(tpd, v, drive, this.lenient);
-            }
+
+            var drive, tpd;
+            if (v == V1) { tpd = this.tpdr; drive = this.tr; }
+            else if (v == V0) { tpd = this.tpdf; drive = this.tf; }
+            else { tpd = Math.min(this.tpdr, this.tpdf); drive = 0; }
+            onode.p_event(tpd, v, drive, this.lenient);
         }
     };
 
@@ -1251,7 +1265,8 @@ var gatesim = (function() {
         this.gate_closed = (type == 'dlatch') ? V0 : V1;   // when is latch closed?
 
         this.properties = properties;
-        this.lenient = properties.lenient !== undefined && properties.lenient !== 0;
+        // by default storage devices aren't lenient
+        this.lenient = (properties.lenient === undefined) ? false : properties.lenient !== 0;
         this.cout = properties.cout || 0;
         this.cin = properties.cin || 0;
         this.tcd = properties.tcd || 0;
@@ -1311,11 +1326,14 @@ var gatesim = (function() {
                     }
                     // report setup time violations?
 
-                    // for lenient dreg's, q output is propagated only
+                    // for lenient dreg's, q output is contaminated only
                     // when new output value differs from current one
                     if (!this.lenient || this.state != this.q.v)
                         this.q.c_event(this.tcd);
 
+                    // always forward propagate events to the output so
+                    // downstream gates will get a chance to recover from
+                    // an earlier contamination event.
                     this.q.p_event((this.state == V0) ? this.tpdf : this.tpdr,
                                    this.state,
                                    (this.state == V0) ? this.tf : this.tr,
@@ -1414,7 +1432,8 @@ var gatesim = (function() {
             throw "Memory "+name+" must have > 0 locations.";
         mem.contents = properties.contents;
 
-        mem.lenient = properties.lenient !== undefined && properties.lenient !== 0;
+        // by default memories aren't lenient
+        mem.lenient = (properties.lenient === undefined) ? false : properties.lenient !== 0;
         mem.cout = properties.cout || options.mem_cout || 0;
         mem.cin = properties.cin || options.mem_cin || .1e-12;
         mem.tcd = properties.tcd || options.mem_tcd || .2e-9;
@@ -1688,26 +1707,23 @@ var gatesim = (function() {
             for (i = 0; i < this.ports.length; i += 1) {
                 port = this.ports[i];
 
-                if (this.active_read_port(port,cause))
+                if (this.active_read_port(port,cause)) {
                     this.update_read_port(port);
+                }
 
                 if (this.active_write_port(port,cause)) {
                     var addr = this.address(port);
                     // will write store a value or X?
                     var valid = (port.clk.v == V1) && (port.wen.v == V1);
                     // write appropriate location(s)
-                    //var word = [];
                     if (addr < 0) this.clear_memory();
                     else if (addr < this.nlocations) {
                         for (bit = 0; bit < this.width; bit += 1) {
                             var v = valid ? port.data[bit].v : VX;
-                            //word[bit] = "01XZ".charAt(v);
                             // MSB of data comes first in the array of data nodes
                             this.bits[addr*this.width + (this.width - 1) - bit] = v;
                         }
                     }
-
-                    //if (this.name == 'Gmem') console.log('write @ '+(this.network.time*1e9).toFixed(1)+', addr=0x'+(4*addr).toString(16)+', valid='+valid+', value='+word.join(''));
 
                     this.location_changed(addr);
                     this.update_min_setup(port);
