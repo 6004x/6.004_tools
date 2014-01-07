@@ -3,10 +3,14 @@
 //var console,localStorage;
 
 var FileSystem= (function(){
-    var server_url = 'https://computationstructures.appspot.com/';
-//    var shared_url = 'http://computationstructures.org/tools';
-    var shared_url = 'http://horus.csail.mit.edu/~cjt/cs/tools';
-//    var shared_url = 'http://localhost/~cjt/cs/tools';
+    // for debugging
+    var server_url = 'http://localhost:6004/';
+    var shared_url = 'http://localhost/~cjt/cs/tools';
+
+    // for deployment
+    // var server_url = 'https://computationstructures.appspot.com/';
+    // var shared_url = 'http://computationstructures.org/tools';
+
     var saved_file_list = [];
     var saved_folder_list = [];
 
@@ -57,7 +61,7 @@ var FileSystem= (function(){
 
             // a successful validation will set a session cookie that will
             // passed to the server on subsequent ajax calls.
-            server_request('/user/validate',
+            server_request('user/validate',
                            {'_user': user,'_password': password},
                            function (response) {
                                if (response._error === undefined) {
