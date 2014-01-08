@@ -147,6 +147,7 @@ var Simulator = (function(){
                         prepare_ac_data(plots);
                     } catch (err) {
                         div.prepend('<div class="alert alert-danger">Simulation error: '+err+
+                                    //err.stack.replace('\n','<br>')+
                                     '.<button class="close" data-dismiss="alert">&times;</button></div>');
                     }
                 } else {
@@ -468,56 +469,62 @@ var Simulator = (function(){
             return;
         }
         
-        // repeated for each set of nodes
-        for (var p = 0; p < plots.length; p += 1) {
-            var plot_nodes = plots[p];
-            var mag_plots = []; 
-            var phase_plots = [];
-            
-            // repeated for each node in the set
-            for (var i = 0; i < plot_nodes.length; i += 1) {
-                var node = plot_nodes[i];
-                if (results[node] === undefined) {
+        // x-axis will be log of frequency
+        var logHz = results._frequencies_.map(function(f) { return Math.log(f)/Math.LN10; });
+
+        var dataseries = [];
+        $.each(plots, function (p,plot) {
+            var magnitude = {xvalues: [],
+                             yvalues: [],
+                             name: [],
+                             color: [],
+                             type: [],
+                             xunits: '',
+                             xlabel: 'Frequency (log Hz)',
+                             yunits: 'dB',
+                             ylabel: 'Magnitude (dB)'
+                            };
+            var phase = {xvalues: [],
+                         yvalues: [],
+                         name: [],
+                         color: [],
+                         type: [],
+                         xunits: '',
+                         xlabel: 'Frequency (log Hz)',
+                         yunits: '\u00B0',   // degree symbols
+                         ylabel: 'Phase (deg)'
+                        };
+            dataseries.push(magnitude);
+            dataseries.push(phase);
+
+            $.each(plot,function (index,pobject) {
+                var node = pobject.args[0];
+
+                if (results[node] === undefined || results[node].magnitude === 0 || results[node].phase === 0) {
                     var novaldiv = get_novaldiv(node);
                     mDiv.prepend(novaldiv);
-                    continue;
+                    return;
                 }
-                var magnitudes = results[node].magnitude;
-                var phases = results[node].phase;
-                
-                // 'm' for magnitude, 'p' for phase
-                var mplotdata = [];
-                var pplotdata = [];
-                for (var j = 0; j < magnitudes.length; j += 1) {
-                    var log_freq = Math.log(results._frequencies_[j]) / Math.LN10;
-                    mplotdata.push([log_freq, magnitudes[j]]);
-                    pplotdata.push([log_freq, phases[j]]);
-                }
-                
-                /***************************** series object ************************************/
-                // push both series objects into their respective lists
-                mag_plots.push({
-                    label: "Node " + node,
-                    data: mplotdata,
-                    xUnits: ' log Hz',
-                    yUnits: ' dB'
-                });
-                phase_plots.push({
-                    label: "Node " + node,
-                    data: pplotdata,
-                    xUnits: ' log Hz',
-                    yUnits: ' deg'
-                });
-                /***************************** series object ************************************/
-            }
-            
-            //            var xmin = mag_plots[0].data[0][0];
-            //            var len = mag_plots[0].data.length;
-            //            var xmax = mag_plots[0].data[len-1][0];
-            
-            /************************ Plot function **********************************/
-            ac_plot(mag_plots, phase_plots /* ... */);
-            /************************ Plot function **********************************/
+
+                magnitude.xvalues.push(logHz);
+                magnitude.yvalues.push(results[node].magnitude.map(function (v) {return 20*Math.log(v)/Math.LN10; }));
+                magnitude.name.push(node);
+                magnitude.color.push(colors[index % colors.length]);
+                magnitude.type.push('analog');
+
+                phase.xvalues.push(logHz);
+                phase.yvalues.push(results[node].phase);
+                phase.name.push(node);
+                phase.color.push(colors[index % colors.length]);
+                phase.type.push('analog');
+            });
+        });
+
+        if (dataseries.length !== 0) {
+            var container = plot.graph(dataseries);
+            mDiv.empty();
+            mDiv.append(container);
+            resize_sim_pane();
         }
     }
     
@@ -529,10 +536,9 @@ var Simulator = (function(){
         var analysis = mCurrent_analysis;
         var sweep1 = analysis.parameters.sweep1;
         var sweep2 = analysis.parameters.sweep2;
-        var dataseries;
-        
         if (sweep1.source === undefined) return;
-        dataseries = [];
+        
+        var dataseries = [];
         $.each(plots, function (p,plot) {
             var dataset = {xvalues: [],
                            yvalues: [],
@@ -599,15 +605,7 @@ var Simulator = (function(){
             resize_sim_pane();
         }
     }
-    
-    function ac_plot(mdata,pdata){
-        //        console.log("mdata:",mdata,"pdata:",pdata);
-    }
-    
-    function dc_plot(dataseries){
-        //        console.log("data:",dataseries);
-    }
-    
+
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
     //

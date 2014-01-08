@@ -904,14 +904,17 @@ var Parser = (function(){
      General (called by the three above)
      ************************/
     function read_linear(line,type){
+        if (line.length != 4){
+            throw new CustomError("Linear device should have two node names and a value",line[0].line,line[0].column);
+        }
+
         var obj = {type:type,
                    ports:["n1","n2"],
                    connections:[],
                    properties:{name:line[0].token}
                   };
         
-        line.shift();
-        for (var i = 0; i < line.length-1; i += 1){
+        for (var i = 1; i < line.length-1; i += 1){
             if (line[i].type != "name"){
                 throw new CustomError("Node name expected", line[i]);
             }
@@ -921,7 +924,7 @@ var Parser = (function(){
         if (line[3].type != "number"){
             throw new CustomError("Number expected",line[3].line,line[3].column);
         }
-        obj.properties.value = line[3];
+        obj.properties.value = line[3].token;
         
         return obj;
     }
