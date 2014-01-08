@@ -510,7 +510,7 @@ var Parser = (function(){
         var i;
         if (line.length >= 4) {
             if (line[0].type != "name"){
-                throw new CustomError("Node name expected", line[0]);
+                throw new CustomError("Source name expected", line[0]);
             } else {
                 dc_obj.parameters.sweep1.source = line[0].token;
             }
@@ -530,7 +530,7 @@ var Parser = (function(){
         
         if (line.length == 8) {
             if (line[4].type != "name"){
-                throw new CustomError("Node name expected", line[4]);
+                throw new CustomError("Source name expected", line[4]);
             } else {
                 dc_obj.parameters.sweep2.source = line[4].token;
             }

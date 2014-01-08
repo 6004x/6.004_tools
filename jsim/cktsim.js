@@ -42,14 +42,14 @@ var cktsim = (function() {
     //   netlist: JSON description of the circuit
     //   returns associative array mapping node names -> DC value
     //   throws a string to report errors
-    function dc_analysis(netlist, sweep1, sweep2) {
+    function dc_analysis(netlist, sweep1, sweep2, options) {
         if (netlist.length > 0) {
-            var ckt = new Circuit(netlist);
+            var ckt = new Circuit(netlist,options);
 
             var source1, start1, stop1, step1, source1_saved_src;
             var source2, start2, stop2, step2, source2_saved_src;
 
-            if (sweep1 !== undefined) {
+            if (sweep1.source !== undefined) {
                 source1 = ckt.device_map[sweep1.source];
                 if (!(source1 instanceof VSource) && !(source1 instanceof ISource)) throw "Device not independent source in DC sweep: " + sweep1.source;
                 start1 = sweep1.start;
@@ -62,7 +62,7 @@ var cktsim = (function() {
                 source1_saved_src = source1.src;
             }
 
-            if (sweep2 !== undefined) {
+            if (sweep2.source !== undefined) {
                 source2 = ckt.device_map[sweep2.source];
                 if (!(source2 instanceof VSource) && !(source2 instanceof ISource)) throw "Device not independent source in DC sweep: " + sweep2.source;
                 start2 = sweep2.start;
@@ -91,6 +91,7 @@ var cktsim = (function() {
                 // do DC analysis, add result to accumulated results for each node and branch
                 var result = ckt.dc();
                 for (var n in result) {
+                    if (n == '_network_') continue;
                     if (results[n] === undefined) results[n] = [];
                     results[n].push(result[n]);
                 }
@@ -108,7 +109,8 @@ var cktsim = (function() {
                     }
                     // start first source over again
                     results = {
-                        _sweep1_: []
+                        _sweep1_: [],
+                        _network_: ckt
                     };
                     val1 = start1;
                     // increment second sweep value, make sure we stop at specified end point
@@ -140,11 +142,11 @@ var cktsim = (function() {
     //   ac_source_name: string giving name of source element where small
     //                   signal is injected
     //   returns associative array mapping <node name> -> {magnitude: val, phase: val}
-    function ac_analysis(netlist, fstart, fstop, ac_source_name) {
+    function ac_analysis(netlist, fstart, fstop, ac_source_name, options) {
         var npts = 50;
 
         if (netlist.length > 0) {
-            var ckt = new Circuit(netlist);
+            var ckt = new Circuit(netlist, options);
             return ckt.ac(npts, fstart, fstop, ac_source_name);
         }
 	return undefined;

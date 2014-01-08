@@ -531,57 +531,73 @@ var Simulator = (function(){
         var sweep2 = analysis.parameters.sweep2;
         var dataseries;
         
-        if (sweep1 === undefined) return;
-        for (var p = 0; p < plots.length; p += 1) {
-            var node = plots[p][0];  // for now: only one value per plot
-            dataseries = [];
-            var index2 = 0;
-            while (true) {
-                var values;
-                var x,x2;
-                if (sweep2 === undefined) {
-                    values = results[node];
-                    x = results._sweep1_;
-                } else {
-                    values = results[index2][node];
-                    x = results[index2]._sweep1_;
-                    x2 = results[index2]._sweep2_;
-                    index2 += 1;
-                }
+        if (sweep1.source === undefined) return;
+        dataseries = [];
+        $.each(plots, function (p,plot) {
+            var dataset = {xvalues: [],
+                           yvalues: [],
+                           name: [],
+                           color: [],
+                           xunits: 'V',
+                           yunits: '',
+                           type: []
+                          };
+            dataseries.push(dataset);
+
+            $.each(plot,function (index,pobject) {
+                var node = pobject.args[0];
+                // deal with how parser parses "I(VDD)"
+                if (pobject.type == 'I') node = 'I(' + node + ')';
+
+                var index2 = 0;
+                while (true) {
+                    var values;
+                    var x,x2;
+                    if (sweep2.source === undefined) {
+                        values = results[node];
+                        x = results._sweep1_;
+                    } else {
+                        values = results[index2][node];
+                        x = results[index2]._sweep1_;
+                        x2 = results[index2]._sweep2_;
+                        index2 += 1;
+                    }
                 
-                // no values to plot for the given node
-                if (values === undefined) {
-                    var novaldiv = get_novaldiv(node);
-                    mDiv.prepend(novaldiv);
-                    continue;
+                    // no values to plot for the given node
+                    if (values === undefined) {
+                        var novaldiv = get_novaldiv(node);
+                        mDiv.prepend(novaldiv);
+                        continue;
+                    }
+
+                    // boolean that records if the analysis asked for current through a node
+                    var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
+                    var name = current ? node : "Node " + node; 
+                    var color = colors[index % colors.length];
+                    if (sweep2.source !== undefined) {
+                        name += " with " + sweep2.source + "=" + x2;
+                        color = colors[index2 % colors.length];
+                    }
+
+                    dataset.yunits = current ? 'A' : 'V';
+                    dataset.name.push(name);
+                    dataset.color.push(color);
+                    dataset.type.push('analog');
+
+                    dataset.xvalues.push(x);
+                    dataset.yvalues.push(values);
+
+                    if (sweep2.source === undefined || index2 >= results.length) break;
                 }
-                var plotdata = [];
-                for (var j = 0; j < values.length; j += 1) {
-                    plotdata.push([x[j],values[j]]);
-                }
-                
-                // boolean that records if the analysis asked for current through a node
-                var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
-                var name = current ? node : "Node " + node; 
-                if (sweep2 !== undefined) name += " with " + sweep2.source + "=" + x2;
-                
-                /***************************** series object ************************************/
-                dataseries.push({label: name,
-                                 data: plotdata,
-                                 lineWidth: 5,
-                                 yUnits: current ? 'A' : 'V'
-                                });
-                /***************************** series object ************************************/
-                if (sweep2 === undefined || index2 >= results.length) break;
-            }
+            });
+        });
+        
+        if (dataseries.length !== 0) {
+            var container = plot.graph(dataseries);
+            mDiv.empty();
+            mDiv.append(container);
+            resize_sim_pane();
         }
-        
-        //        var xmin = x[0];
-        //        var xmax = x[values.length-1];
-        
-        /************************ Plot function **********************************/
-        dc_plot(dataseries /* ... */);
-        /************************ Plot function **********************************/
     }
     
     function ac_plot(mdata,pdata){
