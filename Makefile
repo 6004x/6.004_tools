@@ -6,6 +6,7 @@ what:
 	@echo "  make deploy_6004: copy minified tools to 6004.mit.edu"
 	@echo "  make deploy_debug: copy tools to 6004.mit.edu/courseware/debug"
 	@echo "  make deploy_shared: copy shared files to 6004.mit.edu/courseware/debug"
+	@echo "  make deploy_github: copy tools/files to computationstructures.org"
 	@echo "  make osx_link: add 6.004x link to mac os x webserver document root"
 
 clean:
