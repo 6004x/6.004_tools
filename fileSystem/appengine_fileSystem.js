@@ -9,7 +9,7 @@ var FileSystem= (function(){
 
     // used when access is from scripts deployed on localhost
     var local_server_url = 'http://localhost:6004';
-    var local_shared_url = 'http://localhost/ComputationStructures/labs';
+    var local_shared_url = 'http://localhost/6.004x/server';
 
     // used when access is from scripts deployed on 6004.mit.edu
     var mit_server_url = 'https://6004.mit.edu/coursewarex/cgibin_file_server.py';
