@@ -27,5 +27,10 @@ deploy_debug:
 deploy_shared:
 	rsync -av --delete -e ssh server/shared.json server/shared 6004.mit.edu:coursewarex/
 
+deploy_github:
+	grunt
+	rsync -av -e ssh built/* ../6004x.github.io/tools/
+	rsync -av -e ssh server/shared.json server/shared ../6004x.github.io/labs/
+
 osx_link:
 	sudo ln -s `pwd` /Library/WebServer/Documents/6.004x
