@@ -1,3 +1,4 @@
 *~
+*.pyc
 built
 node_modules
