@@ -6,12 +6,12 @@ module.exports = function(grunt) {
                 separator: ';{}' // hack that 'works' for both JavaScript and CSS.
             }
         },
-        clean: ['built'],
+        clean: ['xblocks'],
         copy: {
-            bsim: {src: 'bsim/bsim.html', dest: 'built/bsim.html'},
-            jsim: {src: ['jsim/jsim.html', 'jsim/*.png'], dest: 'built/', flatten: true, expand: true},
-            tmsim: {src: 'tmsim/tmsim.html', dest: 'built/tmsim.html'},
-            resources: {src: 'libs/*.png', dest: 'built/', flatten: true, expand: true}
+            bsim: {src: 'bsim/bsim.html', dest: 'xblocks/bsim.html'},
+            jsim: {src: ['jsim/jsim.html', 'jsim/*.png'], dest: 'xblocks/', flatten: true, expand: true},
+            tmsim: {src: 'tmsim/tmsim.html', dest: 'xblocks/tmsim.html'},
+            resources: {src: 'libs/*.png', dest: 'xblocks/', flatten: true, expand: true}
         },
         uglify: {
             options: {
@@ -26,24 +26,24 @@ module.exports = function(grunt) {
             jsim: 'jsim/jsim.html',
             tmsim: 'tmsim/tmsim.html',
             options: {
-                dest: 'built'
+                dest: 'xblocks'
             }
         },
         usemin: {
             bsim: {
-                src: 'built/bsim.html',
+                src: 'xblocks/bsim.html',
                 options: {type: 'html'}
             },
             jsim: {
-                src: 'built/jsim.html',
+                src: 'xblocks/jsim.html',
                 options: {type: 'html'}
             },
             tmsim: {
-                src: 'built/tmsim.html',
+                src: 'xblocks/tmsim.html',
                 options: {type: 'html'}
             },
             options: {
-                dirs: ['built']
+                dirs: ['xblocks']
             }
         },
         connect: {
