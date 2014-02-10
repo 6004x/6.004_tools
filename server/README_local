@@ -1,0 +1,28 @@
+To set up a local version of the mit-6004x appengine backend:
+
+1) install google appengine sdk for Python
+
+   https://developers.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python
+
+2) start GoogleAppEngineLauncher, let it do its setup
+
+3) to add the local app:
+     click on "+" in bottom left
+     Application ID: mit-6004x
+     Application directory: <path to repo>/server
+     Port: 6004
+     ... other defaults okay...
+     click "Create"
+
+4) Start server by selecting mit-6004x app, then click Run
+     there's one user: username=admin, password=fifo,werf
+     use that account when logging in from JSim/Bsim
+
+5) to upload some files for the admin user:
+     after signing in with JSim/BSim, browse "localhost:6004/file/?action=upload"
+     choose file <path to repo>/server/computationstructures.zip
+     click Upload
+     return to JSim, click refresh button above file pane
+
+
+   
