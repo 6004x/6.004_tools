@@ -49,6 +49,7 @@ BSim.Beta = function() {
     var mOptions = {};
     var mVerifier = null;
     var mTTYContent = '';
+    this.mSources = [];  // list of {file: name, contents: ...}
 
     // Mostly exception stuff.
     var SUPERVISOR_BIT = 0x80000000;
@@ -83,6 +84,10 @@ BSim.Beta = function() {
         };
     };
     set_defaults();
+
+    this.setSources = function(sources) {
+        this.mSources = sources;
+    };
 
     this.loadBytes = function(bytes) {
         this.stop();

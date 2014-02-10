@@ -1,13 +1,13 @@
-//* test vectors for debugging Beta register file circuitry
+// test vectors for debugging Beta register file circuitry
 
-//* allow verification, but not a real checkin
+// allow verification, but not a real checkin
 .checkoff "" "Lab #6: regfile" 0
 
 Xregfile regfile clk werf ra2sel rega[4:0] regb[4:0] regc[4:0] wdata[31:0] radata[31:0] rbdata[31:0]
 
-Vclk clk gnd pulse(3.3,0,49.9ns,.1ns,.1ns,49.9ns,100ns)
+Vclk clk gnd clock(0,1,100ns)
 
-Wra2sel ra2sel nrz(0,3.3,100n,0n,.1n,.1n)
+Wra2sel ra2sel nrz(0,1.0,100n,0n,.1n,.1n)
 +// see if R31 reads as 0
 + 0 1
 +// fill up the regfile and read it back
@@ -17,7 +17,7 @@ Wra2sel ra2sel nrz(0,3.3,100n,0n,.1n,.1n)
 +// make sure ra2sel works okay
 + 1 0 1
 
-Wrega rega[4:0] nrz(0,3.3,100n,0n,.1n,.1n)
+Wrega rega[4:0] nrz(0,1.0,100n,0n,.1n,.1n)
 +// see if R31 reads as 0
 + 31 31
 +// fill up the regfile and read it back
@@ -27,7 +27,7 @@ Wrega rega[4:0] nrz(0,3.3,100n,0n,.1n,.1n)
 +// make sure ra2sel works okay
 + 5 12 23
 
-Wregb regb[4:0] nrz(0,3.3,100n,0n,.1n,.1n)
+Wregb regb[4:0] nrz(0,1.0,100n,0n,.1n,.1n)
 +// see if R31 reads as 0
 + 31 0
 +// fill up the regfile and read it back
@@ -37,7 +37,7 @@ Wregb regb[4:0] nrz(0,3.3,100n,0n,.1n,.1n)
 +// make sure ra2sel works okay
 + 7  9 11
 
-Wregc regc[4:0] nrz(0,3.3,100n,0n,.1n,.1n)
+Wregc regc[4:0] nrz(0,1.0,100n,0n,.1n,.1n)
 +// see if R31 reads as 0
 + 0 31
 +// fill up the regfile and read it back
@@ -48,7 +48,7 @@ Wregc regc[4:0] nrz(0,3.3,100n,0n,.1n,.1n)
 + 8 10 12
 
 
-Wwerf werf nrz(0,3.3,100n,0n,.1n,.1n)
+Wwerf werf nrz(0,1.0,100n,0n,.1n,.1n)
 +// see if R31 reads as 0
 + 0 0
 +// fill up the regfile and read it back
@@ -58,7 +58,7 @@ Wwerf werf nrz(0,3.3,100n,0n,.1n,.1n)
 +// make sure ra2sel works okay
 + 0 0 0
 
-Wwdata wdata[31:0] nrz(0,3.3,100n,0n,.1n,.1n)
+Wwdata wdata[31:0] nrz(0,1.0,100n,0n,.1n,.1n)
 +// see if R31 reads as 0
 + 0 0
 +// fill up the regfile and read it back
@@ -163,9 +163,9 @@ Wwdata wdata[31:0] nrz(0,3.3,100n,0n,.1n,.1n)
 .plot clk
 .plot werf
 .plot ra2sel
-.plot rega[4:0]
-.plot regb[4:0]
-.plot regc[4:0]
-.plot wdata[31:0]
-.plot radata[31:0]
-.plot rbdata[31:0]
+.plot L(rega[4:0])
+.plot L(regb[4:0])
+.plot L(regc[4:0])
+.plot L(wdata[31:0])
+.plot L(radata[31:0])
+.plot L(rbdata[31:0])

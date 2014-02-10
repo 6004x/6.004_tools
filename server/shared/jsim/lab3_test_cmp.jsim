@@ -1,13 +1,9 @@
+// This is a machine-generated file; do not edit.
 
+// allow verification of results, but no check-in
+.checkoff "" "Lab2: compare" 0
 
-/* This is a machine-generated file; do not edit.
-*
-* information on how to contact the on-line assignments server.  A checksum
-* is included that is computed from the .verify statements, so don't change
-* those or you won't be able to complete your checkoff!
-*/
-.checkoff "" "Lab3: compare" 0
-Wfn fn[4:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wfn fn[4:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x5 // 0ns:  [CMPEQ 0x5 0x4]
 + 0x7 // 100ns:  [CMPLT 0x5 0x4]
 + 0xd // 200ns:  [CMPLE 0x5 0x4]
@@ -27,7 +23,7 @@ Wfn fn[4:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
 + 0x7 // 1600ns:  [CMPLT 0x-5 0x-6]
 + 0xd // 1700ns:  [CMPLE 0x-5 0x-6]
 
-Wa a[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wa a[31:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x5 // 0ns:  [CMPEQ 0x5 0x4]
 + 0x5 // 100ns:  [CMPLT 0x5 0x4]
 + 0x5 // 200ns:  [CMPLE 0x5 0x4]
@@ -47,7 +43,7 @@ Wa a[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
 + 0xfffffffb // 1600ns:  [CMPLT 0x-5 0x-6]
 + 0xfffffffb // 1700ns:  [CMPLE 0x-5 0x-6]
 
-Wb b[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wb b[31:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x4 // 0ns:  [CMPEQ 0x5 0x4]
 + 0x4 // 100ns:  [CMPLT 0x5 0x4]
 + 0x4 // 200ns:  [CMPLE 0x5 0x4]

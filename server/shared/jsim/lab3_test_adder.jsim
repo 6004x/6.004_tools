@@ -1,14 +1,9 @@
+// This is a machine-generated file; do not edit.
 
+// allow verification of results, but no check-in
+.checkoff "" "Lab2: adder" 0
 
-/* This is a machine-generated file; do not edit.
-*
-* information on how to contact the on-line assignments server.  A checksum
-* is included that is computed from the .verify statements, so don't change
-* those or you won't be able to complete your checkoff!
-*/
-
-.checkoff "" "Lab3: adder" 0
-Wfn fn[4:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wfn fn[4:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x0 // 0ns:  [ADD 0x0 0x0]
 + 0x0 // 100ns:  [ADD 0x55555555 0x0]
 + 0x0 // 200ns:  [ADD 0x0 0x55555555]
@@ -52,7 +47,7 @@ Wfn fn[4:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
 + 0x0 // 4000ns:  [ADD 0x3f0000ff 0xffff01]
 + 0x1 // 4100ns:  [SUB 0x80000001 0x1]
 
-Wa a[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wa a[31:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x0 // 0ns:  [ADD 0x0 0x0]
 + 0x55555555 // 100ns:  [ADD 0x55555555 0x0]
 + 0x0 // 200ns:  [ADD 0x0 0x55555555]
@@ -96,7 +91,7 @@ Wa a[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
 + 0x3f0000ff // 4000ns:  [ADD 0x3f0000ff 0xffff01]
 + 0x80000001 // 4100ns:  [SUB 0x80000001 0x1]
 
-Wb b[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wb b[31:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x0 // 0ns:  [ADD 0x0 0x0]
 + 0x0 // 100ns:  [ADD 0x55555555 0x0]
 + 0x55555555 // 200ns:  [ADD 0x0 0x55555555]

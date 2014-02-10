@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}6.004 Sign in{% endblock %}
+{% block content %}
+<form action="{{ url }}" method="post">
+<div class="banner">Sign in to Computation Structures</div>
+<div class="warning">{{ message }}</div>
+<table cellpadding=5>
+<tr>
+  <td>Username:</td>
+  <td><input type="text" name="_user" style="width:300px"></td>
+</tr>
+<tr>
+  <td>Password:</td>
+  <td><input type="password" name="_password" style="width:300px"></td>
+</tr>
+<tr>
+  <td></td>
+  <td><input type="submit" name="action" value="Sign in" class="action"></td>
+</tr>
+</table>
+</form>
+<p>Your account has been initialized using information 
+by the Registrar.  Your username is your MIT email (e.g., bitdiddle@mit.edu)
+and your initial password is your MIT ID number.  You can change
+your password after you've signed in.
+{% endblock %}

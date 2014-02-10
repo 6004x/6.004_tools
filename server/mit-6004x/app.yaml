@@ -1,0 +1,14 @@
+application: mit-6004x
+version: 1-1
+runtime: python27
+api_version: 1
+threadsafe: true
+
+libraries:
+- name: webapp2
+  version: latest  
+
+handlers:
+- url: /.*
+  script: server.application
+  secure: always

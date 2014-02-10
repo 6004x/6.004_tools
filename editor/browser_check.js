@@ -22,11 +22,10 @@ $(function() {
                     <h3>Unsupported Browser</h3>\
                 </div>\
                 <div class="modal-body">\
-                    <p>You are attempting to use an unsupported web browser.\
-                    We recommend using the latest version of Chrome or Chromium, but the latest Firefox or\
-                    Safari versions should also work. You should not use Internet Explorer.</p>\
-                    <p><strong>On Athena:</strong> press the Windows key and type "chromium".</p>\
-                    <p><strong>On a personal machine: <a href="http://google.com/chrome">Get Chrome</p>\
+                    <p>You are attempting to use an unsupported web browser.  We recommend\
+                    using Chrome, but the latest versions of Firefox or Safari should also\
+                    work.<p>You can simply close this window if you want to try the tools\
+                    on your current browser.\
                 </div>\
             </div>').modal();
     };

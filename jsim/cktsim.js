@@ -13,15 +13,15 @@ var cktsim = (function() {
     //                             connections: {port_name: signal, ...},
     //                             properties: {prop_name: value, ...}} ... ]
     // device_type is one of
-    //    "resistor"		ports: n1, n2; properties: value, name
-    //    "capacitor"		ports: n1, n2; properties: value, name
-    //    "inductor"		ports: n1, n2; properties: value, name
-    //    "diode"		ports: anode, cathode; properties: area, type, name
-    //    "opamp"		ports: nplus, nminus, output, gnd; properties: A, name
-    //    "nfet"		ports: D, G, S; properties: W, L, name
-    //    "pfet"		ports: D, G, S; properties: W, L, name
-    //    "voltage source"	ports: nplus, nminus; properties: value=src, name
-    //    "current source"	ports: nplus, nminus; properties: value=src, name
+    //    "resistor"            ports: n1, n2; properties: value, name
+    //    "capacitor"           ports: n1, n2; properties: value, name
+    //    "inductor"            ports: n1, n2; properties: value, name
+    //    "diode"               ports: anode, cathode; properties: area, type, name
+    //    "opamp"               ports: nplus, nminus, output, gnd; properties: A, name
+    //    "nfet"                ports: D, G, S; properties: W, L, name
+    //    "pfet"                ports: D, G, S; properties: W, L, name
+    //    "voltage source"      ports: nplus, nminus; properties: value=src, name
+    //    "current source"      ports: nplus, nminus; properties: value=src, name
     //    "connect"             ports are all aliases for the same electrical node
     //    "ground"              port: gnd
     // signals are just strings
@@ -29,13 +29,13 @@ var cktsim = (function() {
 
     // handy for debugging :)
     function print_netlist(netlist) {
-	$.each(netlist,function(index,c) {
-	    var connections = [];
-	    for (var port in c.connections) connections.push(port+"="+c.connections[port]);
-	    var properties = [];
-	    for (var prop in c.properties) properties.push(prop+"="+JSON.stringify(c.properties[prop]));
-	    console.log(c.type + ' ' + connections.join(' ') + '; ' + properties.join(' '));
-	});
+        $.each(netlist,function(index,c) {
+            var connections = [];
+            for (var port in c.connections) connections.push(port+"="+c.connections[port]);
+            var properties = [];
+            for (var prop in c.properties) properties.push(prop+"="+JSON.stringify(c.properties[prop]));
+            console.log(c.type + ' ' + connections.join(' ') + '; ' + properties.join(' '));
+        });
     }
 
     // DC Analysis
@@ -132,7 +132,7 @@ var cktsim = (function() {
             //   sweep value of the second source
             return results;
         }
-	return undefined;
+        return undefined;
     }
 
     // AC analysis
@@ -149,7 +149,7 @@ var cktsim = (function() {
             var ckt = new Circuit(netlist, options);
             return ckt.ac(npts, fstart, fstop, ac_source_name);
         }
-	return undefined;
+        return undefined;
     }
 
     // Transient analysis
@@ -180,7 +180,7 @@ var cktsim = (function() {
 
             ckt.tran_start(progress, 100, 0, tstop);
         }
-	return undefined;
+        return undefined;
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -208,9 +208,9 @@ var cktsim = (function() {
     var res_check_rel = Math.sqrt(reltol); // Loose Newton residue check
 
     function Circuit(netlist,options) {
-	if (options.v_abstol) v_abstol = options.v_abstol;
-	if (options.i_abstol) { i_abstol = options.ia_abstol; res_check_abs = Math.sqrt(i_abstol); }
-	if (options.reltol) { reltol = options.reltol; res_check_rel = Math.sqrt(reltol); }
+        if (options.v_abstol) v_abstol = options.v_abstol;
+        if (options.i_abstol) { i_abstol = options.ia_abstol; res_check_abs = Math.sqrt(i_abstol); }
+        if (options.reltol) { reltol = options.reltol; res_check_rel = Math.sqrt(reltol); }
 
         this.node_map = {};
         this.ntypes = [];
@@ -316,10 +316,10 @@ var cktsim = (function() {
 
         // set up mapping for all ground connections
         for (i = netlist.length - 1; i >= 0; i -= 1) {
-	    if (netlist[i].type == 'ground') {
+            if (netlist[i].type == 'ground') {
                 connections = netlist[i].connections;
-		this.node_map[connections.gnd] = this.gnd_node();
-	    }
+                this.node_map[connections.gnd] = this.gnd_node();
+            }
         }
 
         // "connect a b ..." makes a, b, ... aliases for the same node
@@ -328,19 +328,19 @@ var cktsim = (function() {
             if (netlist[i].type == 'connect') {
                 connections = netlist[i].connections;
                 if (connections.length <= 1) continue;
-		// see if any of the connected nodes is a ground node.
-		// if so, make it the canonical name. Otherwise just choose
-		// connections[0] as the canonical name.
+                // see if any of the connected nodes is a ground node.
+                // if so, make it the canonical name. Otherwise just choose
+                // connections[0] as the canonical name.
                 var cname = connections[0];
                 for (j = 1; j < connections.length; j += 1) {
-		    c = connections[j];
-		    if (this.node_map[c] !== undefined) {
-			cname = c;
-			break;
-		    }
-		}
+                    c = connections[j];
+                    if (this.node_map[c] !== undefined) {
+                        cname = c;
+                        break;
+                    }
+                }
                 while (aliases[cname] !== undefined) cname = aliases[cname];  // follow alias chain
-		// so make all the other connected nodes aliases for the canonical name
+                // so make all the other connected nodes aliases for the canonical name
                 for (j = 1; j < connections.length; j += 1) {
                     c = connections[j];
                     while (aliases[c] !== undefined) c = aliases[c];  // follow alias chain
@@ -351,14 +351,14 @@ var cktsim = (function() {
 
         // process each component in the JSON netlist (see schematic.js for format)
         var found_ground = false; // is some component hooked to gnd?
-        var counts = {};
+        this.counts = {};
         for (i = netlist.length - 1; i >= 0; i -= 1) {
             component = netlist[i];
             var type = component.type;
             connections = component.connections;
             var properties = component.properties;
 
-            counts[type] = (counts[type] || 0) + 1;
+            this.counts[type] = (this.counts[type] || 0) + 1;
 
             // convert node names to circuit indicies
             for (c in connections) {
@@ -399,8 +399,8 @@ var cktsim = (function() {
             case 'pfet':
                 this.p(connections.D, connections.G, connections.S, properties.W, properties.L, name);
                 break;
-	    case 'ground':
-		break;
+            case 'ground':
+                break;
             case 'connect':
                 break;  
             default:
@@ -421,13 +421,47 @@ var cktsim = (function() {
             if (i !== undefined) this.node_map[node] = i;
         }
 
+        // discover CMOS gates for later analysis
+        this.find_cmos_gates();
+
         // report circuit stats
         var msg = (this.node_index + 1).toString() + ' nodes';
-        for (var d in counts) {
-            msg += ', ' + counts[d].toString() + ' ' + d;
+        this.size = 0;
+        for (var d in this.counts) {
+            msg += ', ' + this.counts[d].toString() + ' ' + d;
+            this.size += this.counts[d];
         }
         //console.log(msg);
     };  
+
+    Circuit.prototype.find_cmos_gates = function() {
+        // for each fet, record its source/drain connectivity
+        var source_drain = {};
+        $.each(this.devices,function (index,d) {
+                if (d instanceof Fet) {
+                    if (source_drain[d.d] === undefined) source_drain[d.d] = [];
+                    source_drain[d.d].push(d);
+
+                    if (source_drain[d.s] === undefined) source_drain[d.s] = [];
+                    source_drain[d.s].push(d);
+                }
+            });
+
+        // find output nodes of CMOS gates by looking for nodes that connect
+        // to both P and N fets
+        var cmos_outputs = [];
+        $.each(source_drain,function (node,fets) {
+                var found_n = false;
+                var found_p = false;
+                $.each(fets,function (index,fet) {
+                        if (fet.type_sign == 1) found_n = true;
+                        else found_p = true;
+                    });
+                if (found_n && found_p) cmos_outputs.push(node);
+            });
+
+        this.counts['cmos_gates'] = cmos_outputs.length;
+    }
 
     // if converges: updates this.solution, this.soln_max, returns iter count
     // otherwise: return undefined and set this.problem_node
@@ -982,7 +1016,7 @@ var cktsim = (function() {
             var d = new Diode(n1, n2, area, type);
             return this.add_device(d, name);
         } // zero area diodes discarded.
-	return undefined;
+        return undefined;
     };
 
 
@@ -1742,12 +1776,14 @@ var cktsim = (function() {
         this.kp = (type == 'n') ? 120e-6 : 25e-6;
         this.beta = this.kp * this.ratio;
         this.lambda = 0.05;
+        this.g_leak = 1.0e-8 * this.beta;
     }
     Fet.prototype = new Device();
     Fet.prototype.constructor = Fet;
 
     Fet.prototype.load_linear = function(ckt) {
-        // FET channels are nonlinear, just like javascript progammers
+        // a small leakage current -- helps with correct DC analysis
+        ckt.add_conductance_l(this.d, this.s, this.g_leak);
 
         // in the absence of a bulk terminal, use the ground node
 
@@ -1808,11 +1844,11 @@ var cktsim = (function() {
     //
     ///////////////////////////////////////////////////////////////////////////////
     var module = {
-	Circuit: Circuit,
+        Circuit: Circuit,
         dc_analysis: dc_analysis,
         ac_analysis: ac_analysis,
         transient_analysis: transient_analysis,
-	print_netlist: print_netlist
+        print_netlist: print_netlist
     };
     return module;
 }());

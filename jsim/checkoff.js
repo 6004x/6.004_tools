@@ -17,6 +17,7 @@ var Checkoff = (function(){
     var mCheckoffStatement = null;
     var mResults = null;
     var mOptions = null;
+    var mSources = [];
     var mEditor;
     
     /**************************
@@ -47,9 +48,10 @@ var Checkoff = (function(){
     /************************
     Set results to the given results
     *************************/
-    function setResults(data, options){
+    function setResults(data, options, sources){
         mResults = data;
         mOptions = options;
+        mSources = sources;
     }
     
     function setEditor(editor){
@@ -99,9 +101,11 @@ var Checkoff = (function(){
             passedModal.setTitle("Checkoff Succeeded!");
             passedModal.setText("Verification succeeded!");
             passedModal.addButton("Dismiss",'dismiss');
-            passedModal.addButton("Submit", 
-                                  function(){show_checkoff_form(passedModal)},
-                                  'btn-primary');
+            // no Submit button for local test jigs
+            if (mCheckoffStatement.checksum.value != 0)
+                passedModal.addButton("Submit", 
+                                      function(){show_checkoff_form(passedModal)},
+                                      'btn-primary');
             passedModal.show();
         } else if (mistake.msg == 'Verify error') {
             failedModal = new ModalDialog();
@@ -155,6 +159,16 @@ var Checkoff = (function(){
         this.given = given;
     }
 
+    // the Java String.hashCode function.
+    function hash_string(str) {
+        var hash = 0;
+        for(var i = 0, len = str.length; i < len; i++) {
+            // the "<< 0" converts answer to 32-bit int
+            hash = (31 * hash + str.charCodeAt(i)) << 0;
+        }
+        return hash;
+    }
+
     // Run Verify: runs the stored verify statements
     function runVerify(){
         var checksum = 2536038;
@@ -165,7 +179,8 @@ var Checkoff = (function(){
         var checks = [];  // list of checks: {time, nodes, expected} 
         $.each(mVerify_statements,function (vindex,vobj) {
             if (vobj.type == "memory"){
-                verify_memory(vobj);  // may throw VerifyError...
+                // the "<< 0" converts answer to 32-bit int
+                checksum = (checksum + verify_memory(vobj)) << 0;  // may throw VerifyError...
                 return;
             }
 
@@ -185,7 +200,8 @@ var Checkoff = (function(){
             // add the checks performed by this .verify to our master list
             $.each(vobj.values,function (index,v) {
                 checks.push({time: v.time, nodes: vobj.nodes, expected: v.value});
-                // do something about computing checksum?
+                // the "<< 0" converts answer to 32-bit int
+                checksum = (checksum + (index+1)*(Math.floor(v.time*1e12) + v.value)) << 0;
             });
         });
 
@@ -234,7 +250,10 @@ var Checkoff = (function(){
             }
         });
 
-        // report bogus checksum here?
+        // report bogus checksum
+        var mChecksum = mCheckoffStatement.checksum.value;
+        if (mChecksum != 0 && checksum != mChecksum)
+            throw new VerifyError("<font size=5>Verification error...</font><p><p>It appears that the checkoff information has been modified in some way.  Please verify that you are using the official checkoff file; contact the course staff if you can't resolve the problem.<p>"+checksum);
     };
     
     // vobj has attributes:
@@ -246,6 +265,7 @@ var Checkoff = (function(){
     //      token: <the first token of the memory line for error throwing>
     function verify_memory(vobj){
         var mem = mResults.get_memory(vobj.mem_name);
+        var checksum = 0;
 
         if (mem === undefined) {
             throw new VerifyError('Cannot get contents of memory '+vobj.mem_name);
@@ -259,7 +279,10 @@ var Checkoff = (function(){
                                       vobj.contents[i].toString(vobj.display_base),
                                       got ? got.toString(vobj.display_base) : 'undefined');
             }
+            checksum += (i+1)*(start + i + got);
         }
+
+        return checksum;
     }
     
     function complete_checkoff(old){
@@ -291,13 +314,22 @@ var Checkoff = (function(){
             pcheckoff:assignment,
             collaboration: collaborators,
             checksum: checksum,
-            size: "FIX_ME",
-            figure_of_merit: "FIX_ME",
-            time: "FIX_ME",
-            version: 'JSim3.1.0',
+            size: mResults.size,
+            counts: JSON.stringify(mResults.counts || {}),
+            figure_of_merit: 1e-10/((mResults.size*1e-12) * mResults.time),
+            time: mResults.time,
+            version: 'JSim3.1.1',
+            /*
             circuits: _.map(mEditor.filenames(), function(f) {
                 return '============== source: ' + f + '\n' + mEditor.content(f) + '\n==============\n';
             }).join('')
+             */
+            circuits: _.map(mSources, function (source) {
+                // don't send along shared files
+                if (source.file.indexOf('/shared') == 0) return '';
+                return '============== source: ' + source.file + '\n' + source.content + '\n==============\n';
+            }).join('')
+
         }).done(function(data) {
             callback(true, data);
         }).fail(function() {

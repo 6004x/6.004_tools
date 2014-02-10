@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="end">
+<head>
+<title>{% block title %}{% endblock %}</title>
+<meta charset="utf-8">
+<script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+<style>
+body {
+  font: 12pt/1.5  Georgia,serif;
+  width: 650px;
+}
+.banner {
+  background-color: #FFC000;
+  color: black;
+  padding: 10px;
+  font-style: bold;
+  font-size: larger;
+}
+input {
+  font: 12pt/1.5  Georgia,serif;
+  padding: 3px;
+  background-color: #FFD9A1;
+}
+input.action {
+  cursor: pointer;
+  font: 12pt/1.5  Georgia,serif;
+  padding: 5px;
+  background-color: #FFD9A1;
+  color: black;
+  border-color: #FFD9A1;
+  border-radius: 4px;
+  -webit-border-radius: 4px;
+}
+a.button {
+  cursor: pointer;
+  font: 12pt/1.5  Georgia,serif;
+  padding: 5px;
+  background-color: #FFD9A1;
+  color: black;
+  border-color: #FFD9A1;
+  border-radius: 4px;
+  -webit-border-radius: 4px;
+  text-decoration: none;
+}
+.warning {
+  color: red;
+  margin: 5px;
+}
+.assignments {
+  border-collapse: collapse;
+}
+</style>
+</head>
+<body>
+{% block content %}{% endblock %}
+</body>
+</html>

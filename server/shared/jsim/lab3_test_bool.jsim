@@ -1,13 +1,9 @@
+// This is a machine-generated file; do not edit.
 
+// allow verification of results but no check-in
+.checkoff "" "Lab2: boolean" 0
 
-/* This is a machine-generated file; do not edit.
-*
-* information on how to contact the on-line assignments server.  A checksum
-* is included that is computed from the .verify statements, so don't change
-* those or you won't be able to complete your checkoff!
-*/
-.checkoff "" "Lab3: boolean" 0
-Wfn fn[4:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wfn fn[4:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x10 // 0ns:  [F0000 0x0 0x0]
 + 0x10 // 100ns:  [F0000 0x0 0xffffffff]
 + 0x10 // 200ns:  [F0000 0x0 0x1234]
@@ -585,7 +581,7 @@ Wfn fn[4:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
 + 0x1f // 57400ns:  [F1111 0x55555555 0xaaaaaaaa]
 + 0x1f // 57500ns:  [F1111 0x55555555 0x55555555]
 
-Wa a[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wa a[31:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x0 // 0ns:  [F0000 0x0 0x0]
 + 0x0 // 100ns:  [F0000 0x0 0xffffffff]
 + 0x0 // 200ns:  [F0000 0x0 0x1234]
@@ -1163,7 +1159,7 @@ Wa a[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
 + 0x55555555 // 57400ns:  [F1111 0x55555555 0xaaaaaaaa]
 + 0x55555555 // 57500ns:  [F1111 0x55555555 0x55555555]
 
-Wb b[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wb b[31:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x0 // 0ns:  [F0000 0x0 0x0]
 + 0xffffffff // 100ns:  [F0000 0x0 0xffffffff]
 + 0x1234 // 200ns:  [F0000 0x0 0x1234]

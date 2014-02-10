@@ -6,12 +6,12 @@ module.exports = function(grunt) {
                 separator: ';{}' // hack that 'works' for both JavaScript and CSS.
             }
         },
-        clean: ['appengine'],
+        clean: ['built'],
         copy: {
-            bsim: {src: 'bsim/bsim.html', dest: 'appengine/bsim.html'},
-            jsim: {src: ['jsim/jsim.html', 'jsim/*.png'], dest: 'appengine/', flatten: true, expand: true},
-            tmsim: {src: 'tmsim/tmsim.html', dest: 'appengine/tmsim.html'},
-            resources: {src: 'libs/*.png', dest: 'appengine/', flatten: true, expand: true}
+            bsim: {src: 'bsim/bsim.html', dest: 'built/bsim.html'},
+            jsim: {src: ['jsim/jsim.html', 'jsim/*.png'], dest: 'built/', flatten: true, expand: true},
+            tmsim: {src: 'tmsim/tmsim.html', dest: 'built/tmsim.html'},
+            resources: {src: 'libs/*.png', dest: 'built/', flatten: true, expand: true}
         },
         uglify: {
             options: {
@@ -26,24 +26,24 @@ module.exports = function(grunt) {
             jsim: 'jsim/jsim.html',
             tmsim: 'tmsim/tmsim.html',
             options: {
-                dest: 'appengine'
+                dest: 'built'
             }
         },
         usemin: {
             bsim: {
-                src: 'appengine/bsim.html',
+                src: 'built/bsim.html',
                 options: {type: 'html'}
             },
             jsim: {
-                src: 'appengine/jsim.html',
+                src: 'built/jsim.html',
                 options: {type: 'html'}
             },
             tmsim: {
-                src: 'appengine/tmsim.html',
+                src: 'built/tmsim.html',
                 options: {type: 'html'}
             },
             options: {
-                dirs: ['appengine']
+                dirs: ['built']
             }
         },
         connect: {

@@ -63,6 +63,7 @@ $(function() {
                 });
             } else {
                 PassiveAlert("Assembled successfully", "success");
+                beta.setSources(result.sources);
                 beta.loadBytes(result.image);
                 beta.setBreakpoints(result.breakpoints);
                 beta.setLabels(result.labels);

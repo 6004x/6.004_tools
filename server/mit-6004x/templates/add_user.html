@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}6.004 Add User{% endblock %}
+{% block content %}
+<form action="{{ url }}" method="post">
+<div class="banner">Add User</div>
+<div class="warning">{{ message }}</div>
+<table cellpadding=5>
+<tr>
+  <td>Email:</td>
+  <td><input type="email" name="email" style="width:300px"></td>
+</tr>
+<tr>
+  <td>Last name:</td>
+  <td><input type="text" name="last_name" style="width:300px"></td>
+</tr>
+<tr>
+  <td>First name:</td>
+  <td><input type="text" name="first_name" style="width:300px"></td>
+</tr>
+<tr>
+  <td>MIT ID:</td>
+  <td><input type="text" name="mit_id" style="width:300px"></td>
+</tr>
+<tr>
+  <td>Section:</td>
+  <td>
+    <select name="section">
+      <option value="unassigned">Unassigned</option>
+      {% for section in sections %}
+        <option value="{{ section.name }}">{{ section.name }}: {{ section.description }}</option>
+      {% endfor %}
+    </select>
+  </td>
+</tr>
+<tr>
+  <td>Status:</td>
+  <td>
+    <select name="status">
+       <option value="registered">registered student</option>
+       <option value="listener">listener</option>
+       <option value="dropped">dropped</option>
+       <option value="LA">LA</option>
+       <option value="staff">staff</option>
+    </select>
+  </td>
+</tr>
+<tr>
+  <td></td>
+  <td><input type="submit" name="action" value="Add user" class="action"></td>
+</tr>
+</table>
+</form>
+{% endblock %}

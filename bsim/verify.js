@@ -90,8 +90,15 @@ BSim.SubmitVerification = function(beta, editor, username, password, collaborati
         size: beta.memorySize(),
         version: 'BSim2.1.0',
         'server info': beta.mServerInfo.join(','),
+        /*
         circuits: _.map(editor.filenames(), function(f) {
             return '============== source: ' + f + '\n' + editor.content(f) + '\n==============\n';
+        }).join('')
+         */
+        circuits: _.map(beta.mSources, function (source) {
+            // don't send along shared files
+            if (source.file.indexOf('/shared') == 0) return '';
+            return '============== source: ' + source.file + '\n' + source.content + '\n==============\n';
         }).join('')
     }).done(function(data) {
         callback(true, data);

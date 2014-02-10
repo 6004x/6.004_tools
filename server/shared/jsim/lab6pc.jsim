@@ -1,6 +1,6 @@
-//* test vectors for debugging Beta PC circuitry
+// test vectors for debugging Beta PC circuitry
 
-//* allow verification, but not a real checkin
+// allow verification, but not a real checkin
 .checkoff "" "Lab #6: pc" 0
 
 .verify ia[31:0] periodic(199n,100n)
@@ -24,15 +24,14 @@
 
 Xpc pc clk reset ia[31:0]
 
-Vclk clk gnd pulse(3.3,0,49.9ns,.1ns,.1ns,49.9ns,100ns)
-Vreset reset gnd pwl(0ns 3.3v, 101ns 3.3v, 101.1ns 0v)
+Vclk clk gnd clock(1,0,100ns)
+Vreset reset gnd step(1,0,101ns)
 
-//* Run the simulation for 243 cycles
+// Run the simulation for 243 cycles
 .tran 24300ns
 
-/* Some useful plots... you can plot additional signals by specifying
-* the appropriate .plot commands in your main netlist file.
-*/
+// Some useful plots... you can plot additional signals by specifying
+// the appropriate .plot commands in your main netlist file.
 .plot clk
 .plot reset
-.plot ia[31:0]
+.plot L(ia[31:0])

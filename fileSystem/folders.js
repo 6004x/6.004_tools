@@ -613,11 +613,7 @@ var Folders = (function(){
 		//console.log('fails regexp')
                 return false;
             } 
-            var newFileName = '';
-            if(fileName.indexOf('.') < 0)
-                newFileName = file_path + fileName+'.'+editMode;
-            else
-                newFileName = file_path + fileName;
+            var newFileName = file_path + fileName;
             //checks that there is not already another file with that name.
             if (FileSystem.isFile(newFileName)){
                 //console.log(newFileName.substring(newFileName.lastIndexOf('/')+1) )

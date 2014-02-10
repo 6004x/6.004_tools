@@ -225,7 +225,7 @@ var Parser = (function(){
     /***************************
      Interpret: turns a token array into a hierarchal representation then calls the flattening functions
      ***************************/
-    function interpret(token_array){
+    function interpret(token_array,sources){
         globals = ['gnd'];
         plots = [];
         options = {};
@@ -277,7 +277,8 @@ var Parser = (function(){
                 plots:plots,
                 plotdefs:plotdefs,
                 analyses:analyses,
-                netlist:netlist};
+                netlist:netlist,
+                sources:sources};
     }
     
     /*****************************
@@ -510,7 +511,7 @@ var Parser = (function(){
         var i;
         if (line.length >= 4) {
             if (line[0].type != "name"){
-                throw new CustomError("Source name expected", line[0]);
+                throw new CustomError("Node name expected", line[0]);
             } else {
                 dc_obj.parameters.sweep1.source = line[0].token;
             }
@@ -530,7 +531,7 @@ var Parser = (function(){
         
         if (line.length == 8) {
             if (line[4].type != "name"){
-                throw new CustomError("Source name expected", line[4]);
+                throw new CustomError("Node name expected", line[4]);
             } else {
                 dc_obj.parameters.sweep2.source = line[4].token;
             }
@@ -903,10 +904,10 @@ var Parser = (function(){
     /************************
      General (called by the three above)
      ************************/
-    function read_linear(line,type){
-        if (line.length != 4){
-            throw new CustomError("Linear device should have two node names and a value",line[0].line,line[0].column);
-        }
+    function read_linear(line,type) {
+	if (line.length != 4) {
+	    throw new CustomError("Linear devices expect 3 arguments.",line[0]);
+	}
 
         var obj = {type:type,
                    ports:["n1","n2"],
@@ -914,7 +915,7 @@ var Parser = (function(){
                    properties:{name:line[0].token}
                   };
         
-        for (var i = 1; i < line.length-1; i += 1){
+        for (var i = 1; i < 3; i += 1){
             if (line[i].type != "name"){
                 throw new CustomError("Node name expected", line[i]);
             }
@@ -1096,12 +1097,12 @@ var Parser = (function(){
     
     /*****************************
      Opamp: 
-     --ports: nplus, nminus, output
+     --ports: nplus, nminus, output, gnd
      --properties: name, A
      *******************************/
     function read_opamp(line){
         var obj = {type:'opamp',
-                   ports:["nplus","nminus","output"],
+                   ports:["nplus","nminus","output","gnd"],
                    connections:[],
                    properties:{name:line[0].token}
                   };
@@ -1629,7 +1630,7 @@ var Parser = (function(){
     // tokenize contents, build netlist, send it to the callback
     function xparse(input_string, filename, callback, error_callback) {
         parse(input_string,filename,
-              function(tokens) { callback(interpret(tokens)); },
+              function(tokens,sources) { callback(interpret(tokens,sources)); },
               function(e) { error_callback(e) });
     }
 
@@ -1659,6 +1660,9 @@ var Parser = (function(){
         var control_pattern = /^\..+/;
         var names_pattern = /^([A-Za-z_$][\w$:\[\]\.]*)/;
         var num_pattern = /^(([+-]?\d*\.?)|(0[xX])|(0[bB]))\d+(([eE]-?\d+)|[A-Za-z]*)/;
+
+        // keep track of sources
+        var sources = [];  // list of {file:..., content: ...}
 
         // work on tokenizing contents, starting with most recently pushed state
         function tokenize() {
@@ -1761,7 +1765,7 @@ var Parser = (function(){
             // so can code it up in a straightforward fashion
             try {
                 tokens = iter_expand(tokens);
-                callback(tokens);
+                callback(tokens,sources);
             } catch(err) {
                 error_callback(err);
                 return;
@@ -1770,6 +1774,8 @@ var Parser = (function(){
 
         // add a new state to the state stack to handle the processing of included file
         function make_state(filename,contents) {
+            sources.push({file: filename, content: contents});
+
             // pattern will match, in order:
             //      anything wrapped in quotes (handles escaped characters)
             //      /* */ multi-line comments

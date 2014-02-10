@@ -1,13 +1,9 @@
+// This is a machine-generated file; do not edit.
 
+// allow verification of results, but no check-in
+.checkoff "" "Lab2: multiplier" 0
 
-/* This is a machine-generated file; do not edit.
-*
-* information on how to contact the on-line assignments server.  A checksum
-* is included that is computed from the .verify statements, so don't change
-* those or you won't be able to complete your checkoff!
-*/
-.checkoff "" "Lab3: multiplier" 0
-Wfn fn[4:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wfn fn[4:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x2 // 0ns:  [MUL 0x0 0x0]
 + 0x2 // 100ns:  [MUL 0x0 0x1]
 + 0x2 // 200ns:  [MUL 0x0 0xffffffff]
@@ -114,7 +110,7 @@ Wfn fn[4:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
 + 0x2 // 10300ns:  [MUL 0x-1 0x80000000]
 + 0x2 // 10400ns:  [MUL 0x180000000 0x3]
 
-Wa a[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wa a[31:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x0 // 0ns:  [MUL 0x0 0x0]
 + 0x0 // 100ns:  [MUL 0x0 0x1]
 + 0x0 // 200ns:  [MUL 0x0 0xffffffff]
@@ -221,7 +217,7 @@ Wa a[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
 + 0xffffffff // 10300ns:  [MUL 0x-1 0x80000000]
 + 0x80000000 // 10400ns:  [MUL 0x180000000 0x3]
 
-Wb b[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wb b[31:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x0 // 0ns:  [MUL 0x0 0x0]
 + 0x1 // 100ns:  [MUL 0x0 0x1]
 + 0xffffffff // 200ns:  [MUL 0x0 0xffffffff]

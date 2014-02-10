@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}6.004 Enter/Change Score{% endblock %}
+{% block content %}
+<p><div class="banner">Scoring activity for {{user.first_name}} {{ user.last_name}} ({{ user.email}})</div>
+<p><div class="warning">{{ message }}</div>
+<p><table class="assignments" border=1 cellpadding=3>
+<tr>
+  <th>Assignment</th>
+  <th>Timestamp (UTC)</th>
+  <th>Submitter</th>
+  <th>Action</th>
+  <th>Value</th>
+  <th>Notes</th>
+</tr>
+{% if actions|length %}
+{% for action in actions %}
+<tr>
+  <td>{{ action.assignment }}</td>
+  <td>{{ action.timestamp }}</td>
+  <td>{{ action.submitter }}</td>
+  <td>{{ action.action }}</td>
+  <td>{{ action.value }}</td>
+  <td>{{ action.nodes }}</td>
+</tr>
+{% endfor %}
+{% else %}
+<td colspan="6" align="center"><i>no actions</i></td>
+{% endif %}
+</table>
+
+<p>Enter a new/updated grade:
+<form action="{{ url }}" method="post">
+<input type="hidden" name="email" value={{ user.email }}>
+<p><table cellpadding=3>
+<tr>
+  <td>Assignment:</td>
+  <td>
+    <select name="assignment">
+      <option value=""></option>
+      {% for a in assignments %}
+        <option value="{{ a.name }}">{{ a.description }}</option>
+      {% endfor %}
+    </select>
+  </td>
+</tr>
+<tr>
+  <td>Action:</td>
+  <td>
+    <select name="action">
+      <option value=""></option>
+      <option value="check-in">check-in</option>
+      <option value="check-off">check-off</option>
+      <option value="quiz">quiz</option>
+      <option value="excuse">excuse</option>
+      <option value="note">note</option>
+    </select>
+  </td>
+</tr>
+<tr>
+  <td>Value:</td>
+  <td><input type="text" name="value"></td>
+</tr>
+<tr>
+  <td>Notes:</td>
+  <td><input type="text" name="notes"></td>
+</tr>
+<tr>
+  <td></td>
+  <td><input type="submit" name="action" value="Submit grade" class="action"></td>
+</tr>
+</table>
+</form>
+
+<p><A href="{{ status_url }}">Return to Status page</A>
+
+{% endblock %}

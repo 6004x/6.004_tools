@@ -1,0 +1,34 @@
+To setup sendmail on mac os x:
+
+sudo su
+cd /etc/postfix
+
+...create sasl_passwd with
+smtp.gmail.com:587 <username@domain.com>:<passwd>
+...end
+
+chmod 600 sasl_passwd
+postmap sasl_passwd
+
+...add these lines to the end of mail.cf
+# Minimum Postfix-specific configurations.
+mydomain_fallback = localhost
+mail_owner = _postfix
+setgid_group = _postdrop
+relayhost=smtp.gmail.com:587
+
+# Enable SASL authentication in the Postfix SMTP client.
+smtp_sasl_auth_enable=yes
+smtp_sasl_password_maps=hash:/etc/postfix/sasl_passwd
+smtp_sasl_security_options=
+
+# Enable Transport Layer Security (TLS), i.e. SSL.
+smtp_use_tls=yes
+smtp_tls_security_level=encrypt
+tls_random_source=dev:/dev/urandom
+...end
+
+postfix start
+mail -t "test subject" cjt@mit.edu
+test message
+^D

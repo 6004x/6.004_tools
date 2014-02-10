@@ -1,14 +1,14 @@
-//* test vectors for debugging Beta control circuitry
+// test vectors for debugging Beta control circuitry
 
-//* allow verification, but not a real checkin
+// allow verification, but not a real checkin
 .checkoff "" "Lab #6: control" 0
 
 Xctl ctl reset id[31:26] ra2sel bsel alufn[4:0] wdsel[1:0] werf moe mwe
 
-Vclk clk gnd pulse(3.3,0,49.9ns,.1ns,.1ns,49.9ns,100ns)
-Vreset reset gnd pwl(0ns 3.3v, 101ns 3.3v, 101.1ns 0v)
+Vclk clk gnd clock(1,0,100ns)
+Vreset reset gnd step(1,0,101ns)
 
-Wid id[31:26] nrz(0,3.3,100n,0n,.1n,.1n)
+Wid id[31:26] nrz(0,1.0,100n,0n,.1n,.1n)
 +// test reset
 + 0x00
 +// test each lab 6, step 1 opcode
@@ -262,13 +262,23 @@ Wid id[31:26] nrz(0,3.3,100n,0n,.1n,.1n)
 /* Some useful plots... you can plot additional signals by specifying
 * the appropriate .plot commands in your main netlist file.
 */
+.plotdef betaop
++ "???"  "???"  "???"  "???"  "???"  "???"  "???"  "???"
++ "???"  "???"  "???"  "???"  "???"  "???"  "???"  "???"
++ "???"  "???"  "???"  "???"  "???"  "???"  "???"  "???"
++ LD     ST     "???"  JMP    BEQ    BNE    "???"  LDR
++ ADD    SUB    MUL    DIV    CMPEQ  CMPLT  CMPLE  "???"
++ AND    OR     XOR    XNOR   SHL    SHR    SRA    "???"
++ ADDC   SUBC   MULC   DIVC   CMPEQC CMPLTC CMPLEC "???"
++ ANDC   ORC    XORC   XNORC  SHLC   SHRC   SRAC   "???"
+
 .plot clk
 .plot reset
 .plot betaop(id[31:26])
 .plot ra2sel
 .plot bsel
-.plot alufn[4:0]
-.plot wdsel[1:0]
+.plot L(alufn[4:0])
+.plot L(wdsel[1:0])
 .plot werf
 .plot moe
 .plot mwe

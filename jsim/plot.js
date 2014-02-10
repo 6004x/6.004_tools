@@ -1,4 +1,4 @@
-var plot = (function() {
+ var plot = (function() {
 
     ///////////////////////////////////////////////////////////////////////////////
     //
@@ -717,45 +717,46 @@ var plot = (function() {
                 c.fillStyle = normal_style;
                 c.fillText(label, dataseries.cursor, dataset.top + dataset.hplot);
 
-                // draw fiducial at intersector of cursor and curve if analog waveform
-                for (var dindex = 0; dindex < dataset.xvalues.length; dindex += 1) {
-                    if (dataset.type[dindex] != 'analog') continue;
-                    var xvalues = dataset.xvalues[dindex];
-                    var yvalues = dataset.yvalues[dindex];
-                    var i = search(xvalues,x);  // quickly find first index
-                    // interpolate cursor's intersection with curve
-                    var x1 = xvalues[i];
-                    var y1 = yvalues[i];
-                    var x2 = xvalues[i+1] || x1;
-                    var y2 = yvalues[i+1] || y1;
-                    var y = y1;
-                    if (x1 != x2) y = y1 + ((x - x1)/(x2-x1))*(y2 - y1);
+                // draw fiducial at intersection of cursor and curve
+                if (dataset.type[0] == 'analog') {
+                    for (var dindex = 0; dindex < dataset.xvalues.length; dindex += 1) {
+                        var xvalues = dataset.xvalues[dindex];
+                        var yvalues = dataset.yvalues[dindex];
+                        var i = search(xvalues,x);  // quickly find first index
+                        // interpolate cursor's intersection with curve
+                        var x1 = xvalues[i];
+                        var y1 = yvalues[i];
+                        var x2 = xvalues[i+1] || x1;
+                        var y2 = yvalues[i+1] || y1;
+                        var y = y1;
+                        if (x1 != x2) y = y1 + ((x - x1)/(x2-x1))*(y2 - y1);
 
-                    var gx = dataset.plotx(x);
-                    var gy = dataset.ploty(y);
-                    c.strokeStyle = dataset.color[dindex] || '#268bd2';
-                    c.beginPath();
-                    c.arc(gx,gy,5,0,2*Math.PI);
-                    c.stroke();
+                        var gx = dataset.plotx(x);
+                        var gy = dataset.ploty(y);
+                        c.strokeStyle = dataset.color[dindex] || '#268bd2';
+                        c.beginPath();
+                        c.arc(gx,gy,5,0,2*Math.PI);
+                        c.stroke();
 
-                    // add y value readout in legend
-                    var lx = dataset.legend_right[dindex];
-                    var ly = dataset.legend_top[dindex];
-                    label = '='+engineering_notation(y,1) + dataset.yunits;
-                    c.font = graph_legend_font;
+                        // add y value readout in legend
+                        var lx = dataset.legend_right[dindex];
+                        var ly = dataset.legend_top[dindex];
+                        label = '='+engineering_notation(y,2) + dataset.yunits;
+                        c.font = graph_legend_font;
 
-                    // translucent background so graph doesn't obscure label
-                    var w = c.measureText(label).width;
-                    c.fillStyle = element_style;
-                    c.globalAlpha = 0.7;
-                    c.fillRect(lx,ly,w+5,20);
+                        // translucent background so graph doesn't obscure label
+                        var w = c.measureText(label).width;
+                        c.fillStyle = element_style;
+                        c.globalAlpha = 0.7;
+                        c.fillRect(lx,ly,w+5,20);
 
-                    // now plot the label itself
-                    c.textAlign = 'left';
-                    c.textBaseline = 'bottom';
-                    c.fillStyle = normal_style;
-                    c.globalAlpha = 1.0;
-                    c.fillText(label,lx,ly+18);
+                        // now plot the label itself
+                        c.textAlign = 'left';
+                        c.textBaseline = 'bottom';
+                        c.fillStyle = normal_style;
+                        c.globalAlpha = 1.0;
+                        c.fillText(label,lx,ly+18);
+                    }
                 }
             }
         });
@@ -797,7 +798,8 @@ var plot = (function() {
         var mantissa = sign * Math.pow(10, log10 - 3 * exp);
 
         // keep specified number of places following decimal point
-        var mstring = (mantissa + sign * 0.5 * Math.pow(10, - nplaces)).toString();
+        //var mstring = (mantissa + sign * 0.5 * Math.pow(10, - nplaces)).toString();
+        var mstring = mantissa.toFixed(nplaces);
         var mlen = mstring.length;
         var endindex = mstring.indexOf('.');
         if (endindex != -1) {
@@ -838,5 +840,9 @@ var plot = (function() {
     }
 
     // module exports
-    return {graph: graph,tick_interval: tick_interval};
+    return {
+        graph: graph,
+        tick_interval: tick_interval,
+        engineering_notation: engineering_notation
+    };
 }());

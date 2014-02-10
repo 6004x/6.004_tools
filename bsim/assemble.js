@@ -838,11 +838,14 @@
             return macro;
         };
 
+        var sources;  // list of {file: ..., content: ...}
         var parse_file = function(file, content, completion_callback, error_callback) {
             var stream = new StringStream(new FileStream(content, file));
             var errors = [];
             var waiting = 0;
             var completed = false;
+
+            sources.push({file: file, content: content});
 
             var insert_include = function(include) {
                 ++waiting;
@@ -1057,7 +1060,7 @@
 
         // Given a syntax tree, returns a Uint8Array representing the program
         // Alternatively, throws a SyntaxError.
-        var run_assembly = function(syntax) {
+        var run_assembly = function(syntax,sources) {
             var context = {
                 symbols: {},
                 macros: {},
@@ -1067,7 +1070,7 @@
                 labels: {},
                 options: {},
                 protection: [],
-                checkoff: null
+                checkoff: null,
             };
             // First pass: figure out where everything goes.
              _.each(syntax, function(item) {
@@ -1087,7 +1090,8 @@
                 labels: context.labels,
                 options: context.options,
                 protection: context.protection,
-                checkoff: context.checkoff
+                checkoff: context.checkoff,
+                sources: sources
             };
         };
 
@@ -1097,14 +1101,15 @@
         // callback(false, error_list): called on failure. error_list is a list of SyntaxErrors, if any
         // callback(true, bytecode): called on success. bytecode is a Uint8Array containing the result of compilation.
         this.assemble = function(file, content, callback) {
-            var stream = new StringStream(new FileStream(content, file));
+            //var stream = new StringStream(new FileStream(content, file));
+            //var can_succeed = true;
             var errors = [];
-            var can_succeed = true;
 
+            sources = [];  // initialize list of sources
             parse_file(file, content, function(syntax) {
                 var code;
                 try {
-                    code = run_assembly(syntax);
+                    code = run_assembly(syntax,sources);
                 } catch(e) {
                     if(e instanceof SyntaxError) {
                         errors.push(e);

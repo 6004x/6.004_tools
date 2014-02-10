@@ -3,19 +3,37 @@
 //var console,localStorage;
 
 var FileSystem= (function(){
-    // for debugging
-    var server_url = 'http://localhost:6004/';
-    var shared_url = 'http://localhost/~cjt/cs/tools';
+    // used when access is from scripts deployed on computationstructures.org
+    var server_url = 'https://mit-6004x.appspot.com';
+    var shared_url = 'http://computationstructures.org/labs';
 
-    // for deployment
-    // var server_url = 'https://computationstructures.appspot.com/';
-    // var shared_url = 'http://computationstructures.org/tools';
+    // used when access is from scripts deployed on localhost
+    var local_server_url = 'http://localhost:6004';
+    var local_shared_url = 'http://localhost/ComputationStructures/labs';
+
+    // used when access is from scripts deployed on 6004.mit.edu
+    var mit_server_url = 'https://6004.mit.edu/coursewarex/cgibin_file_server.py';
+    var mit_shared_url = 'https://6004.mit.edu/coursewarex';
 
     var saved_file_list = [];
     var saved_folder_list = [];
 
     function server_request(url,data,callback) {
-        $.ajax(server_url+url, {
+        // we support various servers during development
+        var host = $(location).attr('host');
+        if (host == 'localhost') {
+            url = local_server_url + url;
+        }
+        else if (host == '6004.mit.edu') {
+            data['_path'] = url;   // add path info to request data
+            url = mit_server_url; // cgi bin script
+        }
+        else {
+            url = server_url;
+        }
+
+        // now make the request
+        $.ajax(url, {
             type: 'POST',
             dataType: 'json',
             data: data,
@@ -34,7 +52,12 @@ var FileSystem= (function(){
     }
 
     function shared_request(url,dataType,succeed,fail) {
-        $.ajax(shared_url+url, {
+        var host = $(location).attr('host');
+        if (host == 'localhost') host = local_shared_url;
+        else if (host == '6004.mit.edu') host = mit_shared_url;
+        else host = shared_url;
+
+        $.ajax(host+url, {
             type: 'GET',
             dataType: dataType,
             success: function(response) {
@@ -55,17 +78,30 @@ var FileSystem= (function(){
             return;
         }
 
+        if ($(location).attr('host') == '6004.mit.edu') {
+            // server will use certificate to determine who user is
+            server_request('/user/validate',{},
+                           function (response) {
+                               if (response._error === undefined) {
+                                   sessionStorage.setItem('user',response._user);
+                                   callback(response._user);
+                               }
+                           });
+            return;
+        }
+
         function complete_signin(dialog) {
             var user = dialog.inputContent(0);
             var password = dialog.inputContent(1);
 
             // a successful validation will set a session cookie that will
             // passed to the server on subsequent ajax calls.
-            server_request('user/validate',
+            server_request('/user/validate',
                            {'_user': user,'_password': password},
                            function (response) {
                                if (response._error === undefined) {
                                    dialog.dismiss();
+                                   if (response._user) user = response._user;
                                    sessionStorage.setItem('user',user);
                                    callback(user);
                                } else {
@@ -125,7 +161,7 @@ var FileSystem= (function(){
     function getFileList(succeed,fail) {
         // first step: validate the user with the server
         validate_user(function(user) {
-            server_request('file/',
+            server_request('/file/',
                            {'action': 'list'},
                            function (response) {
                                if (response._error === undefined) {
@@ -154,8 +190,8 @@ var FileSystem= (function(){
     }
 
     function newFolder(filename,succeed,fail) {
-        server_request('file/'+filename+'/',
-                       {action: 'save',contents: ''},
+        server_request('/file/'+filename+'/',
+                       {action: 'folder'},
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
@@ -172,7 +208,7 @@ var FileSystem= (function(){
     }
 
     function newFile(filename,contents,succeed,fail) {
-        server_request('file/'+filename,
+        server_request('/file/'+filename,
                        {action: 'save',contents: contents},
                        function(response){
                            if (response._error) {
@@ -186,7 +222,7 @@ var FileSystem= (function(){
     }
 
     function deleteFile(filename,succeed,fail) {
-        server_request('file/'+filename,
+        server_request('/file/'+filename,
                        {action: 'delete'},
                        function(response){
                            if (response._error) {
@@ -200,7 +236,7 @@ var FileSystem= (function(){
     }
 
     function renameFile(old_filename,new_filename,succeed,fail) {
-        server_request('file/'+old_filename,
+        server_request('/file/'+old_filename,
                        {action: 'rename',path: new_filename},
                        function(response){
                            if (response._error) {
@@ -223,7 +259,7 @@ var FileSystem= (function(){
             shared_request(filename,'text',function(response) {
                 succeed({name: filename, data: response, shared: true});
             },fail);
-        else server_request('file/'+filename,
+        else server_request('/file/'+filename,
                             {action: 'load'},
                             function(response){
                                 if (response._error) {
@@ -238,7 +274,7 @@ var FileSystem= (function(){
     }
 
     function getBackup(filename,succeed,fail) {
-        server_request('file/'+filename,
+        server_request('/file/'+filename,
                        {action: 'load'},
                        function(response){
                            if (response._error || response.backup === undefined) {
@@ -248,7 +284,7 @@ var FileSystem= (function(){
     }
 
     function makeAutoSave(filename,contents,succeed,fail) {
-        server_request('file/'+filename,
+        server_request('/file/'+filename,
                        {action: 'autosave',contents: contents},
                        function(response){
                            if (response._error) {
@@ -258,7 +294,7 @@ var FileSystem= (function(){
     }
 
     function saveFile(filename,contents,succeed,fail) {
-        server_request('file/'+filename,
+        server_request('/file/'+filename,
                        {action: 'save',contents: contents},
                        function(response){
                            if (response._error) {
@@ -267,8 +303,18 @@ var FileSystem= (function(){
                        });
     }
 
-    function downloadZipURL(succeed,fail) {
-        return server_url+'file/?action=zip';
+    function downloadZipURL() {
+        // we support various servers during development
+        var host = $(location).attr('host');
+        if (host == 'localhost') {
+            return local_server_url+'/file?action=zip'
+        }
+        else if (host == '6004.mit.edu') {
+            return mit_server_url+'?_path=/file&action=zip';
+        }
+        else {
+            return server_url+'/file?action=zip'
+        }
     }
 
     return {getFileList: getFileList,

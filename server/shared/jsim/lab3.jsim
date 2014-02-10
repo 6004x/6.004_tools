@@ -1,5 +1,10 @@
-.include "/shared/jsim/nominal.jsim"
+// set up power supply node and logic thresholds
+.global vdd
+VDD vdd gnd 1.0v
+.options vil=0.2 vih=0.8
+
 .include "/shared/jsim/stdcell.jsim"
+// select which testing/checkoff file to use
 .include "/shared/jsim/lab3_test_bool.jsim"
 
 .subckt BOOL alufn[3:0] A[31:0] B[31:0] OUT[31:0]

@@ -1,25 +1,31 @@
-/* information on how to contact the on-line assignments server.  A checksum
-* is included that is computed from the .verify statements, so don't change
-* those or you won't be able to complete your checkoff!
-*/
-.checkoff "https://6004.mit.edu/currentsemester/6004xassignment.doit" "Lab #1" 456852233
+// information on how to contact the on-line assignments server.  A checksum
+// is included that is computed from the .verify statements, so don't change
+// those or you won't be able to complete your checkoff!
 
-/* a list of expected values for node z.  The first data value (0)
-* is compared against the actual node values at time 99.9ns into the
-* simulation, the second value (0) at time 199.9ns, and so on.
-*/
+.checkoff "https://6004.mit.edu/ssldocs/6004xassignment.doit" "Lab #1" 22932465
+
+// a list of expected values for node z.  The first data value
+// (0) is compared against the actual node values at time 99.9ns into the
+// simulation, the second value (1) at time 199.9ns, and so on.
+
 .verify Z periodic(99.9n,100n)
-+ 0 0 0 1 1 1 1 1
++ 0 1 0 1 0 1 1 1
 
-Wtest C B A nrz(0, 3.3, 100n, 0n, .1n, .1n) 
+// generate the 3 input waveforms for inputs A, B and C
+
+Winputs A B C nrz(0,3.3,100n,0n,.1n,.1n)
 + 0b000 0b001 0b010 0b011 0b100 0b101 0b110 0b111
 
-/* instantiate the subcircuit you defined
-*/
+// make a test instance of the F subcircuit
 Xtest F A B C Z
 
+// run through all eight combinations of input values
 .tran 800ns
+
+// plot the results
 .plot A
 .plot B
 .plot C
 .plot Z
+
+

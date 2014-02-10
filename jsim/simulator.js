@@ -282,7 +282,7 @@ var Simulator = (function(){
             for (var i = 0; i < nlist.length; i += 1) {
                 var node = nlist[i];
                 var values = results.history(node);
-                if (values === undefined) throw "Cannot get history for node: "+node;
+                if (values === undefined) throw "No values to plot for "+node;
 
                 dataset.xvalues.push(values.xvalues);
                 dataset.yvalues.push(values.yvalues);
@@ -434,9 +434,11 @@ var Simulator = (function(){
             mDiv.empty();
             mDiv.append(container);
 
-            var stat_button = $('<button style="margin-left:10px;">Stats</button>');
-            $('.plot-toolbar').append(stat_button);
-            stat_button.on('click',function () { do_stats(results); });
+	    if (results.report) {
+		var stat_button = $('<button style="margin-left:10px;">Stats</button>');
+		$('.plot-toolbar').append(stat_button);
+		stat_button.on('click',function () { do_stats(results); });
+	    }
 
             //cjt for some reason with typeahead one can't type "L(xxx)" ???
             // add autocomplete to add plot input field
@@ -500,11 +502,8 @@ var Simulator = (function(){
             $.each(plot,function (index,pobject) {
                 var node = pobject.args[0];
 
-                if (results[node] === undefined || results[node].magnitude === 0 || results[node].phase === 0) {
-                    var novaldiv = get_novaldiv(node);
-                    mDiv.prepend(novaldiv);
-                    return;
-                }
+                if (results[node] === undefined || results[node].magnitude === 0 || results[node].phase === 0)
+		    throw "No values to plot for node "+node;
 
                 magnitude.xvalues.push(logHz);
                 magnitude.yvalues.push(results[node].magnitude.map(function (v) {return 20*Math.log(v)/Math.LN10; }));
@@ -533,13 +532,20 @@ var Simulator = (function(){
      ***************/
     function prepare_dc_data(plots){
         var results = mCurrent_results;
+
+        if (results === undefined) {
+            mDiv.prepend('<div class="alert alert-danger">No results from the simulation.'+
+                         '.<button class="close" data-dismiss="alert">&times;</button></div>');
+            return;
+        }
+
         var analysis = mCurrent_analysis;
         var sweep1 = analysis.parameters.sweep1;
         var sweep2 = analysis.parameters.sweep2;
         if (sweep1.source === undefined) return;
         
         var dataseries = [];
-        $.each(plots, function (p,plot) {
+        $.each(plots, function (p,plt) {
             var dataset = {xvalues: [],
                            yvalues: [],
                            name: [],
@@ -550,7 +556,7 @@ var Simulator = (function(){
                           };
             dataseries.push(dataset);
 
-            $.each(plot,function (index,pobject) {
+            $.each(plt,function (index,pobject) {
                 var node = pobject.args[0];
                 // deal with how parser parses "I(VDD)"
                 if (pobject.type == 'I') node = 'I(' + node + ')';
@@ -570,18 +576,15 @@ var Simulator = (function(){
                     }
                 
                     // no values to plot for the given node
-                    if (values === undefined) {
-                        var novaldiv = get_novaldiv(node);
-                        mDiv.prepend(novaldiv);
-                        continue;
-                    }
+                    if (values === undefined)
+			throw "No values to plot for node "+node;
 
                     // boolean that records if the analysis asked for current through a node
                     var current = (node.length > 2 && node[0]=='I' && node[1]=='(');
                     var name = current ? node : "Node " + node; 
                     var color = colors[index % colors.length];
                     if (sweep2.source !== undefined) {
-                        name += " with " + sweep2.source + "=" + x2;
+                        name += " with " + sweep2.source + "=" + plot.engineering_notation(x2,2);
                         color = colors[index2 % colors.length];
                     }
 

@@ -1,12 +1,7 @@
+// This is a machine-generated file; do not edit.
 
-
-/* This is a machine-generated file; do not edit.
-*
-* information on how to contact the on-line assignments server.  A checksum
-* is included that is computed from the .verify statements, so don't change
-* those or you won't be able to complete your checkoff!
-*/
-.checkoff "6004.mit.edu/currentsemester/6004assignment.doit" "Lab #3" -1238120568
+// information on how to contact the on-line assignments server
+.checkoff "https://6004.mit.edu/ssldocs/6004xassignment.doit" "Lab #3" -790521437
 
 // instantiate alu
 Xalu alu fn[4:0] a[31:0] b[31:0] y[31:0] z v n
@@ -28,7 +23,7 @@ Xalu alu fn[4:0] a[31:0] b[31:0] y[31:0] z v n
 .plot n
 .plot v
 
-Wfn fn[4:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wfn fn[4:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x0 // 0ns:  [ADD 0x0 0x0]
 + 0x0 // 100ns:  [ADD 0x55555555 0x0]
 + 0x0 // 200ns:  [ADD 0x0 0x55555555]
@@ -1147,7 +1142,7 @@ Wfn fn[4:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
 + 0xb // 111500ns: SRA 0xffffffff >> 31 [SRA 0xffffffff 0x1f]
 + 0xb // 111600ns:  [SRA 0x8000000 0x10]
 
-Wa a[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wa a[31:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x0 // 0ns:  [ADD 0x0 0x0]
 + 0x55555555 // 100ns:  [ADD 0x55555555 0x0]
 + 0x0 // 200ns:  [ADD 0x0 0x55555555]
@@ -2266,7 +2261,7 @@ Wa a[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
 + 0xffffffff // 111500ns: SRA 0xffffffff >> 31 [SRA 0xffffffff 0x1f]
 + 0x8000000 // 111600ns:  [SRA 0x8000000 0x10]
 
-Wb b[31:0] nrz(0, 3.3, 100n, 0n, .1n,.1n)
+Wb b[31:0] nrz(0, 1.0, 100n, 0n, .1n,.1n)
 + 0x0 // 0ns:  [ADD 0x0 0x0]
 + 0x0 // 100ns:  [ADD 0x55555555 0x0]
 + 0x55555555 // 200ns:  [ADD 0x0 0x55555555]
