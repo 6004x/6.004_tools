@@ -127,6 +127,18 @@ var ModalDialog = function() {
         return this;
     };
 
+    this.setWidth = function(width) {
+        mDialog.css('width',width);
+    };
+
+    this.noFocus = function() {
+        mDialog.off('shown');
+    };
+
+    this.find = function(selector) {
+        return mDialog.find(selector);
+    };
+
     var initialise = function() {
         mDialog = $('\
             <div class="modal hide fade">\

@@ -289,6 +289,10 @@ var Checkoff = (function(){
         var username = old.inputContent(0);
         var password = old.inputContent(1);
         var collaborators = old.inputContent(2);
+        var advice = old.find('.advice').map(function(index,field){ return $(field).val(); });
+        var astrings = [];
+        $.each(advice,function(index,a){ astrings.push(a); });
+
         old.dismiss();
         
         var url = mCheckoffStatement.server.name;
@@ -319,11 +323,7 @@ var Checkoff = (function(){
             figure_of_merit: 1e-10/((mResults.size*1e-12) * mResults.time),
             time: mResults.time,
             version: 'JSim3.1.1',
-            /*
-            circuits: _.map(mEditor.filenames(), function(f) {
-                return '============== source: ' + f + '\n' + mEditor.content(f) + '\n==============\n';
-            }).join('')
-             */
+            advice: JSON.stringify(astrings),
             circuits: _.map(mSources, function (source) {
                 // don't send along shared files
                 if (source.file.indexOf('/shared') == 0) return '';
@@ -337,10 +337,77 @@ var Checkoff = (function(){
         });
     }
 
+    function submit_task(dialog,assignment) {
+        if (assignment == 'Lab #2') {
+            var expected = {png:"/ssldocs/lab2_1.png", gates:24, fets:114};
+            var best = {png:"/ssldocs/lab2_8.png", gates:21, fets:96};
+            var worse = [{png:"/ssldocs/lab2_2.png", gates:42, fets:150},
+                         {png:"/ssldocs/lab2_3.png", gates:27, fets:126},
+                         {png:"/ssldocs/lab2_4.png", gates:33, fets:132},
+                         {png:"/ssldocs/lab2_6.png", gates:36, fets:144},
+                         {png:"/ssldocs/lab2_9.png", gates:36, fets:132}];
+            var example = FileSystem.getUserName().charCodeAt(0) % worse.length;
+
+            var fets = mResults.counts.nfet + mResults.counts.pfet;
+            var result = $('<div style="font: 14px Geogia,serif;"></div>');
+            result.append('Your design has a total of <b>'+fets+'</b> mosfets.  For comparison, the graph below shows '+
+                          'the number of designs submitted in a previous semester (y-axis) vs. their mosfet count (x-axis).')
+            result.append('<br><br><img src="/ssldocs/lab2_15.jpg">');
+
+            result.append('<br><br>Below we will ask you to compare your design with a few other designs submitted previously.');
+            result.append('  First, for reference, here\'s your JSim code:');
+            result.append('<br><br><textarea style="font: 12px/1.25 monospace; width:95%;" rows="10" readonly=1>'+mSources[0].content+'</textarea><br>');
+            
+            if (fets > expected.fets) {
+                result.append('<br><br><img src="'+expected.png+'" style="margin-left: 5px; width:50%; float: right;"></center>');
+                result.append('<b>Comparison #1:</b> <br><br>If we used the design shown at the right for the FA module,');
+                result.append(' a 3-bit adder would require only <b>'+expected.fets+'</b> mosfets, smaller than your');
+                result.append(' design by '+(fets-expected.fets)+' mosfets.');
+                result.append('<br><br>Imagine you\'re an LA in a future semester of 6.004 and a student');
+                result.append(' submits a solution like yours.  What advice would you give them');
+                result.append(' on how to make their solution as good as the one in');
+                result.append(' the figure to the right?');
+                result.append('<br style="clear:right;"><br><textarea class="advice" style="font: 12px/1.25 monospace; width:95%;" rows="10">... enter your advice here</textarea>');
+                result.append('<input type=hidden class="advice" name="example" value="example=expected">');
+            } else {
+                result.append('<br><br><img src="'+worse[example].png+'" style="margin-left: 5px; width:50%; float: right;"></center>');
+                result.append('<b>Comparison #1:</b> <br><br>If we used the design shown at the right for the FA module,');
+                result.append(' a 3-bit adder would require <b>'+worse[example].fets+'</b> mosfets, larger than your');
+                result.append(' design by '+(worse[example].fets-fets)+' mosfets.');
+                result.append('<br><br>Imagine you\'re an LA in a future semester of 6.004 and a student');
+                result.append(' submits a solution like the shown on the right.  What advice would you give them');
+                result.append(' on how to make their solution as good as yours?');
+                result.append('<br style="clear:right;"><br><textarea class="advice" style="font: 12px/1.25 monospace; width:95%;" rows="10">... enter your advice here</textarea>');
+                result.append('<input type=hidden class="advice" name="example" value="example='+example+'">');
+            }
+
+
+            if (fets > best.fets) {
+                result.append('<br><br><img src="'+best.png+'" style="margin-left: 5px; width:50%; float: right;"></center>');
+                result.append('<b>Comparison #2:</b> <br><br>If we used the design shown at the right for the FA module,');
+                result.append(' a 3-bit adder would require only <b>'+best.fets+'</b> mosfets, smaller than your');
+                result.append(' design by '+(fets-best.fets)+' mosfets.');
+                result.append('<br><br>Imagine you\'re an LA in a future semester of 6.004 and a student');
+                result.append(' submits a solution like yours.  What advice would you give them');
+                result.append(' on how to make their solution as good as the one in');
+                result.append(' the figure to the right?');
+                result.append('<br style="clear:right;"><br><textarea class="advice" style="font: 12px/1.25 monospace; width:95%;" rows="10">... enter your advice here</textarea>');
+            }
+
+            result.append('<br><hr><br>To complete your submission, please enter your Athena name, your 6.004')
+            result.append('online password and list any collaborators.');
+
+            dialog.setContent(result);
+            dialog.noFocus();
+            dialog.setWidth('750px');
+        }
+    }
+
     function show_checkoff_form(old){
         old.dismiss();
         var dialog = new ModalDialog();
         dialog.setTitle("Submit Lab");
+        submit_task(dialog,mCheckoffStatement.assignment.name);
         dialog.inputBox({label: "Username", callback: complete_checkoff});
         dialog.inputBox({label: "Password", type: 'password', callback: complete_checkoff});
         dialog.inputBox({label: "Collaborators", callback: complete_checkoff});
