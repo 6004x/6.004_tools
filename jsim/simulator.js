@@ -35,6 +35,7 @@ var Simulator = (function(){
     var mDiv;
     var mOptions;
     var mType;
+    var mSources;
     
     /********************
      Called when either simulation button is pressed
@@ -60,6 +61,7 @@ var Simulator = (function(){
         mOptions = parsed.options;
         mPlotDefs = parsed.plotdefs;
         mType = type;
+        mSources = parsed.sources;
         
         if (netlist.length === 0) {
             div.prepend('<div class="alert alert-danger"> Empty netlist.'+
@@ -104,7 +106,7 @@ var Simulator = (function(){
             else if (results) {
                 tranProgress.hide();
                 mCurrent_results = results;
-                Checkoff.setResults(mCurrent_results, mOptions);
+                Checkoff.setResults(mCurrent_results, mOptions, mSources);
                 
                 try {
                     prepare_tran_data(plots,results);
