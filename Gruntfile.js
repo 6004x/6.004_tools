@@ -6,12 +6,11 @@ module.exports = function(grunt) {
                 separator: ';{}' // hack that 'works' for both JavaScript and CSS.
             }
         },
-        clean: ['built'],
         copy: {
-            bsim: {src: 'bsim/bsim.html', dest: 'built/bsim.html'},
-            jsim: {src: ['jsim/jsim.html', 'jsim/*.png'], dest: 'built/', flatten: true, expand: true},
-            tmsim: {src: 'tmsim/tmsim.html', dest: 'built/tmsim.html'},
-            resources: {src: 'libs/*.png', dest: 'built/', flatten: true, expand: true}
+            bsim: {src: 'bsim/bsim.html', dest: '../bsim.html'},
+            jsim: {src: ['jsim/jsim.html', 'jsim/*.png'], dest: '../', flatten: true, expand: true},
+            tmsim: {src: 'tmsim/tmsim.html', dest: '../tmsim.html'},
+            resources: {src: 'libs/*.png', dest: '../', flatten: true, expand: true}
         },
         uglify: {
             options: {
@@ -26,24 +25,24 @@ module.exports = function(grunt) {
             jsim: 'jsim/jsim.html',
             tmsim: 'tmsim/tmsim.html',
             options: {
-                dest: 'built'
+                dest: '..'
             }
         },
         usemin: {
             bsim: {
-                src: 'built/bsim.html',
+                src: '../bsim.html',
                 options: {type: 'html'}
             },
             jsim: {
-                src: 'built/jsim.html',
+                src: '../jsim.html',
                 options: {type: 'html'}
             },
             tmsim: {
-                src: 'built/tmsim.html',
+                src: '../tmsim.html',
                 options: {type: 'html'}
             },
             options: {
-                dirs: ['built']
+                dirs: ['..']
             }
         },
         connect: {
@@ -76,8 +75,8 @@ module.exports = function(grunt) {
 
     grunt.registerTask('bsim', ['copy:resources', 'copy:bsim', 'useminPrepare:bsim', 'concat', 'uglify', 'cssmin', 'usemin:bsim'])
     grunt.registerTask('jsim', ['copy:resources', 'copy:jsim', 'useminPrepare:jsim', 'concat', 'uglify', 'cssmin', 'usemin:jsim'])
-    grunt.registerTask('tmsim', ['copy:resources', 'copy:tmsim', 'useminPrepare:tmsim', 'concat', 'uglify', 'cssmin', 'usemin:tmsim'])
-    grunt.registerTask('test', ['connect', 'qunit:all'])
+    //grunt.registerTask('tmsim', ['copy:resources', 'copy:tmsim', 'useminPrepare:tmsim', 'concat', 'uglify', 'cssmin', 'usemin:tmsim'])
+    //grunt.registerTask('test', ['connect', 'qunit:all'])
 
     // Builds everything if just called as 'grunt'
     grunt.registerTask('default', ['copy', 'useminPrepare', 'concat', 'uglify', 'cssmin', 'usemin'])
