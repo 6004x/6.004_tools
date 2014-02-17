@@ -22,7 +22,7 @@ BSim.TextVerifier = function(beta, checkoff) {
         var hash = checkoffHashCode(content);
 
         if(hash !== mChecksum) {
-            mMessage = "The test program did not print out the expected result. Please check the lab writeup to see what result is expected.";
+            mMessage = "The test program did not print out the expected result. Please check the lab writeup to see what result is expected. ("+hash+")";
             return false;
         } else {
             mMessage = null;

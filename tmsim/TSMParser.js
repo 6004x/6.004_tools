@@ -1,13 +1,13 @@
 /*
-	TMSIM includes the code neccessary to parse in a String into a 
-	TSM instance, and it's corresponding tests. 
+  TMSIM includes the code neccessary to parse in a String into a 
+  TSM instance, and it's corresponding tests. 
 */
 function TSMparser(){
-	//declaring regular expressions for the varrious possible syntaxes in TMSIM
-	var quotedRegExp = /\"([^\n\"]|\\\"|\\\/)+\"/;
-	var multiLineRegExp = /\/\*(.|\n)*\*\//;
-	var commentRegExp = /\/\/(.)*\n/;
-	var variableRegExp = /[^\s\/\\\"\']+/
+    //declaring regular expressions for the varrious possible syntaxes in TMSIM
+    var quotedRegExp = /\"([^\n\"]|\\\"|\\\/)+\"/;
+    var multiLineRegExp = /\/\*(.|\n)*\*\//;
+    var commentRegExp = /\/\/(.)*\n/;
+    var variableRegExp = /[^\s\/\\\"\']+/
 	var selectedRegExp = /\[(\"[^\n]+\"|[^\s\/"']+)+\]/
 	var commentRegExp = /\/\/|\/\*|\*\/|\n/
 	var keywordRegExp = /^(action|symbols|states|tape|result|result1|checkoff)\b/
@@ -156,273 +156,273 @@ function TSMparser(){
 				}
 			} else if (type == 'keyword'){
 				// TODO: we don't need newline here... but might as well
-				// the user started a new command on the same line as another command
-				// how should we handle this, throw an error?
-				// this probably means the user is using a keyword as a state name
-				// which is not allowed. 
-				if (getType(parseState) == 'keyword'){
-					// console.log(parseState + ' on keyword')
-					var message = ('two commands on the same line');
-					count[currParseState]++;
-					exceptions.push({
-						message : message,
-						lineNumber : lineCount,
-					})
-					parseState = token;
-					continue;
-				} else if (parseState == 'line_comment') {
-					continue;
-				} else if (parseState == 'multi_line_comment'){
-					continue;
-				}
-			}
-		}
+                                             // the user started a new command on the same line as another command
+                                             // how should we handle this, throw an error?
+                                             // this probably means the user is using a keyword as a state name
+                                             // which is not allowed. 
+                                             if (getType(parseState) == 'keyword'){
+                                                 // console.log(parseState + ' on keyword')
+                                                 var message = ('two commands on the same line');
+                                                 count[currParseState]++;
+                                                 exceptions.push({
+                                                         message : message,
+                                                             lineNumber : lineCount,
+                                                             })
+                                                 parseState = token;
+                                                 continue;
+                                             } else if (parseState == 'line_comment') {
+                                                 continue;
+                                             } else if (parseState == 'multi_line_comment'){
+                                                 continue;
+                                             }
+                                             }
+                                 }
 		
-		if(exceptions.length > 0){
-			throw exceptions;
-		}
-		return parseDict;
+        if(exceptions.length > 0){
+            throw exceptions;
+        }
+    return parseDict;
 		
-	}
-	function flattenMachine(dict){
-		var tsm = new TSM();
+}
+function flattenMachine(dict){
+    var tsm = new TSM();
 
-		// corresponding lists of test tapes and results, and checkoff requirements
-		var list_of_tapes={};
-		var list_of_results={};
-		var list_of_results1={};
-		var checkoff = {};
+    // corresponding lists of test tapes and results, and checkoff requirements
+    var list_of_tapes={};
+    var list_of_results={};
+    var list_of_results1={};
+    var checkoff = {};
 
-		var keys = Object.keys(dict);
-		//console.log(keys);
-		var exceptions = [];
-		var validSymbols=['-'];
-		var validStates=['*halt*', '*error*'];
-		var validMoves=['l', 'r', '-'];
-		var actions=[];
-		var tsmDict={};
-		var parseFunctions = {
-			action:function(args, lineNumber){
-				if(args.length == 5){
-					var state = args[0];
-					var read_symbol = args[1];
+    var keys = Object.keys(dict);
+    //console.log(keys);
+    var exceptions = [];
+    var validSymbols=['-'];
+    var validStates=['*halt*', '*error*'];
+    var validMoves=['l', 'r', '-'];
+    var actions=[];
+    var tsmDict={};
+    var parseFunctions = {
+        action:function(args, lineNumber){
+            if(args.length == 5){
+                var state = args[0];
+                var read_symbol = args[1];
 
-					var transition = new Object();
-					transition.new_state = args[2];
-					transition.write = args[3];
-					transition.move = args[4];
-					transition.lineNumber = lineNumber;
-					//two actions for the same state
-					if(tsmDict[state].transition[read_symbol]){
-						message = 'you have two actions for state '+state+' at symbol ' + read_symbol;
-						exceptions.push({
-							message:message, lineNumber:lineNumber,
-						})
-					}
-					if(_.contains(validStates,state)
-						&&_.contains(validStates, transition.new_state)
-						&&_.contains(validSymbols, read_symbol)
-						&&_.contains(validSymbols, transition.write)
-						&&_.contains(validMoves, transition.move)){
-						//'valid action');
-						tsmDict[state].transition[read_symbol]=transition;
-					} else {
-						var message = '';
-						if(!_.contains(validStates,state))
-							message = 'your state argument, '+state+', is invalid, you should declare your states with the states command';
-						else if (!_.contains(validStates, transition.new_state))
-							message = 'your new_state argument,'+transition.new_state+', is invalid, you should declare your states with the states command';
-						else if (!_.contains(validSymbols, read_symbol))
-							message = 'your read_symbol, '+read_symbol+', is invalid, declare it with the states command';
-						else if(!_.contains(validSymbols, transition.write))
-							message = 'your write_symbol, '+transition.write+', is invalid, declare it with the states command';
-						else if(!_.contains(validMoves, transition.move))
-							message = 'your move symbol, '+transition.move+', is invalid, declare it with the states command';
+                var transition = new Object();
+                transition.new_state = args[2];
+                transition.write = args[3];
+                transition.move = args[4];
+                transition.lineNumber = lineNumber;
+                //two actions for the same state
+                if(tsmDict[state].transition[read_symbol]){
+                    message = 'you have two actions for state '+state+' at symbol ' + read_symbol;
+                    exceptions.push({
+                            message:message, lineNumber:lineNumber,
+                                })
+                        }
+                if(_.contains(validStates,state)
+                   &&_.contains(validStates, transition.new_state)
+                   &&_.contains(validSymbols, read_symbol)
+                   &&_.contains(validSymbols, transition.write)
+                   &&_.contains(validMoves, transition.move)){
+                    //'valid action');
+                    tsmDict[state].transition[read_symbol]=transition;
+                } else {
+                    var message = '';
+                    if(!_.contains(validStates,state))
+                        message = 'your state argument, '+state+', is invalid, you should declare your states with the states command';
+                    else if (!_.contains(validStates, transition.new_state))
+                        message = 'your new_state argument,'+transition.new_state+', is invalid, you should declare your states with the states command';
+                    else if (!_.contains(validSymbols, read_symbol))
+                        message = 'your read_symbol, '+read_symbol+', is invalid, declare it with the states command';
+                    else if(!_.contains(validSymbols, transition.write))
+                        message = 'your write_symbol, '+transition.write+', is invalid, declare it with the states command';
+                    else if(!_.contains(validMoves, transition.move))
+                        message = 'your move symbol, '+transition.move+', is invalid, declare it with the states command';
 						
-						exceptions.push({
-							message:message,
-							lineNumber:lineNumber
-						});
-					}
-				} else {
-					var message=args+'is not 5 characters, not a valid action';
+                    exceptions.push({
+                            message:message,
+                                lineNumber:lineNumber
+                                });
+                }
+            } else {
+                var message=args+'is not 5 characters, not a valid action';
 					
-					exceptions.push({
-						message:message,
-						lineNumber:lineNumber
-					});
-				}
-			},
-			symbols:function(args, lineNumber){
-				for(var k = 0; k < args.length; k++){
-					var symbol = args[k];
-					validSymbols.push(symbol);
-				}
-			},
-			states:function(args, lineNumber){
-				for(var k = 0; k < args.length; k++){
-					var state = args[k];
-					validStates.push(state);
-					tsmDict[state]={};
-					tsmDict[state].name = state;
-					tsmDict[state].transition = {};
-				}
-			},
-			tape:function(args, lineNumber){
-				var tapeName = args[0];
-				var tapeContents = args.slice(1);
-				list_of_tapes[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
-				// list_of_tapes[tapeName].printLL();
-			},
-			result:function(args, lineNumber){
-				var tapeName = args[0];
-				var tapeContents = args.slice(1);
-				try{
-					list_of_results[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
-				} catch (e){
-					exceptions.push({
-							message:e,
-							lineNumber:lineNumber
-						});
-					list_of_results[tapeName]=[];
+                exceptions.push({
+                        message:message,
+                            lineNumber:lineNumber
+                            });
+            }
+        },
+        symbols:function(args, lineNumber){
+            for(var k = 0; k < args.length; k++){
+                var symbol = args[k];
+                validSymbols.push(symbol);
+            }
+        },
+        states:function(args, lineNumber){
+            for(var k = 0; k < args.length; k++){
+                var state = args[k];
+                validStates.push(state);
+                tsmDict[state]={};
+                tsmDict[state].name = state;
+                tsmDict[state].transition = {};
+            }
+        },
+        tape:function(args, lineNumber){
+            var tapeName = args[0];
+            var tapeContents = args.slice(1);
+            list_of_tapes[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
+            // list_of_tapes[tapeName].printLL();
+        },
+        result:function(args, lineNumber){
+            var tapeName = args[0];
+            var tapeContents = args.slice(1);
+            try{
+                list_of_results[tapeName]=initiateList(tapeContents, tapeName, lineNumber);
+            } catch (e){
+                exceptions.push({
+                        message:e,
+                        lineNumber:lineNumber
+                    });
+                list_of_results[tapeName]=[];
 
-				} 
+            } 
 
-			},
-			result1:function(args, lineNumber){
-				var tapeName = args[0];
-				var tapeResult=  args[1];
-				if (args.length > 2){
-					var message =('your result1 can only have one argument');
-					exceptions.push({
-							message:message,
-							lineNumber:lineNumber
-						});
-					// break;
-				}
-				list_of_results1[tapeName]=tapeResult;
-			},
-			checkoff:function(args, lineNumber){
-				// console.log('checkoff');
-				// console.log(args);
-			}
-		};
-		for (var i = 0; i < keys.length; i++){
-			var key = keys[i];
-			var list_of_commands  = dict[key]; //list of commands of that key
-			for(var j = 0; j < list_of_commands.length; j++){
-				var args = list_of_commands[j].args;
-				var lineNumber = list_of_commands[j].lineNumber;
-				if(parseFunctions[key])
-					parseFunctions[key](args, lineNumber);
-				else {
-					var message = (key+' is not a valid keyword');
-					exceptions.push({
-						message:message,
-						lineNumber:lineNumber
-					});
-				}
-			}
-		}
+        },
+        result1:function(args, lineNumber){
+            var tapeName = args[0];
+            var tapeResult=  args[1];
+            if (args.length > 2){
+                var message =('your result1 can only have one argument');
+                exceptions.push({
+                        message:message,
+                            lineNumber:lineNumber
+                            });
+                // break;
+            }
+            list_of_results1[tapeName]=tapeResult;
+        },
+        checkoff:function(args, lineNumber){
+            // console.log('checkoff');
+            // console.log(args);
+        }
+    };
+    for (var i = 0; i < keys.length; i++){
+        var key = keys[i];
+        var list_of_commands  = dict[key]; //list of commands of that key
+        for(var j = 0; j < list_of_commands.length; j++){
+            var args = list_of_commands[j].args;
+            var lineNumber = list_of_commands[j].lineNumber;
+            if(parseFunctions[key])
+                parseFunctions[key](args, lineNumber);
+            else {
+                var message = (key+' is not a valid keyword');
+                exceptions.push({
+                        message:message,
+                            lineNumber:lineNumber
+                            });
+            }
+        }
+    }
 
-		tsm.setup(tsmDict, validSymbols);
-		if(exceptions.length > 0)
-			throw exceptions;
-		return {
-			tsm:tsm,
-			lists: {
-				list_of_tapes:list_of_tapes,
-				list_of_results:list_of_results,
-				list_of_results1:list_of_results1,
-			},
-			checkoff : checkoff,
-		};
-	}
+    tsm.setup(tsmDict, validSymbols);
+    if(exceptions.length > 0)
+        throw exceptions;
+    return {
+        tsm:tsm,
+            lists: {
+            list_of_tapes:list_of_tapes,
+                list_of_results:list_of_results,
+                list_of_results1:list_of_results1,
+                },
+            checkoff : checkoff,
+            };
+}
 
-	// function getResults(){
-	// 	var results = '';
-	// 	for(key in list_of_tapes){
-	// 		results +=key+': ';
-	// 		var list = list_of_tapes[key].cloneTape();
-	// 		results += list.toString()+'\n';
+// function getResults(){
+// 	var results = '';
+// 	for(key in list_of_tapes){
+// 		results +=key+': ';
+// 		var list = list_of_tapes[key].cloneTape();
+// 		results += list.toString()+'\n';
 			
-	// 		tsm.start(list);
-	// 		results+='results: '+list.toString()+'\n';
-	// 		if (list_of_results[key]){
-	// 			results+='desired: '+(list_of_results[key])+'\t';
-	// 			results+='equal?: '+String(list.equals(list_of_results[key]))+'\n';
-	// 		} 
-	// 		if (list_of_results1[key]){
-	// 			results+='desired current value: '+(list_of_results1[key]);
-	// 			results+=', result1: '+String(list.peek()==(list_of_results1[key]))+'\n';
-	// 		}
-	// 		results+='\n\n';
-	// 	}
-	// 	return results;
-	// }
-	//HELPER FUNCTIONS
+// 		tsm.start(list);
+// 		results+='results: '+list.toString()+'\n';
+// 		if (list_of_results[key]){
+// 			results+='desired: '+(list_of_results[key])+'\t';
+// 			results+='equal?: '+String(list.equals(list_of_results[key]))+'\n';
+// 		} 
+// 		if (list_of_results1[key]){
+// 			results+='desired current value: '+(list_of_results1[key]);
+// 			results+=', result1: '+String(list.peek()==(list_of_results1[key]))+'\n';
+// 		}
+// 		results+='\n\n';
+// 	}
+// 	return results;
+// }
+//HELPER FUNCTIONS
 	
-	function keyCompare(a,b){
-		if(stringContains(b,'action'))
-			return -1;
-		else if(stringContains(a, 'action'))
-			return 1;
-		return -1;
-	}
-	function getType(token){
+function keyCompare(a,b){
+    if(stringContains(b,'action'))
+        return -1;
+    else if(stringContains(a, 'action'))
+        return 1;
+    return -1;
+}
+function getType(token){
 		
-		if (token.match(/\/\//))
-			return 'line_comment';
-		else if (token.match(/\/\*/))
-			return 'multi_comment_start';
-		else if(token.match(keywordRegExp))
-			return 'keyword';
-		else if (token.match(/\*\//))
-			return 'multi_comment_end';
-		else if (token.match(/\n/))
-			return 'newline';
-		else if (token.match(variableRegExp)||token.match(quotedRegExp))
-			return 'variable';
-		else{
-			var message = token+' is not a valid keyword';
-			exceptions.push({
-				message:message,
-				lineNumber:lineCount,
-			})
-		}
-	}
-	function initiateList(tokens, tapeName, lineNumber){
-		var tapeContents = [];
-		var selected = false;
-		var selectedIndex = 0;
-		for (var j = 0; j < tokens.length; j++){
-			var token = tokens[j];
-			if(token.match(selectedRegExp)){
-				//this is the one that we want to start the tsm on 
+    if (token.match(/\/\//))
+        return 'line_comment';
+    else if (token.match(/\/\*/))
+        return 'multi_comment_start';
+    else if(token.match(keywordRegExp))
+        return 'keyword';
+    else if (token.match(/\*\//))
+        return 'multi_comment_end';
+    else if (token.match(/\n/))
+        return 'newline';
+    else if (token.match(variableRegExp)||token.match(quotedRegExp))
+        return 'variable';
+    else{
+        var message = token+' is not a valid keyword';
+        exceptions.push({
+                message:message,
+                    lineNumber:lineCount,
+                    })
+            }
+}
+function initiateList(tokens, tapeName, lineNumber){
+    var tapeContents = [];
+    var selected = false;
+    var selectedIndex = 0;
+    for (var j = 0; j < tokens.length; j++){
+        var token = tokens[j];
+        if(token.match(selectedRegExp)){
+            //this is the one that we want to start the tsm on 
 			
-				if(!selected){
-					//then we haven't selected one yet, good
-					selectedIndex=j;
-					tapeContents.push(token.slice(1, token.length-1));
-					selected = true;
-				} else {
+            if(!selected){
+                //then we haven't selected one yet, good
+                selectedIndex=j;
+                tapeContents.push(token.slice(1, token.length-1));
+                selected = true;
+            } else {
 					
-					throw 'you have 2 selected variables at the tape, you can only have one';
+                throw 'you have 2 selected variables at the tape, you can only have one';
 					 
-				}
+            }
 
-			} else {
-				tapeContents.push(token)
-			}
-		}
-		return (new TapeList()).init(tapeName, tapeContents, selectedIndex);
-	}
+        } else {
+            tapeContents.push(token)
+                }
+    }
+    return (new TapeList()).init(tapeName, tapeContents, selectedIndex);
+}
 
-	return {parse:parse, flattenMachine:flattenMachine}
+return {parse:parse, flattenMachine:flattenMachine}
 };
 
 
 function stringContains(string, value){
-	return string.indexOf(value) > -1;
+    return string.indexOf(value) > -1;
 }
 

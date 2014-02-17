@@ -122,7 +122,7 @@ var Checkoff = (function(){
             failedModal.setTitle("Checkoff Failed!");
             failedModal.setContent("<p><div class='text-error'>Memory verification error:</div></p>\
 <p><table class='table'><tr><td>Memory:</td><td>"+mistake.nodes+"</tr>\
-<tr><td>Location:</td><td>"+mistake.time+"</td></tr>\
+<tr><td>Location:</td><td>"+engineering_notation(mistake.time,3)+"</td></tr>\
 <tr><td>Expected:</td><td>"+mistake.exp+"</td></tr>\
 <tr><td>Actual:</td><td>"+mistake.given+"</td></tr></table></p>");
             failedModal.addButton("Dismiss",'dismiss');
@@ -285,6 +285,22 @@ var Checkoff = (function(){
         return checksum;
     }
     
+    function buffer_string() {
+        return _.map(mSources, function (source) {
+                // don't send along shared files
+                if (source.file.indexOf('/shared') == 0) return '';
+                return '============== source: ' + source.file + '\n' + source.content + '\n==============\n';
+            }).join('')
+    }
+
+    function buffer_list() {
+        return _.map(mSources, function (source) {
+                // don't send along shared files
+                if (source.file.indexOf('/shared') == 0) return {};
+                return {file: source.file, content: source.content};
+            })
+    }
+
     function complete_checkoff(old){
         var username = old.inputContent(0);
         var password = old.inputContent(1);
@@ -324,12 +340,7 @@ var Checkoff = (function(){
             time: mResults.time,
             version: 'JSim3.1.1',
             advice: JSON.stringify(astrings),
-            circuits: _.map(mSources, function (source) {
-                // don't send along shared files
-                if (source.file.indexOf('/shared') == 0) return '';
-                return '============== source: ' + source.file + '\n' + source.content + '\n==============\n';
-            }).join('')
-
+            circuits: buffer_string()
         }).done(function(data) {
             callback(true, data);
         }).fail(function() {
@@ -339,20 +350,20 @@ var Checkoff = (function(){
 
     function submit_task(dialog,assignment) {
         if (assignment == 'Lab #2') {
-            var expected = {png:"/ssldocs/lab2_1.png", gates:24, fets:114};
-            var best = {png:"/ssldocs/lab2_8.png", gates:21, fets:96};
-            var worse = [{png:"/ssldocs/lab2_2.png", gates:42, fets:150},
-                         {png:"/ssldocs/lab2_3.png", gates:27, fets:126},
-                         {png:"/ssldocs/lab2_4.png", gates:33, fets:132},
-                         {png:"/ssldocs/lab2_6.png", gates:36, fets:144},
-                         {png:"/ssldocs/lab2_9.png", gates:36, fets:132}];
+            var expected = {png:"/ssldocs/images/lab2_1.png", gates:24, fets:114};
+            var best = {png:"/ssldocs/images/lab2_8.png", gates:21, fets:96};
+            var worse = [{png:"/ssldocs/images/lab2_2.png", gates:42, fets:150},
+                         {png:"/ssldocs/images/lab2_3.png", gates:27, fets:126},
+                         {png:"/ssldocs/images/lab2_4.png", gates:33, fets:132},
+                         {png:"/ssldocs/images/lab2_6.png", gates:36, fets:144},
+                         {png:"/ssldocs/images/lab2_9.png", gates:36, fets:132}];
             var example = FileSystem.getUserName().charCodeAt(0) % worse.length;
 
             var fets = mResults.counts.nfet + mResults.counts.pfet;
             var result = $('<div style="font: 14px Geogia,serif;"></div>');
             result.append('Your design has a total of <b>'+fets+'</b> mosfets.  For comparison, the graph below shows '+
                           'the number of designs submitted in a previous semester (y-axis) vs. their mosfet count (x-axis).')
-            result.append('<br><br><img src="/ssldocs/lab2_15.jpg">');
+            result.append('<br><br><img src="/ssldocs/images/lab2_15.jpg">');
 
             result.append('<br><br>Below we will ask you to compare your design with a few other designs submitted previously.');
             result.append('  First, for reference, here\'s your JSim code:');

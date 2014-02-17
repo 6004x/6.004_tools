@@ -35,10 +35,10 @@
 
         <!-- build:js tmsim.min.js -->
         <script src="../editor/modes/tsim.js"></script>
-        <script src="tapeList.js"></script>
-        <script src="tsm.js"></script>
-        <script src="tsmParser.js"></script>
-        <script src="tmsim.js"></script>
+        <script src="TapeList.js"></script>
+        <script src="TSM.js"></script>
+        <script src="TSMParser.js"></script>
+        <script src="TMSIM.js"></script>
         <!-- endbuild -->
 
         <!-- build:css tmsim.min.css -->
@@ -118,31 +118,27 @@
             
             var valid = true;
             var tmsimObj;
-            if(file.name.split('.').pop() === 'tsim'){
-                try{
-                    var parsedDict = tsmparse.parse(file.data);
-                    editor.clearErrors();
-                    // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
-                    tmsimObj = tsmparse.flattenMachine(parsedDict);
-                    // editor.openTab(file.name+'done', tsmparse.getResults(), true);
-                } catch(e){
-                    console.log(e.stack );
-                    for (var i = 0; i < e.length; i++)
-                        editor.markErrorLine(file.name, e[i].message, e[i].lineNumber - 1);
-                    valid = false;
-                }
-                if(valid){
-                    if(!$('#split_pane').hasClass('active'))
-                        $('#split_pane').click();
 
-                    if(!tmsim){
-                        // tmsim = new TMSIM('#tmsim_div');
-                    }
-                    tmsim.restartTSM(file.name, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists )
-                }
+            try{
+                var parsedDict = tsmparse.parse(file.data);
+                editor.clearErrors();
+                // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
+                tmsimObj = tsmparse.flattenMachine(parsedDict);
+                // editor.openTab(file.name+'done', tsmparse.getResults(), true);
+            } catch(e){
+                console.log(e.stack );
+                for (var i = 0; i < e.length; i++)
+                    editor.markErrorLine(file.name, e[i].message, e[i].lineNumber - 1);
+                valid = false;
             }
-            else {
-                alert("can't assemble a file that is not .tsim");
+            if(valid){
+                if(!$('#split_pane').hasClass('active'))
+                    $('#split_pane').click();
+
+                if(!tmsim){
+                    // tmsim = new TMSIM('#tmsim_div');
+                }
+                tmsim.restartTSM(file.name, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists )
             }
         }
         
