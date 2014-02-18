@@ -70,6 +70,16 @@ var Checkoff = (function(){
         return failedModal;
     }
     
+    // on checkoff mismatch, send buffers and report to server
+    function report_error(mistake) {
+        var report = $.extend({},mistake);
+        report.given = report.given.replace(/<.*?>/g,'');  // strip html tags
+        report.buffers = JSON.stringify(buffer_list());
+        report.assignment = mCheckoffStatement.assignment.name;
+        // best-efforts post: don't care about reply or success...
+        $.post("https://6004.mit.edu/coursewarex/report_error.py", report);
+    }
+
     /**************************
     Test Results: called when the Checkoff button is pressed
     **************************/
@@ -117,6 +127,7 @@ var Checkoff = (function(){
 <tr><td>Actual:</td><td>"+mistake.given+"</td></tr></table></p>");
             failedModal.addButton("Dismiss",'dismiss');
             failedModal.show();
+            report_error(mistake);
         } else if (mistake.msg == 'Verify memory error') {
             failedModal = new ModalDialog();
             failedModal.setTitle("Checkoff Failed!");
@@ -127,6 +138,7 @@ var Checkoff = (function(){
 <tr><td>Actual:</td><td>"+mistake.given+"</td></tr></table></p>");
             failedModal.addButton("Dismiss",'dismiss');
             failedModal.show();
+            report_error(mistake);
         } else {
             failedModal = new FailedModal(mistake.msg);
             failedModal.show();
