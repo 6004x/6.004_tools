@@ -191,7 +191,7 @@ function flattenMachine(dict){
     var list_of_tapes={};
     var list_of_results={};
     var list_of_results1={};
-    var checkoff = {};
+    var checkoff = undefined;
 
     var keys = Object.keys(dict);
     //console.log(keys);
@@ -290,21 +290,37 @@ function flattenMachine(dict){
 
         },
         result1:function(args, lineNumber){
+            if (args.length > 2){
+                exceptions.push({
+                        message:('result1 can only have two arguments'),
+                        lineNumber:lineNumber
+                    });
+                return;
+            }
             var tapeName = args[0];
             var tapeResult=  args[1];
-            if (args.length > 2){
-                var message =('your result1 can only have one argument');
-                exceptions.push({
-                        message:message,
-                            lineNumber:lineNumber
-                            });
-                // break;
-            }
             list_of_results1[tapeName]=tapeResult;
         },
         checkoff:function(args, lineNumber){
-            // console.log('checkoff');
-            // console.log(args);
+            if (checkoff !== undefined) {
+                exceptions.push({
+                        message:('more than one checkoff statement'),
+                        lineNumber:lineNumber
+                    });
+                return;
+            }
+            if (args.length != 3) {
+                exceptions.push({
+                        message:('checkoff should have three arguments'),
+                        lineNumber:lineNumber
+                    });
+                return;
+            }
+            checkoff = {
+                server: args[0],
+                assignment: args[1],
+                checksum: parseInt(args[2])
+            };
         }
     };
     for (var i = 0; i < keys.length; i++){
@@ -328,13 +344,12 @@ function flattenMachine(dict){
     tsm.setup(tsmDict, validSymbols);
     if(exceptions.length > 0)
         throw exceptions;
-    return {
-        tsm:tsm,
+    return {tsm:tsm,
             lists: {
-            list_of_tapes:list_of_tapes,
-                list_of_results:list_of_results,
-                list_of_results1:list_of_results1,
-                },
+              list_of_tapes:list_of_tapes,
+              list_of_results:list_of_results,
+              list_of_results1:list_of_results1,
+            },
             checkoff : checkoff,
             };
 }
@@ -371,15 +386,15 @@ function keyCompare(a,b){
 }
 function getType(token){
 		
-    if (token.match(/\/\//))
+    if (token.match(/^\/\//))
         return 'line_comment';
-    else if (token.match(/\/\*/))
+    else if (token.match(/^\/\*/))
         return 'multi_comment_start';
     else if(token.match(keywordRegExp))
         return 'keyword';
-    else if (token.match(/\*\//))
+    else if (token.match(/^\*\//))
         return 'multi_comment_end';
-    else if (token.match(/\n/))
+    else if (token.match(/^\n/))
         return 'newline';
     else if (token.match(variableRegExp)||token.match(quotedRegExp))
         return 'variable';

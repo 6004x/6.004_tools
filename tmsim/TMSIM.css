@@ -6,7 +6,7 @@
 	background-color : whitesmoke;
 	overflow: auto;
 	width : calc(100% - 5px);
-	height : 100%;
+	height : 190px;
 }
 .test_radio_buttons{
 	margin: auto;
@@ -26,6 +26,9 @@
 }
 .machine_div{
 	margin:auto;
+}
+.speed_div {
+    display: inline-block;
 }
 .tape_segment{
 	border-style: solid;
@@ -71,7 +74,7 @@
 }
 .machine_label{
 	margin : auto;
-	font-family: monospace;
+	font: 20px monospace;
 }
 .transition_div{
 	font : large monospace;
@@ -95,6 +98,16 @@
 	background-color : yellow; 
 }
 .steps_div{
+    white-space: nowrap;
 	position:absolute;
-	right:0;
+	left:0;
+    width: 100px;
+    text-align: left;
+}
+.checkoff_button {
+    margin-left: 10px;
+}
+.feedback_div {
+    margin-top: 5px;
+    font: 20px Georgia,serif;
 }

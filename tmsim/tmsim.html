@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>TMSim</title>
+        <title>TMSim 2.0.1</title>
         <!-- build:js common.min.js -->
         <!-- This block MUST be identical across bsim, jsim and tmsim. -->
         <script src="../libs/jquery.js"></script>
@@ -48,43 +48,14 @@
     <script>
     var editor;
     $(document).ready(function(){
-        var split = new SplitPane('#main_wrapper', ['#folders_div', '#editor_div', '#tmsim_div'])
+        var split = new SplitPane('#main_wrapper', ['#folders_div', '#editor_div'])
 
         // initial configuration
         split.setPaneWidth(0, 200);
         split.setPaneWidth(1, split.window_width() - 200);
-        split.setPaneWidth(2, 0);
-
-        // Set up the split buttons.
-        $('#maximise_editor').click(function() {
-          split.setPaneWidth(0, 200);
-          split.setPaneWidth(1, split.window_width() - 200);
-          split.setPaneWidth(2, 0);
-        });
-        $('#split_pane').click(function() {
-            var width = split.window_width();
-            split.setPaneWidth(0, 0);
-            split.setPaneWidth(1, width/2);
-            split.setPaneWidth(2, width/2);
-        });
-        $('#maximise_simulation').click(function() {
-            split.setPaneWidth(0, 0);
-            split.setPaneWidth(1, 0);
-            split.setPaneWidth(2, split.window_width());
-        });
 
         var timer;
         split.on('resize', function(widths) {
-            if(widths[2] == 0) {
-                $('#maximise_editor').addClass('active').siblings().removeClass('active');
-            } else if(widths[0] == 0 && widths[1] == 0) {
-                $('#maximise_simulation').addClass('active').siblings().removeClass('active');
-            } else {
-                $('#split_pane').addClass('active').siblings().removeClass('active');
-            }
-            if(widths[1] == 0) {
-                editor.blur();
-            }
             clearTimeout(timer);
             if(tmsim){
                 timer = setTimeout(tmsim.listToTape, 100);
@@ -98,7 +69,7 @@
         var mode = 'tsim';
         editor = new Editor('#editor',mode);
         var set_height = function() {
-            editor.setHeight(document.documentElement.clientHeight - 90); // Set height to window height minus title.
+            editor.setHeight(document.documentElement.clientHeight - 190 - 50); // Set height to window height minus title.
         }
         set_height();
         $(window).resize(set_height); // Update the height whenever the browser window changes size.
@@ -138,29 +109,22 @@
                 if(!tmsim){
                     // tmsim = new TMSIM('#tmsim_div');
                 }
-                tmsim.restartTSM(file.name, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists )
+                tmsim.restartTSM(file, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists, tmsimObj.checkoff )
             }
         }
         
     });
     </script>
     <body>
-
-            <div class="masthead">
-                <ul class="pull-left nav nav-pills split-controls">
-                    <li class="active" id="maximise_editor"><a>Editor</a></li>
-                    <li id="split_pane"><a>Split</a></li>
-                    <li id="maximise_simulation"><a>Simulator</a></li>
-                </ul>
-                <div id="header-alert-holder"></div>
-            </div>
-            <div id="main_wrapper">
-                <div id="folders_div"></div>
-                <div id="editor_div">
-                    <div id="editor"></div>
-                </div>
-                <div id='tmsim_div' style = 'width:calc(100%-5px);'></div>
-            </div>
-      
+      <div class="masthead">
+        <div id="header-alert-holder" class="feedback_div"></div>
+      </div>
+      <div id="main_wrapper">
+        <div id="folders_div"></div>
+        <div id="editor_div">
+          <div id="tmsim_div"></div>
+          <div id="editor"></div>
+        </div>
+      </div>
     </body>
 </html>

@@ -31,14 +31,14 @@ function TSM(){
                 if(symbol.length > self.longestSymbolLength)
                     self.longestSymbolLength = symbol.length;
             }
-            console.log(self.longestSymbolLength)
+            //console.log(self.longestSymbolLength)
         }
         current_state = start_state;
         return self;
     }
     this.start=function(tape){
         // console.log('beginning turing machine');
-		
+        
         var new_state = start_state;
         var valid = true;
         var stepCount=0;
@@ -54,27 +54,27 @@ function TSM(){
                     }
             stepCount++;
         }
-        console.log('ended turing machine with '+stepCount+' steps');
+        //console.log('ended turing machine with '+stepCount+' steps');
         self.restart();
         return tape;
     }
     this.step = function(stepTape, new_state){
         current_state = new_state||current_state;
         var old_state = current_state;
-        var tapeRead = stepTape.peek();	
+        var tapeRead = stepTape.peek(); 
         var state_transition = current_state.transition[tapeRead];
-		
+        
         //set the current state as the new state of the transition
         current_state = list_of_states[state_transition.new_state];
         // console.log(new_state);
         if(state_transition.new_state === '*halt*'){
             current_state = '*halt*';
-			
+            
         } else if (state_transition.new_state === '*error*'){
             current_state = '*error*';
             stepTape.printLL();
-            console.log('encountered an error');
-			
+            //console.log('encountered an error');
+            
         }
 
         return {
@@ -95,8 +95,12 @@ function TSM(){
         return current_state;
     }
     this.setCurrentState = function(state){
-        console.log(list_of_states)
+        //console.log(list_of_states);
         current_state = list_of_states[state];
+    }
+    this.nStates = function() {
+        // return number of states
+        return Object.keys(list_of_states).length;
     }
     return this;
 }
