@@ -88,7 +88,7 @@ BSim.SubmitVerification = function(beta, editor, username, password, collaborati
         checksum: beta.verifier().checkoff().checksum,
         cycles: beta.getCycleCount(),
         size: beta.memorySize(),
-        version: 'BSim2.1.0',
+        version: $('title').text(),
         'server info': beta.mServerInfo.join(','),
         /*
         circuits: _.map(editor.filenames(), function(f) {

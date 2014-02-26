@@ -467,6 +467,9 @@ BSim.Beta.Opcodes = {};
         has_literal: true,
         exec: function ST(a, literal, c) {
             this.writeWord(this.realReadRegister(a) + literal, this.realReadRegister(c), true);
+        },
+        disassemble: function(decoded) {
+                return "ST(" + name_register(decoded.rc) + ", " + decoded.literal + ", " + name_register(decoded.ra) + ")";
         }
     });
 

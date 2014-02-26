@@ -1,8 +1,7 @@
 // 5-state busy beaver Turing Machine example
 
 // See how many 1's we can write on a blank tape using
-// only a five-state Turing Machine
-// action states
+// only a five-state Turing Machine and only one non-blank symbol
 states A B C D E  // list of state names, first is starting state
 symbols 1         // list of symbols (- is blank cell)
 tape test -      // initial tape contents, blank in this case

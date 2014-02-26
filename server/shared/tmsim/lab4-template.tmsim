@@ -1,6 +1,7 @@
-// paren matcher
-
-checkoff "6004.mit.edu/currentsemester/6004assignment.doit" "Lab #4" 1103641864
+// Parenthesis matcher Turing Machine
+// test tapes and checkoff information
+ 
+checkoff "https://6004.mit.edu/ssldocs/6004xassignment.doit" "Lab #4" -363188037
 
 symbols ( ) 0 1
 
@@ -16,13 +17,13 @@ result1 test3 1
 tape test4 ) (
 result1 test4 0
 
-tape test5 ( ) ( ) ( ( ( ) ) ( ) ) ) ( )
+tape test5 ( ( ( )
 result1 test5 0
 
 tape test6 ( ) ( ( ( ) ( ( ( ) ) ( ) ) )
 result1 test6 0
 
-tape test7 ( ) ( ( ) ( ( ( ) ) ( ) ) )
+tape test7 ( ( ( ( ( ( ) ( ( ) ) ) ) ) ) )
 result1 test7 1
 
 // define additional symbols, your states and actions here

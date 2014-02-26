@@ -252,3 +252,7 @@ div.disassembly {
     border-bottom: 2px solid black;
     line-height: 18px;
 }
+
+.highlight-line{
+	background-color : yellow; 
+}

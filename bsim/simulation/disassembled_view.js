@@ -60,6 +60,8 @@ BSim.DisassembledView = function(container, beta) {
         mTable.scrollTo(word);
         mCurrentPC = new_pc & ~0x80000000;
         mTable.endBatch();
+
+        mBeta.highlightSource(mCurrentPC);
     };
 
     var beta_resize_memory = function(new_length) {

@@ -100,10 +100,11 @@ _restoreregs:
 
 _initregs:
 	// NB: We omit R0, LP=R28, and SP=R29 which aren't required to be preserved.
+	// init BP value to 0...
 	          _initr(1) _initr(2) _initr(3) _initr(4) _initr(5) _initr(6) _initr(7) 
 	_initr(8) _initr(9) _initr(10) _initr(11) _initr(12) _initr(13) _initr(14) _initr(15) 
 	_initr(16) _initr(17) _initr(18) _initr(19) _initr(20) _initr(21) _initr(22) _initr(23) 
-	_initr(24) _initr(25) _initr(26) _initr(27) _initr(30)
+	_initr(24) _initr(25) _initr(26) _initr(30)
 	JMP(LP)
 .macro InitRegs() BR(_initregs, LP)
 
@@ -119,7 +120,7 @@ _checkregs:
 	          _checkr(1) _checkr(2) _checkr(3) _checkr(4) _checkr(5) _checkr(6) _checkr(7) 
 	_checkr(8) _checkr(9) _checkr(10) _checkr(11) _checkr(12) _checkr(13) _checkr(14) _checkr(15) 
 	_checkr(16) _checkr(17) _checkr(18) _checkr(19) _checkr(20) _checkr(21) _checkr(22) _checkr(23) 
-	_checkr(24) _checkr(25) _checkr(26) _checkr(27) _checkr(30)
+	_checkr(24) _checkr(25) _checkr(26) _checkr(30)
 	LD(_savedLP, LP)
 	JMP(LP)
 
@@ -252,10 +253,9 @@ _runt2:	LD(R1, 0, R0)		// *tc
 	SaveRegs()		// Save register values
 	InitRegs()		// Preset regs to different values ...
 	BR(quicksort, LP)
-	CheckRegs()		// Check for preserved reg values
-	RestoreRegs()		// Restore saved register values.
-
 	DEALLOCATE(3)
+	CheckRegs()		// Check for preserved reg values
+	RestoreRegs()	// Restore saved register values.
 
 // Look for disparities:
    	CMOVE(0, R5)		// i = 0

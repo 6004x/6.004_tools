@@ -2,6 +2,7 @@ BSim.Beta = function() {
     "use strict";
     var self = this;
     var mMemory = new BSim.Beta.Memory(); // TODO: it might make sense to use an Int32Array here.
+    var mSourceMap = [];  // file & line number for source of each assembled byte
     var mRegisters = new Int32Array(32);
     var mRunning = false; // Only true when calling run(); not executeCycle().
     var mPC = 0x80000000;
@@ -89,11 +90,12 @@ BSim.Beta = function() {
         this.mSources = sources;
     };
 
-    this.loadBytes = function(bytes) {
+    this.loadBytes = function(bytes,source_map) {
         this.stop();
         this.reset(true);
 
         mMemory.loadBytes(bytes);
+        mSourceMap = source_map;
         set_defaults();
 
         // Update the UI with our new program.
@@ -548,6 +550,17 @@ BSim.Beta = function() {
     this.getMemory = function() {
         return mMemory;
     };
+
+    var oldHighlightObject;
+    this.highlightSource = function(pc) {
+        if ($('#editor').width() == 0 || pc >= mSourceMap.length) return;
+        var source = mSourceMap[pc];
+        if (source !== undefined) {
+            if(oldHighlightObject) oldHighlightObject.clear();
+            oldHighlightObject = editor.addLineClass(source.file, source.line-1, 'highlight-line');
+            editor.showLine(source.file, source.line-1);  // make sure we can see it!
+        }
+    }
 
     return this;
 };

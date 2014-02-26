@@ -19,6 +19,8 @@ grunt:
 
 sync_6004:
 	rsync -av -e ssh 6004.mit.edu:coursewarex/debug/ .
+	rsync -av --delete -e ssh 6004.mit.edu:coursewarex/shared/ server/shared/
+	cd server; python build_shared_json.py
 
 deploy_6004:
 	rsync -av --delete -e ssh bsim editor fileSystem Gruntfile.js jsim libs node_modules package.json tmsim 6004.mit.edu:coursewarex/debug/

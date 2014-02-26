@@ -350,7 +350,7 @@ var Checkoff = (function(){
             counts: JSON.stringify(mResults.counts || {}),
             figure_of_merit: 1e-10/((mResults.size*1e-12) * mResults.time),
             time: mResults.time,
-            version: 'JSim3.1.1',
+            version: $('title').text(),
             advice: JSON.stringify(astrings),
             circuits: buffer_string()
         }).done(function(data) {

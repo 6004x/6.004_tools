@@ -1,19 +1,25 @@
-states A B C D
-symbols 0 1
+// 4-state busy beaver Turing Machine example
 
-action A - B 1 r
-action A 1 B 1 l
-action B - A 1 l
-action B 1 C - l
-action C - *halt* 1 r
-action C 1 D 1 l
-action D - D 1 r
-action D 1 A - r
-tape test -
-// action old_state read_symbol 	new_state write_symbol valid_move
-//the action keyword declares what the tsm should do at each step
-// they all need to be valid
-//valid moves are r', 'l', and '-'
-//example
-// action state1 0 	state2 1 r
-// action state2 1		*halt* 1 -
+// See how many 1's we can write on a blank tape using
+// only a four-state Turing Machine and one non-blank symbol
+states A B C D  // list of state names, first is starting state
+symbols 1       // list of symbols (- is blank cell)
+tape test -     // initial tape contents, blank in this case
+
+// This TM writes 13 1s in 107 steps.
+
+// specify transistions: action state symbol state' write move
+//    state = the current state of the FSM
+//    symbol = the symbol read from the current cell
+//    state' = state on the next cycle 
+//    write = symbol to be written into the current cell
+//    move = tape movement ("l" = left, "r" = right, "-"=stay put)
+//    old  R   new  W M
+action A   -    B   1 r
+action A   1    B   1 l
+action B   -    A   1 l
+action B   1    C   - l
+action C   - *halt* 1 r
+action C   1    D   1 l
+action D   -    D   1 r
+action D   1    A   - r

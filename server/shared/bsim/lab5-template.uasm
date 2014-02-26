@@ -19,8 +19,8 @@ TestCase:	LONG(0)
 //    pivotValue = array[pivotIndex]
 //
 //    # swap array[right] and array[pivotIndex]
+//    # note that we already store array[pivotIndex] in pivotValue
 //    array[pivotIndex] = array[right]
-//    #array[right] = pivotValue
 //
 //    # elements <= the pivot are moved to the left (smaller indices)
 //    storeIndex = left

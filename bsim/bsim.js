@@ -64,7 +64,7 @@ $(function() {
             } else {
                 PassiveAlert("Assembled successfully", "success");
                 beta.setSources(result.sources);
-                beta.loadBytes(result.image);
+                beta.loadBytes(result.image,result.source_map);
                 beta.setBreakpoints(result.breakpoints);
                 beta.setLabels(result.labels);
                 _.each(result.options, function(value, key) {
