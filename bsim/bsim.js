@@ -90,8 +90,12 @@ $(function() {
     // Add some buttons to it
     editor.addButtonGroup([new ToolbarButton('Assemble', do_assemble, 'Runs your program!')]);
 
+    function window_height() {
+        return $('#tool-wrapper').innerHeight();
+    };
+
     var set_height = function() {
-        editor.setHeight(document.documentElement.clientHeight - 90); // Set height to window height minus title.
+        editor.setHeight(window_height() - $('.btn-toolbar').height() - $('.nav-tabs').height()); // Set height to window height minus title.
     };
     set_height();
     $(window).resize(set_height); // Update the height whenever the browser window changes size.
@@ -101,7 +105,7 @@ $(function() {
     var do_resize = function(holder, view, difference) {
         if(holder.parents('#programmer-view').length) {
             $(window).resize(function() {
-                var height = $(window).height() - difference;
+                var height = window_height() - difference;
                 view.resize(height);
                 holder.css({height: height});
             });

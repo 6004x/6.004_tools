@@ -13,7 +13,7 @@
 
 // generate the 3 input waveforms for inputs A, B and C
 
-Winputs A B C nrz(0,3.3,100n,0n,.1n,.1n)
+Winputs A B C nrz(0,1.0,100n,0n,.1n,.1n)
 + 0b000 0b001 0b010 0b011 0b100 0b101 0b110 0b111
 
 // make a test instance of the F subcircuit

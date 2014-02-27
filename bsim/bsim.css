@@ -4,11 +4,11 @@ button.btn {
 
 #filetree {
     display: block;
-    width: 100%;
+    /*width: 100%;*/
 }
 
 #editor {
-    width: 100%;
+    /*width: 100%;*/
 }
 
 #programmer-view .content {

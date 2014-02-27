@@ -114,9 +114,12 @@ $(function() {
     //Plot.setup();
     Checkoff.setEditor(editor);
     
-    
+    function window_height() {
+        return $('#tool-wrapper').innerHeight();
+    };
+
     var set_height = function() {
-        editor.setHeight(document.documentElement.clientHeight - 80); // Set height to window height minus title.
+        editor.setHeight(window_height() - $('.btn-toolbar').height() - $('.nav-tabs').height()); // Set height to window height minus title.
     };
     set_height();
     $(window).resize(set_height); // Update the height whenever the browser window changes size.

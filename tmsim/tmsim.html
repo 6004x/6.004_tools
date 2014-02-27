@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="height: 100%;">
     <head>
         <title>TMSim 2.0.1</title>
         <!-- build:js common.min.js -->
@@ -68,11 +68,16 @@
         });
         var mode = 'tsim';
         editor = new Editor('#editor',mode);
+
+        function window_height() {
+            return $('#tool-wrapper').innerHeight();
+        };
         var set_height = function() {
-            editor.setHeight(document.documentElement.clientHeight - 190 - 50); // Set height to window height minus title.
-        }
+            editor.setHeight(window_height() - $('.btn-toolbar').height() - $('.nav-tabs').height() - 190);
+        };
         set_height();
         $(window).resize(set_height); // Update the height whenever the browser window changes size.
+
         split.on('resize', _.throttle(editor.redraw, 50));
 
         Folders.setup('#folders_div', editor, mode);
@@ -115,16 +120,19 @@
         
     });
     </script>
-    <body>
+    <body style="height: 100%;">
+      <!--<div id="tool-wrapper" style="height:720px; width:1024px; border: 1px solid black; margin:5px;">-->
+      <div id="tool-wrapper" style="width: 100%; height: 99%; margin:5px;">
       <div class="masthead">
         <div id="header-alert-holder" class="feedback_div"></div>
       </div>
-      <div id="main_wrapper">
+      <div id="split-container">
         <div id="folders_div"></div>
         <div id="editor_div">
           <div id="tmsim_div"></div>
           <div id="editor"></div>
         </div>
+      </div>
       </div>
     </body>
 </html>

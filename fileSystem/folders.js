@@ -798,8 +798,9 @@ var Folders = (function(){
         var filesWrapper = $('<ul>').addClass('file_paths nav nav-list nav-stacked');
         var sharedFilesWrapper = $('<ul>').addClass('shared_file_paths nav nav-list nav-stacked');
 
-        sideBarNav.height(window.innerHeight - sideBarNav.offset().top - 10);
-        $(window).on('resize',function(){sideBarNav.height(window.innerHeight - sideBarNav.offset().top - 10);});
+        function win_h() { return $('#split-container').parent().height(); };
+        sideBarNav.height(win_h() - sideBarNav.offset().top - 10);
+        $(window).on('resize',function(){sideBarNav.height(win_h() - sideBarNav.offset().top - 10);});
         sideBarNav.append(filesWrapper, sharedFilesWrapper);
         var pref = JSON.parse(localStorage.getItem('6004folderspref'+editMode));
 	

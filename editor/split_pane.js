@@ -24,7 +24,7 @@
 
         this.setPaneWidth = function(pane_number, width) {
             var old_width = mPanes[pane_number].width();
-	    width = Math.floor(width);  // keep dimensions integers!
+        width = Math.floor(width);  // keep dimensions integers!
             mPanes[pane_number].css({width: width});
             if(pane_number+1 < mPanes.length) {
                 mPanes[pane_number+1].css({width: mPanes[pane_number+1].width() + (old_width - width)});
@@ -70,32 +70,32 @@
             return _.map(mPanes, function(pane) { return pane.width(); });
         };
 
-	// compute width available for panes = window width - total width of splitters - margin
-	var window_width = function() {
-	    var window_margin = 5;
-	    var splitter_width = 11;   // css says 10, but sometimes reported as 11 by inspectors?
-	    var result = $(window).width() - splitter_width*(mPanes.length - 1) - window_margin;
-	    return 2*Math.floor(result/2);  // make evenly divisible by 2
-	}
-	this.window_width = window_width;
+    // compute width available for panes = window width - total width of splitters - margin
+    var window_width = function() {
+        var window_margin = 5;
+        var splitter_width = 11;   // css says 10, but sometimes reported as 11 by inspectors?
+        var result = $('#tool-wrapper').innerWidth() - splitter_width*(mPanes.length - 1) - window_margin;
+        return 2*Math.floor(result/2);  // make evenly divisible by 2
+    }
+    this.window_width = window_width;
 
         var initialise = function(panes) {
-            mHolder = $('<div>').css({width: '100%'}).appendTo(mContainer);
-            var height = $(window).height() - mHolder.offset().top - 10;
+            mHolder = $('#split-container');
+            var height = $('#tool-wrapper').innerHeight() - mHolder.offset().top - 10;
             mCurrentHeight = height;
             mHolder.css('height', height);
             _.each(panes, function(p) {
                 self.addPane(p);
             });
             var width = window_width();
-	    var pwidth = mPanes.length ? Math.floor(width/mPanes.length) : 0;
-	    mCurrentWidth = mPanes.length * pwidth;
+            var pwidth = mPanes.length ? Math.floor(width/mPanes.length) : 0;
+            mCurrentWidth = mPanes.length * pwidth;
             _.each(_.range(mPanes.length), function(i) {
-		self.setPaneWidth(i, pwidth);
+                    self.setPaneWidth(i, pwidth);
             });
 
             $(window).resize(function() {
-	        var wwidth = window_width();
+                var wwidth = window_width();
                 for (var i = mPanes.length - 1; i >= 0; i--) {
                     if(mPanes[i].width() > 0) {
                         var delta_width = (mCurrentWidth - wwidth)
@@ -108,7 +108,7 @@
                     }
                 };
 
-                var window_height = $(window).height() - mHolder.offset().top;
+                var window_height = $('#tool-wrapper').innerHeight() - mHolder.offset().top;
                 _.each(mPanes, function(pane) {
                     pane.css({height: window_height - 10});
                 });
