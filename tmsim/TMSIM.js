@@ -752,3 +752,78 @@
     };
     root.TMSIM = TMSIM;
 })();
+
+// used to be in tmsim.html
+var editor;
+$(document).ready(function(){
+        var split = new SplitPane('#main_wrapper', ['#folders_div', '#editor_div']);
+
+        // initial configuration
+        split.setPaneWidth(0, 200);
+        split.setPaneWidth(1, split.window_width() - 200);
+
+        var timer;
+        split.on('resize', function(widths) {
+                clearTimeout(timer);
+                if(tmsim){
+                    timer = setTimeout(tmsim.listToTape, 100);
+                }
+            });
+        $(window).resize(function() {
+                clearTimeout(timer);
+                if(tmsim)
+                    timer = setTimeout(tmsim.listToTape, 100);
+            });
+        var mode = 'tsim';
+        editor = new Editor('#editor',mode);
+
+        function window_height() {
+            return $('.xblock-6004').innerHeight();
+        };
+        var set_height = function() {
+            editor.setHeight(window_height() - $('.btn-toolbar').height() - $('.nav-tabs').height() - 190);
+        };
+        set_height();
+        $(window).resize(set_height); // Update the height whenever the browser window changes size.
+
+        split.on('resize', _.throttle(editor.redraw, 50));
+
+        Folders.setup('#folders_div', editor, mode);
+        Folders.refresh();
+        editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')]);
+
+        var tmsim = new TMSIM('#tmsim_div');
+        var tsmparse = new TSMparser();
+        function tmsimAssemble(){
+            var file = new Object();
+            file.name=editor.currentTab();
+            file.data=editor.content();
+            
+            
+            var valid = true;
+            var tmsimObj;
+
+            try{
+                var parsedDict = tsmparse.parse(file.data);
+                editor.clearErrors();
+                // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
+                tmsimObj = tsmparse.flattenMachine(parsedDict);
+                // editor.openTab(file.name+'done', tsmparse.getResults(), true);
+            } catch(e){
+                console.log(e.stack );
+                for (var i = 0; i < e.length; i++)
+                    editor.markErrorLine(file.name, e[i].message, e[i].lineNumber - 1);
+                valid = false;
+            }
+            if(valid){
+                if(!$('#split_pane').hasClass('active'))
+                    $('#split_pane').click();
+
+                if(!tmsim){
+                    // tmsim = new TMSIM('#tmsim_div');
+                }
+                tmsim.restartTSM(file, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists, tmsimObj.checkoff );
+            }
+        }
+        
+    });

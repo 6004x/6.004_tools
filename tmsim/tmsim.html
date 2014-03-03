@@ -1,128 +1,46 @@
 <!DOCTYPE html>
 <html lang="en" style="height: 100%;">
-    <head>
-        <title>TMSim 2.0.1</title>
-        <!-- build:js common.min.js -->
-        <!-- This block MUST be identical across bsim, jsim and tmsim. -->
-        <script src="../libs/jquery.js"></script>
-        <script src="../libs/underscore.js"></script>
-        <script src="../libs/backbone.js"></script>
-        <script src="../libs/bootstrap.js"></script>
-        <script src="../fileSystem/external/jquery-ui.js"></script>
-        <script src="../editor/external/codemirror.js"></script>
-        <script src="../editor/external/radix.js"></script>
-        <script src="../editor/external/codemirror-extensions.js"></script>
-        <script src="../editor/toolbar.js"></script>
-        <script src="../editor/editor.js"></script>
-        <script src="../editor/prompt.js"></script>
-        <script src="../editor/passive_alert.js"></script>
-        <script src="../editor/split_pane.js"></script>
-        <script src="../editor/autocomplete.js"></script>
-        <script src="../editor/browser_check.js"></script>
-        <script src="../fileSystem/appengine_fileSystem.js"></script>
-        <script src="../fileSystem/folders.js"></script>
-        <!-- endbuild -->
+  <head>
+    <title>TMSim 2.0.1</title>
+    <!-- build:js tmsim.min.js -->
+    <script src="../libs/jquery.js"></script>
+    <script src="../libs/underscore.js"></script>
+    <script src="../libs/backbone.js"></script>
+    <script src="../libs/bootstrap.js"></script>
+    <script src="../fileSystem/external/jquery-ui.js"></script>
+    <script src="../editor/external/codemirror.js"></script>
+    <script src="../editor/external/radix.js"></script>
+    <script src="../editor/external/codemirror-extensions.js"></script>
+    <script src="../editor/toolbar.js"></script>
+    <script src="../editor/editor.js"></script>
+    <script src="../editor/prompt.js"></script>
+    <script src="../editor/passive_alert.js"></script>
+    <script src="../editor/split_pane.js"></script>
+    <script src="../editor/autocomplete.js"></script>
+    <script src="../editor/browser_check.js"></script>
+    <script src="../fileSystem/appengine_fileSystem.js"></script>
+    <script src="../fileSystem/folders.js"></script>
 
-        <!-- build:css common.min.css -->
-        <!-- This block MUST be identical across bsim, jsim and tmsim. -->
-        <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
-        <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
-        <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
-        <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
-        <link rel="stylesheet" type="text/css" href="../editor/common.css">
-        <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">
-        <!-- endbuild -->
+    <script src="../editor/modes/tsim.js"></script>
+    <script src="TapeList.js"></script>
+    <script src="TSM.js"></script>
+    <script src="TSMParser.js"></script>
+    <script src="TMSIM.js"></script>
+    <!-- endbuild -->
 
-        <!-- build:js tmsim.min.js -->
-        <script src="../editor/modes/tsim.js"></script>
-        <script src="TapeList.js"></script>
-        <script src="TSM.js"></script>
-        <script src="TSMParser.js"></script>
-        <script src="TMSIM.js"></script>
-        <!-- endbuild -->
+    <!-- build:css tmsim.min.css -->
+    <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
+    <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+    <link rel="stylesheet" type="text/css" href="../editor/common.css">
+    <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">
 
-        <!-- build:css tmsim.min.css -->
-        <link rel="stylesheet" type="text/css" href="TMSIM.css">   
-        <!-- endbuild -->
-    </head>
-    <script>
-    var editor;
-    $(document).ready(function(){
-        var split = new SplitPane('#main_wrapper', ['#folders_div', '#editor_div'])
-
-        // initial configuration
-        split.setPaneWidth(0, 200);
-        split.setPaneWidth(1, split.window_width() - 200);
-
-        var timer;
-        split.on('resize', function(widths) {
-            clearTimeout(timer);
-            if(tmsim){
-                timer = setTimeout(tmsim.listToTape, 100);
-            }
-        });
-        $(window).resize(function() {
-            clearTimeout(timer);
-            if(tmsim)
-                timer = setTimeout(tmsim.listToTape, 100);
-        });
-        var mode = 'tsim';
-        editor = new Editor('#editor',mode);
-
-        function window_height() {
-            return $('#tool-wrapper').innerHeight();
-        };
-        var set_height = function() {
-            editor.setHeight(window_height() - $('.btn-toolbar').height() - $('.nav-tabs').height() - 190);
-        };
-        set_height();
-        $(window).resize(set_height); // Update the height whenever the browser window changes size.
-
-        split.on('resize', _.throttle(editor.redraw, 50));
-
-        Folders.setup('#folders_div', editor, mode);
-        Folders.refresh();
-        editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')]) 
-
-        var tmsim = new TMSIM('#tmsim_div');
-        var tsmparse = new TSMparser();
-        function tmsimAssemble(){
-            var file = new Object();
-            file.name=editor.currentTab();
-            file.data=editor.content();
-            
-            
-            var valid = true;
-            var tmsimObj;
-
-            try{
-                var parsedDict = tsmparse.parse(file.data);
-                editor.clearErrors();
-                // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
-                tmsimObj = tsmparse.flattenMachine(parsedDict);
-                // editor.openTab(file.name+'done', tsmparse.getResults(), true);
-            } catch(e){
-                console.log(e.stack );
-                for (var i = 0; i < e.length; i++)
-                    editor.markErrorLine(file.name, e[i].message, e[i].lineNumber - 1);
-                valid = false;
-            }
-            if(valid){
-                if(!$('#split_pane').hasClass('active'))
-                    $('#split_pane').click();
-
-                if(!tmsim){
-                    // tmsim = new TMSIM('#tmsim_div');
-                }
-                tmsim.restartTSM(file, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists, tmsimObj.checkoff )
-            }
-        }
-        
-    });
-    </script>
-    <body style="height: 100%;">
-      <!--<div id="tool-wrapper" style="height:720px; width:1024px; border: 1px solid black; margin:5px;">-->
-      <div id="tool-wrapper" style="width: 100%; height: 99%; margin:5px;">
+    <link rel="stylesheet" type="text/css" href="TMSIM.css">   
+    <!-- endbuild -->
+  </head>
+  <body style="height: 100%;">
+    <div class="xblock-6004" style="width: 100%; height: 99%; margin:5px;">
       <div class="masthead">
         <div id="header-alert-holder" class="feedback_div"></div>
       </div>
@@ -133,6 +51,6 @@
           <div id="editor"></div>
         </div>
       </div>
-      </div>
-    </body>
+    </div>
+  </body>
 </html>

@@ -91,7 +91,7 @@ $(function() {
     editor.addButtonGroup([new ToolbarButton('Assemble', do_assemble, 'Runs your program!')]);
 
     function window_height() {
-        return $('#tool-wrapper').innerHeight();
+        return $('.xblock-6004').innerHeight();
     };
 
     var set_height = function() {

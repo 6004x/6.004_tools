@@ -115,7 +115,7 @@ $(function() {
     Checkoff.setEditor(editor);
     
     function window_height() {
-        return $('#tool-wrapper').innerHeight();
+        return $('.xblock-6004').innerHeight();
     };
 
     var set_height = function() {

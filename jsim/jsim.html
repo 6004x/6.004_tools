@@ -1,73 +1,65 @@
 <!DOCTYPE html>
 <html style="height:100%;">
-    <head>
-        <title>JSim 3.1.1</title>
-        <!-- build:js common.min.js -->
-        <!-- This block MUST be identical across bsim, jsim and tmsim. -->
-        <script src="../libs/jquery.js"></script>
-        <script src="../libs/underscore.js"></script>
-        <script src="../libs/backbone.js"></script>
-        <script src="../libs/bootstrap.js"></script>
-        <script src="../fileSystem/external/jquery-ui.js"></script>
-        <script src="../editor/external/codemirror.js"></script>
-        <script src="../editor/external/radix.js"></script>
-        <script src="../editor/external/codemirror-extensions.js"></script>
-        <script src="../editor/toolbar.js"></script>
-        <script src="../editor/editor.js"></script>
-        <script src="../editor/prompt.js"></script>
-        <script src="../editor/split_pane.js"></script>
-        <script src="../editor/passive_alert.js"></script>
-        <script src="../editor/autocomplete.js"></script>
-        <script src="../editor/browser_check.js"></script>
-        <script src="../fileSystem/appengine_fileSystem.js"></script>
-        <script src="../fileSystem/folders.js"></script>
-        <!-- endbuild -->
+  <head>
+    <title>JSim 3.1.1</title>
+    <!-- build:js jsim.min.js -->
+    <script src="../libs/jquery.js"></script>
+    <script src="../libs/underscore.js"></script>
+    <script src="../libs/backbone.js"></script>
+    <script src="../libs/bootstrap.js"></script>
+    <script src="../fileSystem/external/jquery-ui.js"></script>
+    <script src="../editor/external/codemirror.js"></script>
+    <script src="../editor/external/radix.js"></script>
+    <script src="../editor/external/codemirror-extensions.js"></script>
+    <script src="../editor/toolbar.js"></script>
+    <script src="../editor/editor.js"></script>
+    <script src="../editor/prompt.js"></script>
+    <script src="../editor/split_pane.js"></script>
+    <script src="../editor/passive_alert.js"></script>
+    <script src="../editor/autocomplete.js"></script>
+    <script src="../editor/browser_check.js"></script>
+    <script src="../fileSystem/appengine_fileSystem.js"></script>
+    <script src="../fileSystem/folders.js"></script>
 
-        <!-- build:css common.min.css -->
-        <!-- This block MUST be identical across bsim, jsim and tmsim. -->
-        <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
-        <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
-        <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
-        <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
-        <link rel="stylesheet" type="text/css" href="../editor/common.css">
-        <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">
-        <!-- endbuild -->
+    <script src="../editor/modes/jsim.js"></script>
+    <script src="parser.js"></script>
+    <script src="cktsim.js"></script>
+    <script src="gatesim.js"></script>
+    <script src="checkoff.js"></script>
+    <script src="simulator.js"></script>
+    <script src="plot.js"></script>
+    <script src="jsim.js"></script>
+    <!-- endbuild -->
 
-        <!-- build:js jsim.min.js -->
-        <script src="../editor/modes/jsim.js"></script>
-        <script src="parser.js"></script>
-        <script src="cktsim.js"></script>
-        <script src="gatesim.js"></script>
-        <script src="checkoff.js"></script>
-        <script src="simulator.js"></script>
-        <script src="plot.js"></script>
-        <script src="jsim.js"></script>
-        <!-- endbuild -->
+    <!-- build:css jsim.min.css -->
+    <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
+    <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+    <link rel="stylesheet" type="text/css" href="../editor/common.css">
+    <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">
 
-        <!-- build:css jsim.min.css -->
-        <link rel="stylesheet" type="text/css" href="jsim.css">
-        <!-- endbuild -->
-        
-    </head>
-    <body style="height:100%;">
-      <!--<div id="tool-wrapper" style="height:720px; width:1024px; border: 1px solid black; margin:5px;">-->
-        <div id="tool-wrapper" style="width: 100%; height: 99%; margin:5px;">
-            <div class="masthead">
-                <ul class="pull-left nav nav-pills split-controls">
-                    <li class="active" id="maximise_editor"><a>Editor</a></li>
-                    <li id="split_pane"><a>Split</a></li>
-                    <li id="maximise_simulation"><a>Simulation</a></li>
-                </ul>
-                <div id="header-alert-holder"></div>
-            </div>
-            <div id="split-container">
-                <div id="filetree"></div>
-                <div id="editor-pane">
-                    <div id="editor"></div>
-                </div>
-                <div id="simulation-pane">
-                </div>
-            </div>
+    <link rel="stylesheet" type="text/css" href="jsim.css">
+    <!-- endbuild -->
+    
+  </head>
+  <body style="height:100%;">
+    <div class="xblock-6004" style="width: 100%; height: 99%; margin:5px;">
+      <div class="masthead">
+        <ul class="pull-left nav nav-pills split-controls">
+          <li class="active" id="maximise_editor"><a>Editor</a></li>
+          <li id="split_pane"><a>Split</a></li>
+          <li id="maximise_simulation"><a>Simulation</a></li>
+        </ul>
+        <div id="header-alert-holder"></div>
+      </div>
+      <div id="split-container">
+        <div id="filetree"></div>
+        <div id="editor-pane">
+          <div id="editor"></div>
         </div>
-    </body>
+        <div id="simulation-pane"></div>
+      </div>
+    </div>
+  </body>
 </html>

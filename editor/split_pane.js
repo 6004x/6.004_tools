@@ -74,14 +74,14 @@
     var window_width = function() {
         var window_margin = 5;
         var splitter_width = 11;   // css says 10, but sometimes reported as 11 by inspectors?
-        var result = $('#tool-wrapper').innerWidth() - splitter_width*(mPanes.length - 1) - window_margin;
+        var result = $('.xblock-6004').innerWidth() - splitter_width*(mPanes.length - 1) - window_margin;
         return 2*Math.floor(result/2);  // make evenly divisible by 2
     }
     this.window_width = window_width;
 
         var initialise = function(panes) {
             mHolder = $('#split-container');
-            var height = $('#tool-wrapper').innerHeight() - mHolder.offset().top - 10;
+            var height = $('.xblock-6004').innerHeight() - mHolder.offset().top - 10;
             mCurrentHeight = height;
             mHolder.css('height', height);
             _.each(panes, function(p) {
@@ -108,7 +108,7 @@
                     }
                 };
 
-                var window_height = $('#tool-wrapper').innerHeight() - mHolder.offset().top;
+                var window_height = $('.xblock-6004').innerHeight() - mHolder.offset().top;
                 _.each(mPanes, function(pane) {
                     pane.css({height: window_height - 10});
                 });
