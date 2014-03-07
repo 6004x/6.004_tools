@@ -19,6 +19,13 @@ var FileSystem= (function(){
     var saved_folder_list = [];
 
     function server_request(url,data,callback) {
+        // for MITx
+        if (xblock_unique_id !== undefined) {
+            data['_path'] = url;
+            top.window.xblock_post[xblock_unique_id]('user_state',data,callback);
+            return;
+        }
+
         // we support various servers during development
         var host = $(location).attr('host');
         if (host == 'localhost') {
@@ -52,6 +59,21 @@ var FileSystem= (function(){
     }
 
     function shared_request(url,dataType,succeed,fail) {
+        // for MITx
+        if (xblock_unique_id !== undefined) {
+            top.window.xblock_post[xblock_unique_id]('get_resource',{'path':url},
+                                                     function(response) {
+                                                         if (response._error === undefined) {
+                                                             if (succeed) {
+                                                                 var data = response.data;
+                                                                 if (dataType == 'json') data = JSON.parse(data);
+                                                                 succeed(data);
+                                                             }
+                                                         } else if (fail) fail(response._error);
+                                                     });
+            return;
+        }
+
         var host = $(location).attr('host');
         if (host == 'localhost') host = local_shared_url;
         else if (host == '6004.mit.edu') host = mit_shared_url;
@@ -71,6 +93,13 @@ var FileSystem= (function(){
 
     // figure out who user is and let callback know
     function validate_user(callback) {
+        // for MITx
+        if (top.window.studentId !== undefined) {
+            sessionStorage.setItem('user',top.window.studentId);
+            callback(top.window.studentId);
+            return;
+        }
+
         // if user has already signed in, life is easy
         var user = sessionStorage.getItem('user');
         if (user) {
@@ -78,7 +107,7 @@ var FileSystem= (function(){
             return;
         }
 
-        if ($(location).attr('host') == '6004.mit.edu') {
+        if ($(location).attr('host') == '6004.mit.edu' || xblock_unique_id !== undefined) {
             // server will use certificate to determine who user is
             server_request('/user/validate',{},
                            function (response) {
