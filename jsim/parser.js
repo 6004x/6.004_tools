@@ -1617,8 +1617,20 @@ var Parser = (function(){
     }
     
     function netlist_instance(prefix, inst_obj, JSON_netlist){
+        var i;
+
+        // allow user to use to port names to access signals
+        for (i = 0; i < inst_obj.ports.length; i += 1) {
+            var port = inst_obj.ports[i];
+            var connection = inst_obj.connections[i];
+            JSON_netlist.push({type: 'connect',
+                        connections: [connection, prefix + '.' + port],
+                        properties: {}
+                });
+        }
+
         var subckt_def = subcircuits[inst_obj.properties.instanceOf];
-        for (var i = 0; i < subckt_def.devices.length; i += 1){
+        for (i = 0; i < subckt_def.devices.length; i += 1){
             netlist_device(prefix, subckt_def.devices[i], inst_obj, JSON_netlist);
         }
     }
