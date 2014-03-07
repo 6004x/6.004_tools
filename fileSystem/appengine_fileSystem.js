@@ -2,6 +2,8 @@
 //var JSON;
 //var console,localStorage;
 
+var xblock_unique_id;   // filled in by iframe parent on MITx, otherwise undefined
+
 var FileSystem= (function(){
     // used when access is from scripts deployed on computationstructures.org
     var server_url = 'https://mit-6004x.appspot.com';

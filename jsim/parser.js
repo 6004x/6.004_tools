@@ -1586,7 +1586,7 @@ var Parser = (function(){
                 new_obj.properties[item] = local_props[item];
             }
             var n = prefix + new_obj.properties.name;
-            if (ndevices != 1) n += '#' + dev_index;
+            if (ndevices != 1) n += '_' + dev_index;
             new_obj.properties.name = n;
             new_obj.type = dev_obj.type;
             
