@@ -222,9 +222,9 @@ var gatesim = (function() {
         network.gnd = network.node('gnd');
         network.devices.push(new Source(network, 'gnd', network.gnd, {name: 'gnd', value: {type: 'dc', args: []}}));
         $.each(netlist,function (i,component) {
-	    if (component.type == 'ground') {
-		network.node_map[component.connections.gnd] = network.gnd;
-	    }
+            if (component.type == 'ground') {
+                network.node_map[component.connections.gnd] = network.gnd;
+            }
         });
 
         // "connect a b ..." makes a, b, ... aliases for the same node
@@ -244,9 +244,11 @@ var gatesim = (function() {
         $.each(netlist,function (i,component) {
             var n,d;
             var type = component.type;
+            
+            if (type == 'ground' || type == 'connect') return;  // handled above
+
             var connections = component.connections;
             var properties = component.properties;
-
             var name = properties.name;
 
             // convert node names to Nodes
@@ -278,12 +280,6 @@ var gatesim = (function() {
                 });
 
                 new Memory(network, name, properties, options);
-            }
-            else if (type == 'connect') {
-                // handled above
-            }
-            else if (type == 'ground') {
-                // handled above
             }
             else if (type == 'constant0' || type == 'constant1') {
                 n = connections.z;
@@ -705,8 +701,10 @@ var gatesim = (function() {
         // interconnect capacitance
         var ndrivers = this.drivers.length;
         var nfanouts = this.fanouts.length;
-        if (ndrivers === 0 && nfanouts > 0) {
-            throw 'Node ' + this.name + ' is not connected to any output.';
+        if (ndrivers === 0) {
+            if (nfanouts > 0) {
+                throw 'Node ' + this.name + ' is not connected to any output.';
+            } else return;  // no drivers, no fanouts... not interesting :)  
         }
         if (this.capacitance === 0) this.capacitance = c_intercept + c_slope * (ndrivers + nfanouts);
 
