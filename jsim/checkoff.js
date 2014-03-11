@@ -123,8 +123,8 @@ var Checkoff = (function(){
             failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
 <p><table class='table'><tr><td>Node(s):</td><td>"+mistake.nodes+"</tr>\
 <tr><td>Time:</td><td>"+engineering_notation(mistake.time,3)+"s</td></tr>\
-<tr><td>Expected:</td><td>"+mistake.exp+"</td></tr>\
-<tr><td>Actual:</td><td>"+mistake.given+"</td></tr></table></p>");
+<tr><td>Expected:</td><td><tt>"+mistake.exp+"</tt></td></tr>\
+<tr><td>Actual:</td><td><tt>"+mistake.given+"</tt></td></tr></table></p>");
             failedModal.addButton("Dismiss",'dismiss');
             failedModal.show();
             report_error(mistake);
@@ -134,8 +134,8 @@ var Checkoff = (function(){
             failedModal.setContent("<p><div class='text-error'>Memory verification error:</div></p>\
 <p><table class='table'><tr><td>Memory:</td><td>"+mistake.nodes+"</tr>\
 <tr><td>Location:</td><td>"+engineering_notation(mistake.time,3)+"</td></tr>\
-<tr><td>Expected:</td><td>"+mistake.exp+"</td></tr>\
-<tr><td>Actual:</td><td>"+mistake.given+"</td></tr></table></p>");
+<tr><td>Expected:</td><td><tt>"+mistake.exp+"</tt></td></tr>\
+<tr><td>Actual:</td><td><tt>"+mistake.given+"</tt></td></tr></table></p>");
             failedModal.addButton("Dismiss",'dismiss');
             failedModal.show();
             report_error(mistake);
@@ -228,7 +228,7 @@ var Checkoff = (function(){
                 var h = history[node];
                 if (h === undefined) return undefined;
                 var index = search(h.xvalues,check.time);
-                return h.yvalues[index];    // only 0, 1 or X (=2)
+                return h.yvalues[index];    // only 0, 1, X (=2), or Z (=3)
             });
 
             // compare values and expect flagging any errors
@@ -250,7 +250,7 @@ var Checkoff = (function(){
                 var exp = [];
                 var given = [];
                 for (var j = 0; j < values.length; j += 1) {
-                    var v = "01X"[values[j]];
+                    var v = "01XZ"[values[j]];
                     var e = "01"[(check.expected >> (last - j)) & 1];
                     exp.push(e);
                     // color code errors for easy spotting
