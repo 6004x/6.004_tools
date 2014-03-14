@@ -412,6 +412,16 @@ var Editor = function(container, mode) {
         });
     };
 
+    this.get_all_documents = function() {
+        var result = {};
+        for(var name in mOpenDocuments) {
+            if(!_.has(mOpenDocuments, name)) continue;
+            var doc = mOpenDocuments[name];
+            result[name] = doc.cm.getValue();
+        }
+        return result;
+    };
+
     var revert_current_document = function() {
         if(!mCurrentDocument) return;
         var document = mCurrentDocument; // we don't want to dump this in the wrong buffer!

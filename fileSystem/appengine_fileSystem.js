@@ -22,11 +22,13 @@ var FileSystem= (function(){
 
     function server_request(url,data,callback) {
         // for MITx
-        if (xblock_unique_id !== undefined) {
-            data['_path'] = url;
-            top.window.xblock_post[xblock_unique_id]('user_state',data,callback);
-            return;
-        }
+        try {
+            if (xblock_unique_id !== undefined) {
+                data['_path'] = url;
+                top.window.xblock_post[xblock_unique_id]('user_state',data,callback);
+                return;
+            }
+        } catch (e) { }
 
         // we support various servers during development
         var host = $(location).attr('host');
@@ -96,11 +98,13 @@ var FileSystem= (function(){
     // figure out who user is and let callback know
     function validate_user(callback) {
         // for MITx
-        if (top.window.studentId !== undefined) {
-            sessionStorage.setItem('user',top.window.studentId);
-            callback(top.window.studentId);
-            return;
-        }
+        try {
+            if (top.window.studentId !== undefined) {
+                sessionStorage.setItem('user',top.window.studentId);
+                callback(top.window.studentId);
+                return;
+            }
+        } catch (e) {};
 
         // if user has already signed in, life is easy
         var user = sessionStorage.getItem('user');
