@@ -124,4 +124,28 @@ $(function() {
     set_height();
     $(window).resize(set_height); // Update the height whenever the browser window changes size.
 
+    /* fooling around with embedding in Hangout
+    function share_buffers() {
+        parent.postMessage(JSON.stringify({user: FileSystem.getUserName(), buffers: JSON.stringify(editor.get_all_documents())}),'*');
+    }
+
+    var helpq_button = false;
+    $(window).on('message',function (event) {
+            if (!helpq_button) {
+                // add button to let user request help
+                helpq_button = true;
+                $('.global-controls').append('<li id="helpq"><a>Online help <span id="qstatus"></span></a></li>');
+                $('#helpq').click(function() {
+                        // add ourselves to the queue
+                        parent.postMessage(JSON.stringify({user: FileSystem.getUserName()}),'*');
+                    });
+
+                // add button to let user share buffers
+                editor.addButtonGroup([new ToolbarButton('Share',share_buffers, 'Share buffers in Hangout')]);
+            }
+            var state = JSON.parse(event.originalEvent.data);
+            console.log('jsim:');
+            console.log(state);
+        });
+    */
 });

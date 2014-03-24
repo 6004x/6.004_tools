@@ -119,6 +119,7 @@ var FileSystem= (function(){
                            function (response) {
                                if (response._error === undefined) {
                                    sessionStorage.setItem('user',response._user);
+                                   sessionStorage.setItem('username',response._username);
                                    callback(response._user);
                                }
                            });
@@ -217,7 +218,11 @@ var FileSystem= (function(){
     }
 
     function getUserName() {
-        return sessionStorage.getItem('user');
+        return sessionStorage.getItem('user') || '???';
+    }
+
+    function getUserFullName() {
+        return sessionStorage.getItem('username') || '???';
     }
 
     function isFolder(filename) {
@@ -355,6 +360,7 @@ var FileSystem= (function(){
     return {getFileList: getFileList,
             getSharedFileList: getSharedFileList,
             getUserName: getUserName,
+            getUserFullName: getUserFullName,
 
             isFolder: isFolder,
             newFolder: newFolder,
