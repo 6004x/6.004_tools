@@ -773,16 +773,16 @@ var Folders = (function(){
         toolbar.addButtonGroup([
             new ToolbarButton('icon-refresh', function () { refresh(); }, 'Refresh')
         ]);
-        toolbar.addButtonGroup([
-            new ToolbarButton('icon-download',function () {
-                // use an iframe to trigger browser's action when receiving a .zip file
-                var iframe = $('<iframe class="zip"></iframe>').attr('src',FileSystem.downloadZipURL());
-                $('body').append(iframe);  // start the access...
-                // wait a bit, then remove iframe since it's job is done... a kludge
-                // the .ready function seems to return too soon...
-                setTimeout(function () { $('.zip').remove(); }, 5000);
-            },'Download ZIP archive')
-        ]);
+
+        // fake our own toolbar button, but make it a link so that clicking will let
+        // browser process the server response
+        var zip = new ToolbarButton('',undefined,'');
+        zip.render = function(container) {
+            var mElement = $('<a class="btn" href="'+FileSystem.downloadZipURL()+'"><i class="icon-download"></i></a>');
+            mElement.tooltip({title: 'Download Zip archive', placement: 'top', delay: 100, container: 'body'});
+            container.append(mElement);
+        };
+        toolbar.addButtonGroup([zip]);
     }
 
     function setup(root, editorN, mode){

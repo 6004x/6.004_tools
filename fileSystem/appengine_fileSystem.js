@@ -345,6 +345,15 @@ var FileSystem= (function(){
 
     function downloadZipURL() {
         // we support various servers during development
+
+        // for MITx
+        try {
+            if (xblock_unique_id !== undefined) {
+                return top.window.xblock_url[xblock_unique_id]('download_zip');
+            }
+        } catch (e) { }
+
+
         var host = $(location).attr('host');
         if (host == 'localhost') {
             return local_server_url+'/file?action=zip'
