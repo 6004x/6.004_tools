@@ -25,7 +25,7 @@ var FileSystem= (function(){
         try {
             if (xblock_unique_id !== undefined) {
                 data['_path'] = url;
-                top.window.xblock_post[xblock_unique_id]('user_state',data,callback);
+                top.window.xblock_handler[xblock_unique_id]('user_file',data,callback);
                 return;
             }
         } catch (e) { }
@@ -65,16 +65,16 @@ var FileSystem= (function(){
     function shared_request(url,dataType,succeed,fail) {
         // for MITx
         if (xblock_unique_id !== undefined) {
-            top.window.xblock_post[xblock_unique_id]('get_resource',{'path':url},
-                                                     function(response) {
-                                                         if (response._error === undefined) {
-                                                             if (succeed) {
-                                                                 var data = response.data;
-                                                                 if (dataType == 'json') data = JSON.parse(data);
-                                                                 succeed(data);
-                                                             }
-                                                         } else if (fail) fail(response._error);
-                                                     });
+            top.window.xblock_handler[xblock_unique_id]('get_resource',{'path':url},
+                                                        function(response) {
+                                                            if (response._error === undefined) {
+                                                                if (succeed) {
+                                                                    var data = response.data;
+                                                                    if (dataType == 'json') data = JSON.parse(data);
+                                                                    succeed(data);
+                                                                }
+                                                            } else if (fail) fail(response._error);
+                                                        });
             return;
         }
 

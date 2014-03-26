@@ -11,7 +11,8 @@ module.exports = function(grunt) {
             jsim: {src: ['jsim/jsim.html', 'jsim/*.png'], dest: 'build/', flatten: true, expand: true},
             tmsim: {src: 'tmsim/tmsim.html', dest: 'build/tmsim.html'},
             resources: {src: 'libs/*.png', dest: 'build/', flatten: true, expand: true},
-            deploy: {src: 'build/*', dest: '../', flatten: true, expand: true }
+            deploy: {src: 'build/*', dest: '../', flatten: true, expand: true },
+            xblock: {src: 'build/*', dest: '../xblocks-6004x/mit6004/mit6004/public/', flatten: true, expand: true }
         },
         uglify: {
             options: {
@@ -78,6 +79,7 @@ module.exports = function(grunt) {
     grunt.registerTask('jsim', ['copy:resources', 'copy:jsim', 'useminPrepare:jsim', 'concat', 'uglify', 'cssmin', 'usemin:jsim'])
     grunt.registerTask('tmsim', ['copy:resources', 'copy:tmsim', 'useminPrepare:tmsim', 'concat', 'uglify', 'cssmin', 'usemin:tmsim'])
     grunt.registerTask('deploy', ['copy:deploy'])
+    grunt.registerTask('xblock', ['copy:xblock'])
 
     //grunt.registerTask('test', ['connect', 'qunit:all'])
 
