@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html style="height:100%;">
+  <head>
+    <title>Jade 0.1</title>
+    <!-- build:js jade_min.js -->
+    <script src="../libs/jquery.js"></script>
+    <script src="../libs/underscore.js"></script>
+    <script src="../libs/backbone.js"></script>
+    <script src="../libs/bootstrap.js"></script>
+    <script src="../fileSystem/external/jquery-ui.js"></script>
+    <script src="../editor/toolbar.js"></script>
+    <script src="../editor/prompt.js"></script>
+    <script src="../editor/split_pane.js"></script>
+    <script src="../editor/passive_alert.js"></script>
+    <script src="../editor/browser_check.js"></script>
+    <script src="../fileSystem/appengine_fileSystem.js"></script>
+    <script src="../fileSystem/folders.js"></script>
+
+    <script src="jade.js"></script>
+    <script src="editor.js"></script>
+    <!-- endbuild -->
+
+    <!-- build:css jade_min.css -->
+    <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="../editor/common.css">
+    <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">
+
+    <link rel="stylesheet" type="text/css" href="jade.css">
+    <!-- endbuild -->
+    
+  </head>
+  <body style="height:100%;">
+    <div class="xblock-6004" style="width: 100%; height: 99%; margin:5px;">
+      <div class="masthead">
+        <ul class="pull-left nav nav-pills split-controls">
+          <li class="active" id="maximise_editor"><a>Editor</a></li>
+          <li id="split_pane"><a>Split</a></li>
+          <li id="maximise_simulation"><a>Simulation</a></li>
+        </ul>
+        <div id="header-alert-holder"></div>
+        <!--<ul class="pull-right nav nav-pills global-controls"></ul>-->
+      </div>
+      <div id="split-container">
+        <div id="filetree"></div>
+        <div id="editor-pane">
+          <div id="editor"></div>
+        </div>
+        <div id="simulation-pane"></div>
+      </div>
+    </div>
+  </body>
+</html>
