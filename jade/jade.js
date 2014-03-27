@@ -37,7 +37,7 @@ $(function() {
         if(widths[1] === 0) {
             editor.blur();
         }
-        Simulator.resize();
+        //Simulator.resize();
     });
     
     // set up the results pane

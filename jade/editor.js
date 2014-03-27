@@ -51,13 +51,13 @@ var Editor = function(container, mode) {
         var document = try_get_document(filename);
         if(!document) return null;
         do_autosave(document); // We assume that whenever something calls this.content, autosaving would be nice.
-        return document.cm.getValue();
+        return document.editor.getValue();
     };
 
     // Makes sure the edit buffer is displayed correctly.
     this.redraw = function() {
         if(mCurrentDocument) {
-            mCurrentDocument.cm.refresh();
+            mCurrentDocument.editor.refresh();
         }
     };
 
@@ -99,10 +99,6 @@ var Editor = function(container, mode) {
         this.refresh = function () {
         }
 
-        this.getWrapperElement = function () {
-            return wrapper[0];
-        }
-
         this.getInputField = function () {
             return wrapper;
         }
@@ -142,17 +138,18 @@ var Editor = function(container, mode) {
         }
         var id = _.uniqueId('edit_tab');
         var editPane = $('<div>', {'class': 'tab-pane', id: id}).hide();
-        var cm = new CM(editPane, content, !!is_readonly);  //cjt create_cm_instance(editPane, content, !!is_readonly);
+        mContainer.append(editPane);
+        var editor = new jade_view.Jade(editPane, filename, content, !!is_readonly);
         var tab = $('<li>');
 
         var doc = {
             el: editPane, // jQuery element holding the editor
             tab: tab, // jQuery tab element
-            cm: cm, // Editor instance
+            editor: editor, // Editor instance
             hasLocation: has_location, // Whether we know this file's name (if false, we'll need to prompt)
             name: filename, // This file's name, temporary or otherwise
-            generation: cm.changeGeneration(), // The generation at last save. We can use this to track cleanliness of document.
-            autosaveGeneration: cm.changeGeneration(), // Generation of the last autosave.
+            generation: editor.changeGeneration(), // The generation at last save. We can use this to track cleanliness of document.
+            autosaveGeneration: editor.changeGeneration(), // Generation of the last autosave.
             isAutosaving: false, // Prevents multiple simultaneous save attempts
             n: 0, // Counts changes until we autosave.
             autosaved: autosaved_content || null,
@@ -178,13 +175,13 @@ var Editor = function(container, mode) {
             'margin-left': 5,
             'margin-right': -7
         }).on('mouseenter', tab_mouse_enter).on('mouseleave', function() { handle_change_tab_icon(doc); });
-        cm.on('change', function(c, changeObj) {
+        editor.on('change', function(c, changeObj) {
             handle_change_tab_icon(doc);
             // Let our listeners know, too.
             self.trigger('change', filename, changeObj);
         });
         // Handle autosaving as appropriate.
-        cm.on('cursorActivity', function() {
+        editor.on('cursorActivity', function() {
             doc.n++;
             if(doc.n >= AUTOSAVE_TRIGGER_EVENTS) {
                 doc.n = 0;
@@ -199,7 +196,7 @@ var Editor = function(container, mode) {
         // Make sure we aren't still showing initial tips.
         clear_initial_tips();
 
-        mContainer.append(editPane);
+        //mContainer.append(editPane);
 
         // If we have no open documents, or we were explicitly asked to activate this document, do so.
         if(!_.size(mOpenDocuments) || activate) {
@@ -237,8 +234,9 @@ var Editor = function(container, mode) {
         mContainer.height(height);
         var offset = mCurrentDocument.el.position().top; // Gets the amount of unavailable space.
         _.each(mOpenDocuments, function(doc) {
-            doc.cm.getWrapperElement().style.height = (height - offset) + 'px';
-            doc.cm.refresh();
+                //doc.editor.getWrapperElement().style.height = (height - offset) + 'px';
+                doc.editor.setHeight(height - offset);
+            doc.editor.refresh();
         });
     };
 
@@ -246,7 +244,7 @@ var Editor = function(container, mode) {
     this.blur = function() {
         if(!mCurrentDocument) return; // If we don't have a current document we can't be focused anyway.
 
-        mCurrentDocument.cm.getInputField().blur();
+        mCurrentDocument.editor.blur();
     };
 
     // The below methods are private.
@@ -254,8 +252,8 @@ var Editor = function(container, mode) {
         doc.tab.find('a').tab('show');
         if(mCurrentDocument) mCurrentDocument.el.hide();
         doc.el.show().addClass('active');
-        doc.cm.refresh();
-        doc.cm.focus();
+        doc.editor.refresh();
+        doc.editor.focus();
         mCurrentDocument = doc;
         if(doc.autosaved) {
             mRestoreAutosaveButton.show();
@@ -278,7 +276,7 @@ var Editor = function(container, mode) {
 
     var closeTab = function(doc, force) {
         if(!doc) return;
-        if(!doc.cm.isClean(doc.generation) && !force) {
+        if(!doc.editor.isClean(doc.generation) && !force) {
             var dialog = new ModalDialog();
             dialog.setTitle("Unsaved document");
             dialog.setContent("<p><strong>Do you want to save the changes you made to " + doc.name + "?</strong></p>" +
@@ -328,7 +326,7 @@ var Editor = function(container, mode) {
 
     var handle_change_tab_icon = function(doc) {
         var close = doc.tab.find('.close');
-        if(!doc.cm.isClean(doc.generation)) {
+        if(!doc.editor.isClean(doc.generation)) {
             close.text("\u25CF"); // U+25CF BLACK CIRCLE
         } else {
             close.text("\u00D7"); // U+00D7 MULTIPLICATION SIGN
@@ -346,7 +344,7 @@ var Editor = function(container, mode) {
 
     var save_all_documents = function() {
         _.each(mOpenDocuments, function(document) {
-            if(!document.cm.isClean(document.generation)) {
+            if(!document.editor.isClean(document.generation)) {
                 do_save(document);
             }
         });
@@ -357,7 +355,7 @@ var Editor = function(container, mode) {
         for(var name in mOpenDocuments) {
             if(!_.has(mOpenDocuments, name)) continue;
             var doc = mOpenDocuments[name];
-            result[name] = doc.cm.getValue();
+            result[name] = doc.editor.getValue();
         }
         return result;
     };
@@ -366,7 +364,7 @@ var Editor = function(container, mode) {
         if(!mCurrentDocument) return;
         var document = mCurrentDocument; // we don't want to dump this in the wrong buffer!
         FileSystem.getBackup(document.name, function(content) {
-            document.cm.setValue(content.data);
+            document.editor.setValue(content.data);
         }, function(content) {
             PassiveAlert("Revert failed; unable to load old version.", 'error');
         });
@@ -374,7 +372,7 @@ var Editor = function(container, mode) {
 
     var restore_autosave = function() {
         if(!mCurrentDocument) return;
-        mCurrentDocument.cm.setValue(mCurrentDocument.autosaved);
+        mCurrentDocument.editor.setValue(mCurrentDocument.autosaved);
         clear_autosave(mCurrentDocument);
     };
 
@@ -429,9 +427,9 @@ var Editor = function(container, mode) {
     var do_save = function(document) {
         if(!document) document = mCurrentDocument;
         if(!document) return false;
-        FileSystem.saveFile(document.name, document.cm.getValue(), function() {
+        FileSystem.saveFile(document.name, document.editor.getValue(), function() {
             // Mark the file as clean.
-            document.generation = document.cm.changeGeneration();
+            document.generation = document.editor.changeGeneration();
             document.autosaveGeneration = document.generation;
             clear_autosave(document);
             handle_change_tab_icon(document);
@@ -439,11 +437,11 @@ var Editor = function(container, mode) {
     };
 
     var do_autosave = function(document) {
-        if(document.cm.isClean(document.autosaveGeneration) || document.isAutosaving) return;
+        if(document.editor.isClean(document.autosaveGeneration) || document.isAutosaving) return;
         document.isAutosaving = true;
         clear_autosave(document);
-        var generation = document.cm.changeGeneration();
-        FileSystem.makeAutoSave(document.name, document.cm.getValue(), function() {
+        var generation = document.editor.changeGeneration();
+        FileSystem.makeAutoSave(document.name, document.editor.getValue(), function() {
             document.isAutosaving = false;
             document.autosaveGeneration = generation;
         }, function() {
@@ -456,7 +454,7 @@ var Editor = function(container, mode) {
         for(var name in mOpenDocuments) {
             if(!_.has(mOpenDocuments, name)) continue;
             var doc = mOpenDocuments[name];
-            if(!doc.cm.isClean(doc.generation)) {
+            if(!doc.editor.isClean(doc.generation)) {
                 return "You have unsaved files. If you leave the page you will lose your unsaved work.";
             }
         }
