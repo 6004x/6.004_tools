@@ -283,4 +283,4 @@ try:
 
 except IOError as err:
     # handle I/O errors in bulk instead at every file operation
-    print json.dumps({'_error': 'Server I/O error: '+err})
+    print json.dumps({'_error': 'Server I/O error {0}: {1}'.format(e.errno, e.strerror) })

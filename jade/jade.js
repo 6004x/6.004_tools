@@ -52,6 +52,7 @@ $(function() {
     var editor = new Editor('#editor', mode);
     Folders.setup('#filetree', editor, mode);
     
+    /*
     function dls(){
         $('#split_pane').click();
         Checkoff.reset();
@@ -92,6 +93,7 @@ $(function() {
             throw err;
         }
     }
+     */
 
     // Add some buttons to it
     /*

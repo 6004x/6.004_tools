@@ -1100,9 +1100,9 @@ var jade_model = (function() {
 
         if (this.properties.global_signal)
             // no mapping or prefixing for global signals
-            nlist = parse_signal(this.properties.global_signal);
+            nlist = jade_utils.parse_signal(this.properties.global_signal);
         else {
-            nlist = parse_signal(this.properties.signal);
+            nlist = jade_utils.parse_signal(this.properties.signal);
             if (nlist.length > 0) {
                 // substitute external names for local labels that are connected to ports
                 // or add prefix to local labels
@@ -1287,7 +1287,7 @@ var jade_model = (function() {
             // possibly label other cp's for this device?
             this.parent.propagate_label(label);
         }
-        else if (!signal_equals(this.label, label))
+        else if (!jade_utils.signal_equals(this.label, label))
             // signal an error while generating netlist
             throw "Node has two conflicting sets of labels: [" + this.label + "], [" + label + "]";
     };

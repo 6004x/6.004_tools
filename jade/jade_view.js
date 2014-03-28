@@ -335,8 +335,8 @@ var jade_view = (function() {
     }
 
     Diagram.prototype.resize = function() {
-        var w = $(this.canvas).width() //this.canvas.clientWidth;
-        var h = $(this.canvas).height() //this.canvas.clientHeight;
+        var w = $(this.canvas).width(); //this.canvas.clientWidth;
+        var h = $(this.canvas).height(); //this.canvas.clientHeight;
 
         this.canvas.width = w*this.pixelRatio;
         this.canvas.height = h*this.pixelRatio;
@@ -1323,7 +1323,7 @@ var jade_view = (function() {
         e.height(h);
 
         // adjust size of all the tab bodies.  Account for tabs and status divs
-        h -=  e.find('.jade-tabs-div').outerHeight(true) + e.find('.jade-status').outerHeight(true);
+        h -=  39; //e.find('.jade-tabs-div').outerHeight(true) + e.find('.jade-status').outerHeight(true);
         var ediv,ew,eh;
         for (var tab in this.tabs) {
             ediv = this.tabs[tab][1]; // [tab div, body div]

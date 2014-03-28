@@ -359,6 +359,18 @@ var Editor = function(container, mode) {
         return document;
     };
 
+    var run_simulation = function(handler) {
+        $('#split_pane').click();
+        var pane = $('#simulation-pane');
+        pane.empty();
+
+        if (mCurrentDocument) {
+            // whenever a simuulation is run, autosaving would be nice.
+            do_autosave(mCurrentDocument);
+            handler(mCurrentDocument.editor.module,pane);
+        }
+    };
+
     var initialise = function() {
         // Build up our editor UI.
         mToolbarHolder = $('<div>');
@@ -373,6 +385,13 @@ var Editor = function(container, mode) {
         mRestoreAutosaveButton = self.addButtonGroup([
             new ToolbarButton('Restore Autosave', restore_autosave, "There is an autosaved document more recent than your last save.", "btn-warning")
         ]).hide();
+
+        var sim_group = [];
+        $.each(schematic_view.schematic_tools,function (index,info) {
+            sim_group.push(new ToolbarButton(info[0],function() { run_simulation(info[2]); },info[1]));
+        });
+        self.addButtonGroup(sim_group);
+
         mContainer.append(mToolbarHolder);
         mContainer.css('position', 'relative');
 

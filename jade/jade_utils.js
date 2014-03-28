@@ -411,6 +411,7 @@ var jade_utils = (function() {
         parse_number_alert: parse_number_alert,
         engineering_notation: engineering_notation,
         parse_source: parse_source,
+        signal_equals: signal_equals,
         parse_signal: parse_signal
     };
 }());

@@ -1,4 +1,4 @@
- /////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 //
 //  Circuit simulator
 //
@@ -27,6 +27,21 @@ var cktsim = (function() {
     //    "initial voltage"     ports: node; properties: IV, name
     // signals are just strings
     // src == {type: function_name, args: [number, ...]}
+
+    analog_modules = [
+        'analog/capacitor',
+        'analog/diode',
+        'analog/inductor',
+        'analog/initial_voltage',
+        'analog/i_probe',
+        'analog/i_source',
+        'analog/nfet',
+        'analog/opamp',
+        'analog/pfet',
+        'analog/resistor',
+        'analog/v_probe',
+        'analog/v_source'
+    ];
 
     // DC Analysis
     //   netlist: JSON description of the circuit
@@ -170,7 +185,7 @@ var cktsim = (function() {
                 ckt.tran_start(progress, 100, 0, tstop);
             }
             catch (e) {
-                progress.finish(e);
+                progress.finish(e.trace);
             }
         }
         return undefined;
@@ -2032,7 +2047,8 @@ var cktsim = (function() {
         Circuit: Circuit,
         dc_analysis: dc_analysis,
         ac_analysis: ac_analysis,
-        transient_analysis: transient_analysis
+        transient_analysis: transient_analysis,
+        analog_modules: analog_modules
     };
     return module;
 }());

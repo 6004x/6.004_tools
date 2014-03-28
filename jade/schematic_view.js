@@ -128,7 +128,7 @@ var schematic_view = (function() {
         var e = $(this.diagram.canvas);
 
         w -= e.outerWidth(true) - e.width();
-        h -= this.toolbar.height() + (e.outerHeight(true) - e.height());
+        h -= 30 /*this.toolbar.height()*/ + (e.outerHeight(true) - e.height());
         //console.log('sch: w='+w+', h='+h);
 
         e.width(w);
@@ -1000,7 +1000,7 @@ var schematic_view = (function() {
     // parse foo(1,2,3) into {type: foo, args: [1,2,3]}
     function parse_source(value) {
         var m = value.match(/(\w+)\s*\((.*?)\)\s*/);
-        var args = $.map(m[2].split(','),parse_number);
+        var args = $.map(m[2].split(','),jade_utils.parse_number);
         return {type: m[1], args: args};
     }
 
@@ -1009,7 +1009,7 @@ var schematic_view = (function() {
         // extract netlist and convert to form suitable for new cktsim.js
         // use modules in the analog libraries as the leafs
         var mlist = ['ground','jumper'];
-        $.each(jade_model.libraries.analog.modules,function (mname,module) { mlist.push(module.get_name()); });
+        $.each(cktsim.analog_modules,function (index,mname) { mlist.push(mname); });
         return cktsim_netlist(diagram.netlist(mlist));
     }
 
@@ -1022,53 +1022,54 @@ var schematic_view = (function() {
             var type = device[0];
             var c = device[1];
             var props = device[2];
-            if (type == 'analog:nfet')
+            if (type == 'analog/nfet')
                 revised_netlist.push({type: 'nfet',
                                       connections: c,
                                       properties: {name: props.name, 
-                                                   W: parse_number(props.W),
-                                                   L: parse_number(props.L)}
+                                                   W: jade_utils.parse_number(props.W),
+                                                   L: jade_utils.parse_number(props.L)}
                                      });
-            else if (type == 'analog:pfet')
+            else if (type == 'analog/pfet')
                 revised_netlist.push({type: 'pfet',
                                       connections: c,
                                       properties: {name: props.name, 
-                                                   W: parse_number(props.W),
-                                                   L: parse_number(props.L)}
+                                                   W: jade_utils.parse_number(props.W),
+                                                   L: jade_utils.parse_number(props.L)}
                                      });
-            else if (type == 'analog:r')
+            else if (type == 'analog/resistor')
                 revised_netlist.push({type: 'resistor',
                                       connections: c,
-                                      properties: {name: props.name, value: parse_number(props.r)}
+                                      properties: {name: props.name, value: jade_utils.parse_number(props.r)}
                                      });
-            else if (type == 'analog:l')
+            else if (type == 'analog/inductor')
                 revised_netlist.push({type: 'inductor',
                                       connections: c,
-                                      properties: {name: props.name, value: parse_number(props.l)}
+                                      properties: {name: props.name, value: jade_utils.parse_number(props.l)}
                                      });
-            if (type == 'analog:c')                revised_netlist.push({type: 'capacitor',
+            if (type == 'analog/capacitor')
+                revised_netlist.push({type: 'capacitor',
                                       connections: c,
-                                      properties: {name: props.name, value: parse_number(props.c)}
+                                      properties: {name: props.name, value: jade_utils.parse_number(props.c)}
                                      });
-            else if (type == 'analog:v')
+            else if (type == 'analog/v_source')
                 revised_netlist.push({type: 'voltage source',
                                       connections: c,
-                                      properties: {name: props.name, value: parse_source(props.value)}
+                                      properties: {name: props.name, value: jade_utils.parse_source(props.value)}
                                      });
-            else if (type == 'analog:i')
+            else if (type == 'analog/i_source')
                 revised_netlist.push({type: 'current source',
                                       connections: c,
-                                      properties: {name: props.name, value: parse_source(props.value)}
+                                      properties: {name: props.name, value: jade_utils.parse_source(props.value)}
                                      });
-            else if (type == 'analog:o')
+            else if (type == 'analog/opamp')
                 revised_netlist.push({type: 'opamp',
                                       connections: c,
-                                      properties: {name: props.name, A: parse_number(props.A)}
+                                      properties: {name: props.name, A: jade_utils.parse_number(props.A)}
                                      });
-            else if (type == 'analog:d')
+            else if (type == 'analog/diode')
                 revised_netlist.push({type: 'diode',
                                       connections: c,
-                                      properties: {name: props.name, area: parse_number(props.area)}
+                                      properties: {name: props.name, area: jade_utils.parse_number(props.area)}
                                      });
             else if (type == 'ground')   // ground connection
                 revised_netlist.push({type: 'ground',
@@ -1083,20 +1084,20 @@ var schematic_view = (function() {
                                       properties: {}
                                      });
             }
-            else if (type == 'analog:s')   // ground connection
+            else if (type == 'analog/v_probe')   // ground connection
                 revised_netlist.push({type: 'voltage probe',
                                       connections: c,
-                                      properties: {name: props.name, color: props.color, offset: parse_number(props.offset)}
+                                      properties: {name: props.name, color: props.color, offset: jade_utils.parse_number(props.offset)}
                                      });
-            else if (type == 'analog:a')   // current probe
+            else if (type == 'analog/i_probe')   // current probe
                 revised_netlist.push({type: 'voltage source',
                                       connections: c,
                                       properties: {name: props.name, value: {type: 'dc', args: [0]}}
                                      });
-            else if (type == 'analog:iv') // initial voltage
+            else if (type == 'analog/initial_voltage') // initial voltage
                 revised_netlist.push({type: 'initial voltage',
                                       connections: c,
-                                      properties: {name: props.name, IV: parse_number(props.IV)}
+                                      properties: {name: props.name, IV: jade_utils.parse_number(props.IV)}
                                      });
         });
 
@@ -1243,8 +1244,13 @@ var schematic_view = (function() {
         }
     }
 
+    function do_dc (module,pane) {
+        console.log(module);
+        pane.text('Hi there from do_dc!');
+    }
+
     // add DC analysis to tool bar
-    schematic_tools.push(['DC', 'DC', 'DC Analysis', dc_analysis]);
+    schematic_tools.push(['DC', 'DC Analysis', do_dc]);
 
     ///////////////////////////////////////////////////////////////////////////////
     //
@@ -1307,8 +1313,8 @@ var schematic_view = (function() {
             module.set_property('ac_fstop', ac_fstop);
             module.set_property('ac_source', ac_source);
 
-            ac_fstart = parse_number_alert(ac_fstart);
-            ac_fstop = parse_number_alert(ac_fstop);
+            ac_fstart = jade_utils.parse_number_alert(ac_fstart);
+            ac_fstop = jade_utils.parse_number_alert(ac_fstop);
             if (ac_fstart === undefined || ac_fstop === undefined) return;
 
             ac_analysis(netlist, diagram, ac_fstart, ac_fstop, ac_source);
@@ -1477,8 +1483,13 @@ var schematic_view = (function() {
         return max;
     }
 
+    function do_ac (module,pane) {
+        console.log(module);
+        pane.text('Hi there from do_ac!');
+    }
+
     // add AC analysis to tool bar
-    schematic_tools.push(['AC', 'AC', 'AC Analysis', setup_ac_analysis]);
+    schematic_tools.push(['AC', 'AC Analysis', do_dc]);
 
     ///////////////////////////////////////////////////////////////////////////////
     //
@@ -1519,7 +1530,7 @@ var schematic_view = (function() {
         diagram.dialog('Transient Analysis', content, function() {
             // retrieve parameters, remember for next time
             module.set_property('tran_tstop', fields[tstop_lbl].value);
-            var tstop = parse_number_alert(module.properties.tran_tstop);
+            var tstop = jade_utils.parse_number_alert(module.properties.tran_tstop);
 
             if (netlist.length > 0 && tstop !== undefined) {
                 // gather a list of nodes that are being probed.  These
@@ -1609,15 +1620,24 @@ var schematic_view = (function() {
         }
     }
 
+    function do_tran (module,pane) {
+        console.log(module);
+        pane.text('Hi there from do_tran!');
+    }
 
     // add transient analysis to tool bar
-    schematic_tools.push(['tran', 'TRAN', 'Transient Analysis', setup_transient_analysis]);
+    schematic_tools.push([$('<img>').attr('src',jade_icons.tran_icon), 'Transient Analysis', do_tran]);
 
     // exports
     return {
+        schematic_tools: schematic_tools,
         text_alignments: text_alignments,
         text_bbox: text_bbox,
         schematic_tools: schematic_tools,
-        print_netlist: print_netlist
+        cktsim_netlist: cktsim_netlist,
+        extract_nodes: extract_nodes,
+        print_netlist: print_netlist,
+        tran_progress_report: tran_progress_report,
+        interpolate: interpolate
     };
 })();

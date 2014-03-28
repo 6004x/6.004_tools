@@ -139,7 +139,7 @@ var test_view = (function() {
                         errors.push('Malformed '+line[0]+' statement: '+source[k]);
                         break;
                     }
-                    v = parse_number(line[i+2]);
+                    v = jade_utils.parse_number(line[i+2]);
                     if (isNaN(v)) {
                         errors.push('Unrecognized voltage specification "'+line[i+2]+'": '+source[k]);
                         break;
@@ -200,7 +200,7 @@ var test_view = (function() {
                         continue;
                     }
                     else if (line[i] == 'tran' && (i + 1 < line.length)) {
-                        v = parse_number(line[i+1]);
+                        v = jade_utils.parse_number(line[i+1]);
                         if (isNaN(v)) {
                             errors.push('Unrecognized tran duration "'+line[i+1]+'": '+source[k]);
                             break;
@@ -273,17 +273,18 @@ var test_view = (function() {
 
         var netlist;
         var mlist = ['ground','jumper'];
-        $.each(jade_model.libraries.analog.modules,function (mname,module) { mlist.push(module.get_name()); });
+        $.each(cktsim.analog_modules,function (index,mname) { mlist.push(mname); });
         try {
             netlist = this.module.aspect('schematic').netlist(mlist, '', {});
-            netlist = cktsim_netlist(netlist);
+            netlist = schematic_view.cktsim_netlist(netlist);
         }
         catch (e) {
+            console.log("Error extracting netlist:<p>" + e);
             this.status.html("Error extracting netlist:<p>" + e);
             return;
         }
 
-        var nodes = extract_nodes(netlist);  // get list of nodes in netlist
+        var nodes = schematic_view.extract_nodes(netlist);  // get list of nodes in netlist
         function check_node(node) {
             if (nodes.indexOf(node) == -1)
                 errors.push('Circuit does not have a node named "'+node+'".');
@@ -401,28 +402,38 @@ var test_view = (function() {
                           properties: {name: node+'_pulldown_source', value: {type: 'pwl', args: pulldown}}});
         });
         //console.log('stop time: '+time);
-        //print_netlist(netlist);
+        //schematic_view.print_netlist(netlist);
 
         // do the simulation
         var editor = this;  // for closure
-        var progress = tran_progress_report();
+        var progress = schematic_view.tran_progress_report();
         jade_view.window('Progress',progress[0],editor.textarea.offset());
         cktsim.transient_analysis(netlist, time, Object.keys(sampled_signals), function(percent_complete,results) {
             if (percent_complete === undefined) {
                 jade_view.window_close(progress[0].win);  // done with progress bar
 
+                // error? let user see what's up...
+                if (_.isString(results)) {
+                    editor.status.html(results);
+                    return;
+                }
+
                 // check the sampled node values for each test cycle
                 var errors = [];
                 $.each(sampled_signals,function(node,tvlist) {
-                    var times = results[node].xvalues;
-                    var observed = results[node].yvalues;
-                    $.each(tvlist,function(index,tvpair) {
-                        var v = interpolate(tvpair[0], times, observed);
-                        if ((tvpair[1] == 'L' && v > thresholds.Vil) ||
-                            (tvpair[1] == 'H' && v < thresholds.Vih)) 
-                            errors.push('Expected signal '+node+' to be a valid '+tvpair[1]+
-                                        ' at time '+engineering_notation(tvpair[0],2)+'s.');
-                    });
+                    if (!Object.prototype.hasOwnProperty.call(results, node))
+                        errors.push('No results for node '+node);
+                    else {
+                        var times = results[node].xvalues;
+                        var observed = results[node].yvalues;
+                        $.each(tvlist,function(index,tvpair) {
+                            var v = schematic_view.interpolate(tvpair[0], times, observed);
+                            if ((tvpair[1] == 'L' && v > thresholds.Vil) ||
+                                (tvpair[1] == 'H' && v < thresholds.Vih)) 
+                                errors.push('Expected signal '+node+' to be a valid '+tvpair[1]+
+                                            ' at time '+jade_utils.engineering_notation(tvpair[0],2)+'s.');
+                        });
+                    }
                 });
                 if (errors.length > 0) {
                     var postscript = '';
@@ -431,6 +442,7 @@ var test_view = (function() {
                         postscript = '<br>...';
                     }
                     editor.status.html('<li>'+errors.join('<li>')+postscript);
+                    return;
                 }
                 else editor.status.text('Test succesful!');
 
@@ -520,4 +532,11 @@ var test_view = (function() {
     Test.prototype.json = function() {
         return [this.type, this.test];
     };
+
+    function do_test (module,pane) {
+        console.log(module);
+        pane.text('Hi there from do_test!');
+    }
+
+    schematic_view.schematic_tools.push([$('<img>').attr('src',jade_icons.check_icon), 'Run test', do_test]);
  })();
