@@ -1,0 +1,26 @@
+.global gnd vdd
+VDD vdd gnd 1
+.options vil=0.2 vih=0.8
+
+.include "/shared/jsim/lab1checkoff.jsim"
+
+// inverter
+.subckt inv a z
+N1 z a gnd w=16
+P1 z a vdd w=16
+.ends
+
+// not F = C + AB
+.subckt notF a b c x
+Pa vdd a n1
+Pb vdd b n1
+Pc n1 c x
+Nc x c gnd
+Na x a n2
+Nb n2 b gnd
+.ends
+
+.subckt F a b c z
+X1 notF a b c x
+X2 inv x z
+.ends

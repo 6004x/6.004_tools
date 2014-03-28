@@ -1,0 +1,118 @@
+// set up power supply node and logic thresholds
+.global vdd
+VDD vdd gnd 1.0v
+.options vil=0.2 vih=0.8
+
+.include "/shared/jsim/stdcell.jsim"
+.include "/shared/jsim/lab6ctl.jsim"  // PC test jig
+
+.include "alu.jsim"
+
+// PC
+.subckt pc clk reset ia[31:0]
+Xpcplus4 FA ia[31:0] gnd#29 vdd gnd#2 cout[30:0] gnd pcplus4[31:0] cout[31:0]
+Xpcnext mux2 reset#32 pcplus4[31:0] gnd#32 pcnext[31:0]
+Xia dreg pcnext[31:0] clk#32 ia[31:0]
+.ends
+
+// REGFILE
+.subckt regfile clk werf ra2sel ra[4:0] rb[4:0] rc[4:0] wdata[31:0] radata[31:0] rbdata[31:0]
+
+Xra2mux mux2 ra2sel#5 rb[4:0] rc[4:0] ra2mux[4:0]
+
+Gregfile memory
++ vdd gnd gnd  ra[4:0]     adata[31:0] // A read port
++ vdd gnd gnd  ra2mux[4:0] bdata[31:0] // B read port
++ gnd clk werf rc[4:0]     wdata[31:0] // write port
++ width=32 nlocations=31
+
+// if ra[4:0] == 0b11111, return 0 on radata[31:0]
+Xra1 and4 ra[3:0] ra1
+Xra2 nand2 ra[4] ra1 ra2
+Xradata and2 ra2#32 adata[31:0] radata[31:0]
+
+// if ra2mux[4:0] == 0b11111, return 0 on rbdata[31:0]
+Xrb1 and4 ra2mux[3:0] rb1
+Xrb2 nand2 ra2mux[4] rb1 rb2
+Xrbdata and2 rb2#32 bdata[31:0] rbdata[31:0]
+
+.ends
+
+// CTL
+.subckt ctl reset id[31:26] ra2sel bsel alufn[4:0] wdsel[1:0] werf moe wr
+
+Gctl memory vdd gnd gnd id[31:26]    // one read port
++ pcsel[2:0] wasel asel ra2sel bsel alufn[4:0] wdsel[1:0] werf moe xwr
++ width=17 nlocations=64 contents=(
++  0b00000000000000000         // opcode=0b000000
++  0b00000000000000000         // opcode=0b000001
++  0b00000000000000000         // opcode=0b000010
++  0b00000000000000000         // opcode=0b000011
++  0b00000000000000000         // opcode=0b000100
++  0b00000000000000000         // opcode=0b000101
++  0b00000000000000000         // opcode=0b000110
++  0b00000000000000000         // opcode=0b000111
++  0b00000000000000000         // opcode=0b001000
++  0b00000000000000000         // opcode=0b001001
++  0b00000000000000000         // opcode=0b001010
++  0b00000000000000000         // opcode=0b001011
++  0b00000000000000000         // opcode=0b001100
++  0b00000000000000000         // opcode=0b001101
++  0b00000000000000000         // opcode=0b001110
++  0b00000000000000000         // opcode=0b001111
+
++  0b00000000000000000         // opcode=0b010000
++  0b00000000000000000         // opcode=0b010001
++  0b00000000000000000         // opcode=0b010010
++  0b00000000000000000         // opcode=0b010011
++  0b00000000000000000         // opcode=0b010100
++  0b00000000000000000         // opcode=0b010101
++  0b00000000000000000         // opcode=0b010110
++  0b00000000000000000         // opcode=0b010111
++  0b00000010000010110         // opcode=0b011000 LD
++  0b00000110000000001         // opcode=0b011001 ST
++  0b00000000000000000         // opcode=0b011010
++  0b00000000000000000         // opcode=0b011011 JMP
++  0b00000000000000000         // opcode=0b011100 BEQ
++  0b00000000000000000         // opcode=0b011101 BNE
++  0b00000000000000000         // opcode=0b011110
++  0b00000000000000000         // opcode=0b011111 LDR
+
++  0b00000000000001100         // opcode=0b100000 ADD
++  0b00000000000101100         // opcode=0b100001 SUB
++  0b00000000000000100         // opcode=0b100010 MUL
++  0b00000000000000100         // opcode=0b100011 DIV
++  0b00000000010101100         // opcode=0b100100 CMPEQ
++  0b00000000011101100         // opcode=0b100101 CMPLT
++  0b00000000110101100         // opcode=0b100110 CMPLE
++  0b00000000000000000         // opcode=0b100111
++  0b00000001100001100         // opcode=0b101000 AND
++  0b00000001111001100         // opcode=0b101001 OR
++  0b00000001011001100         // opcode=0b101010 XOR
++  0b00000001100101100         // opcode=0b101011 XNOR
++  0b00000000100001100         // opcode=0b101100 SHL
++  0b00000000100101100         // opcode=0b101101 SHR
++  0b00000000101101100         // opcode=0b101110 SRA
++  0b00000000000000000         // opcode=0b101111
+
++  0b00000010000001100         // opcode=0b110000 ADDC
++  0b00000010000101100         // opcode=0b110001 SUBC
++  0b00000000000001100         // opcode=0b110010 MULC
++  0b00000000000001100         // opcode=0b110011 DIVC
++  0b00000010010101100         // opcode=0b110100 CMPEQC
++  0b00000010011101100         // opcode=0b110101 CMPLTC
++  0b00000010110101100         // opcode=0b110110 CMPLEC
++  0b00000000000000000         // opcode=0b110111
++  0b00000011100001100         // opcode=0b111000 ANDC
++  0b00000011111001100         // opcode=0b111001 ORC
++  0b00000011011001100         // opcode=0b111010 XORC
++  0b00000011100101100         // opcode=0b111011 XNORC
++  0b00000010100001100         // opcode=0b111100 SHLC
++  0b00000010100101100         // opcode=0b111101 SHRC
++  0b00000010101101100         // opcode=0b111110 SRAC
++  0b00000000000000000         // opcode=0b111111
++ )
+
+Xwr1 inverter reset _reset
+Xwr2 and2 _reset xwr wr
+.ends

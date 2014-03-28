@@ -1,5 +1,4 @@
-#! /usr/bin/python
-# -*- mode: python -*-
+#! /usr/bin/env python
 
 # cgi-bin file server for 6.004 tools
 
@@ -63,24 +62,28 @@ try:
     # set up response
     response = {}
 
-    # validate user by checking to see if course knows who they are
-    user = os.environ.get('SSL_CLIENT_S_DN_Email','???')
-    if user == '???':
-        default_headers()
-        print json.dumps({'_error': 'No certificate'});
-        sys.exit()
+    if os.environ.get('SERVER_NAME') == 'localhost':
+        user = 'bitdiddle'
+        user_dir = '/Users/cjt/git/6.004x/server/files'
     else:
-        user = user.lower()
+        # validate user by checking to see if course knows who they are
+        user = os.environ.get('SSL_CLIENT_S_DN_Email','???')
+        if user == '???':
+            default_headers()
+            print json.dumps({'_error': 'No certificate'});
+            sys.exit()
+        else:
+            user = user.lower()
 
-    # find user's files, creating a 'files' directory if it doesn't exist
-    user_dir = os.path.join(students,user.split('@')[0])
-    if not os.path.exists(user_dir):
-        default_headers()
-        print json.dumps({'_error': 'Invalid user'})
-        sys.exit()
-    user_dir = os.path.join(user_dir,'files')
-    if not os.path.exists(user_dir):
-        os.mkdir(user_dir,0666)
+        # find user's files, creating a 'files' directory if it doesn't exist
+        user_dir = os.path.join(students,user.split('@')[0])
+        if not os.path.exists(user_dir):
+            default_headers()
+            print json.dumps({'_error': 'Invalid user'})
+            sys.exit()
+        user_dir = os.path.join(user_dir,'files')
+        if not os.path.exists(user_dir):
+            os.mkdir(user_dir,0666)
 
     # process request
     args = cgi.FieldStorage()

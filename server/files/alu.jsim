@@ -1,0 +1,188 @@
+// ALU circuits for Labs 3 & 6
+
+.subckt BOOL alufn[3:0] A[31:0] B[31:0] OUT[31:0]
+Xbool mux4 A[31:0] B[31:0] alufn[0]#32 alufn[1]#32 alufn[2]#32 alufn[3]#32 OUT[31:0]
+.ends
+
+// carry-lookahead adder
+.subckt aoi21 a b c z
+X1 and2 a b aandb
+X2 nor2 aandb c z
+.ends
+
+.subckt oai21 a b c z
+X1 or2 a b aorb
+X2 nand2 aorb c z
+.ends
+
+.subckt cla_add a b cin_bar sum p g
+X1 xor2 a b p
+X2 and2 a b g
+X3 xnor2 p cin_bar sum
+.ends
+
+.subckt cla_lookahead p00 g00 p01 g01 cin pbar1 gbar1 cbar0 cbar1
+X1 nand2 p00 p01 pbar1
+X2 aoi21 p01 g00 g01 gbar1
+X3 inverter cin cbar0
+X4 aoi21 p00 cin g00 cbar1
+.ends
+
+.subckt cla_lookahead_bar pbar00 gbar00 pbar01 gbar01 cin_bar p1 g1 c0 c1
+X1 nor2 pbar00 pbar01 p1
+X2 oai21 pbar01 gbar00 gbar01 g1
+X3 inverter cin_bar c0
+X4 oai21 pbar00 cin_bar gbar00 c1
+.ends
+
+.subckt cla_add_2 a[1:0] b[1:0] cin sum[1:0] pbar1 gbar1
+X1 cla_add a[0] b[0] cbar0 sum[0] p00 g00
+X2 cla_add a[1] b[1] cbar1 sum[1] p01 g01
+X3 cla_lookahead p00 g00 p01 g01 cin pbar1 gbar1 cbar0 cbar1
+.ends
+
+.subckt cla_add_4 a[3:0] b[3:0] cin_bar sum[3:0] p2 g2
+X1 cla_add_2 a[1:0] b[1:0] c0 sum[1:0] pbar10 gbar10
+X2 cla_add_2 a[3:2] b[3:2] c2 sum[3:2] pbar11 gbar11
+X3 cla_lookahead_bar pbar10 gbar10 pbar11 gbar11 cin_bar p2 g2 c0 c2
+.ends
+
+.subckt cla_add_8 a[7:0] b[7:0] cin sum[7:0] pbar3 gbar3
+X1 cla_add_4 a[3:0] b[3:0] cbar0 sum[3:0] p20 g20
+X2 cla_add_4 a[7:4] b[7:4] cbar4 sum[7:4] p21 g21
+X3 cla_lookahead p20 g20 p21 g21 cin pbar3 gbar3 cbar0 cbar4
+.ends
+
+.subckt cla_add_16 a[15:0] b[15:0] cin_bar sum[15:0] p4 g4
+X1 cla_add_8 a[7:0] b[7:0] c0 sum[7:0] pbar30 gbar30
+X2 cla_add_8 a[15:8] b[15:8] c8 sum[15:8] pbar31 gbar31
+X3 cla_lookahead_bar pbar30 gbar30 pbar31 gbar31 cin_bar p4 g4 c0 c8
+.ends
+
+.subckt cla_add_32 a[31:0] b[31:0] cin sum[31:0]
+X1 cla_add_16 a[15:0] b[15:0] cbar0 sum[15:0] p40 g40
+X2 cla_add_16 a[31:16] b[31:16] cbar16 sum[31:16] p41 g41
+X3 cla_lookahead p40 g40 p41 g41 cin pbar5 gbar5 cbar0 cbar16
+.ends
+
+// optional multiplier
+
+.subckt mulbit a b ppin cin ppout cout
+Xpp and2 a b pp
+Xfa FA ppin pp cin ppout cout
+.ends
+
+.subckt mul32 a[31:0] b[31:0] product[31:0]
+Xpp00 and2   a[31:0]  b[0]#32                                pp00_[31:1]   product[0]
+Xpp01 mulbit a[30:0]  b[1]#31 pp00_[31:1]  ppc01_[30:1]  gnd pp01_[31:2]   product[1] ppc01_[31:1]
+Xpp02 mulbit a[29:0]  b[2]#30 pp01_[31:2]  ppc02_[30:2]  gnd pp02_[31:3]   product[2] ppc02_[31:2]
+Xpp03 mulbit a[28:0]  b[3]#29 pp02_[31:3]  ppc03_[30:3]  gnd pp03_[31:4]   product[3] ppc03_[31:3]
+Xpp04 mulbit a[27:0]  b[4]#28 pp03_[31:4]  ppc04_[30:4]  gnd pp04_[31:5]   product[4] ppc04_[31:4]
+Xpp05 mulbit a[26:0]  b[5]#27 pp04_[31:5]  ppc05_[30:5]  gnd pp05_[31:6]   product[5] ppc05_[31:5]
+Xpp06 mulbit a[25:0]  b[6]#26 pp05_[31:6]  ppc06_[30:6]  gnd pp06_[31:7]   product[6] ppc06_[31:6]
+Xpp07 mulbit a[24:0]  b[7]#25 pp06_[31:7]  ppc07_[30:7]  gnd pp07_[31:8]   product[7] ppc07_[31:7]
+Xpp08 mulbit a[23:0]  b[8]#24 pp07_[31:8]  ppc08_[30:8]  gnd pp08_[31:9]   product[8] ppc08_[31:8]
+Xpp09 mulbit a[22:0]  b[9]#23 pp08_[31:9]  ppc09_[30:9]  gnd pp09_[31:10]  product[9] ppc09_[31:9]
+Xpp10 mulbit a[21:0] b[10]#22 pp09_[31:10] ppc10_[30:10] gnd pp10_[31:11] product[10] ppc10_[31:10]
+Xpp11 mulbit a[20:0] b[11]#21 pp10_[31:11] ppc11_[30:11] gnd pp11_[31:12] product[11] ppc11_[31:11]
+Xpp12 mulbit a[19:0] b[12]#20 pp11_[31:12] ppc12_[30:12] gnd pp12_[31:13] product[12] ppc12_[31:12]
+Xpp13 mulbit a[18:0] b[13]#19 pp12_[31:13] ppc13_[30:13] gnd pp13_[31:14] product[13] ppc13_[31:13]
+Xpp14 mulbit a[17:0] b[14]#18 pp13_[31:14] ppc14_[30:14] gnd pp14_[31:15] product[14] ppc14_[31:14]
+Xpp15 mulbit a[16:0] b[15]#17 pp14_[31:15] ppc15_[30:15] gnd pp15_[31:16] product[15] ppc15_[31:15]
+Xpp16 mulbit a[15:0] b[16]#16 pp15_[31:16] ppc16_[30:16] gnd pp16_[31:17] product[16] ppc16_[31:16]
+Xpp17 mulbit a[14:0] b[17]#15 pp16_[31:17] ppc17_[30:17] gnd pp17_[31:18] product[17] ppc17_[31:17]
+Xpp18 mulbit a[13:0] b[18]#14 pp17_[31:18] ppc18_[30:18] gnd pp18_[31:19] product[18] ppc18_[31:18]
+Xpp19 mulbit a[12:0] b[19]#13 pp18_[31:19] ppc19_[30:19] gnd pp19_[31:20] product[19] ppc19_[31:19]
+Xpp20 mulbit a[11:0] b[20]#12 pp19_[31:20] ppc20_[30:20] gnd pp20_[31:21] product[20] ppc20_[31:20]
+Xpp21 mulbit a[10:0] b[21]#11 pp20_[31:21] ppc21_[30:21] gnd pp21_[31:22] product[21] ppc21_[31:21] 
+Xpp22 mulbit a[9:0]  b[22]#10 pp21_[31:22] ppc22_[30:22] gnd pp22_[31:23] product[22] ppc22_[31:22]
+Xpp23 mulbit a[8:0]  b[23]#9  pp22_[31:23] ppc23_[30:23] gnd pp23_[31:24] product[23] ppc23_[31:23]
+Xpp24 mulbit a[7:0]  b[24]#8  pp23_[31:24] ppc24_[30:24] gnd pp24_[31:25] product[24] ppc24_[31:24]
+Xpp25 mulbit a[6:0]  b[25]#7  pp24_[31:25] ppc25_[30:25] gnd pp25_[31:26] product[25] ppc25_[31:25]
+Xpp26 mulbit a[5:0]  b[26]#6  pp25_[31:26] ppc26_[30:26] gnd pp26_[31:27] product[26] ppc26_[31:26] 
+Xpp27 mulbit a[4:0]  b[27]#5  pp26_[31:27] ppc27_[30:27] gnd pp27_[31:28] product[27] ppc27_[31:27]
+Xpp28 mulbit a[3:0]  b[28]#4  pp27_[31:28] ppc28_[30:28] gnd pp28_[31:29] product[28] ppc28_[31:28]
+Xpp29 mulbit a[2:0]  b[29]#3  pp28_[31:29] ppc29_[30:29] gnd pp29_[31:30] product[29] ppc29_[31:29]
+Xpp30 mulbit a[1:0]  b[30]#2  pp29_[31:30] ppc30_[30]    gnd pp30_[31]    product[30] ppc30_[31:30]
+
+Xppx nand2 a[0] b[31] pp31_[31]
+Xpp31 xnor2 pp30_[31] pp31_[31] product[31]   // just the part of FA that we need (with cin = VDD)
+.ends
+
+// ripple-carry adder
+
+.subckt FA a b cin s cout
+Xg1 nand2 a b gn
+Xp1 xor2 a b p
+Xxor xor2 cin p s
+Xpc nand2 p cin propn
+Xco nand2 propn gn cout
+.ends
+
+.subckt ripple_add_32 a[31:0] b[31:0] cin sum[31:0]
+Xfa FA a[31:0] b[31:0] c[31:1] cin sum[31:0] c[32:1]
+.ends
+
+.subckt ARITH op[1:0] a[31:0] b[31:0] out[31:0] z v n
+Xinv inverter_4 op[0] op0n
+Xxr xnor2 b[31:0] op0n#32 xb[31:0]
+
+// only one of the following lines!
+Xadd ripple_add_32 a[31:0] xb[31:0] op[0] s[31:0]
+//Xadd cla_add_32 a[31:0] xb[31:0] op[0] s[31:0] 
+
+Xz0 nor4 s[31:0] za[7:0]
+Xz1 nand4 za[7:0] zb[1:0]
+Xz2 nor2 zb[0] zb[1] z
+
+Xv0 inverter a[31] a31n
+Xv1 inverter xb[31] xb31n
+Xv2 inverter s[31] s31n
+Xv3 nand3 a[31] xb[31] s31n v0
+Xv4 nand3 a31n xb31n s[31] v1
+Xv5 nand2 v0 v1 v
+
+Xn inverter s31n n
+
+// accommodate multiplier
+Xmult constant0 mult[31:0]
+//Xmult mul32 a[31:0] b[31:0] mult[31:0]
+Xmux mux2 op[1]#32 s[31:0] mult[31:0] out[31:0]
+.ends
+
+.subckt SHIFT alufn[1:0] a[31:0] b[4:0] shift[31:0]
+Xbuf buffer b[4:0] bb[4:0]
+Xsin and2 a[31] alufn[1] sin
+Xmux0 mux2 alufn[0]#32 a[31:0] a[0:31] u[31:0]
+Xmux1 mux2 bb[4]#32  u[31:0] u[15:0] sin#16 v[31:0]
+Xmux2 mux2 bb[3]#32  v[31:0] v[23:0] sin#8 w[31:0]
+Xmux3 mux2 bb[2]#32  w[31:0] w[27:0] sin#4 x[31:0]
+Xmux4 mux2 bb[1]#32  x[31:0] x[29:0] sin#2 y[31:0]
+Xmux5 mux2 bb[0]#32  y[31:0] y[30:0] sin z[31:0]
+Xmux6 mux2 alufn[0]#32 z[31:0] z[0:31] shift[31:0]
+.ends
+
+.subckt CMP op3 op1 z v n cmp[31:0]
+Xc1 xor2 n v n_xor_v
+Xc7 inverter op1 op1n
+Xc2 nand2 op1n z n1
+Xc3 or2 op3 op1 lt
+Xc4 nand2 lt n_xor_v n2
+Xc5 nand2 n1 n2 cmp[0]
+Xc6 constant0 cmp[31:1]
+.ends
+
+.subckt alu alufn[4:0] a[31:0] b[31:0] out[31:0] z v n
+
+// Generate outputs from each of BOOL, SHIFT, ARITH, CMP subcircuits:
+xbool BOOL alufn[3:0] a[31:0] b[31:0] boolout[31:0]
+xshift SHIFT alufn[1:0] a[31:0] b[4:0] shiftout[31:0]
+xarith ARITH alufn[1:0] a[31:0] b[31:0] arithout[31:0] z v n
+xcmp CMP alufn[3] alufn[1] z v n cmpout[31:0]
+
+// Combine them, using three multiplexors:
+xmux1 mux2 alufn[4]#32 nonbool[31:0] boolout[31:0] out[31:0]
+xmux2 mux2 alufn[2]#32 arithshift[31:0] cmpout[31:0] nonbool[31:0]
+xmux3 mux2 alufn[3]#32 arithout[31:0] shiftout[31:0] arithshift[31:0]
+
+.ends

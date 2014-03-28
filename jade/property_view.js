@@ -24,7 +24,7 @@ var property_view = (function() {
         this.build_table();
     }
 
-    PropertyEditor.prototype.resize = function(dx, dy, selected) {};
+    PropertyEditor.prototype.resize = function(w, h, selected) {};
 
     PropertyEditor.prototype.show = function() {};
 

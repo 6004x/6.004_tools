@@ -11,6 +11,7 @@ var Editor = function(container, mode) {
     var mTabHolder; // Element holding the tabs
     var mCurrentDocument = null; // Current document object
     var mExpectedHeight = null; // The height the entire editor view (including toolbars and tabs) should maintain
+    var mExpectedWidth = null;
     var mUntitledDocumentCount = 0; // The number of untitled documents (used to name the next one)
     var mSaveButtons = null;   //cjt: so we can manage SAVE/SAVE ALL/REVERT buttons as a group
     var mRestoreAutosaveButton = null;
@@ -79,47 +80,6 @@ var Editor = function(container, mode) {
         });
     };
 
-    // fake editor
-    function CM(container, content, read_only) {
-        var generation = 0;
-        var wrapper = $('<div style="background-color: #E0FFE0;"></div>');
-
-        this.changeGeneration = function () {
-            return generation;
-        }
-
-        this.getValue = function () {
-            return wrapper.text();
-        }
-
-        this.setValue = function (value) {
-            if (value) wrapper.text(value);
-        }
-
-        this.refresh = function () {
-        }
-
-        this.getInputField = function () {
-            return wrapper;
-        }
-
-        this.focus = function () {
-        }
-
-        this.isClean = function(generation) {
-            return true;
-        }
-
-        this.on = function() {
-        }
-
-        // set up initial contents
-        this.setValue(content);
-
-        // add to parent
-        container.append(wrapper);
-    }
-
     // Opens a new tab with the given filename and content.
     // filename should be a full path to the file. If not given, the document will be called 'untitled'
     // If activate is true, the tab will be focused. If false, the tab will be focused only if there are
@@ -139,7 +99,7 @@ var Editor = function(container, mode) {
         var id = _.uniqueId('edit_tab');
         var editPane = $('<div>', {'class': 'tab-pane', id: id}).hide();
         mContainer.append(editPane);
-        var editor = new jade_view.Jade(editPane, filename, content, !!is_readonly);
+        var editor = new jade_view.Jade(editPane, filename, !!is_readonly);
         var tab = $('<li>');
 
         var doc = {
@@ -208,7 +168,7 @@ var Editor = function(container, mode) {
         mOpenDocuments[filename] = doc;
         store_tabs();
         // If we know how tall we should be, arrange to make sure everything still fits in that space.
-        if(mExpectedHeight) self.setHeight(mExpectedHeight);
+        if(mExpectedHeight) self.resize(mExpectedWidth,mExpectedHeight);
         // HACK: make sure something understands our window size.
         $(window).resize();
     };
@@ -227,16 +187,24 @@ var Editor = function(container, mode) {
     // Sets the vertical height of the entire editor (including toolbars, etc.), in pixels.
     // This should be called whenever the available display area changes.
     // (Why does doing anything vertically suck so much?)
-    this.setHeight = function(height) {
+    this.resize = function(width,height) {
+        mExpectedWidth = width;
+        mExpectedHeight = height;
+
         if(!mCurrentDocument) return; // If we don't have a current document there is no height to set, so don't die over it.
 
-        mExpectedHeight = height;
+        // allow for margins, border, padding
+        width -= mContainer.outerWidth(true) - mContainer.width();
+        height -= mContainer.outerHeight(true) - mContainer.height();
+
         mContainer.height(height);
-        var offset = mCurrentDocument.el.position().top; // Gets the amount of unavailable space.
+        mContainer.width(width);
+
+        height -= $('.btn-toolbar',mContainer).outerHeight(true) + $('.nav-tabs',mContainer).outerHeight(true);
+        //console.log('editor: w='+width+', h='+height);
         _.each(mOpenDocuments, function(doc) {
-                //doc.editor.getWrapperElement().style.height = (height - offset) + 'px';
-                doc.editor.setHeight(height - offset);
-            doc.editor.refresh();
+            doc.editor.resize(width,height);
+            //doc.editor.refresh();
         });
     };
 

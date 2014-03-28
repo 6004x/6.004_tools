@@ -14,10 +14,11 @@ var schematic_view = (function() {
 
     var schematic_tools = [];
 
-    function Schematic(div, parent) {
-        this.jade = parent;
-        this.status = parent.status;
-        this.components = parent.parent.attr('components');
+    function Schematic(div, jade) {
+        this.parent = $(div);
+        this.jade = jade;
+        this.status = jade.status;
+        //this.components = parent.parent.attr('components');
 
         this.diagram = new jade_view.Diagram(this, 'jade-schematic-diagram');
         div.diagram = this.diagram;
@@ -95,6 +96,7 @@ var schematic_view = (function() {
 
         this.toolbar.add_spacer();
 
+        /*
         // add external tools
         var tools = parent.parent.attr('tools');
         if (tools !== undefined) tools = tools.split(',');
@@ -104,19 +106,13 @@ var schematic_view = (function() {
                 continue;  // skip tool if it's not on the list
             this.toolbar.add_tool(info[0], info[1], info[2], info[3], info[4]);
         }
+         */
 
         div.appendChild(this.toolbar.toolbar[0]);
 
         div.appendChild(this.diagram.canvas);
         this.aspect = new jade_model.Aspect('untitled', null);
         this.diagram.set_aspect(this.aspect);
-
-        // set up parts bin
-        /*
-        this.parts_bin = new PartsBin(this);
-        div.appendChild(this.parts_bin.top_level);
-        */
-
     }
 
     function part_tool(tool,diagram,pname) {
@@ -127,11 +123,16 @@ var schematic_view = (function() {
         tool.mouseup(function(event) { diagram.new_part = undefined; });
     }
 
-    Schematic.prototype.resize = function(dx, dy, selected) {
+    Schematic.prototype.resize = function(w, h, selected) {
         // schematic canvas
         var e = $(this.diagram.canvas);
-        e.width(dx + e.width());
-        e.height(dy + e.height());
+
+        w -= e.outerWidth(true) - e.width();
+        h -= this.toolbar.height() + (e.outerHeight(true) - e.height());
+        //console.log('sch: w='+w+', h='+h);
+
+        e.width(w);
+        e.height(h);
 
         //this.parts_bin.resize(dx, dy, selected);
 
@@ -140,13 +141,12 @@ var schematic_view = (function() {
     };
 
     Schematic.prototype.show = function() {
-        this.diagram.resize();
-        //this.parts_bin.show();
+        this.diagram.canvas.focus(); // capture key strokes
+        this.resize(this.parent.width(),this.parent.height(),true);
     };
 
     Schematic.prototype.set_aspect = function(module) {
         this.diagram.set_aspect(module.aspect(Schematic.prototype.editor_name));
-        //this.parts_bin.show();
     };
 
     Schematic.prototype.redraw = function(diagram) {
@@ -1613,9 +1613,11 @@ var schematic_view = (function() {
     // add transient analysis to tool bar
     schematic_tools.push(['tran', 'TRAN', 'Transient Analysis', setup_transient_analysis]);
 
-    return {text_alignments: text_alignments,
-            text_bbox: text_bbox,
-            schematic_tools: schematic_tools,
-            print_netlist: print_netlist,
-            };
+    // exports
+    return {
+        text_alignments: text_alignments,
+        text_bbox: text_bbox,
+        schematic_tools: schematic_tools,
+        print_netlist: print_netlist
+    };
 })();

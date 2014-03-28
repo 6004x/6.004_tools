@@ -1,0 +1,284 @@
+// Beta, as described in Lab 6 handout (cjt)
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+///
+///	Adder32
+///
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+.subckt FA a b cin s cout
+Xp xor2 a b p
+Xs xor2 p cin s
+Xg nand2 a b g_
+Xpc nand2 p cin prop_
+Xcout nand2 g_ prop_ cout
+.ends
+
+// ADD: op0 = 0
+// SUB: op0 = 1  (also CMPxx)
+.subckt adder32 op[0] a[31:0] b[31:0] s[31:0] z v n
+Xinv inverter op[0] op0n
+
+Xxr xnor2 b[31:0] op0n#32 xb[31:0]
+
+Xfa FA a[31:0] xb[31:0] c[31:1] op[0] s[31:0] c[32:1]
+
+Xz0 nor4 s[31:0] za[7:0]
+Xz1 nand4 za[7:0] zb[1:0]
+Xz20 nor2 zb[0] zb[1] z
+
+Xv0 inverter a[31] a31n
+Xv1 inverter xb[31] xb31n
+Xv2 inverter s[31] s31n
+Xv3 nand3 a[31] xb[31] s31n v0
+Xv4 nand3 a31n xb31n s[31] v1
+Xv5 nand2 v0 v1 v
+
+Xn inverter s31n n
+.ends
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+///
+///	Compare32
+///
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// CMPEQ: op[2:1] = 0b01
+// CMPLT: op[2:1] = 0b10
+// CMPLE: op[2:1] = 0b11
+.subckt compare32 op2 op1 z v n cmp[31:0]
+Xc1 xor2 n v n_xor_v
+Xc2 nand2 op1 z n1
+Xc3 nand2 op2 n_xor_v n2
+Xc4 nand2 n1 n2 cmp[0]
+Xc5 constant0 cmp[31:1]
+.ends
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+///
+///	barrel shifter
+///
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// SHL: op[1:0] = 0b00
+// SHR: op[1:0] = 0b01
+// SRA: op[1:0] = 0b11
+.subckt shift32 op1 op0 a[31:0] b[4:0] shift[31:0]
+Xsin and2 a[31] op1 sin
+Xmux0 mux2 op0#32 a[31:0] a[0:31] u[31:0]
+Xmux1 mux2 b[4]#32  u[31:0] u[15:0] sin#16 v[31:0]
+Xmux2 mux2 b[3]#32  v[31:0] v[23:0] sin#8 w[31:0]
+Xmux3 mux2 b[2]#32  w[31:0] w[27:0] sin#4 x[31:0]
+Xmux4 mux2 b[1]#32  x[31:0] x[29:0] sin#2 y[31:0]
+Xmux5 mux2 b[0]#32  y[31:0] y[30:0] sin z[31:0]
+Xmux6 mux2 op0#32 z[31:0] z[0:31] shift[31:0]
+.ends
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+///
+///	boolean unit
+///
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// AND: op[3:0] = 0b1000
+// OR:  op[3:0] = 0b1110
+// XOR: op[3:0] = 0b0110
+// A:   op[3:0] = 0b1010
+.subckt boole32 op[3:0] a[31:0] b[31:0] z[31:0]
+Xmux mux4 a[31:0] b[31:0] op[0]#32 op[1]#32 op[2]#32 op[3]#32 z[31:0]
+.ends
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+///
+///	alu
+///
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// op     543210
+// ADD:	  00---0	0x00
+// SUB:	  00---1	0x01
+// AND:	  011000	0x18
+// OR:	  011110	0x1E
+// XOR:	  010110	0x16
+// LDR:	  011010	0x1A
+// SHL:	  10--00	0x20
+// SHR:	  10--01	0x21
+// SRA:	  10--11	0x23
+// CMPEQ: 11-011	0x33
+// CMPLT: 11-101	0x35
+// CMPLE: 11-111	0x37
+.subckt alu op[5:0] a[31:0] b[31:0] alu[31:0]
+Xadder adder32 op[0] a[31:0] b[31:0] sum[31:0] z v n
+Xcompare compare32 op[2] op[1] z v n compare[31:0]
+Xboole boole32 op[3:0] a[31:0] b[31:0] boole[31:0]
+Xshift shift32 op[1:0] a[31:0] b[4:0] shift[31:0]
+
+Xmux mux4 op[4]#32 op[5]#32 sum[31:0] boole[31:0] shift[31:0] compare[31:0] alu[31:0]
+.ends
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+///
+///	beta
+///
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+.subckt beta clk reset irq ia[31:0] id[31:0] ma[31:0] moe mrd[31:0] wr mwd[31:0]
+
+// control logic
+Gctl memory vdd gnd gnd id[31:26]
++ branch btest pcsel[1:0] ra2sel xwasel asel bsel alufn[5:0] xwdsel[1:0] xwerf moe xwr
++ width=19 nlocations=64 contents=(
++ // b ppr   aaaaaaww
++ // rbccaw  lllllldd
++ // atss2aabuuuuuussw
++ // neeessssffffffeeemx
++ // cslleeeennnnnnllrow
++ // ht10llll54321010fer
++  0b0011010000000000100  // opcode 0b000000
++  0b0011010000000000100  // opcode 0b000001
++  0b0011010000000000100  // opcode 0b000010
++  0b0011010000000000100  // opcode 0b000011
++  0b0011010000000000100  // opcode 0b000100
++  0b0011010000000000100  // opcode 0b000101
++  0b0011010000000000100  // opcode 0b000110
++  0b0011010000000000100  // opcode 0b000111
++  0b0011010000000000100  // opcode 0b001000
++  0b0011010000000000100  // opcode 0b001001
++  0b0011010000000000100  // opcode 0b001010
++  0b0011010000000000100  // opcode 0b001011
++  0b0011010000000000100  // opcode 0b001100
++  0b0011010000000000100  // opcode 0b001101
++  0b0011010000000000100  // opcode 0b001110
++  0b0011010000000000100  // opcode 0b001111
++  0b0011010000000000100  // opcode 0b010000
++  0b0011010000000000100  // opcode 0b010001
++  0b0011010000000000100  // opcode 0b010010
++  0b0011010000000000100  // opcode 0b010011
++  0b0011010000000000100  // opcode 0b010100
++  0b0011010000000000100  // opcode 0b010101
++  0b0011010000000000100  // opcode 0b010110
++  0b0011010000000000100  // opcode 0b010111
++  0b0000000100000010110  // opcode 0b011000 LD
++  0b0000100100000010001  // opcode 0b011001 ST
++  0b0011010000000000100  // opcode 0b011010
++  0b0010000000000000100  // opcode 0b011011 JMP
++  0b1000000000000000100  // opcode 0b011100 BEQ
++  0b1100000000000000100  // opcode 0b011101 BNE
++  0b0011010000000000100  // opcode 0b011110
++  0b0000001001101010110  // opcode 0b011111 LDR
++ // b ppr   aaaaaaww
++ // rbccaw  lllllldd
++ // atss2aabuuuuuussw
++ // neeessssffffffeeemx
++ // cslleeeennnnnnllrow
++ // ht10llll54321010fer
++  0b0000000000000001100  // opcode 0b100000 ADD
++  0b0000000000000101100  // opcode 0b100001 SUB
++  0b0011010000000000100  // opcode 0b100010 MUL
++  0b0011010000000000100  // opcode 0b100011 DIV
++  0b0000000011001101100  // opcode 0b100100 CMPEQ
++  0b0000000011010101100  // opcode 0b100101 CMPLT
++  0b0000000011011101100  // opcode 0b100110 CMPLE
++  0b0011010000000000100  // opcode 0b100111
++  0b0000000001100001100  // opcode 0b101000 AND
++  0b0000000001111001100  // opcode 0b101001 OR
++  0b0000000001011001100  // opcode 0b101010 XOR
++  0b0000000001100101100  // opcode 0b101011 XNOR
++  0b0000000010000001100  // opcode 0b101100 SHL
++  0b0000000010000101100  // opcode 0b101101 SHR
++  0b0000000010001101100  // opcode 0b101110 SRA
++  0b0011010000000000100  // opcode 0b101111
++  0b0000000100000001100  // opcode 0b110000 ADDC
++  0b0000000100000101100  // opcode 0b110001 SUBC
++  0b0011010000000000100  // opcode 0b110010 MULC
++  0b0011010000000000100  // opcode 0b110011 DIVC
++  0b0000000111001101100  // opcode 0b110100 CMPEQC
++  0b0000000111010101100  // opcode 0b110101 CMPLTC
++  0b0000000111011101100  // opcode 0b110110 CMPLEC
++  0b0011010000000000100  // opcode 0b110111
++  0b0000000101100001100  // opcode 0b111000 ANDC
++  0b0000000101111001100  // opcode 0b111001 ORC
++  0b0000000101011001100  // opcode 0b111010 XORC
++  0b0000000101100101100  // opcode 0b111011 XNORC
++  0b0000000110000001100  // opcode 0b111100 SHLC
++  0b0000000110000101100  // opcode 0b111101 SHRC
++  0b0000000110001101100  // opcode 0b111110 SRAC
++  0b0011010000000000100  // opcode 0b111111
++ )
+
+Xresetn inverter reset resetn
+
+// interrupts enabled when in user mode (ia31 = 0)
+Xirq0 inverter ia[31] ia31n
+Xirq1 and2 ia31n irq xirq
+Xirq2 inverter xirq xirqn
+
+// for interrupt: WR=0, WERF=1, WASEL=1, WDSEL=0
+Xirq3 and3 xwr xirqn resetn wr
+Xirq4 or2 xwasel xirq wasel
+Xirq5 or2 xwerf xirq werf
+Xirq6 and2 xirqn#2 xwdsel[1:0] wdsel[1:0]
+Xirq7 nor2 xirq reset xadr2
+
+// pc
+Xpc0 xor2 z btest bdecision
+Xpc1 and2 branch bdecision bresult
+Xpc2 or4 xirq reset bresult pcsel[0] psel[0]
+Xpc3 or3 xirq reset pcsel[1] psel[1]
+Xpc4 and2 radata[31] ia[31] jtpc[31]
+Xpcsel mux4 psel[0]#30 psel[1]#30
++ ia[31] pcinc[30:2]
++ ia[31] pcoffset[30:2]
++ jtpc[31] radata[30:2]
++ vdd gnd#27 xirq xadr2
++ npc[31:2]
+Xpc dreg npc[31:2] gnd#2 clk#32 ia[31:0]
+
+// pc increment
+Xpcinc1 and2 pcc[29:3] vdd ia[29:2] pcc[30:3]
+Xpcinc2 xor2 ia[30:2] pcc[30:3] vdd pcinc[30:2]
+
+// pc offset
+Xpcoff FA pcinc[30:2] id[15]#13 id[15:0] poc[30:3] gnd pcoffset[30:2] poc[31:3]
+
+// register file
+Xra2sel mux2 ra2sel#5 id[15:11] id[25:21] baddr[4:0]
+Xwasel2 mux2 wasel#5 id[25:21] vdd#4 gnd waddr[4:0]
+Gregfile memory
++ vdd gnd gnd id[20:16] adata[31:0]    // A read port
++ vdd gnd gnd baddr[4:0] bdata[31:0]   // B read port
++ gnd clk werf waddr[4:0] wdata[31:0] // write port
++ width=32 nlocations=31
+Xra1 and3 id[18] id[17] id[16] ra1
+Xra2 nand3 id[20] id[19] ra1 rar31
+Xra3 and2 rar31#32 adata[31:0] radata[31:0]
+Xrb1 and3 baddr[2] baddr[1] baddr[0] rb1
+Xrb2 nand3 baddr[4] baddr[3] rb1 rbr31
+Xrb3 and2 rbr31#32 bdata[31:0] mwd[31:0]
+
+// z
+Xz0 nor4 radata[31:0] za[7:0]
+Xz1 nand4 za[7:0] zb[1:0]
+Xz20 nor2 zb[0] zb[1] z
+
+// alu
+Xasel mux2 asel#32 radata[31:0] gnd pcoffset[30:2] gnd#2 alua[31:0]
+Xbsel mux2 bsel#32 mwd[31:0] id[15]#16 id[15:0] alub[31:0]
+Xalu alu alufn[5:0] alua[31:0] alub[31:0] ma[31:0]
+
+// wdata mux
+Xwdata mux4 wdsel[0]#32 wdsel[1]#32 ia[31] pcinc[30:2] gnd#2 ma[31:0] mrd[31:0] gnd#32 wdata[31:0]
+
+.ends

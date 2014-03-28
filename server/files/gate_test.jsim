@@ -1,0 +1,24 @@
+// set up power supply node and logic thresholds
+.global vdd
+VDD vdd gnd 1v
+.options vil=0.2 vih=0.8
+
+.include "/shared/jsim/stdcell.jsim"
+
+.subckt FA a b cin s cout
+X1 xor2 a b p
+X2 xor2 p cin s
+X3 nand2 a b g_
+X4 nand2 p cin prop_
+X5 nand2 g_ prop_ cout
+.ends
+
+X1 FA pc[31:0] gnd#29 vdd gnd#2 c[30:0] gnd pc_plus4[31:0] c[31:0]
+X2 mux2 resetb#32 gnd#32 pc_plus4[31:0] next_pc[31:0]
+X3 dreg next_pc[31:0] clk#32 pc[31:0]
+
+V1 clk gnd clock(1,0,10ns)
+Vreset resetb gnd step(0,1,11ns)
+.tran 500ns
+.plot clk resetb
+.plot L(pc[31:0])

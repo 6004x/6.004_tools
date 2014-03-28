@@ -1,0 +1,32 @@
+.global vdd
+VDD vdd gnd 3v
+
+// input is square wave with a 20ns period
+Vin in gnd clock(0,3,20n)
+
+// a chain of three CMOS inverters using
+// the default mosfets widths of 8 (don't fuss
+// about noise immunity for now)
+N1 gnd in out1
+P1 vdd in out1
+
+N2 gnd out1 out2
+P2 vdd out1 out2
+
+N3 gnd out2 out3
+P3 vdd out2 out3
+
+VDDx vddx gnd 1v
+N1x gnd in out1x
+P1x vddx in out1x
+
+N2x gnd out1x out2x
+P2x vddx out1x out2x
+
+N3x gnd out2x out3x
+P3x vddx out2x out3x
+
+// run for 25ns to get both falling and rising
+// transition on input to middle inverter.
+.tran 25n
+.plot out2 out2x

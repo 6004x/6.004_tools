@@ -1,0 +1,59 @@
+// set up power supply node and logic thresholds
+.global vdd
+VDD vdd gnd 1v
+.options vil=0.2 vih=0.8
+
+//.include "/shared/jsim/lab2checkoff.jsim"
+.include "l2check.jsim"
+
+.subckt NAND2 a b z
+P1 z a vdd
+P2 z b vdd
+N1 z a n1
+N2 n1 b gnd
+.ends
+
+.subckt NAND3 a b c z
+P1 z a vdd
+P2 z b vdd
+P3 z c vdd
+N1 z a n1
+N2 n1 b n2
+N3 n2 c gnd
+.ends
+
+.subckt NOR2 a b z
+P1 z a n1
+P2 n1 b vdd
+N1 z a gnd
+N2 z b gnd
+.ends
+
+.subckt XOR2 a b z
+X1 NOR2 a b anorb
+P1 z anorb n1
+P2 n1 a vdd
+P3 n1 b vdd
+N1 z anorb gnd
+N2 z a n2
+N3 n2 b gnd
+.ends
+
+.subckt FA a b cin s cout
+X1 XOR2 a b p
+X2 XOR2 p cin s
+/*
+X3 NAND2 p cin pbar
+X4 NAND2 a b gbar
+X5 NAND2 pbar gbar cout
+*/
+X3 NAND2 a b c1
+X4 NAND2 a cin c2
+X5 NAND2 b cin c3
+X6 NAND3 c1 c2 c3 cout
+.ends
+
+.subckt adder3 a[2:0] b[2:0] s[3:0]
+// ripple carry adder
+X1 FA a[2:0] b[2:0] c[1:0] gnd s[2:0] s[3] c[1:0]
+.ends

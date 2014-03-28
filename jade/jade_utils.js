@@ -405,12 +405,7 @@ var jade_utils = (function() {
         return result;
     }
 
-    ///////////////////////////////////////////////////////////////////////////////
-    //
-    // Module exports
-    //
-    //////////////////////////////////////////////////////////////////////////////
-
+    // exports
     return {
         parse_number: parse_number,
         parse_number_alert: parse_number_alert,

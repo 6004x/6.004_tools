@@ -1,0 +1,17 @@
+.global vdd
+VDD vdd gnd 3v
+
+
+Vin in gnd clock(0,3,20n)    // inverter input
+
+P1 gnd in out1
+N1 vdd in out1
+
+P2 gnd out1 out2
+N2 vdd out1 out2
+
+P3 gnd out2 out3
+N3 vdd out2 out3
+
+.tran 100n
+.plot in out1 out2 out3

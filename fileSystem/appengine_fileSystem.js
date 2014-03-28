@@ -10,8 +10,10 @@ var FileSystem= (function(){
     var shared_url = 'http://computationstructures.org/labs';
 
     // used when access is from scripts deployed on localhost
-    var local_server_url = 'http://localhost:6004';
-    var local_shared_url = 'http://localhost/6.004x/server';
+    //var local_server_url = 'http://localhost:6004';
+    //var local_shared_url = 'http://localhost/6.004x/server';
+    var local_server_url = 'http://localhost/~cjt/6.004x/server/cgibin_file_server.py';
+    var local_shared_url = 'http://localhost/~cjt/6.004x/server';
 
     // used when access is from scripts deployed on 6004.mit.edu
     var mit_server_url = 'https://6004.mit.edu/coursewarex/cgibin_file_server.py';
@@ -33,7 +35,9 @@ var FileSystem= (function(){
         // we support various servers during development
         var host = $(location).attr('host');
         if (host == 'localhost') {
-            url = local_server_url + url;
+            //url = local_server_url + url;
+            data['_path'] = url;   // add path info to request data
+            url = local_server_url; // cgi bin script
         }
         else if (host == '6004.mit.edu') {
             data['_path'] = url;   // add path info to request data
@@ -74,6 +78,8 @@ var FileSystem= (function(){
                                                                     succeed(data);
                                                                 }
                                                             } else if (fail) fail(response._error);
+                                                            else console.log(response._error);
+
                                                         });
             return;
         }
@@ -91,6 +97,7 @@ var FileSystem= (function(){
             },
             error: function(jqXHR,status,error) {
                 if (fail) fail('Server '+status+' '+error);
+                else console.log(response._error);
             }
         });
     }
@@ -113,7 +120,8 @@ var FileSystem= (function(){
             return;
         }
 
-        if ($(location).attr('host') == '6004.mit.edu' || xblock_unique_id !== undefined) {
+        var host = $(location).attr('host');
+        if (host == '6004.mit.edu' || host == 'localhost' || xblock_unique_id !== undefined) {
             // server will use certificate to determine who user is
             server_request('/user/validate',{},
                            function (response) {
@@ -206,6 +214,7 @@ var FileSystem= (function(){
                                    succeed(tree,sessionStorage.getItem('user'));
                                } else {
                                    if (fail) fail(response._error);
+                                   else console.log(response._error);
                                }
                            });
 
@@ -235,6 +244,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
+                               else console.log(response._error);
                            } else {
                                if (saved_folder_list.indexOf(filename) == -1)
                                    saved_folder_list.push(filename);
@@ -253,6 +263,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
+                               else console.log(response._error);
                            } else {
                                if (saved_file_list.indexOf(filename) == -1)
                                    saved_file_list.push(filename);
@@ -267,6 +278,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
+                               else console.log(response._error);
                            } else {
                                var index = saved_file_list.indexOf(filename);
                                if (index != -1) saved_file_list.splice(index,1);
@@ -281,6 +293,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
+                               else console.log(response._error);
                            } else {
                                var index = saved_file_list.indexOf(old_filename);
                                if (index != -1) saved_file_list.splice(index,1);
@@ -304,6 +317,7 @@ var FileSystem= (function(){
                             function(response){
                                 if (response._error) {
                                     if (fail) fail(response._error);
+                                    else console.log(response._error);
                                 } else {
                                     succeed({name: filename,
                                              data: response.file,
@@ -319,6 +333,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error || response.backup === undefined) {
                                if (fail) fail(response._error);
+                               else console.log(response._error);
                            } else succeed({name: filename, data: response.backup});
                        });
     }
@@ -329,6 +344,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
+                               else console.log(response._error);
                            } else succeed({name: filename, data: contents});
                        });
     }
@@ -339,6 +355,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
+                               else console.log(response._error);
                            } else succeed({name: filename, data: contents});
                        });
     }
@@ -356,7 +373,8 @@ var FileSystem= (function(){
 
         var host = $(location).attr('host');
         if (host == 'localhost') {
-            return local_server_url+'/file?action=zip'
+            //return local_server_url+'/file?action=zip'
+            return local_server_url+'?_path=/file&action=zip';
         }
         else if (host == '6004.mit.edu') {
             return mit_server_url+'?_path=/file&action=zip';

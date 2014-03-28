@@ -89,7 +89,9 @@ var jade_view = (function() {
     Diagram.prototype.set_aspect = function(aspect) {
         this.aspect = aspect;
         this.show_grid = true;
-        this.redraw_background(); // compute bounding box
+
+        this.bbox = this.aspect.compute_bbox();
+        //this.redraw_background(); // compute bounding box
         this.zoomall(); // let's see the whole diagram
     };
 
@@ -1099,6 +1101,10 @@ var jade_view = (function() {
         this.toolbar = $('<div class="jade-toolbar"></div>');
     }
 
+    Toolbar.prototype.height = function() {
+        return this.toolbar.outerHeight(true);
+    };
+
     Toolbar.prototype.add_tool = function(tname, icon, tip, handler, enable_check) {
         var tool;
         if (icon.search('data:image') != -1) {
@@ -1176,10 +1182,9 @@ var jade_view = (function() {
 
     var clipboards = {}; // clipboards for each editor type
 
-    function Jade(owner,name,content,readonly) {
+    function Jade(owner,name,readonly) {
         var jade = this;
         this.parent = owner;
-        this.module = jade_model.find_module(name,content);
 
         // grab children and empty out div
         this.id = owner.attr('id');
@@ -1188,27 +1193,10 @@ var jade_view = (function() {
                           ' <div class="jade-tabs-div"></div>' +
                           ' <div class="jade-status"><span id="message"></span></div>' +
                           '</div>');
+        this.status = top_level.find('#message');
 
         // insert framework into DOM
         owner.append(top_level);
-
-        /*
-        // set up top-level toolbar
-        if (owner.attr('hierarchical') !== undefined) {
-            top_level.find('.jade-tabs-div').before('<div id="jade-toolbar"><button id="savelibs" disabled>Save changes</button>Module: <input id="module" type="text" autocorrect="off" autocapitalize="off"></input></div>');
-            this.input_field = top_level.find('#module');
-            this.input_field.keypress(function(event) {
-                // when user hits ENTER, edit the specified module
-                if (event.keyCode == 13) jade.edit(event.target.value);
-            });
-
-            top_level.find('#savelibs').click(function(event) {
-                save_libraries();
-            });
-        }
-        */
-
-        this.status = top_level.find('#message');
 
         // now add a display tab for each registered editor
         var tabs_div = top_level.find('.jade-tabs-div');
@@ -1254,76 +1242,39 @@ var jade_view = (function() {
         }
 
         // add status line at the bottom
-        /*
-        var resize = top_level.find('.jade-resize');
-        resize.attr('src',jade_icons.resize_icon);
-        resize[0].jade = this;
-        resize.mousedown(resize_mouse_down);
-        */
-
         this.status.text('');
 
-        // should we expand to fill screen?
-        if (owner.attr('fill_window')) {
-            // set up handler to resize jade
-            var jade = this;
-            $(window).on('resize',function() {
-                var win_w = $(window).width();
-                var win_h = $(window).height();
-                var offset = top_level.offset();
-                var w = offset.left + top_level.outerWidth(true) + 10;
-                var h = offset.top + top_level.outerHeight(true) + 10;
-                jade.resize(win_w - w,win_h - h);
-            });
-            // trigger handler on startup
-            $(window).trigger('resize');
-        };
-
-        /*
-        // starting module?
-        var mname = owner.attr('edit');
-        if (mname === undefined) mname = localStorage.getItem('jade-module');
-        if (mname !== undefined) {
-            // mname = library:module.aspect
-            mname = mname.split('.');
-            this.edit(mname[0]);  // select module
-            if (mname.length > 1) this.show(mname[1]);
-        }
-        */
-
-        this.refresh();
+        jade_model.find_module(name,function(m){
+            jade.module = m;
+            jade.refresh();
+        });
     }
 
     Jade.prototype.changeGeneration = function () {
         return 0;
-    }
+    };
 
     Jade.prototype.getValue = function () {
         return JSON.stringify(this.module.json());
-    }
+    };
 
     Jade.prototype.setValue = function (content) {
         this.module.load(content);
         this.refresh();
-    }
+    };
     
-    Jade.prototype.getWrapperElement = function () {
-        return wrapper[0];
-    }
-
     Jade.prototype.blur = function () {
-    }
+    };
 
     Jade.prototype.focus = function () {
-    }
+    };
 
     Jade.prototype.isClean = function(generation) {
         return this.module.modified;
-    }
+    };
 
     Jade.prototype.on = function() {
-    }
-
+    };
 
     // remember module and aspect for next visit
     Jade.prototype.bookmark = function() {
@@ -1332,41 +1283,6 @@ var jade_view = (function() {
             if (this.selected_tab !== undefined) mark += '.' + this.selected_tab;
             localStorage.setItem('jade-module',mark);
         }
-    };
-
-    Jade.prototype.load_library = function(json) {
-        if (this.id === undefined) return;
-
-        // create a library for this particular instance, initialize from div body
-        json = $.trim(json);
-        if (json.length == 0) json = '{}';
-
-        // replace an existing library with the one we're loading!
-        // prevent load from marking state as dirty
-        new Library(this.id,JSON.parse(json));
-
-        // update current module to the one in the new library!
-        if (this.module)
-            this.module = find_module(this.module.get_name());
-
-        this.refresh();   // update all the editors since library changed
-    };
-
-    Jade.prototype.save_library = function() {
-        if (this.id === undefined || libraries[this.id] === undefined) return '{}';
-        return JSON.stringify(libraries[this.id].json());
-    };
-
-    Jade.prototype.edit = function(module) {
-        if (typeof module == 'string') module = find_module(module);
-        this.module = module;
-
-        if (this.input_field !== undefined) {
-            this.input_field.val(module.get_name());
-        }
-
-        this.bookmark();    // remember current module for next visit
-        this.refresh();  // tell each tab which module we're editing
     };
 
     // if underlying library/module is reloaded, refresh each tab
@@ -1393,79 +1309,57 @@ var jade_view = (function() {
         }
     };
 
-    Jade.prototype.setHeight = function(h) {
-        this.resize(0,h - $(this.top_level).height() - 500);
-    };
+    Jade.prototype.resize = function(w,h) {
+        if (w === 0) return;
 
-    Jade.prototype.resize = function(dx, dy) {
-        var e = $(this.top_level);
-        e.width(dx + e.width());
-        e.height(dy + e.height());
+        var e = this.parent;
 
-        // adjust size of all the tab bodies
+        // allow for margins, border, padding
+        w -= e.outerWidth(true) - e.width();
+        h -= e.outerHeight(true) - e.height();
+        //console.log('jade: w='+w+', h='+h);
+
+        e.width(w);
+        e.height(h);
+
+        // adjust size of all the tab bodies.  Account for tabs and status divs
+        h -=  e.find('.jade-tabs-div').outerHeight(true) + e.find('.jade-status').outerHeight(true);
+        var ediv,ew,eh;
         for (var tab in this.tabs) {
-            var ediv = this.tabs[tab][1]; // [tab div, body div]
+            ediv = this.tabs[tab][1]; // [tab div, body div]
             e = $(ediv);
-            e.width(dx + e.width());
-            e.height(dy + e.height());
+            ew = w - (e.outerWidth(true) - e.width());
+            eh = h - (e.outerHeight(true) - e.height());
+            // remember to account for padding, border, margins
+            e.width(ew);
+            e.height(eh);
             // inform associated editor about its new size
-            ediv.editor.resize(dx, dy, tab == this.selected_tab);
+            ediv.editor.resize(ew, eh, tab == this.selected_tab);
         }
     };
 
-    function resize_mouse_down(event) {
-        var jade = event.target.jade;
-        var lastX = event.pageX;
-        var lastY = event.pageY;
-
-        $(document).mousemove(function(event) {
-            jade.resize(event.pageX - lastX, event.pageY - lastY);
-            lastX = event.pageX;
-            lastY = event.pageY;
-            return false;
-        });
-
-        $(document).mouseup(function(event) {
-            $(document).unbind('mousemove');
-            $(document).unbind('mouseup');
-            return false;
-        });
-
-        return false;
-    }
-
-    //////////////////////////////////////////////////////////////////////
-    //
-    // sadly javascript has no modules, so we have to fake it
-    //
-    //////////////////////////////////////////////////////////////////////
-
-    var exports = {};
-
-    exports.Diagram = Diagram;
-    exports.diagram_undo = diagram_undo;
-    exports.diagram_redo = diagram_redo;
-    exports.diagram_cut = diagram_cut;
-    exports.diagram_copy = diagram_copy;
-    exports.diagram_paste = diagram_paste;
-    exports.diagram_fliph = diagram_fliph;
-    exports.diagram_flipv = diagram_flipv;
-    exports.diagram_rotcw = diagram_rotcw;
-    exports.diagram_rotccw = diagram_rotccw;
-
-    exports.Toolbar = Toolbar;
-    exports.Jade = Jade;
-
-    exports.editors = editors;
-    exports.clipboards = clipboards;
-
-    exports.build_table = build_table;
-    exports.build_button = build_button;
-    exports.build_input = build_input;
-    exports.build_select = build_select;
-    exports.dialog = dialog;
-    exports.window = jade_window;
-    exports.window_close = window_close;
-
-    return exports;
+    // exports
+    return {
+        Diagram: Diagram,
+        diagram_undo: diagram_undo,
+        diagram_redo: diagram_redo,
+        diagram_cut: diagram_cut,
+        diagram_copy: diagram_copy,
+        diagram_paste: diagram_paste,
+        diagram_fliph: diagram_fliph,
+        diagram_flipv: diagram_flipv,
+        diagram_rotcw: diagram_rotcw,
+        diagram_rotccw: diagram_rotccw,
+        Toolbar: Toolbar,
+        Jade: Jade,
+        editors: editors,
+        clipboards: clipboards,
+        build_table: build_table,
+        build_button: build_button,
+        build_input: build_input,
+        build_select: build_select,
+        dialog: dialog,
+        window: jade_window,
+        window_close: window_close
+    };
 }());

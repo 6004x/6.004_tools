@@ -13,17 +13,20 @@ $(function() {
         split.setPaneWidth(0, 200);
         split.setPaneWidth(1, split.window_width() - 200);
         split.setPaneWidth(2, 0);
+        set_height();
     });
     $('#split_pane').click(function() {
         var width = split.window_width();
         split.setPaneWidth(0, 0);
         split.setPaneWidth(1, width/2);
         split.setPaneWidth(2, width/2);
+        set_height();
     });
     $('#maximise_simulation').click(function() {
         split.setPaneWidth(0, 0);
         split.setPaneWidth(1, 0);
         split.setPaneWidth(2, split.window_width());
+        set_height();
     });
 
     split.on('resize', function(widths) {
@@ -37,7 +40,7 @@ $(function() {
         if(widths[1] === 0) {
             editor.blur();
         }
-        //Simulator.resize();
+        set_height();
     });
     
     // set up the results pane
@@ -51,7 +54,6 @@ $(function() {
     
     function dls(){
         $('#split_pane').click();
-        editor.clearErrors();
         Checkoff.reset();
         var content = editor.content();
         if (!content) return;
@@ -61,7 +63,6 @@ $(function() {
     
     function gls(){
         $('#split_pane').click();
-        editor.clearErrors();
         Checkoff.reset();
         var content = editor.content();
         if (!content) return;
@@ -71,7 +72,7 @@ $(function() {
 
     function ta(){
         $('#split_pane').click();
-        editor.clearErrors();
+
         var content = editor.content();
         if (!content) return;
         var filename = editor.currentTab();
@@ -120,7 +121,8 @@ $(function() {
     };
 
     var set_height = function() {
-        editor.setHeight(window_height() - $('.btn-toolbar').height() - $('.nav-tabs').height()); // Set height to window height minus title.
+        var eparent = $('#editor-pane').parent();
+        editor.resize(eparent.width(),eparent.height());
     };
     set_height();
     $(window).resize(set_height); // Update the height whenever the browser window changes size.

@@ -15,9 +15,10 @@ var icon_view = (function() {
 
     var icon_tools = [];
 
-    function Icon(div, parent) {
-        this.jade = parent;
-        this.status = parent.status;
+    function Icon(div, jade) {
+        this.parent = $(div);
+        this.jade = jade;
+        this.status = jade.status;
 
         this.diagram = new jade_view.Diagram(this, 'jade-icon-diagram');
         div.diagram = this.diagram;
@@ -85,11 +86,16 @@ var icon_view = (function() {
         this.diagram.set_aspect(this.aspect);
     }
 
-    Icon.prototype.resize = function(dx, dy, selected) {
-        // schematic canvas
+    Icon.prototype.resize = function(w, h, selected) {
+        // icon canvas
         var e = $(this.diagram.canvas);
-        e.width(dx + e.width());
-        e.height(dy + e.height());
+
+        w -= e.outerWidth(true) - e.width();
+        h -= this.toolbar.height() + (e.outerHeight(true) - e.height());
+        //console.log('icon: w='+w+', h='+h);
+
+        e.width(w);
+        e.height(h);
 
         // adjust diagram to reflect new size
         if (selected) this.diagram.resize();
@@ -97,7 +103,7 @@ var icon_view = (function() {
 
     Icon.prototype.show = function() {
         this.diagram.canvas.focus(); // capture key strokes
-        this.diagram.resize();
+        this.resize(this.parent.width(),this.parent.height(),true);
     };
 
     Icon.prototype.set_aspect = function(module) {
@@ -646,7 +652,7 @@ var icon_view = (function() {
         }
 
         // need to adjust alignment accounting for our rotation
-        var align = text_alignments.indexOf(this.properties.align);
+        var align = schematic_view.text_alignments.indexOf(this.properties.align);
         align = jade_model.aOrient[this.coords[2] * 9 + align];
 
         c.draw_text(diagram, s, this.coords[0], this.coords[1], align, diagram.property_font);
@@ -725,7 +731,8 @@ var icon_view = (function() {
         return [this.coords[0], this.coords[1], this.properties.name];
     };
 
-    var exports = {};
-    exports.icon_tools = icon_tools;
-    return exports;
+    // exports
+    return {
+        icon_tools: icon_tools
+    };
 })();

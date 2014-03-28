@@ -46,9 +46,10 @@ var test_view = (function() {
 
      */
 
-    function TestEditor(div, parent) {
-        this.jade = parent;
-        this.status = parent.status;
+    function TestEditor(div, jade) {
+        this.parent = $(div);
+        this.jade = jade;
+        this.status = jade.status;
         this.module = undefined;
         this.aspect = undefined;
         this.test_component = undefined;
@@ -78,13 +79,21 @@ var test_view = (function() {
         div.appendChild(textarea[0]);
     }
 
-    TestEditor.prototype.resize = function(dx, dy, selected) {
+    TestEditor.prototype.resize = function(w, h, selected) {
         var e = this.textarea;
-        e.width(dx + e.width());
-        e.height(dy + e.height());
+
+        w -= e.outerWidth(true) - e.width();
+        h -= this.toolbar.height() + (e.outerHeight(true) - e.height());
+        //console.log('test: w='+w+', h='+h);
+
+        e.width(w);
+        e.height(h);
     };
 
-    TestEditor.prototype.show = function() {};
+    TestEditor.prototype.show = function() {
+        this.textarea.focus(); // capture key strokes
+        this.resize(this.parent.width(),this.parent.height(),true);
+    };
 
     TestEditor.prototype.set_aspect = function(module) {
         this.module = module;

@@ -1,0 +1,133 @@
+.include "/shared/bsim/beta.uasm"
+.include "/shared/bsim/lab7checkoff.uasm"
+//.include "/shared/bsim/lab7macros.uasm"
+
+UI:
+	ST(r0,regs,r31)		// save user's registers
+	ST(r1,regs+4,r31)	// (it makes it easy to access their values)
+	ST(r2,regs+8,r31)
+	ST(r3,regs+12,r31)
+	ST(r4,regs+16,r31)
+	ST(r5,regs+20,r31)
+	ST(r6,regs+24,r31)
+	ST(r7,regs+28,r31)
+	ST(r8,regs+32,r31)
+	ST(r9,regs+36,r31)
+	ST(r10,regs+40,r31)
+	ST(r11,regs+44,r31)
+	ST(r12,regs+48,r31)
+	ST(r13,regs+52,r31)
+	ST(r14,regs+56,r31)
+	ST(r15,regs+60,r31)
+	ST(r16,regs+64,r31)
+	ST(r17,regs+68,r31)
+	ST(r18,regs+72,r31)
+	ST(r19,regs+76,r31)
+	ST(r20,regs+80,r31)
+	ST(r21,regs+84,r31)
+	ST(r22,regs+88,r31)
+	ST(r23,regs+92,r31)
+	ST(r24,regs+96,r31)
+	ST(r25,regs+100,r31)
+	ST(r26,regs+104,r31)
+	ST(r27,regs+108,r31)
+	ST(r28,regs+112,r31)
+	ST(r29,regs+116,r31)
+	ST(r30,regs+120,r31)
+	ST(r31,regs+124,r31)	// in case we need to access R31
+
+	LD(xp,-4,r0)		// illegal instruction
+	SHRC(r0,26,r1)		// extract opcode[5:0]
+	CMPEQC(r1,0x10,r2)	// see if it's LDB
+	BT(r2,ldb)
+	CMPEQC(r1,0x11,r2)	// see if it's STB
+	BT(r2,stb)
+
+	LD(r31,regs,r0)		// neither, so restore regs we used
+	LD(r31,regs+4,r1)
+	LD(r31,regs+8,r2)
+	BR(_IllegalInstruction)	// and go to system's handler
+
+ldb:
+	CALL(addr)		// R1 = Reg[Ra] + sxt(literal)
+	ANDC(r1,0xFFFC,r2)	// turn into word address
+	LD(r2,0,r2)		// fetch data from memory
+	ANDC(r1,0x3,r1)		// right shift amount = 8*(addr[1:0])
+	SHLC(r1,3,r1)
+	SRA(r2,r1,r2)		// shift byte we want into low-order bits
+	ANDC(r2,0xFF,r2)	// remove unwanted bits
+
+	SRAC(r0,21-2,r0)	// Rc * 4
+	ANDC(r0,0x7C,r0)
+	ST(r2,regs,r0)		// Reg[Rc] = byte from memory
+	BR(rtn)
+
+stb:
+	CALL(addr)		// R1 = Reg[Ra] + sxt(literal)
+	ANDC(r1,0xFFFC,r2)	// turn into word address
+	LD(r2,0,r5)		// R5 = data from memory
+	ANDC(r1,0x3,r1)		// R1 = left shift amount = 8*(addr[1:0])
+	SHLC(r1,3,r1)
+
+	CMOVE(0xFF,r3)		// R3 = shifted 8-bit mask
+	SHL(r3,r1,r3)
+	XORC(r3,0xFFFF,r4)	// invert it so we can clear out byte
+	AND(r5,r4,r5)		// word &= ~mask
+
+	SRAC(r0,21-2,r0)	// Rc * 4
+	ANDC(r0,0x7C,r0)
+	LD(r0,regs,r4)		// R4 = (Reg[Rc] << shift amount) & mask
+	SHL(r4,r1,r4)
+	AND(r4,r3,r4)
+
+	OR(r4,r5,r5)		// word //= (Reg[Rc] << shift amount) & mask
+	ST(r5,0,r2)		// return updated word to memory
+	BR(rtn)
+
+rtn:
+	LD(r31,regs,r0)		// restore registers
+	LD(r31,regs+4,r1)
+	LD(r31,regs+8,r2)
+	LD(r31,regs+12,r3)
+	LD(r31,regs+16,r4)
+	LD(r31,regs+20,r5)
+	LD(r31,regs+24,r6)
+	LD(r31,regs+28,r7)
+	LD(r31,regs+32,r8)
+	LD(r31,regs+36,r9)
+	LD(r31,regs+40,r10)
+	LD(r31,regs+44,r11)
+	LD(r31,regs+48,r12)
+	LD(r31,regs+52,r13)
+	LD(r31,regs+56,r14)
+	LD(r31,regs+60,r15)
+	LD(r31,regs+64,r16)
+	LD(r31,regs+68,r17)
+	LD(r31,regs+72,r18)
+	LD(r31,regs+76,r19)
+	LD(r31,regs+80,r20)
+	LD(r31,regs+84,r21)
+	LD(r31,regs+88,r22)
+	LD(r31,regs+92,r23)
+	LD(r31,regs+96,r24)
+	LD(r31,regs+100,r25)
+	LD(r31,regs+104,r26)
+	LD(r31,regs+108,r27)
+	LD(r31,regs+112,r28)
+	LD(r31,regs+116,r29)
+	LD(r31,regs+120,r30)
+	JMP(XP)			// return to instruction follow LDB/STB
+
+// compute Reg[Ra] + sxt(literal) using instruction in R0, result in R1
+// uses R2
+addr:	SHLC(r0,16,r1)		// R1 = sxt(literal)
+	SRAC(r1,16,r1)
+
+	SHRC(r0,16-2,r2)	// Ra * 4
+	ANDC(r2,0x7C,r2)
+	LD(r2,regs,r2)		// R2 = Reg[Ra]
+
+	ADD(r2,r1,r1)		// R1 = Reg[Ra] + sxt(literal)
+	RTN()
+
+regs:	. = . + (4*32)

@@ -1,0 +1,158 @@
+// set up power supply node and logic thresholds
+.global vdd
+VDD vdd gnd 1.0v
+.options vil=0.2 vih=0.8
+
+.include "/shared/jsim/stdcell.jsim"
+//.include "/shared/jsim/lab6pc.jsim"  			// PC test jig
+//.include "/shared/jsim/lab6regfile.jsim"		// Reg test jig
+//.include "/shared/jsim/lab6ctl.jsim"			// CTL test jig
+//.include "/shared/jsim/lab6basicblock.jsim"		// beta basic test jig
+//.include "/shared/jsim/lab6checkoff.jsim"		// full beta checkoff
+
+.include "dsukhin_bbb.jsim"
+
+/*.subckt HAnc a b s c
+Xc nand2 a b c
+Xs xor2 a b s
+.ends
+
+.subckt FA a b cin s cout		//Full Adder using inverse carry half adders
+Xha1 HAnc a b s1 c1
+Xha2 HAnc s1 cin s c2
+Xnc nand2 c1 c2 cout
+.ends
+*/
+
+.include "dsukhin_bbb.jsim"
+
+.subckt pc clk reset ia[31:0]
+Xpcmux mux2 reset#32 add4[31:0] gnd#32 mout[31:0]
+Xpcreg dreg mout[31:0] clk#32 ia[31:0]
+Xadd4 FA ia[31:0] gnd#29 vdd gnd#2 c[30:0] gnd add4[31:0] c[31:0]
+.ends
+
+
+
+.subckt regfile clk werf ra2sel ra[4:0] rb[4:0] rc[4:0]
++ //+ waddr[4:0] wdata[31:0] radata[31:0] rbdata[31:0]
++ wdata[31:0] radata[31:0] rbdata[31:0]
+
+Xra2selmux mux2 ra2sel#5 rb[4:0] rc[4:0] ra2mux[4:0]
+
+//Xrcand and2 rc[1:3] rc[0] th[0:1] th[0:2]	//and all bits in c
+Xand4 and4 rc[0] rc[1] rc[2] rc[3] th[0]
+Xrcnand nand2 rc[4] th[0] th[1]				//nand last two to make !c
+Xwerf and2 werf th[1] wrtth					//werf and !c
+
+//use mux to read r31 a/b!!!
+
+Gregfile memory	//registers
++ vdd gnd gnd  ra[4:0]     radata[31:0] // A read port
++ vdd gnd gnd  ra2mux[4:0] rbdata[31:0] // B read port
++ //gnd clk wrtth waddr[4:0] wdata[31:0] // write port
++ gnd clk wrtth rc[4:0] wdata[31:0] 	// write port
++ width=32 nlocations=32 				//needless extra memory to read 0!!! :256 uM2 extra
++ contents=(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+.ends
+
+
+
+.subckt ctl reset id[31:26] ra2sel bsel alufn[4:0] wdsel[1:0] werf moe wr
+//... your control ROM and other circuitry here ...
+
+//Xopshift FA where 011000 = 00000
+
+Gctl memory 
++ vdd gnd gnd id[31:26]    // one read port
++ pcsel[2:0] wasel asel ra2sel bsel alufn[4:0] wdsel[1:0] werf moe xwr
++ width=17 nlocations=64 contents=(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
++  0b00000110000010110         // opcode=0b011000	//LD		
++  0b00000110000001001         // opcode=0b011001	//ST		
++  0b00000000000000000         // opcode=0b011010	//XXXX		
++  0b00000000000000000         // opcode=0b011011	//JMP XXXX
++  0b00000000000000000         // opcode=0b011100	//BEQ XXXX		
++  0b00000000000000000         // opcode=0b011101	//BNE XXXX
++  0b00000000000000000         // opcode=0b011110	//XXXX
++  0b00000000000000000         // opcode=0b011111	//LDR XXXX
+
++  0b00000000000001100         // opcode=0b100000	//ADD
++  0b00000000000101100         // opcode=0b100001	//SUB
++  0b00000000000000000         // opcode=0b100010	//MUL XXX
++  0b00000000000000000         // opcode=0b100011	//DIV XXX
++  0b00000000010101100         // opcode=0b100100	//CMPEQ
++  0b00000000011101100         // opcode=0b100101	//CMPLT
++  0b00000000110101100         // opcode=0b100110	//CMPLE
++  0b00000000000000000         // opcode=0b100111	//XXXX
+
++  0b00000001100001100         // opcode=0b101000	//AND
++  0b00000001111001100         // opcode=0b101001	//OR
++  0b00000001011001100         // opcode=0b101010	//XOR
++  0b00000001100101100         // opcode=0b101011	//XNOR
++  0b00000000100001100         // opcode=0b101100	//SHL
++  0b00000000100101100         // opcode=0b101101	//SHR
++  0b00000000101101100         // opcode=0b101110	//SHA
++  0b00000000000000000         // opcode=0b101111	//XXXX
+
++ // opcode bit 4 defines C-ops
++ //pcsel[2:0] wasel asel ra2sel bsel alufn[4:0] wdsel[1:0] werf moe xwr
+
++  0b00000110000001100         // opcode=0b110000	//ADDC
++  0b00000110000101100         // opcode=0b110001	//SUBC
++  0b00000000000000000         // opcode=0b110010	//MULC XXXX
++  0b00000000000000000         // opcode=0b110011	//DIVC XXXX
++  0b00000110010101100         // opcode=0b110100	//CMPEQC
++  0b00000110011101100         // opcode=0b110101	//CMPLTC
++  0b00000110110101100         // opcode=0b110110	//CMPLEC
++  0b00000100000001100         // opcode=0b110111	//XXXX
+
++  0b00000111100001100         // opcode=0b111000	//ANDC
++  0b00000111111001100         // opcode=0b111001	//ORC
++  0b00000111011001100         // opcode=0b111010	//XORC
++  0b00000111100101100         // opcode=0b111011	//XNORC
++  0b00000110100001100         // opcode=0b111100	//SHLC
++  0b00000110100101100         // opcode=0b111101	//SHRC
++  0b00000110101101100         // opcode=0b111110	//SHAC
++  0b00000000000000000         // opcode=0b111111	//XXXX
+
++ )
+
+Xwrmux mux2 reset xwr gnd wr
+//.connect xwr wr
+
+.ends
+
+.subckt beta clk reset ia[31:0] id[31:0] ma[31:0] moe mrd[31:0] wr mwd[31:0]
+
+//XP register 30 (0b1110)
+//.connect XP[0] gnd
+//.connect XP[4:1] vdd
+
+//Xwasel mux2 wasel#5 id[25:21] XP[4:0] waddr[4:0]
+
+Xpc pc clk reset ia[31:0]
+//.connect ia[31:0] gnd
+
+Xctl ctl reset id[31:26] ra2sel bsel alufn[4:0] wdsel[1:0] werf moe wr
+//Xreg regfile clk werf ra2sel id[20:16] id[15:11] id[25:21] waddr[4:0] wdata[31:0] radata[31:0] rbdata[31:0]
+Xreg regfile clk werf ra2sel id[20:16] id[15:11] id[25:21] wdata[31:0] radata[31:0] rbdata[31:0]
+
+Xbsel mux2 bsel#32 rbdata[31:0] id[15]#16 id[15:0] b[31:0]
+
+XALU alu alufn[4:0] radata[31:0] b[31:0] out[31:0] z v n
+
+Xaddr connect out[31:0] ma[31:0] 
+Xdata connect rbdata[31:0] mwd[31:0] 
+
+Xwdsel_mux mux4 wdsel[0]#32 wdsel[1]#32 gnd#32 out[31:0] mrd[31:0] gnd#32 wdata[31:0]
+
+//Xwrmux mux2 reset xxwr gnd wr
+
+
+.ends
+
+.subckt connect a b
+	.connect a b
+.ends
+
+

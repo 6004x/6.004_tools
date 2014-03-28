@@ -52,16 +52,23 @@
   cursor: se-resize;
 }
 .jade-schematic-diagram {
-  width: 90%;
-  height: 270px;
+  width: 100px;
+  height: 100px;
   border: 1px solid black;
   outline: none;
 }
 .jade-icon-diagram {
-  width: 90%;
-  height: 270px;
+  width: 100px;
+  height: 100px;
   border: 1px solid black;
   outline: none;
+}
+.jade-test-editor {
+  width: 100px;
+  height: 100px;
+  border: 1px solid black;
+  outline: none;
+  margin: 0;
 }
 .jade-toolbar {
   line-height: 25px;
@@ -119,6 +126,19 @@
   min-height: 265px;
   font: 10pt/1.25 "Lucida Console",monospace;
 }
+.jade-property-table label,
+.jade-property-table input,
+.jade-property-table button,
+.jade-property-table select,
+.jade-property-table textarea {
+  font: -webkit-small-control;
+  padding: 2px;
+  margin: 0;
+  width: auto;
+  height: auto;
+  line-height: 1;
+}
+
 .jade-window {
   background-image: -webkit-linear-gradient(top, #F0F0F0 0%, #D0D0D0 100%);
   background-image: -moz-linear-gradient(top, #F0F0F0 0%, #D0D0D0 100%);

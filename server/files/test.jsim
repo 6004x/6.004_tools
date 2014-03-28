@@ -1,0 +1,12 @@
+.global vdd
+VDD vdd gnd .9v
+.options vil=0.2 vih=.8
+
+Vin in gnd 0V
+
+Pup vdd in out
+Ndn out in gnd
+
+.dc Vin 0 .9 .001
+.plot out in
+.plot I(VDD)

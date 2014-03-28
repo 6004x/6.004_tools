@@ -18,21 +18,29 @@
 var jade_model = (function() {
     var modules = {};
 
-    // return specified Module, newly created if necessary.
-    function find_module(name,json) {
-        var m;
-        if (!(name in modules)) {
-            m = new Module(name);
-            modules[name] = m;
-            if (json === undefined)
-                FileSystem.getFile(name,function (json) {
-                        m.load(json);
-                    });
+    // find specified Module, newly created if necessary.
+    function find_module(name,callback) {
+        function load_complete() {
+            //console.log('loaded '+name);
+            if (callback) callback(m);
         }
 
-        m = modules[name];
-        if (json !== undefined) m.load(json);
-        return m;
+        function load(json) {
+            if (_.isString(json)) {
+                if (json == '') json = [{},{}];
+                else json = JSON.parse(json);
+            }
+            //console.log('loading '+name); //+': '+JSON.stringify(json));
+            m.load(json,load_complete);
+        }
+
+        var m = modules[name];
+        if (m === undefined) {
+            m = new Module(name);
+            modules[name] = m;
+            //console.log('get file '+name);
+            FileSystem.getFile(name,function(response){ load(response.data); });
+        } else if (callback) callback(m);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -41,27 +49,23 @@ var jade_model = (function() {
     //
     //////////////////////////////////////////////////////////////////////
 
-    function Module(name, json) {
+    function Module(name) {
         this.name = name;
         this.aspects = {};
         this.properties = {};
         this.modified = false;
 
-        // list of callbacks when load is complete
         this.loaded = false;
         this.listeners = [];
-
-        if (json) this.load(json);
     }
+
+    Module.prototype.add_listener = function (listener) {
+        if (this.loaded) listener();
+        else this.listeners.push(listener);
+    };
 
     Module.prototype.get_name = function() {
         return this.name;
-    };
-
-    Module.prototype.add_listener = function(callback) {
-        // if we're already loaded, do callback now
-        if (this.loaded) callback('load');
-        else this.listeners.push(callback);
     };
 
     Module.prototype.clear_modified = function() {
@@ -98,27 +102,32 @@ var jade_model = (function() {
     };
 
     // initialize module from JSON object
-    Module.prototype.load = function(json) {
-        if (_.isString(json)) {
-            if (json == '') json = [{},{}];
-            else json = JSON.parse(json);
-        }
+    Module.prototype.load = function(json,callback) {
+        var pending = 1;  // so we don't return too soon!
+        var m = this;
+        function load_complete() {
+            pending -= 1;
+            if (pending == 0) {
+                // a newly loaded module starts as unmodified
+                m.set_modified(false);
 
-        // load aspects
-        for (var a in json[0]) {
-            this.aspects[a] = new Aspect(a, this, json[0][a]);
+                m.loaded = true;
+                for (var i = 0; i < m.listeners.length; i += 1)
+                    m.listeners[i]();
+
+                if (callback) callback();
+            }
         }
 
         // load properties
         this.properties = json[1];
 
-        // a newly loaded module starts as unmodified
-        this.set_modified(false);
-
-        this.loaded = true;
-        for (var i = this.listeners.length - 1; i >= 0; i -= 1) {
-            this.listeners[i]('load');
+        // load aspects
+        for (var a in json[0]) {
+            pending += 1;
+            this.aspect(a).load(json[0][a],load_complete);
         }
+        load_complete();
     };
 
     Module.prototype.has_aspect = function(name) {
@@ -160,7 +169,7 @@ var jade_model = (function() {
     //
     //////////////////////////////////////////////////////////////////////
 
-    function Aspect(name, module, json) {
+    function Aspect(name, module) {
         this.module = module;
         this.name = name;
         this.components = [];
@@ -175,17 +184,29 @@ var jade_model = (function() {
         this.actions = [];
         this.current_action = -1; // index of current list of changes
         this.change_list = undefined;
-
-        if (json) this.load(json);
     }
 
     // initialize aspect from JSON object
-    Aspect.prototype.load = function(json) {
-        for (var i = 0; i < json.length; i += 1) {
-            var c = make_component(json[i]);
-            c.add(this);
+    Aspect.prototype.load = function(json,callback) {
+        //console.log('loading '+this.module.name); //+'.'+this.name+': '+JSON.stringify(json));
+
+        var pending = 1;  // so we don't return too soon!
+        var a = this;
+        function load_complete() {
+            pending -= 1;
+            if (pending == 0) {
+                //console.log('loaded '+a.module.name+'.'+a.name);
+                // a newly loaded module starts as unmodified
+                a.set_modified(false);
+                if (callback) callback();
+            }
         }
-        this.set_modified(false);
+
+        for (var i = 0; i < json.length; i += 1) {
+            pending += 1;
+            make_component(json[i],load_complete).add(this);
+        }
+        load_complete();
     };
 
     Aspect.prototype.set_modified = function(which) {
@@ -644,15 +665,22 @@ var jade_model = (function() {
 
     var built_in_components = {};
 
-    function make_component(json) {
+    function make_component(json,callback) {
         var c = built_in_components[json[0]];
 
-        if (c) return new c(json);
-        else return new Component(json);
+        if (c === undefined) {
+            c = new Component();
+            c.load(json,callback);
+        } else {
+            c = new c(json);
+            if (callback) callback();
+        }
+            
+        return c;
     }
 
     // general-purpose component, drawn in a diagram using its icon
-    function Component(json) {
+    function Component() {
         this.aspect = undefined;
         this.module = undefined;
         this.icon = undefined;
@@ -665,8 +693,6 @@ var jade_model = (function() {
         this.bounding_box = [0, 0, 0, 0]; // in device coords [left,top,right,bottom]
         this.bbox = this.bounding_box; // in absolute coords
         this.connections = [];
-
-        if (json) this.load(json);
     }
     Component.prototype.required_grid = 8;
 
@@ -681,16 +707,19 @@ var jade_model = (function() {
         return props;
     };
 
-    Component.prototype.load = function(json) {
+    Component.prototype.load = function(json,callback) {
         this.type = json[0];
         this.coords = json[1];
         this.properties = json[2] || {};
 
         // track down icon and set up bounding box and connections
         var component = this; // for closure
-        this.module = find_module(this.type);
-        this.module.add_listener(function() {
-            Component.prototype.compute_bbox.call(component);
+        find_module(this.type,function(m) {
+            component.module = m;
+            m.add_listener(function () {
+                Component.prototype.compute_bbox.call(component);
+                if (callback) callback();
+            });
         });
     };
 
@@ -1181,16 +1210,16 @@ var jade_model = (function() {
 
                 var lbl = mprop.label || p; // use provided label
                 var input;
-                if (mprop.type == 'menu') input = build_select(mprop.choices, this.properties[p]);
+                if (mprop.type == 'menu') input = jade_view.build_select(mprop.choices, this.properties[p]);
                 else {
                     var v = this.properties[p];
-                    input = build_input('text', Math.max(10, (v === undefined ? 1 : v.length) + 5), this.properties[p]);
+                    input = jade_view.build_input('text', Math.max(10, (v === undefined ? 1 : v.length) + 5), this.properties[p]);
                 }
                 input.prop_name = p;
                 fields[lbl] = input;
             }
 
-            var content = build_table(fields);
+            var content = jade_view.build_table(fields);
             var component = this;
 
             diagram.dialog('Edit Properties', content, function() {
@@ -1300,18 +1329,17 @@ var jade_model = (function() {
         return area === 0;
     }
 
-    var exports = {};
-
-    exports.Aspect = Aspect;
-    exports.Component = Component;
-    exports.make_component = make_component;
-    exports.ConnectionPoint = ConnectionPoint;
-    exports.connection_point_radius = connection_point_radius;
-
-    exports.find_module = find_module;
-    exports.built_in_components = built_in_components;
-    exports.canonicalize = canonicalize;
-    exports.aOrient = aOrient;
-
-    return exports;
+    // exports
+    return {
+        Aspect: Aspect,
+        Component: Component,
+        make_component: make_component,
+        ConnectionPoint: ConnectionPoint,
+        connection_point_radius: connection_point_radius,
+        find_module: find_module,
+        built_in_components: built_in_components,
+        canonicalize: canonicalize,
+        aOrient: aOrient,
+        modules: modules
+    };
 })();

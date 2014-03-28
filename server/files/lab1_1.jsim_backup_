@@ -1,0 +1,17 @@
+.global vdd
+VDD vdd gnd 1v
+
+Vol vol gnd 0.2  // marker for Vol
+Voh voh gnd 0.8  // marker for Vol
+
+Vin in gnd 0V    // inverter input
+
+// CMOS inverter: pfet pullup, nfet pulldown
+Pup vdd in out W=38.4
+Ndn gnd in out
+
+// create VTC: plot vout for vin values in
+// the range 0V to 3V.  Include markers for
+// Vol and Voh to make measurements easier.
+.dc Vin 0 1 .005
+.plot in out vol voh
