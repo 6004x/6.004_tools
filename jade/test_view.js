@@ -54,6 +54,7 @@ var test_view = (function() {
         this.aspect = undefined;
         this.test_component = undefined;
 
+        /*
         this.toolbar = new jade_view.Toolbar(this);
         this.toolbar.add_tool('check', jade_icons.check_icon, 'Check: run tests',
                               function(testeditor) {
@@ -62,6 +63,7 @@ var test_view = (function() {
         this.toolbar.enable_tools();
 
         div.appendChild(this.toolbar.toolbar[0]);
+         */
 
         var textarea = $('<textarea class="jade-test-editor"></textarea>');
         this.textarea = textarea;
@@ -82,9 +84,9 @@ var test_view = (function() {
     TestEditor.prototype.resize = function(w, h, selected) {
         var e = this.textarea;
 
-        w -= e.outerWidth(true) - e.width();
-        h -= this.toolbar.height() + (e.outerHeight(true) - e.height());
-        //console.log('test: w='+w+', h='+h);
+        // .jade-test-editor: border: 1, padding-l/r: 6, padding-t/b: 4
+        w -= 14;
+        h -= 10;
 
         e.width(w);
         e.height(h);

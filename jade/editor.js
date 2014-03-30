@@ -193,15 +193,12 @@ var Editor = function(container, mode) {
 
         if(!mCurrentDocument) return; // If we don't have a current document there is no height to set, so don't die over it.
 
-        // allow for margins, border, padding
-        width -= mContainer.outerWidth(true) - mContainer.width();
-        height -= mContainer.outerHeight(true) - mContainer.height();
-
         mContainer.height(height);
         mContainer.width(width);
 
+        // leave room for editor buttons and file tabs
         height -= $('.btn-toolbar',mContainer).outerHeight(true) + $('.nav-tabs',mContainer).outerHeight(true);
-        //console.log('editor: w='+width+', h='+height);
+
         _.each(mOpenDocuments, function(doc) {
             doc.editor.resize(width,height);
             //doc.editor.refresh();

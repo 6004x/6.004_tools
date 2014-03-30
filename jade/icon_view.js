@@ -90,9 +90,10 @@ var icon_view = (function() {
         // icon canvas
         var e = $(this.diagram.canvas);
 
-        w -= e.outerWidth(true) - e.width();
-        h -= this.toolbar.height() + (e.outerHeight(true) - e.height());
-        //console.log('icon: w='+w+', h='+h);
+        // .jade-toolbar: margin-bottom: 5, height: 25
+        // .jade-icon-diagram:  border: 1,
+        w -= 2;
+        h -= 32;
 
         e.width(w);
         e.height(h);

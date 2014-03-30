@@ -127,14 +127,13 @@ var schematic_view = (function() {
         // schematic canvas
         var e = $(this.diagram.canvas);
 
-        w -= e.outerWidth(true) - e.width();
-        h -= 30 /*this.toolbar.height()*/ + (e.outerHeight(true) - e.height());
-        //console.log('sch: w='+w+', h='+h);
+        // .jade-toolbar: margin-bottom: 5, height: 25
+        // .jade-schematic-diagram:  border: 1,
+        w -= 2;
+        h -= 32;
 
         e.width(w);
         e.height(h);
-
-        //this.parts_bin.resize(dx, dy, selected);
 
         // adjust diagram to reflect new size
         if (selected) this.diagram.resize();

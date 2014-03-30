@@ -1314,23 +1314,24 @@ var jade_view = (function() {
 
         var e = this.parent;
 
-        // allow for margins, border, padding
-        w -= e.outerWidth(true) - e.width();
-        h -= e.outerHeight(true) - e.height();
-        //console.log('jade: w='+w+', h='+h);
+        // allow for margins, border, padding of tab-pane
+        w -= 2;    // border: 1
+        h -= 1;    // bottom-border: 1
 
         e.width(w);
         e.height(h);
 
         // adjust size of all the tab bodies.  Account for tabs and status divs
-        h -=  39; //e.find('.jade-tabs-div').outerHeight(true) + e.find('.jade-status').outerHeight(true);
+        // .jade-tabs-div: margin-top: 4, height: 16
+        // .jade-status: padding-top: 5, height: 14
+        h -=  39;
         var ediv,ew,eh;
         for (var tab in this.tabs) {
             ediv = this.tabs[tab][1]; // [tab div, body div]
             e = $(ediv);
-            ew = w - (e.outerWidth(true) - e.width());
-            eh = h - (e.outerHeight(true) - e.height());
-            // remember to account for padding, border, margins
+            // .jade-tab-body: border: 1, padding: 5, margin-top: 2
+            ew = w - 12;
+            eh = h - 14;
             e.width(ew);
             e.height(eh);
             // inform associated editor about its new size
