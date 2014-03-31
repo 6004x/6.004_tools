@@ -890,11 +890,13 @@ var test_view = (function() {
             // construct a data set for the given signal
             function new_dataset(signal) {
                 if (results[signal] !== undefined) {
-                    return {xvalues: results[signal].xvalues,
-                            yvalues: results[signal].yvalues,
-                            name: signal,
+                    return {xvalues: [results[signal].xvalues],
+                            yvalues: [results[signal].yvalues],
+                            name: [signal],
                             xunits: 's',
-                            yunits: 'V'
+                            yunits: 'V',
+                            color: ['#268bd2'],
+                            type: ['analog']
                            };
                 } else return undefined;
             }
@@ -929,6 +931,14 @@ var test_view = (function() {
                 // graph the result and display in a window
                 var graph = plot.graph(dataseries);
                 pane.append(graph);
+
+                var sim_pane = $('#simulation-pane');
+                var plots = $('.plot-container',sim_pane);
+                if (plots.length > 0) {
+                    var h = $('.alert',sim_pane).outerHeight(true);
+                    plots[0].resize(plots[0],sim_pane.width(),sim_pane.height() - h);
+                }
+
             }
         }
 

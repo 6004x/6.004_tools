@@ -42,81 +42,12 @@ $(function() {
         }
         set_height();
     });
-    
-    // set up the results pane
-    //$('#simulation-pane').append('<div id="results"></div>');
-    //$('#results').data("current",null);
 
     // Make an editor
     var mode = 'jade';
     var editor = new Editor('#editor', mode);
     Folders.setup('#filetree', editor, mode);
     
-    /*
-    function dls(){
-        $('#split_pane').click();
-        Checkoff.reset();
-        var content = editor.content();
-        if (!content) return;
-        var filename = editor.currentTab();
-        //Simulator.simulate(content,filename,$('#simulation-pane'),error_catcher,"device");
-    }
-    
-    function gls(){
-        $('#split_pane').click();
-        Checkoff.reset();
-        var content = editor.content();
-        if (!content) return;
-        var filename = editor.currentTab();
-        //Simulator.simulate(content,filename,$('#simulation-pane'),error_catcher,"gate");
-    }
-
-    function ta(){
-        $('#split_pane').click();
-
-        var content = editor.content();
-        if (!content) return;
-        var filename = editor.currentTab();
-        //Simulator.timing_analysis(content,filename,$('#simulation-pane'),error_catcher);
-    }
-    
-    function error_catcher(err){
-        if (err instanceof Parser.CustomError){
-            if (editor.filenames().indexOf(err.filename) == -1){
-                editor.openFile(err.filename, true, function(editor_filename){
-                    editor.markErrorLine(editor_filename, err.message, err.line-1, err.column);
-                });
-            } else {
-                editor.markErrorLine(err.filename, err.message, err.line-1, err.column);
-            }
-        } else {
-            throw err;
-        }
-    }
-     */
-
-    // Add some buttons to it
-    /*
-    editor.addButtonGroup([new ToolbarButton('<img src="simulate.png" style="position:relative;bottom:1px">',
-                                             dls, 'Device-level Simulation'),
-                           new ToolbarButton('<img src="gatesim.png" style="position:relative;bottom:2px">',
-                                             gls, 'Gate-level Simulation'),
-                           new ToolbarButton('<img src="timing_analysis.png" style="position:relative;bottom:2px">',
-                                             ta, 'Timing Analysis')
-                          ]);
-    
-    editor.addButtonGroup([new ToolbarButton('Checkoff',function(){
-        try{
-            Checkoff.testResults();
-        } catch (err) {
-            error_catcher(err);
-        }
-    },"Checkoff")]);
-    */
-    
-    // setup things
-    //Plot.setup();
-    //Checkoff.setEditor(editor);
     
     function window_height() {
         return $('.xblock-6004').innerHeight();
@@ -125,7 +56,20 @@ $(function() {
     var set_height = function() {
         var eparent = $('#editor-pane').parent();
         editor.resize(eparent.width(),eparent.height());
+
+        // limit the simulation pane's height to that of the editor pane
+        var sim_pane = $('#simulation-pane');
+        sim_pane.height($('#editor-pane').height());
+
+        //$('.timing-analysis').height(sim_pane.height());
+
+        var plots = $('.plot-container');
+        if (plots.length > 0) {
+            var h = $('.alert',sim_pane).outerHeight(true);
+            plots[0].resize(plots[0],sim_pane.width(),sim_pane.height() - h);
+        }
     };
+
     set_height();
     $(window).resize(set_height); // Update the height whenever the browser window changes size.
 
