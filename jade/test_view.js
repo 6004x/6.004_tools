@@ -526,7 +526,7 @@ var test_view = (function() {
 
     function test_parse(module) {
         var source = module.aspect('test').components[0];
-        if (source === undefined) throw module.name + ' doesn\'t have a test aspect.';
+        if (source === undefined || source.test.length == 0) throw module.name + ' doesn\'t have a test aspect.';
         source = source.test;
 
         // remove multiline comments, in-line comments
@@ -946,7 +946,7 @@ var test_view = (function() {
             test_netlist(test);
             test_simulate(test,pane);
         } catch (e) {
-            console.log(e.stack);
+            //console.log(e.stack);
             pane.empty();
             pane.prepend('<div class="alert alert-danger">' + e +
                         '<button class="close" data-dismiss="alert">&times;</button></div>');

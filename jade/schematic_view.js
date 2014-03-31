@@ -1496,7 +1496,7 @@ var schematic_view = (function() {
                     var ac_fstart = fields[fstart_lbl].value;
                     var ac_fstop = fields[fstop_lbl].value;
                     var ac_source = fields[source_name_lbl].value;
-                    console.log(ac_fstart+", "+ac_fstop+", "+ac_source);
+                    //console.log(ac_fstart+", "+ac_fstop+", "+ac_source);
 
                     module.set_property('ac_fstart', ac_fstart);
                     module.set_property('ac_fstop', ac_fstop);
