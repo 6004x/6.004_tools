@@ -54,7 +54,7 @@ var test_view = (function() {
         this.aspect = undefined;
         this.test_component = undefined;
 
-        var textarea = $('<textarea class="jade-test-editor"></textarea>');
+        var textarea = $('<textarea class="jade-test-editor" spellcheck="false"></textarea>');
         this.textarea = textarea;
         // on changes, update test component of module's test aspect
         var editor = this;  // for closure
@@ -931,14 +931,7 @@ var test_view = (function() {
                 // graph the result and display in a window
                 var graph = plot.graph(dataseries);
                 pane.append(graph);
-
-                var sim_pane = $('#simulation-pane');
-                var plots = $('.plot-container',sim_pane);
-                if (plots.length > 0) {
-                    var h = $('.alert',sim_pane).outerHeight(true);
-                    plots[0].resize(plots[0],sim_pane.width(),sim_pane.height() - h);
-                }
-
+                $(window).resize();  // resize everything to fit
             }
         }
 
@@ -947,9 +940,9 @@ var test_view = (function() {
     }
 
 
-    function do_test (module,pane) {
+    function do_test (editor,pane) {
         try {
-            var test = test_parse(module);
+            var test = test_parse(editor.module);
             test_netlist(test);
             test_simulate(test,pane);
         } catch (e) {

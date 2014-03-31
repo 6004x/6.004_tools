@@ -117,6 +117,22 @@ var jade_utils = (function() {
     //
     ///////////////////////////////////////////////////////////////////////////////
 
+    function parse_source(v) {
+        // generic parser: parse v as either <value> or <fun>(<value>,...)
+        var src = {};
+        var m = v.match(/^\s*(\w+)\s*\(([^\)]*)\)\s*$/); // parse f(arg,arg,...)
+        if (m) {
+            src.type = m[1];
+            src.args = m[2].split(/\s*,\s*/).map(parse_number_alert);
+        }
+        else {
+            src.type = 'dc';
+            src.args = [parse_number_alert(v)];
+        }
+        return src;
+    }
+
+
     // argument is a string describing the source's value (see comments for details)
     // source types: dc,step,square,triangle,sin,pulse,pwl,pwl_repeating
 
@@ -127,7 +143,7 @@ var jade_utils = (function() {
     //   inflection_point(t) -- compute time after t when a time point is needed
     //   period -- repeat period for periodic sources (0 if not periodic)
 
-    function parse_source(v) {
+    function xparse_source(v) {
         // generic parser: parse v as either <value> or <fun>(<value>,...)
         var src = {};
         src.period = 0; // Default not periodic
@@ -147,6 +163,7 @@ var jade_utils = (function() {
             src.fun = 'dc';
             src.args = [parse_number_alert(v)];
         }
+        
         //console.log(src.fun + ': ' + src.args);
 
         var v1,v2,voffset,va,td,tr,tf,freq,duty_cycle,pw,per,t_change,t1,t2,t3,t4,phase;
@@ -155,7 +172,7 @@ var jade_utils = (function() {
         // dc(v)
         if (src.fun == 'dc') {
             v1 = arg_value(src.args, 0, 0);
-            src.args = [v];
+            src.args = [v1];
             src.value = function(t) {
                 return v1;
             }; // closure

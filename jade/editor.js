@@ -364,7 +364,7 @@ var Editor = function(container, mode) {
         if (mCurrentDocument) {
             // whenever a simuulation is run, autosaving would be nice.
             do_autosave(mCurrentDocument);
-            handler(mCurrentDocument.editor.module,pane);
+            handler(mCurrentDocument.editor,pane);
         }
     };
 

@@ -773,7 +773,7 @@ var jade_view = (function() {
                 // convert to diagram coordinates
                 var s = [r[0] / this.scale + this.origin_x, r[1] / this.scale + this.origin_y,
                          r[2] / this.scale + this.origin_x, r[3] / this.scale + this.origin_y];
-                canonicalize(s);
+                jade_model.canonicalize(s);
 
                 if (!shiftKey) this.unselect_all();
 

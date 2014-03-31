@@ -415,6 +415,7 @@ var schematic_view = (function() {
     Wire.prototype.draw = function(diagram) {
         var dx = this.coords[3];
         var dy = this.coords[4];
+        var x,y;
 
         this.draw_line(diagram, 0, 0, dx, dy);
 
@@ -428,8 +429,8 @@ var schematic_view = (function() {
             if ((ncp0 && !ncp1) || (!ncp0 && ncp1)) {
                 // this is the unconnected end
                 var cp = this.connections[ncp0 ? 0 : 1];
-                var x = cp.offset_x;
-                var y = cp.offset_y;
+                x = cp.offset_x;
+                y = cp.offset_y;
                 if (dx === 0 || Math.abs(dy / dx) > 1) {
                     // vertical-ish wire
                     var cy = (this.bounding_box[1] + this.bounding_box[3]) / 2;
@@ -458,11 +459,15 @@ var schematic_view = (function() {
             }
             else {
                 // draw label at center of wire
-                if (dx === 0) align = 3;
-                else if (dy === 0) align = 7;
-                else if (dy / dx > 0) align = 6;
-                else align = 8;
-                this.draw_text(diagram, name, dx >> 1, dy >> 1, align, diagram.property_font);
+                x = dx >> 1;
+                y = dy >> 1;
+
+                if (dx === 0) { align = 3; x += 1; }
+                else if (dy === 0) { align = 7; y -= 1; }
+                else if (dy / dx > 0) { align = 6; x += 1; }
+                else { align = 8; x -= 1; } 
+
+                this.draw_text(diagram, name, x, y, align, diagram.property_font);
             }
         }
     };
@@ -1198,54 +1203,44 @@ var schematic_view = (function() {
     }
 
     // handler for DC analysis tool
-    function dc_analysis(diagram) {
-        // remove any previous annotations
-        diagram.remove_annotations();
+    function do_dc (editor,pane) {
+        try {
+            var diagram = $('.jade-schematic-diagram',editor.parent)[0].diagram;
 
-        var netlist = diagram_netlist(diagram);
+            // remove any previous annotations
+            diagram.remove_annotations();
 
-        if (netlist.length > 0) {
-            var ckt;
-            try {
-                ckt = new cktsim.Circuit(netlist);
-            }
-            catch (e) {
-                alert(e);
-                return;
-            }
+            var netlist = diagram_netlist(diagram);
 
-            // run the analysis
-            var operating_point;
-            try {
-                operating_point = ckt.dc();
-            }
-            catch (e) {
-                alert("Error during DC analysis:\n\n" + e);
-                return;
-            }
+            if (netlist.length > 0) {
+                var ckt = new cktsim.Circuit(netlist);
 
-            //console.log('OP: '+JSON.stringify(operating_point));
+                // run the analysis
+                var operating_point = ckt.dc(true);
 
-            if (operating_point !== undefined) {
-                // save a copy of the results for submission
-                var dc = {};
-                for (var i in operating_point) {
-                    dc[i] = operating_point[i];
+                if (operating_point !== undefined) {
+                    /*
+                    // save a copy of the results for submission
+                    var dc = {};
+                    for (var i in operating_point) {
+                        dc[i] = operating_point[i];
+                    }
+                    // add permanenty copy to module's properties
+                    diagram.aspect.module.set_property('dc_results', dc);
+                     */
+
+                    // display results on diagram
+                    diagram.add_annotation(function(diagram) {
+                        display_dc(diagram, operating_point);
+                    });
                 }
-                // add permanenty copy to module's properties
-                diagram.aspect.module.set_property('dc_results', dc);
-
-                // display results on diagram
-                diagram.add_annotation(function(diagram) {
-                    display_dc(diagram, operating_point);
-                });
             }
-        }
-    }
-
-    function do_dc (module,pane) {
-        console.log(module);
-        pane.text('Hi there from do_dc!');
+        } catch (e) {
+            console.log(e.stack);
+            pane.empty();
+            pane.prepend('<div class="alert alert-danger">' + e +
+                         '<button class="close" data-dismiss="alert">&times;</button></div>');
+        };
     }
 
     // add DC analysis to tool bar
@@ -1321,21 +1316,14 @@ var schematic_view = (function() {
     }
 
     // perform ac analysis
-    function ac_analysis(netlist, diagram, fstart, fstop, ac_source_name) {
+    function ac_analysis(netlist, diagram, fstart, fstop, ac_source_name, pane) {
         var npts = 50;
 
         if (netlist.length > 0) {
             var ckt = new cktsim.Circuit(netlist);
-            var results;
-            try {
-                results = ckt.ac(npts, fstart, fstop, ac_source_name);
-            }
-            catch (e) {
-                alert("Error during AC analysis:\n\n" + e);
-                return;
-            }
+            var results = ckt.ac(npts, fstart, fstop, ac_source_name);
 
-            if (typeof results == 'string') this.message(results);
+            if (_.isString(results)) throw results;
             else {
                 var x_values = results._frequencies_;
                 var i,j,v;
@@ -1345,6 +1333,7 @@ var schematic_view = (function() {
                     x_values[i] = Math.log(x_values[i]) / Math.LN10;
                 }
 
+                /*
                 // see what we need to submit.  Expecting attribute of the form
                 // submit_analyses="{'tran':[[node_name,t1,t2,t3],...],
                 //                   'ac':[[node_name,f1,f2,...],...]}"
@@ -1375,6 +1364,7 @@ var schematic_view = (function() {
 
                     diagram.aspect.module.set_property('ac_result', ac_results);
                 }
+                 */
 
                 // set up plot values for each node with a probe
                 var y_values = []; // list of [color, result_array]
@@ -1423,30 +1413,30 @@ var schematic_view = (function() {
                         v[j] = 20.0 * Math.log(v[j] / v_max) / Math.LN10;
                     }
                     // magnitude
-                    dataseries.push({xvalues: x_values,
-                                     yvalues: v,
-                                     name: label,
-                                     color: color,
-                                     offset: offset,
+                    dataseries.push({xvalues: [x_values],
+                                     yvalues: [v],
+                                     name: [label],
+                                     color: [color],
                                      //xlabel: 'log(Frequency in Hz)',
                                      ylabel: 'Magnitude',
-                                     yunits: 'dB'
+                                     yunits: 'dB',
+                                     type: ['analog']
                                     });
                     // phase
-                    dataseries.push({xvalues: x_values,
-                                     yvalues: results[label].phase,
-                                     name: label,
-                                     color: color,
-                                     offset: offset,
+                    dataseries.push({xvalues: [x_values],
+                                     yvalues: [results[label].phase],
+                                     name: [label],
+                                     color: [color],
                                      xlabel: 'log(Frequency in Hz)',
                                      ylabel: 'Phase',
-                                     yunits: '\u00B0'    // degrees
+                                     yunits: '\u00B0',    // degrees
+                                     type: ['analog']
                                     });
                 }
 
                 // graph the result and display in a window
                 var graph = plot.graph(dataseries);
-                diagram.window('Results of AC Analysis', graph);
+                pane.append(graph);
             }
         }
     }
@@ -1482,13 +1472,67 @@ var schematic_view = (function() {
         return max;
     }
 
-    function do_ac (module,pane) {
-        console.log(module);
-        pane.text('Hi there from do_ac!');
+    function do_ac (editor,pane) {
+        try {
+            var diagram = $('.jade-schematic-diagram',editor.parent)[0].diagram;
+            diagram.remove_annotations();  // remove any annotations from DC analysis
+
+            var fstart_lbl = 'Starting frequency (Hz)';
+            var fstop_lbl = 'Ending frequency (Hz)';
+            var source_name_lbl = 'Name of V or I source for ac';
+
+            var module = diagram.aspect.module;
+            var fields = {};
+            fields[fstart_lbl] = jade_view.build_input('text', 10, module.properties.ac_fstart || '10');
+            fields[fstop_lbl] = jade_view.build_input('text', 10, module.properties.ac_fstop || '1G');
+            fields[source_name_lbl] = jade_view.build_input('text', 10, module.properties.ac_source);
+            var content = jade_view.build_table(fields);
+            var start = $('<button class="btn">Run Analysis</button>');
+            start.on('click',function () {
+                try {
+                    $('.plot-container',pane).remove();
+
+                    // retrieve parameters, remember for next time
+                    var ac_fstart = fields[fstart_lbl].value;
+                    var ac_fstop = fields[fstop_lbl].value;
+                    var ac_source = fields[source_name_lbl].value;
+                    console.log(ac_fstart+", "+ac_fstop+", "+ac_source);
+
+                    module.set_property('ac_fstart', ac_fstart);
+                    module.set_property('ac_fstop', ac_fstop);
+                    module.set_property('ac_source', ac_source);
+
+                    ac_fstart = jade_utils.parse_number_alert(ac_fstart);
+                    ac_fstop = jade_utils.parse_number_alert(ac_fstop);
+                    if (ac_fstart === undefined || ac_fstop === undefined) return;
+
+                    var netlist = diagram_netlist(diagram);
+                    if (find_probes(netlist).length === 0) {
+                        throw "AC Analysis: there are no voltage probes in the diagram!";
+                    }
+
+                    ac_analysis(netlist, diagram, ac_fstart, ac_fstop, ac_source, pane);
+                    $(window).resize();  // resize everything to fit
+                } catch (e) {
+                    console.log(e.stack);
+                    pane.prepend('<div class="alert alert-danger">' + e +
+                                 '<button class="close" data-dismiss="alert">&times;</button></div>');
+                }
+            });
+            var user_input = $('<div class="alert"></div>');
+            user_input.append('<b>AC Analysis</b><p>');
+            user_input.append($('<center></center>').append(content));
+            user_input.append(start);
+            pane.append(user_input);
+        } catch (e) {
+            console.log(e.stack);
+            pane.prepend('<div class="alert alert-danger">' + e +
+                         '<button class="close" data-dismiss="alert">&times;</button></div>');
+        };
     }
 
     // add AC analysis to tool bar
-    schematic_tools.push(['AC', 'AC Analysis', do_dc]);
+    schematic_tools.push(['AC', 'AC Analysis', do_ac]);
 
     ///////////////////////////////////////////////////////////////////////////////
     //
@@ -1558,70 +1602,173 @@ var schematic_view = (function() {
     }
 
     // process results of transient analysis
-    function transient_results(results,diagram,probes) {
+    function transient_results(results,diagram,probes,pane) {
         var v;
 
-        if (typeof results == 'string') alert("Error during Transient analysis:\n\n" + results);
-        else if (results === undefined) alert("Sorry, no results from transient analysis to plot!");
-        else {
-            // see what we need to submit.  Expecting attribute of the form
-            // submit_analyses="{'tran':[[node_name,t1,t2,t3],...],
-            //                   'ac':[[node_name,f1,f2,...],...]}"
-            var submit = diagram.getAttribute('submit_analyses');
-            if (submit && submit.indexOf('{') === 0) submit = JSON.parse(submit).tran;
-            else submit = undefined;
+        /*
+        // see what we need to submit.  Expecting attribute of the form
+        // submit_analyses="{'tran':[[node_name,t1,t2,t3],...],
+        //                   'ac':[[node_name,f1,f2,...],...]}"
+        var submit = diagram.getAttribute('submit_analyses');
+        if (submit && submit.indexOf('{') === 0) submit = JSON.parse(submit).tran;
+        else submit = undefined;
 
-            if (submit !== undefined) {
-                // save a copy of the results for submission
-                var tran_results = {};
+        if (submit !== undefined) {
+            // save a copy of the results for submission
+            var tran_results = {};
 
-                // save requested values for each requested node
-                for (var j = 0; j < submit.length; j += 1) {
-                    var tlist = submit[j]; // [node_name,t1,t2,...]
-                    var node = tlist[0];
-                    var values = results[node];
-                    var tvlist = [];
-                    // for each requested time, interpolate waveform value
-                    for (var k = 1; k < tlist.length; k += 1) {
-                        var t = tlist[k];
-                        v = interpolate(t, xvalues, values);
-                        tvlist.push([t, v === undefined ? 'undefined' : v]);
-                    }
-                    // save results as list of [t,value] pairs
-                    tran_results[node] = tvlist;
+            // save requested values for each requested node
+            for (var j = 0; j < submit.length; j += 1) {
+                var tlist = submit[j]; // [node_name,t1,t2,...]
+                var node = tlist[0];
+                var values = results[node];
+                var tvlist = [];
+                // for each requested time, interpolate waveform value
+                for (var k = 1; k < tlist.length; k += 1) {
+                    var t = tlist[k];
+                    v = interpolate(t, xvalues, values);
+                    tvlist.push([t, v === undefined ? 'undefined' : v]);
                 }
-
-                diagram.aspect.module.set_property('tran_result', tran_results);
+                // save results as list of [t,value] pairs
+                tran_results[node] = tvlist;
             }
 
-            // set up plot values for each node with a probe
-            var dataseries = [];
-            for (var i = probes.length - 1; i >= 0; i -= 1) {
-                var color = probes[i][0];
-                var label = probes[i][1];
-                v = results[label];
-                if (v === undefined) {
-                    alert('The ' + color + ' probe is connected to node ' + '"' + label + '"' + ' which is not an actual circuit node');
-                } else if (color != 'x-axis') {
-                    dataseries.push({xvalues: v.xvalues,
-                                     yvalues: v.yvalues,
-                                     name: label,
-                                     color: color,
-                                     xunits: 's',
-                                     yunits: (probes[i][3] == 'voltage') ? 'V' : 'A',
-                                    });
-                }
-            }
-
-            // graph the result and display in a window
-            var graph = plot.graph(dataseries);
-            diagram.window('Results of Transient Analysis', graph);
+            diagram.aspect.module.set_property('tran_result', tran_results);
         }
+         */
+
+        // set up plot values for each node with a probe
+        var dataseries = [];
+        for (var i = probes.length - 1; i >= 0; i -= 1) {
+            var color = probes[i][0];
+            var label = probes[i][1];
+            v = results[label];
+            if (v === undefined) {
+                throw 'The ' + color + ' probe is connected to node ' + '"' + label + '"' + ' which is not an actual circuit node';
+            } else if (color != 'x-axis') {
+                dataseries.push({xvalues: [v.xvalues],
+                                 yvalues: [v.yvalues],
+                                 name: [label],
+                                 color: [color],
+                                 xunits: 's',
+                                 yunits: (probes[i][3] == 'voltage') ? 'V' : 'A',
+                                 type: ['analog']
+                                });
+            }
+        }
+
+        // graph the result and display in a window
+        var graph = plot.graph(dataseries);
+        pane.append(graph);
     }
 
-    function do_tran (module,pane) {
-        console.log(module);
-        pane.text('Hi there from do_tran!');
+    function do_tran (editor,pane) {
+        try {
+            var diagram = $('.jade-schematic-diagram',editor.parent)[0].diagram;
+            diagram.remove_annotations();  // remove any annotations from DC analysis
+
+            var tstop_lbl = 'Stop Time (seconds)';
+
+            var module = diagram.aspect.module;
+            var fields = {};
+            fields[tstop_lbl] = jade_view.build_input('text', 10, module.properties.tran_tstop);
+            var content = jade_view.build_table(fields);
+            var start = $('<button class="btn">Run Analysis</button>');
+            start.on('click',function () {
+                try {
+                    $('.plot-container',pane).remove();
+
+                    // retrieve parameters, remember for next time
+                    module.set_property('tran_tstop', fields[tstop_lbl].value);
+                    var tstop = jade_utils.parse_number_alert(module.properties.tran_tstop);
+
+                    var netlist = diagram_netlist(diagram);
+                    if (find_probes(netlist).length === 0) {
+                        throw "AC Analysis: there are no voltage probes in the diagram!";
+                    }
+
+                    if (netlist.length > 0 && tstop !== undefined) {
+                        // gather a list of nodes that are being probed.  These
+                        // will be added to the list of nodes checked during the
+                        // LTE calculations in transient analysis
+                        var probes = find_probes(netlist);
+                        var probe_names = {};
+                        for (var i = probes.length - 1; i >= 0; i -= 1) {
+                            probe_names[i] = probes[i][1];
+                        }
+
+                        // transient analysis progress text and halt button
+                        var tranProgress = $('<div><span></span></br></div>');
+                        var progressTxt = tranProgress.find('span');
+                        var tranHalt = false;
+                        var haltButton = $('<button class="btn btn-danger">Halt</button>');
+                        haltButton.tooltip({title:'Halt Simulation',delay:100,container:'body'});
+                        haltButton.on("click",function(){
+                            tranHalt = true;
+                        });
+                        tranProgress.append(haltButton);
+                        pane.append(tranProgress);
+
+                        cktsim.transient_analysis(netlist,tstop,probe_names,function(percent_complete,results) {
+                            try {
+                                if (percent_complete !== undefined) {
+                                    progressTxt.text("Performing Transient Analysis... "+percent_complete+"%");
+                                    return tranHalt;
+                                }
+                            
+                                tranProgress.remove();  // all done with progress bar
+
+                                // error? let user see what's up...
+                                if (results === undefined) throw "Sorry, no results from transient analysis to plot!";
+                                else if (_.isString(results)) throw results;
+
+                                // set up plot values for each node with a probe
+                                var dataseries = [];
+                                for (var i = probes.length - 1; i >= 0; i -= 1) {
+                                    var color = probes[i][0];
+                                    var label = probes[i][1];
+                                    v = results[label];
+                                    if (v === undefined) {
+                                        throw 'The ' + color + ' probe is connected to node ' + '"' + label + '"' + ' which is not an actual circuit node';
+                                    } else if (color != 'x-axis') {
+                                        dataseries.push({xvalues: [v.xvalues],
+                                                         yvalues: [v.yvalues],
+                                                         name: [label],
+                                                         color: [color],
+                                                         xunits: 's',
+                                                         yunits: (probes[i][3] == 'voltage') ? 'V' : 'A',
+                                                         type: ['analog']
+                                                        });
+                                    }
+                                }
+
+                                // graph the result and display in a window
+                                var graph = plot.graph(dataseries);
+                                pane.append(graph);
+                                $(window).resize();  // resize everything to fit
+                            } catch (e) {
+                                console.log(e.stack);
+                                pane.prepend('<div class="alert alert-danger">' + e +
+                                             '<button class="close" data-dismiss="alert">&times;</button></div>');
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.log(e.stack);
+                    pane.prepend('<div class="alert alert-danger">' + e +
+                                 '<button class="close" data-dismiss="alert">&times;</button></div>');
+                }
+            });
+            var user_input = $('<div class="alert"></div>');
+            user_input.append('<b>Transient Analysis</b><p>');
+            user_input.append($('<center></center>').append(content));
+            user_input.append(start);
+            pane.append(user_input);
+        } catch (e) {
+            console.log(e.stack);
+            pane.prepend('<div class="alert alert-danger">' + e +
+                         '<button class="close" data-dismiss="alert">&times;</button></div>');
+        };
     }
 
     // add transient analysis to tool bar

@@ -65,7 +65,9 @@ $(function() {
 
         var plots = $('.plot-container');
         if (plots.length > 0) {
-            var h = $('.alert',sim_pane).outerHeight(true);
+            // leave room for various alert divs at the top of the pane
+            var h = 0;
+            $('.alert',sim_pane).each(function (index,div) { h += $(div).outerHeight(true); });
             plots[0].resize(plots[0],sim_pane.width(),sim_pane.height() - h);
         }
     };
