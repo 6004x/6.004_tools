@@ -117,10 +117,15 @@ var schematic_view = (function() {
         // let user drop parts onto canvas
         $(this.diagram.canvas).droppable({
             'accept' : '.file_name',
-            'activeClass' : 'active_drop',
             'greedy' : true,
             'hoverClass' : 'jade-schematic-hover-drop',
             'tolerance' : 'pointer',
+            'activate': function(e, ui){
+                div.diagram.message("Drag and drop part onto schematic to insert.");
+            },
+            'deactivate': function(e, ui){
+                div.diagram.clear_message("Drag and drop part onto schematic to insert.");
+            },
             'drop' : function(e, ui){
                 var diagram = div.diagram;
                 diagram.set_cursor_grid(8); // for parts

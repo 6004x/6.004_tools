@@ -290,7 +290,7 @@ var jade_model = (function() {
                 changes[i](this, 'redo');
             }
             this.clean_up_wires(false); // canonicalize diagram's wires
-            this.changed = true;
+            this.set_modified(true);
         }
     };
 
