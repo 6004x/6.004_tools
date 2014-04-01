@@ -1244,11 +1244,19 @@ var jade_view = (function() {
         // add status line at the bottom
         this.status.text('');
 
+        _.extend(jade, Backbone.Events);
         jade_model.find_module(name,function(m){
             jade.module = m;
+            m.add_listener('status',function () {
+                jade.trigger('change');
+            });
             jade.refresh();
         });
     }
+
+    Jade.prototype.clear_modified = function () {
+        if (this.module) this.module.clear_modified();
+    };
 
     Jade.prototype.changeGeneration = function () {
         return 0;
@@ -1270,10 +1278,7 @@ var jade_view = (function() {
     };
 
     Jade.prototype.isClean = function(generation) {
-        return this.module.modified;
-    };
-
-    Jade.prototype.on = function() {
+        return !this.module.modified;
     };
 
     // remember module and aspect for next visit

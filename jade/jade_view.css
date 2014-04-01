@@ -57,6 +57,9 @@
   border: 1px solid black;
   outline: none;
 }
+.jade-schematic-hover-drop {
+  border-color: lightblue;
+}
 .jade-icon-diagram {
   width: 100px;
   height: 100px;

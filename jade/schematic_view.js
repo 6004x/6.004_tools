@@ -113,6 +113,35 @@ var schematic_view = (function() {
         div.appendChild(this.diagram.canvas);
         this.aspect = new jade_model.Aspect('untitled', null);
         this.diagram.set_aspect(this.aspect);
+
+        // let user drop parts onto canvas
+        $(this.diagram.canvas).droppable({
+            'accept' : '.file_name',
+            'activeClass' : 'active_drop',
+            'greedy' : true,
+            'hoverClass' : 'jade-schematic-hover-drop',
+            'tolerance' : 'pointer',
+            'drop' : function(e, ui){
+                var diagram = div.diagram;
+                diagram.set_cursor_grid(8); // for parts
+                diagram.event_coords(e);
+                var filePath = ui.draggable.data('path');
+
+                var coords = [diagram.cursor_x,diagram.cursor_y,0];
+                jade_model.make_component([filePath,coords,{}],function (part) {
+                    // unselect everything else in the diagram, add part and select it
+                    diagram.unselect_all(-1);
+
+                    // start of a new action
+                    diagram.aspect.start_action();
+                    part.add(diagram.aspect); // add it to aspect
+                    part.set_select(true);
+                    diagram.aspect.end_action();
+                
+                    diagram.redraw_background(); // so we see any components that got unselected
+                });
+            }
+        });
     }
 
     function part_tool(tool,diagram,pname) {

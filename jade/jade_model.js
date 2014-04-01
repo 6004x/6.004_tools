@@ -59,9 +59,16 @@ var jade_model = (function() {
         this.listeners = [];
     }
 
-    Module.prototype.add_listener = function (listener) {
-        if (this.loaded) listener();
-        else this.listeners.push(listener);
+    Module.prototype.add_listener = function (event,listener) {
+        if (event == 'load' && this.loaded) listener();
+        else this.listeners.push([event,listener]);
+    };
+
+    Module.prototype.trigger = function (event) {
+        for (var i = 0; i < this.listeners.length; i += 1) {
+            if (this.listeners[i][0] == event)
+                this.listeners[i][1](event);
+        }
     };
 
     Module.prototype.get_name = function() {
@@ -77,6 +84,7 @@ var jade_model = (function() {
     Module.prototype.set_modified = function(which) {
         if (this.modified != which) {
             this.modified = which;
+            this.trigger('status');  // let the world know our status has changed
         }
     };
 
@@ -112,9 +120,7 @@ var jade_model = (function() {
                 m.set_modified(false);
 
                 m.loaded = true;
-                for (var i = 0; i < m.listeners.length; i += 1)
-                    m.listeners[i]();
-
+                m.trigger('load');
                 if (callback) callback();
             }
         }
@@ -670,10 +676,10 @@ var jade_model = (function() {
 
         if (c === undefined) {
             c = new Component();
-            c.load(json,callback);
+            c.load(json,function () { callback(c); });
         } else {
             c = new c(json);
-            if (callback) callback();
+            if (callback) callback(c);
         }
             
         return c;
@@ -716,7 +722,10 @@ var jade_model = (function() {
         var component = this; // for closure
         find_module(this.type,function(m) {
             component.module = m;
-            m.add_listener(function () {
+            // since this might be executed before module is loaded
+            // (ie, when load was initiated by an earlier call), wait
+            // until module is actually loaded, then we can compute bbox.
+            m.add_listener('load',function () {
                 Component.prototype.compute_bbox.call(component);
                 if (callback) callback();
             });

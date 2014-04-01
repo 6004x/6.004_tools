@@ -413,6 +413,7 @@ var Editor = function(container, mode) {
         if(!document) return false;
         FileSystem.saveFile(document.name, document.editor.getValue(), function() {
             // Mark the file as clean.
+            document.editor.clear_modified();
             document.generation = document.editor.changeGeneration();
             document.autosaveGeneration = document.generation;
             clear_autosave(document);

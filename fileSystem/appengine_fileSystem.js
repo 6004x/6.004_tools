@@ -78,7 +78,7 @@ var FileSystem= (function(){
                                                                     succeed(data);
                                                                 }
                                                             } else if (fail) fail(response._error);
-                                                            else console.log(response._error);
+                                                            else console.warn(response._error);
 
                                                         });
             return;
@@ -97,7 +97,7 @@ var FileSystem= (function(){
             },
             error: function(jqXHR,status,error) {
                 if (fail) fail('Server '+status+' '+error);
-                else console.log(response._error);
+                else console.warn(response._error);
             }
         });
     }
@@ -214,7 +214,7 @@ var FileSystem= (function(){
                                    succeed(tree,sessionStorage.getItem('user'));
                                } else {
                                    if (fail) fail(response._error);
-                                   else console.log(response._error);
+                                   else console.warn(response._error);
                                }
                            });
 
@@ -244,7 +244,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
-                               else console.log(response._error);
+                               else console.warn(response._error);
                            } else {
                                if (saved_folder_list.indexOf(filename) == -1)
                                    saved_folder_list.push(filename);
@@ -263,7 +263,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
-                               else console.log(response._error);
+                               else console.warn(response._error);
                            } else {
                                if (saved_file_list.indexOf(filename) == -1)
                                    saved_file_list.push(filename);
@@ -278,7 +278,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
-                               else console.log(response._error);
+                               else console.warn(response._error);
                            } else {
                                var index = saved_file_list.indexOf(filename);
                                if (index != -1) saved_file_list.splice(index,1);
@@ -293,7 +293,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
-                               else console.log(response._error);
+                               else console.warn(response._error);
                            } else {
                                var index = saved_file_list.indexOf(old_filename);
                                if (index != -1) saved_file_list.splice(index,1);
@@ -317,7 +317,7 @@ var FileSystem= (function(){
                             function(response){
                                 if (response._error) {
                                     if (fail) fail(response._error);
-                                    else console.log(response._error);
+                                    else console.warn(response._error);
                                 } else {
                                     succeed({name: filename,
                                              data: response.file,
@@ -333,7 +333,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error || response.backup === undefined) {
                                if (fail) fail(response._error);
-                               else console.log(response._error);
+                               else console.warn(response._error);
                            } else succeed({name: filename, data: response.backup});
                        });
     }
@@ -344,7 +344,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
-                               else console.log(response._error);
+                               else console.warn(response._error);
                            } else succeed({name: filename, data: contents});
                        });
     }
@@ -355,7 +355,7 @@ var FileSystem= (function(){
                        function(response){
                            if (response._error) {
                                if (fail) fail(response._error);
-                               else console.log(response._error);
+                               else console.warn(response._error);
                            } else succeed({name: filename, data: contents});
                        });
     }

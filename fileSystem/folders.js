@@ -294,11 +294,12 @@ var Folders = (function(){
                 function cloneFileName(e){
                     var current = $(e.currentTarget);
                     var div = $('<div>').append(current.text()).addClass('dragging_div file_name');
-                    parentNode.append(div);
+                    //parentNode.append(div);
                     return div;
                 }
                 listVar.draggable({
-                    'containment' : '.file_paths',
+                    'containment' : '.xblock-6004', //'.file_paths',
+                    'appendTo': '.xblock-6004',
                     'cursor' : 'move',
                     'delay' : 300,
                     'helper' : cloneFileName,
