@@ -488,6 +488,8 @@ var jade_model = (function() {
             min_y = Math.min(component.bbox[1], min_y);
             max_y = Math.max(component.bbox[3], max_y);
         }
+        if (min_x == Infinity) { min_x = max_x = 0; }
+        if (min_y == Infinity) { min_y = max_y = 0; }
         return [min_x, min_y, max_x, max_y];
     };
 

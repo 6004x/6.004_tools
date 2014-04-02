@@ -61,6 +61,14 @@ var jade_view = (function() {
         this.annotations = [];
         this.show_grid = true;
 
+        // may be given new values by the various views
+        this.grid = 8;
+        this.zoom_factor = 1.25; // scaling is some power of zoom_factor
+        this.zoom_min = Math.pow(this.zoom_factor, - 3);
+        this.zoom_max = Math.pow(this.zoom_factor, 5);
+        this.origin_min = -200; // in grids
+        this.origin_max = 200;
+
         this.origin_x = 0;
         this.origin_y = 0;
         this.cursor_x = 0;
@@ -169,7 +177,7 @@ var jade_view = (function() {
         var diagram_w = 1.5 * (this.bbox[2] - this.bbox[0]);
         var diagram_h = 1.5 * (this.bbox[3] - this.bbox[1]);
 
-        if (diagram_w === 0) this.scale = 1;
+        if (diagram_w === 0) this.scale = this.zoom_max;
         else {
             // compute scales that would make diagram fit, choose smallest
             var scale_x = this.canvas.clientWidth / diagram_w;
