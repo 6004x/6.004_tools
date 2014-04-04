@@ -20,21 +20,36 @@ var jade_model = (function() {
 
     // find specified Module, newly created if necessary.
     function find_module(name,callback) {
-        function load_complete() {
+        var m = modules[name];
+
+        function load_complete(err) {
             //console.log('loaded '+name);
-            if (callback) callback(m);
+            if (err) {
+                delete modules[name];
+                m = undefined;
+            }
+            if (callback) callback(m,err);
         }
 
         function load(json) {
             if (_.isString(json)) {
                 if (json == '') json = [{},{}];
-                else json = JSON.parse(json);
+                else if (json[0]!='[' || json[1]!='{') {
+                    load_complete("File is not a Jade module.");
+                    return;
+                } else {
+                    try {
+                        json = JSON.parse(json);
+                    } catch (e) {
+                        load_complete("Error while parsing module: "+e);
+                        return;
+                    }
+                }
             }
             //console.log('loading '+name); //+': '+JSON.stringify(json));
             m.load(json,load_complete);
         }
 
-        var m = modules[name];
         if (m === undefined) {
             m = new Module(name);
             modules[name] = m;
@@ -678,7 +693,7 @@ var jade_model = (function() {
 
         if (c === undefined) {
             c = new Component();
-            c.load(json,function () { callback(c); });
+            c.load(json,function (err) { callback(c,err); });
         } else {
             c = new c(json);
             if (callback) callback(c);
@@ -722,15 +737,19 @@ var jade_model = (function() {
 
         // track down icon and set up bounding box and connections
         var component = this; // for closure
-        find_module(this.type,function(m) {
-            component.module = m;
-            // since this might be executed before module is loaded
-            // (ie, when load was initiated by an earlier call), wait
-            // until module is actually loaded, then we can compute bbox.
-            m.add_listener('load',function () {
-                Component.prototype.compute_bbox.call(component);
-                if (callback) callback();
-            });
+        find_module(this.type,function(m,err) {
+            if (err) {
+                if (callback) callback(err);
+            } else {
+                component.module = m;
+                // since this might be executed before module is loaded
+                // (ie, when load was initiated by an earlier call), wait
+                // until module is actually loaded, then we can compute bbox.
+                m.add_listener('load',function () {
+                    Component.prototype.compute_bbox.call(component);
+                    if (callback) callback();
+                });
+            }
         });
     };
 

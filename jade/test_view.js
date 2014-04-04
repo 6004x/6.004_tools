@@ -902,20 +902,11 @@ var test_view = (function() {
             }
 
             // called by plot.graph when user wants to plot another signal
-            function add_plot(callback) {
-                // use dialog to get new signal name
-                var fields = {'Signal name': jade_view.build_input('text',10,'')};
-                var content = jade_view.build_table(fields);
-                jade_view.dialog('Add Plot', content, function() {
-                    var signal = fields['Signal name'].value;
-
-                    // construct data set for requested signal
-                    // if the signal was legit, use callback to plot it
-                    var dataset = new_dataset(signal);
-                    if (dataset !== undefined) {
-                        callback(dataset);
-                    }
-                },pane.offset());
+            function add_plot(signal) {
+                // construct data set for requested signal
+                // if the signal was legit, use callback to plot it
+                var dataset = new_dataset(signal);
+                if (dataset !== undefined) dataseries.push(dataset);
             }
 
             // produce requested plots

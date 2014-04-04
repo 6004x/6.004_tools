@@ -1286,7 +1286,8 @@ var jade_view = (function() {
     };
 
     Jade.prototype.isClean = function(generation) {
-        return !this.module.modified;
+        if (this.module === undefined) return true;
+        else return !this.module.modified;
     };
 
     // remember module and aspect for next visit

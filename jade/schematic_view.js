@@ -126,24 +126,28 @@ var schematic_view = (function() {
             'deactivate': function(e, ui){
                 div.diagram.clear_message("Drag and drop part onto schematic to insert.");
             },
-            'drop' : function(e, ui){
+            'drop': function(e, ui){
                 var diagram = div.diagram;
                 diagram.set_cursor_grid(8); // for parts
                 diagram.event_coords(e);
                 var filePath = ui.draggable.data('path');
 
                 var coords = [diagram.cursor_x,diagram.cursor_y,0];
-                jade_model.make_component([filePath,coords,{}],function (part) {
-                    // unselect everything else in the diagram, add part and select it
-                    diagram.unselect_all(-1);
+                jade_model.make_component([filePath,coords,{}],function (part,err) {
+                    if (err) {
+                        diagram.message('Cannot insert: '+err);
+                    } else {
+                        // unselect everything else in the diagram, add part and select it
+                        diagram.unselect_all(-1);
 
-                    // start of a new action
-                    diagram.aspect.start_action();
-                    part.add(diagram.aspect); // add it to aspect
-                    part.set_select(true);
-                    diagram.aspect.end_action();
+                        // start of a new action
+                        diagram.aspect.start_action();
+                        part.add(diagram.aspect); // add it to aspect
+                        part.set_select(true);
+                        diagram.aspect.end_action();
                 
-                    diagram.redraw_background(); // so we see any components that got unselected
+                        diagram.redraw_background(); // so we see any components that got unselected
+                    }
                 });
             }
         });
