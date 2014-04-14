@@ -1283,6 +1283,9 @@ var Parser = (function(){
      Instance: instance of user-specified subcircuit
      *******************************/
     function read_instance(line){
+        if (line.length < 2)
+            throw new CustomError('Malformed instance statement',line[0]);
+
         var inst = line[1].token;
         var obj = {type:"instance",
                    connections:[],
@@ -1640,8 +1643,8 @@ var Parser = (function(){
      ****************************/
 
     // tokenize contents, build netlist, send it to the callback
-    function xparse(input_string, filename, callback, error_callback) {
-        parse(input_string,filename,
+    function xparse(editor,input_string, filename, callback, error_callback) {
+        parse(editor,input_string,filename,
               function(tokens,sources) { callback(interpret(tokens,sources)); },
               function(e) { error_callback(e) });
     }
@@ -1649,7 +1652,7 @@ var Parser = (function(){
     // tokenize contents, send it to the callback
     // complication: reading include files is asynchronous, so the processing state is
     // organized to allow for processing to resume after an async file operation is complete.
-    function parse(input_string, filename, callback, error_callback) {
+    function parse(editor, input_string, filename, callback, error_callback) {
         var included_files = [];   // list of included files
         var tokens = [];  // list of accumulated tokens
 
@@ -1816,7 +1819,7 @@ var Parser = (function(){
             }
 
             included_files.push(filename);
-            FileSystem.getFile(filename,
+            editor.getFile(filename,
                                function(data) {
                                    // success: add state for new file to processing stack
                                    make_state(filename,data.data);  

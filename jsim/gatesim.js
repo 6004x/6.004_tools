@@ -1349,12 +1349,12 @@ var gatesim = (function() {
             }
         } else {
             // compute output of latch
-            var v = (this.g.v == this.gate_closed) ? this.state :
-                    (this.g.v == this.gate_open) ? this.d.v :
+            var v = (this.clk.v == this.gate_closed) ? this.state :
+                    (this.clk.v == this.gate_open) ? this.d.v :
                     (this.lenient && this.d.v == this.state) ? this.state : VX;
 
             // state follows D when gate is open
-            if (this.g.v == this.gate_open) this.state = v;
+            if (this.clk.v == this.gate_open) this.state = v;
 
             if (event.type == CONTAMINATE) {
                 // a lenient latch sometimes won't contaminate output

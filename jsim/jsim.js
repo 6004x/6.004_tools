@@ -57,7 +57,7 @@ $(function() {
         var content = editor.content();
         if (!content) return;
         var filename = editor.currentTab();
-        Simulator.simulate(content,filename,$('#simulation-pane'),error_catcher,"device");
+        Simulator.simulate(editor,content,filename,$('#simulation-pane'),error_catcher,"device");
     }
     
     function gls(){
@@ -67,7 +67,7 @@ $(function() {
         var content = editor.content();
         if (!content) return;
         var filename = editor.currentTab();
-        Simulator.simulate(content,filename,$('#simulation-pane'),error_catcher,"gate");
+        Simulator.simulate(editor,content,filename,$('#simulation-pane'),error_catcher,"gate");
     }
 
     function ta(){
@@ -76,7 +76,7 @@ $(function() {
         var content = editor.content();
         if (!content) return;
         var filename = editor.currentTab();
-        Simulator.timing_analysis(content,filename,$('#simulation-pane'),error_catcher);
+        Simulator.timing_analysis(editor,content,filename,$('#simulation-pane'),error_catcher);
     }
     
     function error_catcher(err){
@@ -124,28 +124,39 @@ $(function() {
     set_height();
     $(window).resize(set_height); // Update the height whenever the browser window changes size.
 
-    /* fooling around with embedding in Hangout
+    /*
+    // support for online help
+
+    // enroll in help queue
+    $('#helpq').click(function() {
+            window.open('https://hangoutsapi.talkgadget.google.com/hangouts?authuser=0&gid=849892182986','JSim_Hangout');
+        });
+
     function share_buffers() {
         parent.postMessage(JSON.stringify({user: FileSystem.getUserName(), buffers: JSON.stringify(editor.get_all_documents())}),'*');
     }
 
-    var helpq_button = false;
+    var helpq = false;
     $(window).on('message',function (event) {
-            if (!helpq_button) {
-                // add button to let user request help
-                helpq_button = true;
-                $('.global-controls').append('<li id="helpq"><a>Online help <span id="qstatus"></span></a></li>');
-                $('#helpq').click(function() {
-                        // add ourselves to the queue
-                        parent.postMessage(JSON.stringify({user: FileSystem.getUserName()}),'*');
-                    });
-
+            if (!helpq) {
+                helpq = true;
+                // no help button since we're already in a hangout
+                $('#helpq').hide(); 
+                // let server know we're waiting for help
+                parent.postMessage(JSON.stringify({user: FileSystem.getUserName(), username: FileSystem.getUserFullName()}),'*');
                 // add button to let user share buffers
                 editor.addButtonGroup([new ToolbarButton('Share',share_buffers, 'Share buffers in Hangout')]);
             }
-            var state = JSON.parse(event.originalEvent.data);
-            console.log('jsim:');
-            console.log(state);
+
+            var message = JSON.parse(event.originalEvent.data);
+            console.log(message);
+            if (message.buffers) {
+                editor.closeAllTabs(true);
+                var buffers = JSON.parse(message.buffers)
+                for (filename in buffers) {
+                    editor.openTab(filename,buffers[filename],true,undefined,true);
+                };
+            }
         });
     */
 });

@@ -45,6 +45,11 @@ var Editor = function(container, mode) {
         closeTab(mOpenDocuments[filename]);
     };
 
+    this.closeAllTabs = function (force) {
+        _.each(mOpenDocuments, function(document) {
+                closeTab(document,force);
+        });
+    };
 
     // These are convenience functions to save on fiddling with CodeMirror directly.
 
@@ -117,6 +122,17 @@ var Editor = function(container, mode) {
         }
     };
 
+    // called when external tool wants contents of some file -- look for open
+    // document and use it first, otherwise call FileSystem
+    this.getFile = function(filename,succeed,fail) {
+        if (_.has(mOpenDocuments,filename))
+            succeed({name: filename,
+                     data: mOpenDocuments[filename].cm.getValue(),
+                     autosave: undefined,
+                     shared: false});
+        else FileSystem.getFile(filename,succeed,fail);
+    }
+
     // Opens the file at the given path.
     // filename: absolute path to th efile.
     // activate: whether to focus the tab
@@ -170,8 +186,8 @@ var Editor = function(container, mode) {
             readonly: is_readonly    //cjt: for managing SAVE/SAVE ALL/REVERT buttons
         };
 
-	//cjt: var label = _.last(filename.split('/'));
-	var label = filename;
+        //cjt: var label = _.last(filename.split('/'));
+        var label = filename;
         var a = $('<a>', {href: '#' + id}).text(label).click(function(e) { e.preventDefault(); focusTab(doc); });
         tab.append(a);
 

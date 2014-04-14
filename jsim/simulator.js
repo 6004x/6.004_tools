@@ -40,10 +40,10 @@ var Simulator = (function(){
     /********************
      Called when either simulation button is pressed
      ********************/
-    function simulate(text, filename, div, error_callback, type){
+    function simulate(editor, text, filename, div, error_callback, type){
         // type is "gate" or "device"
         // parse args: input string, filename, success callback, error callback, reset
-        Parser.parse(text, filename, function(data){run_simulation(data,div,type);},
+        Parser.parse(editor, text, filename, function(data){run_simulation(data,div,type);},
                      error_callback, true);
     }
     
@@ -100,6 +100,7 @@ var Simulator = (function(){
                 div.prepend('<div class="alert alert-danger">Simulation error: '+err+
                             '.<button class="close" data-dismiss="alert">&times;'+
                             '</button></div>');
+                console.log(err.stack);
             }
 
             if (msg) error(msg);
@@ -135,6 +136,7 @@ var Simulator = (function(){
                     tranProgress.hide();
                     div.prepend('<div class="alert alert-danger">Simulation error: '+err+
                                 '.<button class="close" data-dismiss="alert">&times;</button></div>');
+                    console.log(err.stack);
                 }
                 break;
                 
@@ -151,6 +153,7 @@ var Simulator = (function(){
                         div.prepend('<div class="alert alert-danger">Simulation error: '+err+
                                     //err.stack.replace('\n','<br>')+
                                     '.<button class="close" data-dismiss="alert">&times;</button></div>');
+                        console.log(err.stack);
                     }
                 } else {
                     div.prepend('<div class="alert alert-danger">No AC analysis in gate-level simulation.'+
@@ -169,6 +172,7 @@ var Simulator = (function(){
                     } catch (err) {
                         div.prepend('<div class="alert alert-danger">Simulation error: '+err+
                                     '.<button class="close" data-dismiss="alert">&times;</button></div>');
+                        console.log(err.stack);
                     }
                 } else {
                     div.prepend('<div class="alert alert-danger">No DC analysis in gate-level simulation.'+
