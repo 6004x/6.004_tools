@@ -693,7 +693,7 @@ var jade_model = (function() {
 
         if (c === undefined) {
             c = new Component();
-            c.load(json,function (err) { callback(c,err); });
+            c.load(json,function (err) { if (callback) callback(c,err); });
         } else {
             c = new c(json);
             if (callback) callback(c);
