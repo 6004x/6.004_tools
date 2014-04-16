@@ -307,6 +307,30 @@ var FileSystem= (function(){
                        });
     }
 
+    var metadata_tag = '//metadata ';   // marker for metadata at beginning of file
+
+    // extract JSON metadata, if any, from first line of file
+    function extract_metadata(contents) {
+        var metadata = undefined;
+        
+        if (contents && contents.substring(0,metadata_tag.length) == metadata_tag) {
+            var end = contents.indexOf('\n');
+            if (end != -1) {
+                metadata = JSON.parse(contents.substring(metadata_tag.length,end));
+                contents = contents.substring(end+1,contents.length);
+            }
+        }
+
+        return {contents: contents, metadata: metadata };
+    }
+
+    // insert JSON metadata, if any, as first line of file
+    function insert_metadata(contents, metadata) {
+        if (metadata)
+            contents = metadata_tag + JSON.stringify(metadata) + '\n' + (contents || ''); 
+        return contents;
+    }
+
     function getFile(filename,succeed,fail) {
         if (filename.match(/^\/shared/))
             shared_request(filename,'text',function(response) {
@@ -319,9 +343,12 @@ var FileSystem= (function(){
                                     if (fail) fail(response._error);
                                     else console.warn(response._error);
                                 } else {
+                                    var contents = extract_metadata(response.file);
+                                    var autosave_contents = extract_metadata(response.autosave);
                                     succeed({name: filename,
-                                             data: response.file,
-                                             autosave: response.autosave,
+                                             data: contents.contents,
+                                             metadata: contents.metadata,
+                                             autosave: autosave_contents,
                                              shared: false});
                                 }
                             });
@@ -334,11 +361,17 @@ var FileSystem= (function(){
                            if (response._error || response.backup === undefined) {
                                if (fail) fail(response._error);
                                else console.warn(response._error);
-                           } else succeed({name: filename, data: response.backup});
+                           } else {
+                               var contents = extract_metadata(response.backup);
+                               succeed({name: filename,
+                                        data: contents.contents,
+                                        metadata: contents.metadata});
+                           }
                        });
     }
 
-    function makeAutoSave(filename,contents,succeed,fail) {
+    function makeAutoSave(filename,contents,succeed,fail,metadata) {
+        contents = insert_metadata(contents,metadata);
         server_request('/file/'+filename,
                        {action: 'autosave',contents: contents},
                        function(response){
@@ -349,7 +382,8 @@ var FileSystem= (function(){
                        });
     }
 
-    function saveFile(filename,contents,succeed,fail) {
+    function saveFile(filename,contents,succeed,fail,metadata) {
+        contents = insert_metadata(contents,metadata);
         server_request('/file/'+filename,
                        {action: 'save',contents: contents},
                        function(response){

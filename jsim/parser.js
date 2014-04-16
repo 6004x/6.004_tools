@@ -172,14 +172,16 @@ var Parser = (function(){
     function parse_number(x) {
         var m;
 
-        m = x.match(/^\s*([\-+]?)0x([0-9a-fA-F]+)\s*$/); // hex
-        if (m) return parseInt(m[1] + m[2], 16);
+        // allow "_" for formatting in hex, binary and octal numbers
 
-        m = x.match(/^\s*([\-+]?)0b([0-1]+)\s*$/); // binary
-        if (m) return parseInt(m[1] + m[2], 2);
+        m = x.match(/^\s*([\-+]?)0x([0-9a-fA-F_]+)\s*$/); // hex
+        if (m) return parseInt(m[1] + m[2].replace('_',''), 16);
 
-        m = x.match(/^\s*([\-+]?)0([0-7]+)\s*$/); // octal
-        if (m) return parseInt(m[1] + m[2], 8);
+        m = x.match(/^\s*([\-+]?)0b([01_]+)\s*$/); // binary
+        if (m) return parseInt(m[1] + m[2].replace('_',''), 2);
+
+        m = x.match(/^\s*([\-+]?)0([0-7_]+)\s*$/); // octal
+        if (m) return parseInt(m[1] + m[2].replace('_',''), 8);
 
         m = x.match(/^\s*[\-+]?[0-9]*(\.([0-9]+)?)?([eE][\-+]?[0-9]+)?\s*$/); // decimal, float, exponential
         if (m) return parseFloat(m[0]);
@@ -1674,7 +1676,7 @@ var Parser = (function(){
         
         var control_pattern = /^\..+/;
         var names_pattern = /^([A-Za-z_$][\w$:\[\]\.]*)/;
-        var num_pattern = /^(([+-]?\d*\.?)|(0[xX])|(0[bB]))\d+(([eE]-?\d+)|[A-Za-z]*)/;
+        var num_pattern = /^(([+-]?\d*\.?)|(0[xX])|(0[bB]))\d+(([eE]-?\d+)|[A-Za-z_]*)/;
 
         // keep track of sources
         var sources = [];  // list of {file:..., content: ...}
@@ -1819,7 +1821,8 @@ var Parser = (function(){
             }
 
             included_files.push(filename);
-            editor.getFile(filename,
+            if (editor === undefined) error_callback(new CustomError("Could not get file",token));
+            else editor.getFile(filename,
                                function(data) {
                                    // success: add state for new file to processing stack
                                    make_state(filename,data.data);  
@@ -1844,7 +1847,7 @@ var Parser = (function(){
     
     // for external use: parse string as a plot specification, return list of plot objs
     function parse_plot(s,callback) {
-        parse(s,'',
+        parse(undefined,s,'',
               function(tokens) {
                   tokens.splice(0,0,{}); // add a dummy token in front
                   tokens.pop();  // remove NL token at end

@@ -51,13 +51,20 @@ var Editor = function(container, mode) {
         });
     };
 
+    this.metadata_count = function(which,filename) {
+        var document = try_get_document(filename);
+        if (document) 
+            document.metadata[which] = (document.metadata[which] || 0) + 1;
+    }
+
     // These are convenience functions to save on fiddling with CodeMirror directly.
 
     // If filename is given, returns the content of that file in the buffer
     // If filename is omitted, returns the content of the current editor
-    this.content = function(filename) {
+    this.content = function(purpose,filename) {
         var document = try_get_document(filename);
         if(!document) return null;
+        if (purpose) this.metadata_count(purpose);
         do_autosave(document); // We assume that whenever something calls this.content, autosaving would be nice.
         return document.cm.getValue();
     };
@@ -128,6 +135,7 @@ var Editor = function(container, mode) {
         if (_.has(mOpenDocuments,filename))
             succeed({name: filename,
                      data: mOpenDocuments[filename].cm.getValue(),
+                     metadata: mOpenDocuments[filename].metadata,
                      autosave: undefined,
                      shared: false});
         else FileSystem.getFile(filename,succeed,fail);
@@ -143,7 +151,7 @@ var Editor = function(container, mode) {
             return;
         }
         FileSystem.getFile(filename, function(content) {
-            self.openTab(content.name, content.data, activate, content.autosave, content.shared);
+                self.openTab(content.name, content.data, activate, content.autosave, content.shared, content.metadata);
             if(callback)
                 callback(content.name, content.data);
         }, function() {
@@ -155,7 +163,7 @@ var Editor = function(container, mode) {
     // filename should be a full path to the file. If not given, the document will be called 'untitled'
     // If activate is true, the tab will be focused. If false, the tab will be focused only if there are
     // no other documents currently open.
-    this.openTab = function(filename, content, activate, autosaved_content, is_readonly) {
+    this.openTab = function(filename, content, activate, autosaved_content, is_readonly, metadata) {
         // We can't open a file if we already have one at the same path (it wouldn't make sense and breaks things)
         if(_.has(mOpenDocuments, filename)) {
             focusTab(mOpenDocuments[filename]);
@@ -183,6 +191,7 @@ var Editor = function(container, mode) {
             isAutosaving: false, // Prevents multiple simultaneous save attempts
             n: 0, // Counts changes until we autosave.
             autosaved: autosaved_content || null,
+            metadata: metadata || {},
             readonly: is_readonly    //cjt: for managing SAVE/SAVE ALL/REVERT buttons
         };
 
@@ -206,6 +215,7 @@ var Editor = function(container, mode) {
             'margin-right': -7
         }).on('mouseenter', tab_mouse_enter).on('mouseleave', function() { handle_change_tab_icon(doc); });
         cm.on('change', function(c, changeObj) {
+            doc.metadata.changes = (doc.metadata.changes || 0) + 1;
             handle_change_tab_icon(doc);
             // Let our listeners know, too.
             self.trigger('change', filename, changeObj);
@@ -284,7 +294,7 @@ var Editor = function(container, mode) {
         doc.cm.refresh();
         doc.cm.focus();
         mCurrentDocument = doc;
-        if(doc.autosaved) {
+        if(doc.autosaved.contents) {
             mRestoreAutosaveButton.show();
         } else {
             mRestoreAutosaveButton.hide();
@@ -357,6 +367,11 @@ var Editor = function(container, mode) {
         var cm = new CodeMirror(container[0], {
             indentUint: 4,
             lineNumbers: true,
+            /*
+            foldGutter: (mSyntaxMode == 'jsim'),
+            gutters: (mSyntaxMode == 'jsim') ? ["CodeMirror-linenumbers", "CodeMirror-foldgutter"] :
+                                               ["CodeMirror-linenumbers"],
+            */
             electricChars: true,
             matchBrackets: true,
             autoCloseBrackets: (mSyntaxMode != 'tsim'), // HACK: no parenthesis closing in TMSim.
@@ -443,6 +458,7 @@ var Editor = function(container, mode) {
         var document = mCurrentDocument; // we don't want to dump this in the wrong buffer!
         FileSystem.getBackup(document.name, function(content) {
             document.cm.setValue(content.data);
+            document.metadata = content.metadata;
         }, function(content) {
             PassiveAlert("Revert failed; unable to load old version.", 'error');
         });
@@ -450,7 +466,8 @@ var Editor = function(container, mode) {
 
     var restore_autosave = function() {
         if(!mCurrentDocument) return;
-        mCurrentDocument.cm.setValue(mCurrentDocument.autosaved);
+        mCurrentDocument.cm.setValue(mCurrentDocument.autosaved.contents);
+        mCurrentDocument.metadata = mCurrentDocument.autosaved.metadata;
         clear_autosave(mCurrentDocument);
     };
 
@@ -522,7 +539,7 @@ var Editor = function(container, mode) {
             document.autosaveGeneration = document.generation;
             clear_autosave(document);
             handle_change_tab_icon(document);
-        });
+            },undefined,document.metadata);
     };
 
     var do_autosave = function(document) {
@@ -531,12 +548,12 @@ var Editor = function(container, mode) {
         clear_autosave(document);
         var generation = document.cm.changeGeneration();
         FileSystem.makeAutoSave(document.name, document.cm.getValue(), function() {
-            document.isAutosaving = false;
-            document.autosaveGeneration = generation;
-        }, function() {
-            document.isAutosaving = false;
-            console.warn("Autosave failed.");
-        });
+                document.isAutosaving = false;
+                document.autosaveGeneration = generation;
+            }, function() {
+                document.isAutosaving = false;
+                console.warn("Autosave failed.");
+            }, document.metadata);
     };
 
     var handle_page_unload = function() {

@@ -54,7 +54,7 @@ $(function() {
         $('#split_pane').click();
         editor.clearErrors();
         Checkoff.reset();
-        var content = editor.content();
+        var content = editor.content('simulate');
         if (!content) return;
         var filename = editor.currentTab();
         Simulator.simulate(editor,content,filename,$('#simulation-pane'),error_catcher,"device");
@@ -64,7 +64,7 @@ $(function() {
         $('#split_pane').click();
         editor.clearErrors();
         Checkoff.reset();
-        var content = editor.content();
+        var content = editor.content('simulate');
         if (!content) return;
         var filename = editor.currentTab();
         Simulator.simulate(editor,content,filename,$('#simulation-pane'),error_catcher,"gate");
@@ -73,7 +73,7 @@ $(function() {
     function ta(){
         $('#split_pane').click();
         editor.clearErrors();
-        var content = editor.content();
+        var content = editor.content('analyze');
         if (!content) return;
         var filename = editor.currentTab();
         Simulator.timing_analysis(editor,content,filename,$('#simulation-pane'),error_catcher);
@@ -105,6 +105,7 @@ $(function() {
     editor.addButtonGroup([new ToolbarButton('Checkoff',function(){
         try{
             Checkoff.testResults();
+            editor.metadata_count('checkoff');
         } catch (err) {
             error_catcher(err);
         }

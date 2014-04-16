@@ -46,8 +46,8 @@ $(function() {
 
     var do_assemble = function() {
         var filename = editor.currentTab();
-        var content = editor.content();
-        var assembler = new BetaAssembler();
+        var content = editor.content('assemble');
+        var assembler = new BetaAssembler(editor);
         editor.clearErrors();
         assembler.assemble(filename, content, function(success, result) {
             if(!success) {

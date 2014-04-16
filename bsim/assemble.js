@@ -803,7 +803,7 @@
     };
 
     // Public Assembler interface. Constructor takes no arguments.
-    var Assembler = function() {
+    var Assembler = function(editor) {
         var mParsedFiles = {};
         var mPendingIncludes = [];
 
@@ -855,7 +855,7 @@
 
             var insert_include = function(include) {
                 ++waiting;
-                FileSystem.getFile(include.filename, function(include_content) {
+                editor.getFile(include.filename, function(include_content) {
                     parse_file(include_content.name, include_content.data, function(syntax) {
                         --waiting;
                         include.instructions = syntax;

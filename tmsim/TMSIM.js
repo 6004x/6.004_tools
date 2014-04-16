@@ -797,8 +797,7 @@ $(document).ready(function(){
         function tmsimAssemble(){
             var file = new Object();
             file.name=editor.currentTab();
-            file.data=editor.content();
-            
+            file.data=editor.content('assemble');
             
             var valid = true;
             var tmsimObj;

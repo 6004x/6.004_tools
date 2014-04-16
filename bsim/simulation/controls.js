@@ -28,6 +28,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
     };
 
     var handle_step = function() {
+        mEditor.metadata_count('step');
         mBeta.executeCycle();
         mUndoButton.enable();
         if(mBeta.verifier()) {
@@ -71,6 +72,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
     };
 
     var handle_checkoff = function() {
+        mEditor.metadata_count('checkoff');
         var verifier = mBeta.verifier();
         var dialog = new ModalDialog();
         dialog.setTitle("Checkoff Result").addButton("Dismiss", "dismiss");
@@ -90,6 +92,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
     };
 
     var beta_run_start = function() {
+        mEditor.metadata_count('run');
         mRunButton.setLabel('icon-pause');
         mStepButton.disable();
         mFastRunButton.disable();
