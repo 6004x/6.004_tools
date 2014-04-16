@@ -47,9 +47,10 @@ $(function() {
     var do_assemble = function() {
         var filename = editor.currentTab();
         var content = editor.content('assemble');
+        var metadata = editor.metadata();
         var assembler = new BetaAssembler(editor);
         editor.clearErrors();
-        assembler.assemble(filename, content, function(success, result) {
+        assembler.assemble(filename, content, metadata, function(success, result) {
             if(!success) {
                 PassiveAlert("Assembly failed.", "error");
                 _.each(result, function(error) {

@@ -98,7 +98,9 @@ BSim.SubmitVerification = function(beta, editor, username, password, collaborati
         circuits: _.map(beta.mSources, function (source) {
             // don't send along shared files
             if (source.file.indexOf('/shared') == 0) return '';
-            return '============== source: ' + source.file + '\n' + source.content + '\n==============\n';
+            var result = '============== source: ' + source.file;
+            if (source.metadata) result += ' metadata: ' + JSON.stringify(source.metadata);
+            return result + '\n' + source.content + '\n==============\n';
         }).join('')
     }).done(function(data) {
         callback(true, data);

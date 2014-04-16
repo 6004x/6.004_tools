@@ -845,13 +845,13 @@
         };
 
         var sources;  // list of {file: ..., content: ...}
-        var parse_file = function(file, content, completion_callback, error_callback) {
+        var parse_file = function(file, content, completion_callback, error_callback, metadata) {
             var stream = new StringStream(new FileStream(content, file));
             var errors = [];
             var waiting = 0;
             var completed = false;
 
-            sources.push({file: file, content: content});
+            sources.push({file: file, content: content, metadata: metadata});
 
             var insert_include = function(include) {
                 ++waiting;
@@ -862,7 +862,7 @@
                         if(errors.length === 0 && waiting === 0 && completed) {
                             completion_callback(our_syntax);
                         }
-                    }, error_callback);
+                    }, error_callback, metadata);
                 }, function() {
                     error_callback([new SyntaxError("File not found: " + include.filename, include.file, include.line)]);
                 });
@@ -1111,7 +1111,7 @@
         // content: the contents of the file
         // callback(false, error_list): called on failure. error_list is a list of SyntaxErrors, if any
         // callback(true, bytecode): called on success. bytecode is a Uint8Array containing the result of compilation.
-        this.assemble = function(file, content, callback) {
+        this.assemble = function(file, content, metadata, callback) {
             //var stream = new StringStream(new FileStream(content, file));
             //var can_succeed = true;
             var errors = [];
@@ -1135,7 +1135,7 @@
                 }
             }, function(errors) {
                 callback(false, errors);
-            });
+            }, metadata);
         };
     };
 
