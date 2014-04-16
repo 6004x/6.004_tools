@@ -623,9 +623,9 @@ var Simulator = (function(){
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
 
-    function timing_analysis(text, filename, div, error_callback){
+    function timing_analysis(editor, text, filename, div, error_callback){
         // parse args: input string, filename, success callback, error callback, reset
-        Parser.parse(text, filename, function(data){run_timing_analysis(filename,data,div);},
+        Parser.parse(editor, text, filename, function(data){run_timing_analysis(filename,data,div);},
                      error_callback, true);
     }
 
