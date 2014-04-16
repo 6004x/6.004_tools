@@ -1790,8 +1790,8 @@ var Parser = (function(){
         }
 
         // add a new state to the state stack to handle the processing of included file
-        function make_state(filename,contents) {
-            sources.push({file: filename, content: contents});
+        function make_state(filename,contents,metadata) {
+            sources.push({file: filename, content: contents, metadata: metadata});
 
             // pattern will match, in order:
             //      anything wrapped in quotes (handles escaped characters)
@@ -1825,7 +1825,7 @@ var Parser = (function(){
             else editor.getFile(filename,
                                function(data) {
                                    // success: add state for new file to processing stack
-                                   make_state(filename,data.data);  
+                                   make_state(filename,data.data,data.metadata);  
                                    // restart tokenizing with the new file.  The tokenizer
                                    // will return to the old file once the new file is
                                    // exhausted
@@ -1841,7 +1841,7 @@ var Parser = (function(){
         }
 
         // process top-level file
-        make_state(filename,input_string);
+        make_state(filename,input_string,editor ? editor.metadata() : undefined);
         tokenize();  // start the ball rolling
     }
     

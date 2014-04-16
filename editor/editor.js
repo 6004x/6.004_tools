@@ -69,6 +69,12 @@ var Editor = function(container, mode) {
         return document.cm.getValue();
     };
 
+    this.metadata = function(filename) {
+        var document = try_get_document(filename);
+        if(!document) return null;
+        return document.metadata;
+    }
+
     // Marks the given line in the given file as having an error, and displays it to the user.
     this.markErrorLine = function(filename, message, line, column) {
         var document = try_get_document(filename);

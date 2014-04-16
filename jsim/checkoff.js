@@ -301,7 +301,9 @@ var Checkoff = (function(){
         return _.map(mSources, function (source) {
                 // don't send along shared files
                 if (source.file.indexOf('/shared') == 0) return '';
-                return '============== source: ' + source.file + '\n' + source.content + '\n==============\n';
+                var result = '============== source: ' + source.file;
+                if (source.metadata) result += ' metadata: ' + JSON.stringify(source.metadata);
+                return result + '\n' + source.content + '\n==============\n';
             }).join('')
     }
 
@@ -309,7 +311,7 @@ var Checkoff = (function(){
         return _.map(mSources, function (source) {
                 // don't send along shared files
                 if (source.file.indexOf('/shared') == 0) return {};
-                return {file: source.file, content: source.content};
+                return {file: source.file, content: source.content, metadata: source.metadata};
             })
     }
 
