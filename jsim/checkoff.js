@@ -122,7 +122,7 @@ var Checkoff = (function(){
             failedModal.setTitle("Checkoff Failed!");
             failedModal.setContent("<p><div class='text-error'>Node value verification error:</div></p>\
 <p><table class='table'><tr><td>Node(s):</td><td>"+mistake.nodes+"</tr>\
-<tr><td>Time:</td><td>"+engineering_notation(mistake.time,3)+"s</td></tr>\
+<tr><td>Time (ns):</td><td>"+Math.floor(mistake.time * 1e9)+"</td></tr> \
 <tr><td>Expected:</td><td><tt>"+mistake.exp+"</tt></td></tr>\
 <tr><td>Actual:</td><td><tt>"+mistake.given+"</tt></td></tr></table></p>");
             failedModal.addButton("Dismiss",'dismiss');
