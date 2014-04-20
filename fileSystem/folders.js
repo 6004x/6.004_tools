@@ -23,14 +23,13 @@ var Folders = (function(){
         sharedNode = sharedNode ||  rootNode.find('.shared_file_paths');
 
         //fetch the filelist from server, then add the files to the filesystem.
-        FileSystem.getFileList( function(data){
+        FileSystem.getFileList( function(data,username,user_list){
             parentNode.empty();
-            var username = FileSystem.getUserName();
             var root = {
                 'path' : '',
                 'name' : username,
                 'folders' : {
-                    'dontony' : {
+                    'root' : {
                         'name' : username,
                         'path' : '',
                         'folders' : data.folders,
@@ -38,8 +37,7 @@ var Folders = (function(){
                     }
                 }
             };
-            addFiles(root, parentNode);
-            FileSystem.getUserName();
+            addFiles(root, parentNode, user_list);
             FileSystem.getSharedFileList(function(sharedFileList){
                 sharedNode.empty();
                 //console.log(sharedFileList);
@@ -132,28 +130,10 @@ var Folders = (function(){
             else
                 return type === editMode;
         }
-        function addFiles(fileList, parentNode){
+        function addFiles(fileList, parentNode, user_list){
             //testing whether username chenged or not, to change data structure
             level++;
             var parentPath = fileList.path;
-            /*
-             var files = _.sortBy(fileList.files, function(file, name){
-             var fileType = name.split('.').pop()
-             return !isInMode(fileType);
-             })
-             var folders = _.sortBy(fileList.folders, function(folder, name){
-             var folder = fileList.folders[name];
-             var maxType = '';
-             var maxValue = 0;
-             _.each(folder.contentType, function(total, type){
-             if(total > maxValue){
-             maxValue = total;
-             maxType = type;
-             }
-             })
-             return !isInMode(maxType);
-             })
-             */
             var files = _.sortBy(fileList.files,name);     // just keep sorted by name
             var folders = _.sortBy(fileList.folders,name);
             _.each(folders, function(folder){
@@ -187,7 +167,30 @@ var Folders = (function(){
                 //add folder name and the arrow
                 var arrow = $('<i>').addClass("icon-chevron-down pull-left open_indicator").addClass(collapseName)
                         .css('height', 16);
-                collapser.append(arrow).append($('<span>').text(folderName));
+                collapser.append(arrow)
+                    if (level == 1 && user_list) {
+                        // special treatment for root folder name if we have a list of users
+                        var seluser = $('<select>');
+                        var option;
+                        var user = folderName.split('@')[0];
+                        $.each(user_list,function (index,u) {
+                                option = $('<option>'+u+'</option>');
+                                if (u == user) option.attr('selected','yes');
+                                seluser.append(option);
+                            });
+                        collapser.append(seluser);
+
+                        seluser.on('change',function (event) {
+                                // switching users, so close all our current tabs
+                                editor.closeAllTabs(true);
+                                // tell file system which user to access
+                                FileSystem.set_user_attribute(seluser.val());
+                                // update file navigation pane
+                                refresh();
+                                // show top level of user's files
+                                subListUL.collapse('show');
+                            });
+                    } else collapser.append($('<span>').text(folderName));
 
                 var newFileButton = buildListButton('icon-file', newFile, 'folder_button', 'New File');
                 var newFolderButton = buildListButton('icon-folder-open', newFolder, 'folder_button', 'New Folder');

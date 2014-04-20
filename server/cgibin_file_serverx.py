@@ -4,7 +4,10 @@
 # cgi-bin file server for 6.004 tools
 
 import sys,os,os.path,shutil,cgi,cgitb,json
-import zipfile,io,time
+import zipfile,io,time,glob
+
+# staff get privileges to look at any user's files
+staff_list = [ 'cjt', 'ward', 'dnl', 'silvina', 'elg', 'haiiro', 'ciara', 'gkurian', 'phurst' ]
 
 # where to find user files for the term
 students = '/afs/csail.mit.edu/proj/courses/6.004/CurrentTerm/records/course/students/'
@@ -64,14 +67,28 @@ try:
     response = {}
 
     # validate user by checking to see if course knows who they are
-    user = os.environ.get('SSL_CLIENT_S_DN_Email','???')
-    username = os.environ.get('SSL_CLIENT_S_DN_CN','???')
-    if user == '???':
+    requester = os.environ.get('SSL_CLIENT_S_DN_Email','???')
+    requester_name = os.environ.get('SSL_CLIENT_S_DN_CN','???')
+    if requester == '???':
         default_headers()
         print json.dumps({'_error': 'Unable to process request because your MIT certificate was invalid or was not sent by your browser.'});
         sys.exit()
     else:
-        user = user.lower()
+        requester = requester.lower()
+
+    # process request
+    args = cgi.FieldStorage()
+
+    user = requester
+    username = requester_name
+
+    # allow staff to ask for anyone's files
+    staff = False
+    if requester.split('@')[0] in staff_list:
+        staff = True
+        user = args.getvalue('user',requester)
+
+    response['_user'] = user  # let requester know user's id
 
     # find user's files, creating a 'files' directory if it doesn't exist
     user_dir = os.path.join(students,user.split('@')[0])
@@ -83,8 +100,6 @@ try:
     if not os.path.exists(user_dir):
         os.mkdir(user_dir,0666)
 
-    # process request
-    args = cgi.FieldStorage()
     # parse path, ignore leading slash
     command = args.getvalue('_path','')[1:].split('/')
 
@@ -124,6 +139,12 @@ try:
                     matches.append(os.path.join(root, dirname)[len(top_level)+1:]+'/')
             matches.sort()
             response['list'] = matches
+
+            # for staff: also return list of all the users
+            if staff:
+                ulist = [os.path.basename(s) for s in glob.glob(students+'*')]
+                ulist.sort()
+                response['users'] = ulist
 
         ###################################################################################
         ## load file, backup and autosave

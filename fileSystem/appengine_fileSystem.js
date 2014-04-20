@@ -16,13 +16,22 @@ var FileSystem= (function(){
     var local_shared_url = 'http://localhost/~cjt/6.004x/server';
 
     // used when access is from scripts deployed on 6004.mit.edu
-    var mit_server_url = 'https://6004.mit.edu/coursewarex/cgibin_file_server.py';
+    var mit_server_url = 'https://6004.mit.edu/coursewarex/cgibin_file_serverx.py';
     var mit_shared_url = 'https://6004.mit.edu/coursewarex';
 
     var saved_file_list = [];
     var saved_folder_list = [];
 
+    // which user we want to access on file system
+    // if undefined, server will use certificate to determine user
+    var user_attribute = undefined;
+    function set_user_attribute(user) {
+        user_attribute = user;
+    }
+
     function server_request(url,data,callback) {
+        if (user_attribute) data['user'] = user_attribute;
+
         // for MITx
         try {
             if (xblock_unique_id !== undefined) {
@@ -211,7 +220,7 @@ var FileSystem= (function(){
                                if (response._error === undefined) {
                                    saved_file_list = response.list;  // remember for later reference
                                    var tree = build_tree(response.list);
-                                   succeed(tree,sessionStorage.getItem('user'),response.users);
+                                   succeed(tree,response._user,response.users);
                                } else {
                                    if (fail) fail(response._error);
                                    else console.warn(response._error);
@@ -422,6 +431,7 @@ var FileSystem= (function(){
             getSharedFileList: getSharedFileList,
             getUserName: getUserName,
             getUserFullName: getUserFullName,
+            set_user_attribute: set_user_attribute,
 
             isFolder: isFolder,
             newFolder: newFolder,
