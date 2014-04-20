@@ -300,7 +300,7 @@ var Editor = function(container, mode) {
         doc.cm.refresh();
         doc.cm.focus();
         mCurrentDocument = doc;
-        if(doc.autosaved.contents) {
+        if(doc.autosaved && doc.autosaved.contents) {
             mRestoreAutosaveButton.show();
         } else {
             mRestoreAutosaveButton.hide();

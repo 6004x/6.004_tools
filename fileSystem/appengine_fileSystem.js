@@ -211,7 +211,7 @@ var FileSystem= (function(){
                                if (response._error === undefined) {
                                    saved_file_list = response.list;  // remember for later reference
                                    var tree = build_tree(response.list);
-                                   succeed(tree,sessionStorage.getItem('user'));
+                                   succeed(tree,sessionStorage.getItem('user'),response.users);
                                } else {
                                    if (fail) fail(response._error);
                                    else console.warn(response._error);
