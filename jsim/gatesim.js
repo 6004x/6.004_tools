@@ -1131,7 +1131,44 @@ var gatesim = (function() {
             return table[in0.v][in1.v][in2.v][in3.v][in4.v][4];
         };
         else if (inputs.length == 6) this.logic_eval = function() {
-            return table[in0.v][in1.v][in2.v][in3.v][in4.v][in5.v][4];
+                var v0,v1;
+
+                // special case eval function for mux4 with X's on select lines
+                if (type == 'mux4' && (in0.v >= VX || in1.v >= VX)) {
+                    if (in0.v >= VX) {
+                        if (in1.v >= VX) {
+                            // both s0 and s1 are X
+                            // check to see if d0 == d1 == d2 == d3 to see if selects matter
+                            if (in2.v==in3.v && in2.v==in4.v && in2.v==in5.v) return in2.v;
+                            else return VX;
+                        } else {
+                            // just s0 is X
+                            // if s1 is 0, check to see if d0 == d1 to see if s0 matters
+                            // otherwise, check to see if d2 == d3 to see if s0 matters
+                            if (in1.v == V0) {
+                                if (in2.v == in3.v) return in2.v;
+                                else return VX;
+                            } else {
+                                if (in4.v == in5.v) return in4.v;
+                                else return VX;
+                            }
+                        }
+                    } else {
+                        // just s1 is X
+                        // if s0 is 0, check to see if d0 == d2 to see if s1 matters
+                        // otherwise, check to see if d1 == d3 to see if s1 matters
+                        if (in0.v == V0) {
+                            if (in2.v == in4.v) return in2.v;
+                            else return VX;
+                        } else {
+                            if (in3.v == in5.v) return in3.v;
+                            else return VX;
+                        }
+                    }
+                }
+
+                // otherwise use tables to compute answer
+                return table[in0.v][in1.v][in2.v][in3.v][in4.v][in5.v][4];
         };
         else this.logic_eval = function() {
             // handles arbitrary numbers of inputs (eg, for BusTable).
