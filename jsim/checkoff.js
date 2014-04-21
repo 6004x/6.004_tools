@@ -189,6 +189,7 @@ var Checkoff = (function(){
 
         var history = {}; // simulation history for each checked node
         var checks = [];  // list of checks: {time, nodes, expected} 
+        var node_order = [];   // list of nodes in order they appear in .verify
         $.each(mVerify_statements,function (vindex,vobj) {
             if (vobj.type == "memory"){
                 // the "<< 0" converts answer to 32-bit int
@@ -200,6 +201,7 @@ var Checkoff = (function(){
             $.each(vobj.nodes,function (index,node) {
                 var h = mResults.history(node);
                 if (h === undefined) throw new VerifyError('No results for node '+node);
+                node_order.push(node);
                 if (mResults.result_type() == 'analog') {
                     // convert results to digital domain (0, 1, X)
                     var vil = mOptions.vil || 0.2;
@@ -211,15 +213,24 @@ var Checkoff = (function(){
 
             // add the checks performed by this .verify to our master list
             $.each(vobj.values,function (index,v) {
-                checks.push({time: v.time, nodes: vobj.nodes, expected: v.value});
+                // convert time to nearest ps, avoiding unintended reordering
+                // due to small floating-point precision differences
+                var t = Math.round(v.time * 1e12)*1e-12;
+                checks.push({time: t, nodes: vobj.nodes, expected: v.value});
                 // the "<< 0" converts answer to 32-bit int
                 checksum = (checksum + (index+1)*(Math.floor(v.time*1e12) + v.value)) << 0;
             });
         });
 
         // sort the checks by time, so we'll do earlier checks across all nodes
-        // before checking any later values
-        checks.sort(function(a,b) { return a.time - b.time; });
+        // before checking any later values.  If the times are equal, use node_order
+        // (ie, the order of the verify statements) to determine order of tests
+        checks.sort(function(a,b) {
+                if (a.time != b.time) return a.time - b.time;
+                var aindex = node_order.indexOf(a.nodes[0]);
+                var bindex = node_order.indexOf(b.nodes[0]);
+                return aindex - bindex;
+            });
 
         // run through all checks, now ordered by increasing time
         $.each(checks,function(index,check) {
