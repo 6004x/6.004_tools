@@ -87,7 +87,7 @@ var Simulator = (function(){
         var haltButton = $('<button class="btn btn-danger">Halt</button>');
         haltButton.tooltip({title:'Halt Simulation',delay:100,container:'body'});
         haltButton.on("click",function(){
-            tranHalt = true;
+               tranHalt = true;
         });
         tranProgress.append(haltButton);
         
@@ -102,6 +102,8 @@ var Simulator = (function(){
                             '</button></div>');
                 console.log(err.stack);
             }
+
+            haltButton.tooltip('hide');
 
             if (msg) error(msg);
             else if (results) {
@@ -429,10 +431,32 @@ var Simulator = (function(){
 
         // called by plot.graph when user wants to add a plot
         dataseries.add_plot = function (node,callback) {
-            // parse "node" here to handle iterators, etc.
-            Parser.parse_plot(node,function(plist) {
-                if (plist) process_plist(plist);  // will push to dataseries
-            });
+            try {
+                // parse "node" here to handle iterators, etc.
+                Parser.parse_plot(node,function(plist) {
+                        if (plist) {
+                            if (plist.length > 1) {
+                                // hack: plot multiple nodes as a bus
+                                var nplist = [{type: 'L', args: []}];
+                                $.each(plist,function (index,plot) {
+                                        nplist[0].args.push(plot.args[0]);
+                                    });
+                                plist = nplist;
+                            }
+                            try {
+                                process_plist(plist);  // will push to dataseries
+                            } catch (err) {
+                                $('#simulation-pane').prepend('<div class="alert alert-danger">Can\'t plot node: '+err+
+                                                              '.<button class="close" data-dismiss="alert">&times;'+
+                                                              '</button></div>');
+                            }
+                        }
+                    });
+            } catch (err) {
+                $('#simulation-pane').prepend('<div class="alert alert-danger">Can\'t plot noe: '+err+
+                                              '.<button class="close" data-dismiss="alert">&times;'+
+                                              '</button></div>');
+            }
         };
 
         if (dataseries.length !== 0) {
