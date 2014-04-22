@@ -354,11 +354,13 @@ var FileSystem= (function(){
                                 } else {
                                     var contents = extract_metadata(response.file);
                                     var autosave_contents = extract_metadata(response.autosave);
+                                    // only allow read-only access if we're staff reading in a student's file
+                                    var readonly = (user_attribute && user_attribute!=sessionStorage.getItem('user').split('@')[0])
                                     succeed({name: filename,
                                              data: contents.contents,
                                              metadata: contents.metadata,
                                              autosave: autosave_contents,
-                                             shared: false});
+                                             shared: readonly});
                                 }
                             });
     }
