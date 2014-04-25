@@ -133,7 +133,7 @@ var Checkoff = (function(){
             failedModal.setTitle("Checkoff Failed!");
             failedModal.setContent("<p><div class='text-error'>Memory verification error:</div></p>\
 <p><table class='table'><tr><td>Memory:</td><td>"+mistake.nodes+"</tr>\
-<tr><td>Location:</td><td>"+engineering_notation(mistake.time,3)+"</td></tr>\
+<tr><td>Location:</td><td>0x"+mistake.time.toString(16)+"</td></tr> \
 <tr><td>Expected:</td><td><tt>"+mistake.exp+"</tt></td></tr>\
 <tr><td>Actual:</td><td><tt>"+mistake.given+"</tt></td></tr></table></p>");
             failedModal.addButton("Dismiss",'dismiss');
@@ -298,9 +298,10 @@ var Checkoff = (function(){
         for (var i = 0; i < vobj.contents.length; i += 1) {
             var got = mem[start+i];
             if (vobj.contents[i] != got) {
+                var prefix = vobj.display_base == 16 ? '0x' : (vobj.display_base == 2 ? '0b' : '');
                 throw new VerifyError('Verify memory error',start+i,vobj.mem_name,
-                                      vobj.contents[i].toString(vobj.display_base),
-                                      got ? got.toString(vobj.display_base) : 'undefined');
+                                      prefix + vobj.contents[i].toString(vobj.display_base),
+                                      got!==undefined ? prefix +got.toString(vobj.display_base) : 'undefined');
             }
             checksum += (i+1)*(start + i + got);
         }
