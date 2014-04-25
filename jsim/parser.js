@@ -71,7 +71,8 @@ var Parser = (function(){
                         duped_token_array.push({token:dupe_string,
                                                 line:current.line,
                                                 type:'name',
-                                                column:current.column
+                                                column:current.column,
+                                                origin_file:current.origin_file
                                                });
                     }
                     duped_token_array = iter_expand(duped_token_array);
