@@ -684,6 +684,7 @@ var Folders = (function(){
         }
         textInput(handleCreate, childDiv, validateName, defaultText);
     }
+
     function newFile(file_path, parent) {
         function newFileAction(validName, actions){
             var new_file = {
@@ -720,6 +721,7 @@ var Folders = (function(){
         newFSObject(parent, validNewFileName, newFileAction, 'New File', 'new file');
 
     }
+
     function newFolder(file_path, parent){
         //checks against regexp
         function validFolderName(folderName, actions){
@@ -746,7 +748,8 @@ var Folders = (function(){
         }
         newFSObject(parent, validFolderName, newFolderAction, 'New Folder', 'new folder');
     }
-    function deleteFile(path){
+
+    function deleteFile(path,element){
         var modal = new ModalDialog();
         modal.setTitle("Delete File");
         modal.setText("Are you sure you want to delete " + path + "?");

@@ -205,18 +205,25 @@ try:
                 write_file(os.path.join(user_dir,path + autosave_suffix),contents)
 
         ###################################################################################
-        ## delete files with names having specified prefix
-        ## url: ?_path=/file/<prefix>&action=delete
+        ## delete file/directory with specified path
+        ## url: ?_path=/file/<path>&action=delete
         ## returns: {}
         ###################################################################################
         elif action == 'delete':
+            fname = os.path.join(user_dir,path)
+            if not os.path.exists(fname):
+                response['_error'] = "File not found on delete: "+path
+            elif os.path.isdir(fname):
+                shutil.rmtree(fname)
+            else: os.remove(fname)
+            """
             found = False
             for root, dirnames, filenames in os.walk(user_dir):
-                # visit all user's files, removing those that match prefix
+                # visit all user's files, removing those that match
                 for filename in filenames:
                     fname = os.path.join(root, filename)  # full path to file
                     # see if path relative to user_dir starts with specified prefix
-                    if fname[len(user_dir)+1:].startswith(path):
+                    if fname[len(user_dir)+1:] == path:
                         found = True
                         os.remove(fname)
                 # remove entire trees if subdirectory matches prefix
@@ -231,6 +238,7 @@ try:
                         shutil.rmtree(dname)
             if not found:
                 response['_error'] = "File not found on delete: "+path
+                """
 
         ###################################################################################
         ## rename file (along with backup and autosave)
