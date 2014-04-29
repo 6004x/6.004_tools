@@ -8,6 +8,8 @@
 // Chris Terman
 
 var gatesim = (function() {
+    var last_network;  // remember most recent network
+    function get_last_network() { return last_network; }
 
     function dc_analysis(netlist, sweep1, sweep2, options) {
         throw "Sorry, no DC analysis with gate-level simulation";
@@ -207,6 +209,8 @@ var gatesim = (function() {
 
     // load circuit from JSON netlist: [[device,[connections,...],{prop: value,...}]...]
     Network.prototype.load_netlist = function(netlist, options) {
+        last_network = this;
+
         var network = this;
         network.N = 0;
         network.node_map = {};
@@ -500,6 +504,21 @@ var gatesim = (function() {
         this.nodes = [];
     }
 
+    // test heap invariant
+    Heap.prototype.assert = function() {
+        var len = this.nodes.length;
+        var i,j;
+        for (i = 0; i < len; i += 1) {
+            j = 2*i + 1;
+            if (j < len && this.nodes[i].time > this.nodes[j].time) {
+                throw 'heap error 1';
+            }
+            if (j+1 < len && this.nodes[i].time > this.nodes[j+1].time) {
+                throw 'heap error 2';
+            }
+        }
+    }
+
     // specialized for events...
     Heap.prototype.cmplt = function(e1, e2) {
         return e1.time < e2.time;
@@ -511,7 +530,7 @@ var gatesim = (function() {
     Heap.prototype._siftdown = function(startpos, pos) {
         var newitem, parent, parentpos;
         newitem = this.nodes[pos];
-        // follow th epath to the root
+        // follow the path to the root
         while (pos > startpos) {
             parentpos = (pos - 1) >> 1;
             parent = this.nodes[parentpos];
@@ -602,6 +621,7 @@ var gatesim = (function() {
             var lastelt = this.nodes.pop();
             if (item !== lastelt) {
                 this.nodes[pos] = lastelt;
+                this._siftdown(0, pos);
                 this._siftup(pos);
             }
         }
@@ -679,7 +699,9 @@ var gatesim = (function() {
             this.values.push(event.v);
         }
 
-        if (this.network.debug_level > 0) console.log(this.name + ": " + "01XZ"[this.v] + "->" + "01XZ"[event.v] + " @ " + event.time + [" contamination"," propagation"][event.type]);
+        if (this.network.debug_level > 0) {
+            console.log(this.name + ": " + "01XZ"[this.v] + "->" + "01XZ"[event.v] + " @ " + event.time + [" contamination"," propagation"][event.type]);
+        }
 
         this.v = event.v;
 
@@ -1906,7 +1928,8 @@ var gatesim = (function() {
         'dc_analysis': dc_analysis,
         'ac_analysis': ac_analysis,
         'transient_analysis': transient_analysis,
-        'timing_analysis': timing_analysis
+        'timing_analysis': timing_analysis,
+        'get_last_network': get_last_network
     };
     return module;
 }());
