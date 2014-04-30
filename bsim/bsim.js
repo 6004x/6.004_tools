@@ -3,6 +3,8 @@ BSim = {};
 $(function() {
     var split = new SplitPane('#split-container', ['#filetree', '#editor-pane', '#simulation-pane']);
 
+    $('.global-controls').append('<span style="margin-right:10px;">'+$('title').text()+'</span>');
+
     // initial configuration
     split.setPaneWidth(0, 200);
     split.setPaneWidth(1, split.window_width() - 200);
