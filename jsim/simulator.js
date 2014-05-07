@@ -193,8 +193,8 @@ var Simulator = (function(){
      *********************/
     
     // returns an alert when there are no values to plot for a node
-    function get_novaldiv(node){
-        var div = $('<div class="alert alert-danger">No values to plot for node '+node+
+    function get_novaldiv(msg){
+        var div = $('<div class="alert alert-danger">'+msg+
                     '<button class="close" type="button" data-dismiss="alert">&times;\
                     </button></div>');
         return div;
@@ -275,6 +275,7 @@ var Simulator = (function(){
      Transient analysis
      ***************/
     function prepare_tran_data(plots,results){
+        mDiv.empty();
 
         // build dataset from a list of nodes
         function new_dataset(nlist) {
@@ -290,7 +291,10 @@ var Simulator = (function(){
             for (var i = 0; i < nlist.length; i += 1) {
                 var node = nlist[i];
                 var values = results.history(node);
-                if (values === undefined) throw "No values to plot for "+node;
+                if (values === undefined) {
+                    mDiv.prepend(get_novaldiv("No values for "+node));
+                    return undefined;
+                }
 
                 dataset.xvalues.push(values.xvalues);
                 dataset.yvalues.push(values.yvalues);
@@ -446,29 +450,24 @@ var Simulator = (function(){
                             try {
                                 process_plist(plist);  // will push to dataseries
                             } catch (err) {
-                                $('#simulation-pane').prepend('<div class="alert alert-danger">Can\'t plot node: '+err+
-                                                              '.<button class="close" data-dismiss="alert">&times;'+
-                                                              '</button></div>');
+                                mDiv.prepend(get_novaldiv("Can't plot node: "+err));
                             }
                         }
                     });
             } catch (err) {
-                $('#simulation-pane').prepend('<div class="alert alert-danger">Can\'t plot noe: '+err+
-                                              '.<button class="close" data-dismiss="alert">&times;'+
-                                              '</button></div>');
+                mDiv.prepend(get_novaldiv("Can't plot node: "+err));
             }
         };
 
         if (dataseries.length !== 0) {
             var container = plot.graph(dataseries);
-            mDiv.empty();
             mDiv.append(container);
 
-	    if (results.report) {
-		var stat_button = $('<button style="margin-left:10px;">Stats</button>');
-		$('.plot-toolbar').append(stat_button);
-		stat_button.on('click',function () { do_stats(results); });
-	    }
+            if (results.report) {
+                var stat_button = $('<button style="margin-left:10px;">Stats</button>');
+                $('.plot-toolbar').append(stat_button);
+                stat_button.on('click',function () { do_stats(results); });
+            }
 
             //cjt for some reason with typeahead one can't type "L(xxx)" ???
             // add autocomplete to add plot input field
