@@ -1489,8 +1489,8 @@ var gatesim = (function() {
             throw "Memory "+name+" must have > 0 locations.";
         mem.contents = properties.contents;
 
-        // by default memories aren't lenient
-        mem.lenient = (properties.lenient === undefined) ? false : properties.lenient !== 0;
+        // by default memories are lenient
+        mem.lenient = (properties.lenient === undefined) ? true : properties.lenient !== 0;
         mem.cout = properties.cout || options.mem_cout || 0;
         mem.cin = properties.cin || options.mem_cin || .1e-12;
         mem.tcd = properties.tcd || options.mem_tcd || .2e-9;
