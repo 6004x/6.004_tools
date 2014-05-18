@@ -1112,8 +1112,8 @@ var gatesim = (function() {
         this.properties = properties;
         this.size = properties.size || 0;
 
-        // by default logic gates aren't lenient
-        this.lenient = (properties.lenient === undefined) ? false : properties.lenient !== 0;
+        // by default logic gates are lenient
+        this.lenient = (properties.lenient === undefined) ? true : properties.lenient !== 0;
         // but devices with 0 or 1 inputs are lenient by definition!
         if (inputs.length < 2) this.lenient = true;
 
