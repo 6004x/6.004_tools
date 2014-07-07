@@ -13,7 +13,8 @@ module.exports = function(grunt) {
             jade: {src: 'jade/jade.html', dest: 'build/jade.html'},
             resources: {src: 'libs/*.png', dest: 'build/', flatten: true, expand: true},
             deploy: {src: 'build/*', dest: '../', flatten: true, expand: true },
-            xblock: {src: 'build/*', dest: '../xblocks-6004x/mit6004/mit6004/public/', flatten: true, expand: true }
+            xblock: {src: 'build/*', dest: '../xblocks-6004x/mit6004/mit6004/public/', flatten: true, expand: true },
+            cs: {src: 'build/*', dest: '../6004x.github.io/ntools/', flatten: true, expand: true }
         },
         uglify: {
             options: {
@@ -87,6 +88,7 @@ module.exports = function(grunt) {
     grunt.registerTask('jade', ['copy:resources', 'copy:jade', 'useminPrepare:jade', 'concat', 'uglify', 'cssmin', 'usemin:jade'])
     grunt.registerTask('deploy', ['copy:deploy'])
     grunt.registerTask('xblock', ['copy:xblock'])
+    grunt.registerTask('cs', ['copy:cs'])
 
     //grunt.registerTask('test', ['connect', 'qunit:all'])
 
