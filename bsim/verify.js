@@ -75,14 +75,11 @@ BSim.MemoryVerifier = function(beta, checkoff) {
     };
 };
 
-BSim.SubmitVerification = function(beta, editor, username, password, collaboration, callback) {
+BSim.SubmitVerification = function(beta, editor, collaboration, callback) {
     if(!beta.verifier().verify()) {
         throw new Error("Attempted to submit checkoff without verifiable result.");
     }
     $.post(beta.verifier().checkoff().url, {
-        username: username,
-        userpassword: password,
-        sender: username, // we can't actually figure this one out
         collaboration: collaboration,
         pcheckoff: beta.verifier().checkoff().name,
         checksum: beta.verifier().checkoff().checksum,

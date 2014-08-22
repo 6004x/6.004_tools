@@ -328,9 +328,9 @@ var Checkoff = (function(){
     }
 
     function complete_checkoff(old){
-        var username = old.inputContent(0);
-        var password = old.inputContent(1);
-        var collaborators = old.inputContent(2);
+        //var username = old.inputContent(0);
+        //var password = old.inputContent(1);
+        var collaborators = old.inputContent(0);
         var advice = old.find('.advice').map(function(index,field){ return $(field).val(); });
         var astrings = [];
         $.each(advice,function(index,a){ astrings.push(a); });
@@ -354,9 +354,9 @@ var Checkoff = (function(){
         };
         
         $.post(url, {
-            username: username,
-            userpassword: password,
-            sender: username, // we can't actually figure this one out
+            //username: username,
+            //userpassword: password,
+            //sender: username, // we can't actually figure this one out
             pcheckoff:assignment,
             collaboration: collaborators,
             checksum: checksum,
@@ -375,7 +375,7 @@ var Checkoff = (function(){
     }
 
     function submit_task(dialog,assignment) {
-        if (assignment == 'Lab #2') {
+        if (assignment == 'foo') { //'Lab #2') {
             var expected = {png:"/ssldocs/images/lab2_1.png", gates:24, fets:114};
             var best = {png:"/ssldocs/images/lab2_8.png", gates:21, fets:96};
             var worse = [{png:"/ssldocs/images/lab2_2.png", gates:42, fets:150},
@@ -445,11 +445,11 @@ var Checkoff = (function(){
         var dialog = new ModalDialog();
         dialog.setTitle("Submit Lab");
         submit_task(dialog,mCheckoffStatement.assignment.name);
-        dialog.inputBox({label: "Username", callback: complete_checkoff});
-        dialog.inputBox({label: "Password", type: 'password', callback: complete_checkoff});
+        //dialog.inputBox({label: "Username", callback: complete_checkoff});
+        //dialog.inputBox({label: "Password", type: 'password', callback: complete_checkoff});
         dialog.inputBox({label: "Collaborators", callback: complete_checkoff});
         dialog.addButton("Dismiss", "dismiss");
-        dialog.addButton("Submit", function(){complete_checkoff(dialog)}, 'btn-primary');
+        dialog.addButton("Submit", function(){complete_checkoff(dialog);}, 'btn-primary');
         dialog.show();
     }
     

@@ -41,11 +41,9 @@ BSim.Controls = function(container, beta, editor, schematic) {
     };
 
     var complete_checkoff = function(old) {
-        var username = old.inputContent(0);
-        var password = old.inputContent(1);
-        var collaborators = old.inputContent(2);
+        var collaborators = old.inputContent(0);
         old.dismiss();
-        BSim.SubmitVerification(mBeta, mEditor, username, password, collaborators, function(success, text) {
+        BSim.SubmitVerification(mBeta, mEditor, collaborators, function(success, text) {
             var dialog = new ModalDialog();
             if(success) {
                 dialog.setTitle("Checkoff complete");
@@ -63,8 +61,8 @@ BSim.Controls = function(container, beta, editor, schematic) {
         old.dismiss();
         var dialog = new ModalDialog();
         dialog.setTitle("Submit Lab");
-        dialog.inputBox({label: "Username", callback: complete_checkoff});
-        dialog.inputBox({label: "Password", type: 'password', callback: complete_checkoff});
+        //dialog.inputBox({label: "Username", callback: complete_checkoff});
+        //dialog.inputBox({label: "Password", type: 'password', callback: complete_checkoff});
         dialog.inputBox({label: "Collaborators", callback: complete_checkoff});
         dialog.addButton("Dismiss", "dismiss");
         dialog.addButton("Submit", complete_checkoff, 'btn-primary');

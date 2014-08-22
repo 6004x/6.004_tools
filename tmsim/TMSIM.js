@@ -460,9 +460,9 @@
             };
 
             function complete_checkoff(old) {
-                var username = old.inputContent(0);
-                var password = old.inputContent(1);
-                var collaborators = old.inputContent(2);
+                //var username = old.inputContent(0);
+                //var password = old.inputContent(1);
+                var collaborators = old.inputContent(0);
                 old.dismiss();
 
                 var url = mCheckoff.server.substring(1,mCheckoff.server.length - 1);
@@ -482,9 +482,6 @@
                 };
         
                 var args = {
-                    username: username,
-                    userpassword: password,
-                    sender: username, // we can't actually figure this one out
                     checkoff:assignment,
                     collaboration: collaborators,
                     checksum: checksum,
@@ -535,8 +532,8 @@
                     } else {
                         var dialog = new ModalDialog();
                         dialog.setTitle("Submit Lab");
-                        dialog.inputBox({label: "Username", callback: complete_checkoff});
-                        dialog.inputBox({label: "Password", type: 'password', callback: complete_checkoff});
+                        //dialog.inputBox({label: "Username", callback: complete_checkoff});
+                        //dialog.inputBox({label: "Password", type: 'password', callback: complete_checkoff});
                         dialog.inputBox({label: "Collaborators", callback: complete_checkoff});
                         dialog.addButton("Dismiss", "dismiss");
                         dialog.addButton("Submit", function(){complete_checkoff(dialog)}, 'btn-primary');
