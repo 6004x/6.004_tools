@@ -212,19 +212,18 @@ function TSMparser(){
                     transition.write = args[3];
                     transition.move = args[4];
                     transition.lineNumber = lineNumber;
-                    //two actions for the same state
-                    if(tsmDict[state].transition[read_symbol]){
-                        message = 'you have two actions for state '+state+' at symbol ' + read_symbol;
-                        exceptions.push({
-                            message:message, lineNumber:lineNumber,
-                        })
-                    }
                     if(_.contains(validStates,state)
                        &&_.contains(validStates, transition.new_state)
                        &&_.contains(validSymbols, read_symbol)
                        &&_.contains(validSymbols, transition.write)
                        &&_.contains(validMoves, transition.move)){
-                        //'valid action');
+                        //two actions for the same state
+                        if(tsmDict[state].transition[read_symbol]){
+                            message = 'you have two actions for state '+state+' at symbol ' + read_symbol;
+                            exceptions.push({
+                                message:message, lineNumber:lineNumber,
+                            });
+                        }
                         tsmDict[state].transition[read_symbol]=transition;
                     } else {
                         var message = '';
