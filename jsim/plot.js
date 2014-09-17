@@ -357,6 +357,8 @@
 
     function do_plot(container,w,h) {
         var dataseries = container.dataseries;
+        dataseries.sel0 = undefined;  // remove selection region, if any
+        dataseries.sel1 = undefined;
 
         // set dimensions of each canvas, figure out consistent margins
         var left_margin = 55.5;
