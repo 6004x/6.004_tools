@@ -344,6 +344,18 @@
                 $(document).unbind('mousemove');
                 $(document).unbind('mouseup');
             });
+
+        });
+
+        thumb.on('click',function (event) {
+            event.stopPropagation();  // doesn't count as scrollbar click
+        });
+
+        scrollbar.on('click',function (event) {
+            var mx = event.pageX - thumb.offset().left;
+            var w = 0.9 * thumb.width();
+            move_thumb(mx < 0 ? -w : w);
+            event.preventDefault();
         });
 
         // set up resize handler
@@ -688,12 +700,17 @@
                 c.stroke();
 
                 if (dataseries.sel0 !== dataseries.sel1) {
-                    c.fillStyle = 'rgb(207,191,194)';
-                    c.font = graph_font;
-                    c.textAlign = 'left';
-                    c.textBaseline = 'top';
                     var delta = Math.abs(dataset.datax(dataseries.sel0) - dataset.datax(dataseries.sel1));
-                    c.fillText('dx='+engineering_notation(delta,3),xsel+wsel+2,dataset.top);
+                    var v = engineering_notation(delta,3);
+                    c.font = value_font;
+                    c.textAlign = 'right';
+                    c.textBaseline = 'top';
+                    c.fillStyle = 'rgb(0,0,0)';
+                    var background = '';
+                    for (var i = 0; i < v.length+5; i += 1) background += '\u2588';
+                    c.fillText(background,xsel+wsel,dataset.top);
+                    c.fillStyle = 'rgb(255,255,255)'; //'rgb(207,191,194)';
+                    c.fillText('dx='+v+' ',xsel+wsel,dataset.top);
                 }
             }
 

@@ -41,7 +41,10 @@ var ToolbarButton = function(icon, callback, tooltip, cls) {
             mElement.tooltip({title: mTooltip, placement: 'top', delay: 100, container: 'body'});
         }
         if(mCallback) {
-            mElement.click(mCallback);
+            mElement.click(function () {
+                mElement.tooltip('hide');
+                mCallback();
+            });
         }
         mElement.data('button', self);
         container.append(mElement);
