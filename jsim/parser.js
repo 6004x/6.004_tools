@@ -1049,6 +1049,9 @@ var Parser = (function(){
                    connections:[],
                    properties:{name:line[0].token}
                   };
+        if (line.length < 4) {
+            throw new CustomError("Malformed "+type, line[0]);
+        }
         for (var i = 1; i <= 2; i += 1){
             if (line[i].type != "name"){
                 throw new CustomError("Node name expected", line[i]);

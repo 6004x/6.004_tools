@@ -573,15 +573,18 @@ var Editor = function(container, mode) {
     };
 
     var store_tabs = function() {
-        localStorage['6004_' + mSyntaxMode + '_tabs'] = JSON.stringify(self.filenames());
+        //localStorage['6004_' + mSyntaxMode + '_tabs'] = JSON.stringify(self.filenames());
     };
 
     var restore_tabs = function() {
+        /*
         var filenames = localStorage['6004_' + mSyntaxMode + '_tabs'];
         if(!filenames) return false; // Default state
         filenames = JSON.parse(filenames);
         _.each(filenames, function(f) { self.openFile(f, false); });
         return !!filenames.length;
+         */
+        return false;
     };
 
     // Re-opens whatever tabs the user had open last time.
