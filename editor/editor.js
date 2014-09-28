@@ -380,7 +380,7 @@ var Editor = function(container, mode) {
             */
             electricChars: true,
             matchBrackets: true,
-            autoCloseBrackets: (mSyntaxMode != 'tsim'), // HACK: no parenthesis closing in TMSim.
+            autoCloseBrackets: false, //(mSyntaxMode != 'tsim'), // HACK: no parenthesis closing in TMSim.
             smartIndent: true,
             indentWithTabs: true,
             styleActiveLine: true,
