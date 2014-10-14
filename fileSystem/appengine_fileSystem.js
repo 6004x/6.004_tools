@@ -12,8 +12,8 @@ var FileSystem= (function(){
     // used when access is from scripts deployed on localhost
     //var local_server_url = 'http://localhost:6004';
     //var local_shared_url = 'http://localhost/6.004x/server';
-    var local_server_url = 'http://localhost/~cjt/6.004x/server/cgibin_file_server.py';
-    var local_shared_url = 'http://localhost/~cjt/6.004x/server';
+    var local_server_url = 'http://localhost/6.004x/server/local_file_server.py';
+    var local_shared_url = 'http://localhost/6.004x/server/';
 
     // used when access is from scripts deployed on 6004.mit.edu
     var mit_server_url = 'https://6004.mit.edu/coursewarex/cgibin_file_serverx.py';
@@ -47,6 +47,7 @@ var FileSystem= (function(){
         var host = $(location).attr('host');
         if (host == 'localhost') {
             //url = local_server_url + url;
+
             data['_path'] = url;   // add path info to request data
             url = local_server_url; // cgi bin script
         }
