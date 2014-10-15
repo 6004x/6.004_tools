@@ -454,7 +454,7 @@
         var xend = dataset.dataseries.xend;
 
         // compute info for drawing grids -- shoot for a grid line every 100 pixels
-        var xtick = tick_interval(xstart,xend,dataset.wplot/100);
+        var xtick = tick_interval(xstart,xend,dataset.wplot/40);
         xtick.push(xend);  // when to stop drawing x grid
         var tick_length = 5;
 
@@ -483,7 +483,7 @@
             c.fillText(engineering_notation(t, 2)+xunits, temp, dataset.top + dataset.hplot);
         }
 
-        var ytick = tick_interval(dataset.ymin,dataset.ymax,dataset.hplot/100);
+        var ytick = tick_interval(dataset.ymin,dataset.ymax,dataset.hplot/40);
         // draw ygrid and tick labels
         c.textAlign = 'right';
         c.textBaseline = 'middle';

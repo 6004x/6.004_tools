@@ -412,14 +412,14 @@ var Editor = function(container, mode) {
                     }
                     if(closest !== null) {
                         closest_mark.clear();
-                        mAutocompleter.selectPlaceholder(cm, closest);
+                        //mAutocompleter.selectPlaceholder(cm, closest);
                     } else {
                         return CodeMirror.Pass;
                     }
                 }
             }
         });
-        cm.on('change', _.debounce(CodeMirror.commands.autocomplete, 800, false));
+        //cm.on('change', _.debounce(CodeMirror.commands.autocomplete, 800, false));
         return cm;
     };
 
