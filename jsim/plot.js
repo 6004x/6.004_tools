@@ -45,7 +45,7 @@
     //   type: 'digital' or 'analog'
     function graph(dataseries) {
         // create container
-        var container = $('<div class="plot-container"></div>');
+        var container = $('<div class="plot-container noselect"></div>');
         container[0].dataseries = dataseries;
         dataseries.container = container[0];
 
@@ -72,6 +72,7 @@
                             process_dataset(dataset);
                     });
                     do_plot(container[0], container.width(), container.height());
+                    event.preventDefault();
                 }
             });
         }
@@ -82,12 +83,13 @@
         container.append('<div class="plot-scrollbar-wrapper"><div class="plot-scrollbar"><div class="plot-scrollbar-thumb"></div></div></div>');
 
         // handlers for zoom tools
-        zoom.on('click',function () {
+        zoom.on('click',function (event) {
             if (zoom.hasClass('plot-tool-enabled')) {
                 dataseries.sel0 = undefined;   // remove selection
                 dataseries.xstart = dataseries.xmin;
                 dataseries.xend = dataseries.xmax;
                 do_plot(container[0],container.width(),container.height());
+                event.preventDefault();
             }
         });
 
@@ -115,17 +117,21 @@
             do_plot(container[0],container.width(),container.height());
         };
 
-        zoomin.on('click',function () {
-            if (zoomin.hasClass('plot-tool-enabled'))
+        zoomin.on('click',function (event) {
+            if (zoomin.hasClass('plot-tool-enabled')) {
                 do_zoom((dataseries.xend - dataseries.xstart)/2);
+                event.preventDefault();
+            }
         });
 
-        zoomout.on('click',function () {
-            if (zoomout.hasClass('plot-tool-enabled'))
+        zoomout.on('click',function (event) {
+            if (zoomout.hasClass('plot-tool-enabled')) {
                 do_zoom((dataseries.xend - dataseries.xstart)*2);
+                event.preventDefault();
+            }
         });
 
-        zoomsel.on('click',function () {
+        zoomsel.on('click',function (event) {
             if (zoomsel.hasClass('plot-tool-enabled') && dataseries.sel0 && dataseries.sel1) {
                 var x0 = dataseries[0].datax(dataseries.sel0);
                 var x1 = dataseries[0].datax(dataseries.sel1);
@@ -134,6 +140,7 @@
                 dataseries.sel0 = undefined;   // all done with region!
                 dataseries.sel1 = undefined;
                 do_plot(container[0],container.width(),container.height());
+                event.preventDefault();
             }
         });
 
@@ -197,6 +204,7 @@
                     // replot remaining datasets
                     do_plot(container[0],container.width(),container.height());
                 }
+                event.preventDefault();
             });
 
             // double-click zooms in, shift double-click zooms out
@@ -211,6 +219,7 @@
                     if (event.shiftKey) do_zoom(xrange*2,gx);
                     else do_zoom(xrange/2,gx);
                 }
+                event.preventDefault();
             });
 
             // use arrow keys to pan (ie, move the scrollbar thumb)  [doesn't work?]
@@ -233,6 +242,7 @@
                     gy >= dataset.top && gy <= dataset.top + dataset.hplot) {
                     event.preventDefault();
                     move_thumb(event.originalEvent.wheelDelta > 0 ? -1 : 1);
+                    event.preventDefault();
                 }
             });
 
@@ -248,12 +258,14 @@
                     dataseries.sel0 = dataseries.cursor;   // remember start of region
                     dataseries.sel1 = undefined;
                     dataseries.sel = true;
+                    event.preventDefault();
                 }
 
-                $(document).on('mouseup',function () {
+                $(document).on('mouseup',function (event) {
                     $(document).unbind('mouseup');
                     dataseries.sel = undefined;      // we're done defining region
                     graph_redraw(dataseries);
+                    event.preventDefault();
                 });
             });
 
@@ -268,6 +280,7 @@
                     gy >= dataset.top && gy <= dataset.top + dataset.hplot) {
                     dataseries.cursor = Math.floor(gx) + 0.5;
                     if (dataseries.sel) dataseries.sel1 = dataseries.cursor;
+                    event.preventDefault();
                 } else dataseries.cursor = undefined;
 
                 graph_redraw(dataseries);
@@ -330,6 +343,7 @@
             $(document).on('mousemove',function (event) {
                 move_thumb(event.pageX - mx);
                 mx = event.pageX;
+                event.preventDefault();
                 /*
                 var dx = event.pageX - mx;
                 var value = Math.min(thumb_max_value,Math.max(0,thumb_value + dx));
@@ -343,8 +357,10 @@
             $(document).on('mouseup',function (event) {
                 $(document).unbind('mousemove');
                 $(document).unbind('mouseup');
+                event.preventDefault();
             });
 
+            event.preventDefault();
         });
 
         thumb.on('click',function (event) {
@@ -353,7 +369,7 @@
 
         scrollbar.on('click',function (event) {
             var mx = event.pageX - thumb.offset().left;
-            var w = 0.9 * thumb.width();
+            var w = 0.8 * thumb.width();
             move_thumb(mx < 0 ? -w : w);
             event.preventDefault();
         });
@@ -453,8 +469,8 @@
         var xstart = dataset.dataseries.xstart;
         var xend = dataset.dataseries.xend;
 
-        // compute info for drawing grids -- shoot for a grid line every 100 pixels
-        var xtick = tick_interval(xstart,xend,dataset.wplot/40);
+        // compute info for drawing grids -- shoot for a grid line every 80 pixels
+        var xtick = tick_interval(xstart,xend,dataset.wplot/80);
         xtick.push(xend);  // when to stop drawing x grid
         var tick_length = 5;
 
