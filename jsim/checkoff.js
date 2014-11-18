@@ -316,7 +316,7 @@ var Checkoff = (function(){
                 var result = '============== source: ' + source.file;
                 if (source.metadata) result += ' metadata: ' + JSON.stringify(source.metadata);
                 return result + '\n' + source.content + '\n==============\n';
-            }).join('')
+            }).join('');
     }
 
     function buffer_list() {
@@ -324,7 +324,7 @@ var Checkoff = (function(){
                 // don't send along shared files
                 if (source.file.indexOf('/shared') == 0) return {};
                 return {file: source.file, content: source.content, metadata: source.metadata};
-            })
+            });
     }
 
     function complete_checkoff(old){
@@ -388,7 +388,7 @@ var Checkoff = (function(){
             var fets = mResults.counts.nfet + mResults.counts.pfet;
             var result = $('<div style="font: 14px Geogia,serif;"></div>');
             result.append('Your design has a total of <b>'+fets+'</b> mosfets.  For comparison, the graph below shows '+
-                          'the number of designs submitted in a previous semester (y-axis) vs. their mosfet count (x-axis).')
+                          'the number of designs submitted in a previous semester (y-axis) vs. their mosfet count (x-axis).');
             result.append('<br><br><img src="/ssldocs/images/lab2_15.jpg">');
 
             result.append('<br><br>Below we will ask you to compare your design with a few other designs submitted previously.');
@@ -431,7 +431,7 @@ var Checkoff = (function(){
                 result.append('<br style="clear:right;"><br><textarea class="advice" style="font: 12px/1.25 monospace; width:95%;" rows="10">... enter your advice here</textarea>');
             }
 
-            result.append('<br><hr><br>To complete your submission, please enter your Athena name, your 6.004')
+            result.append('<br><hr><br>To complete your submission, please enter your Athena name, your 6.004');
             result.append('online password and list any collaborators.');
 
             dialog.setContent(result);

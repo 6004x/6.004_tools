@@ -75,6 +75,7 @@ $(function() {
     function ta(){
         $('#split_pane').click();
         editor.clearErrors();
+        Checkoff.reset();
         var content = editor.content('analyze');
         if (!content) return;
         var filename = editor.currentTab();
