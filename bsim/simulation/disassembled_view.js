@@ -1,5 +1,6 @@
 BSim.DisassembledView = function(container, beta) {
     var mContainer = $(container);
+    var mCycleCount = $('#cycle_count',mContainer.parent());
     var mBeta = beta;
     var mTable = new BigTable(mContainer, mContainer.data('width') || 450, mContainer.data('height') || 200, 22, 4);
     var mCurrentPC = 0;
@@ -39,6 +40,10 @@ BSim.DisassembledView = function(container, beta) {
             mTable.updateCell(i, 3, disassemble_value(address, mBeta.readWord(address)));
         }
         mTable.endBatch();
+    };
+
+    var beta_change_cycle_count = function(new_count) {
+        mCycleCount.text(new_count.toString());
     };
 
     var beta_change_pc = function(new_pc) {
@@ -107,6 +112,7 @@ BSim.DisassembledView = function(container, beta) {
         mContainer.append(mTable);
 
         mBeta.on('change:word', beta_change_word);
+        mBeta.on('change:cycle_count', beta_change_cycle_count);
         mBeta.on('change:pc', beta_change_pc);
         mBeta.on('change:bulk:word', beta_bulk_change_word);
         mBeta.on('resize:memory', beta_resize_memory);
