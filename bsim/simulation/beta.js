@@ -276,6 +276,7 @@ BSim.Beta = function() {
         mRegisters = new Int32Array(32);
         mPendingInterrupts = 0;
         mCycleCount = 0;
+        this.trigger('change:cycle_count',0);
         mClockCounter = 0;
         this.mServerInfo = [];
         if(!no_update_memory) mMemory.reset();
@@ -408,6 +409,8 @@ BSim.Beta = function() {
         //cjt: move try up here so that instruction fetch errors are caught
         try {
             mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
+            this.trigger('change:cycle_count',mCycleCount);
+
             // Continue on with instructions as planned.
             var instruction = this.readWord(mPC);
             var old_pc = mPC;
