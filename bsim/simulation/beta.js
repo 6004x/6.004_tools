@@ -409,7 +409,7 @@ BSim.Beta = function() {
         //cjt: move try up here so that instruction fetch errors are caught
         try {
             mCycleCount = (mCycleCount + 1) % 0x7FFFFFFF;
-            this.trigger('change:cycle_count',mCycleCount);
+            if(!mRunning) this.trigger('change:cycle_count',mCycleCount);
 
             // Continue on with instructions as planned.
             var instruction = this.readWord(mPC);
@@ -527,6 +527,7 @@ BSim.Beta = function() {
             self.trigger('read:register', mCurrentRegisterReads);
             self.trigger('write:register', mCurrentRegisterWrites);
             self.trigger('change:pc', mPC);
+            self.trigger('change:cycle_count', mCycleCount);
             mChangedRegisters = {};
             mChangedWords = {};
             mLastReads = [];
