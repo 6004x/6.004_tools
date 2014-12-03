@@ -1,3 +1,4 @@
+
 #tmsim_div{
 	text-align : center;
 	position : relative;
@@ -110,4 +111,51 @@
 .feedback_div {
     margin-top: 5px;
     font: 20px Georgia,serif;
+}
+
+/* Messing around with scrollability @sagrawal */
+#editor_div {
+	overflow-y: auto;
+}
+
+
+
+/* d3 visualization */
+
+/* Taken from Simplest Force Directed Graph: http://bl.ocks.org/sathomas/11550728
+
+.node {
+    fill: #ccc;
+    stroke: #fff;
+    stroke-width: 2px;
+}
+
+.link {
+    stroke: #777;
+    stroke-width: 2px;
+}
+
+path.link {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1.5px;
+}*/
+
+/* Taken from Example: http://www.d3noob.org/2013/03/d3js-force-directed-graph-example-basic.html */
+path.link {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1.5px;
+}
+
+circle {
+  fill: #ccc;
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+text {
+  fill: #000;
+  font: 10px sans-serif;
+  pointer-events: none;
 }

@@ -742,9 +742,6 @@
                 callback();
             }
         }
-
-        // this.toggleTape = toggleTape;
-
         self.initialise();
     };
     root.TMSIM = TMSIM;
@@ -752,8 +749,9 @@
 
 // used to be in tmsim.html
 var editor;
+
 $(document).ready(function(){
-        var split = new SplitPane('#main_wrapper', ['#folders_div', '#editor_div']);
+        var split = new SplitPane('#split-container', ['#folders_div', '#editor_div']);
 
         // initial configuration
         split.setPaneWidth(0, 200);
@@ -778,7 +776,9 @@ $(document).ready(function(){
             return $('.xblock-6004').innerHeight();
         };
         var set_height = function() {
-            editor.setHeight(window_height() - $('.btn-toolbar').height() - $('.nav-tabs').height() - 190);
+            // editor.setHeight(window_height() - $('.btn-toolbar').height() - $('.nav-tabs').height() - $('#tmsim_div').height());
+            editor.setHeight(500);
+            $('#editor_div').height(window_height() - $('.masthead').outerHeight(true));
         };
         set_height();
         $(window).resize(set_height); // Update the height whenever the browser window changes size.
@@ -801,6 +801,13 @@ $(document).ready(function(){
 
             try{
                 var parsedDict = tsmparse.parse(file.data);
+
+                // GRAPHICS EDITOR
+                // assembleGraphicsEditor('#editor_graphics', parsedDict);
+                // assembleSpringyRaphael('#editor_graphics', parsedDict);
+                // assembleSpringySimple('#holder_springy_raphael', parsedDict);
+                assembleD3('#holder', parsedDict);
+
                 editor.clearErrors();
                 // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
                 tmsimObj = tsmparse.flattenMachine(parsedDict);

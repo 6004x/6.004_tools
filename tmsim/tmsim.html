@@ -7,6 +7,9 @@
     <script src="../libs/underscore.js"></script>
     <script src="../libs/backbone.js"></script>
     <script src="../libs/bootstrap.js"></script>
+    <script src="../libs/raphael.js"></script>
+    <script src="../libs/springy.js"></script>
+    <script src="../libs/springyui.js"></script>
     <script src="../fileSystem/external/jquery-ui.js"></script>
     <script src="../editor/external/codemirror.js"></script>
     <script src="../editor/external/radix.js"></script>
@@ -20,11 +23,17 @@
     <script src="../editor/browser_check.js"></script>
     <script src="../fileSystem/appengine_fileSystem.js"></script>
     <script src="../fileSystem/folders.js"></script>
+    <!-- d3 graphics -->
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 
     <script src="../editor/modes/tsim.js"></script>
     <script src="TapeList.js"></script>
     <script src="TSM.js"></script>
     <script src="TSMParser.js"></script>
+    <script src="tmsim_graphics_editor.js"></script>
+    <script src="tmsim_graphics_springy_raphael.js"></script>
+    <script src="tmsim_graphics_springy_simple.js"></script>
+    <script src="tmsim_graphics_d3.js"></script>
     <script src="TMSIM.js"></script>
     <!-- endbuild -->
 
@@ -48,9 +57,16 @@
         <div id="folders_div"></div>
         <div id="editor_div">
           <div id="tmsim_div"></div>
+          <div id="editor_graphics">
+            <div id="holder"></div>
+            <!-- <canvas id="holder_springy_raphael"></canvas> -->
+          </div>
           <div id="editor"></div>
         </div>
       </div>
     </div>
   </body>
+  <script>
+
+  </script>
 </html>
