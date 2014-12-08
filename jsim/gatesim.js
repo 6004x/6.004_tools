@@ -1129,6 +1129,9 @@ var gatesim = (function() {
         for (var i = 0; i < inputs.length ; i+= 1) inputs[i].add_fanout(this);
         output.add_driver(this);
 
+        // gates with no input generate constant value outputs
+        if (inputs.length === 0) output.constant_value = true;
+
         var in0 = inputs[0];
         var in1 = inputs[1];
         var in2 = inputs[2];
