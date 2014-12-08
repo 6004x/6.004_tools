@@ -173,19 +173,19 @@ var gatesim = (function() {
         name2 = this.unalias(name2);
         if (name1 == name2) return;    // already aliased!
 
-        // are the names at the top level of the hierarchy?
-        var top_level_1 = (name1.indexOf('.') == -1);
-        var top_level_2 = (name2.indexOf('.') == -1);
+        // how many levels in hierarchical name?
+        var levels_1 = (name1.match(/\./g) || []).length;
+        var levels_2 = (name2.match(/\./g) || []).length;
 
         // figure out which name becomes the anchor of the alias chain:
         // gnd is always the anchor
-        // top level names are preferred to hierarchical names
+        // otherwise chose name with least hierarchy
         // otherwise simply chose the shorter of the two names
         var winner,loser;
         if (name1 == 'gnd') { winner = name1; loser = name2; }
         else if (name2 == 'gnd') { winner = name2; loser = name1; }
-        else if (top_level_1 && !top_level_2) { winner = name1; loser = name2; }
-        else if (top_level_2 && !top_level_1) { winner = name2; loser = name1; }
+        else if (levels_1 < levels_2) { winner = name1; loser = name2; }
+        else if (levels_2 < levels_1) { winner = name2; loser = name1; }
         else if (name1.length <= name2.length) { winner = name1; loser = name2; }
         else { winner = name2; loser = name1; }
 
@@ -860,6 +860,7 @@ var gatesim = (function() {
         if (v.fun == 'dc') {
             this.tvpairs = [0, v.args[0]];   // single t,v pair
             this.period = 0;
+            output.constant_value = true;
         } else {
             this.tvpairs = v.tvpairs;
             this.period = v.period;
@@ -1286,6 +1287,9 @@ var gatesim = (function() {
 
         // loop through inputs looking for min/max paths
         for (var i = 0; i < this.inputs.length ; i+= 1) {
+            // constant inputs don't contribute to timing
+            if (this.inputs[i].constant_value) continue;
+
             tinfo.set_delays(this.inputs[i].get_timing_info());
         }
         return tinfo;
