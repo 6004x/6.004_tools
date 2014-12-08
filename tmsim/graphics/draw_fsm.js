@@ -1,79 +1,20 @@
-var assembleD3 = function(container, parsedDict) {
+// Define Force Directed Diagram using d3
+// Example taken from: http://www.d3noob.org/2013/03/d3js-force-directed-graph-example-basic.html
+var drawFSM = function(obj, container) {
 
 	var width = 960;	//original: 960
 	var height = 400;	//original: 500
-
-	// FUNCTION: Create object of states (nodes) and transitions (links)
-	var createObj = function(tmsim_dict) {
-		var jsonObj = {};	
-		jsonObj.nodes = [];
-		jsonObj.links = [];
-		// dictionary relating state to position in nodes array
-		var state_to_pos = {};
-		var x_val = 20;			// pre-set x start values
-		var y_val = -20;		// pre-set y start values
-		// get all the nodes
-		var pos = 0;
-		for (key in tmsim_dict.states[0].args) {
-			if (parsedDict.states[0].args.hasOwnProperty(key)) { // avoid parsing functions in array
-				console.log(key);
-				var state = parsedDict.states[0].args[key];
-				// create item {"name":STATE_NAME, "x": PRESET_VAL, "y": PRESET_VAL}
-				item = {};
-				item ["name"] = state;
-				//item ["group"] = 1;
-				if (key === 0) { item ["fixed"] = true; }
-				// item ["x"] = x_val;
-				// item ["y"] = y_val;
-				x_val = x_val + 20;
-				y_val = y_val*-1;
-				// update state_to_pos object
-				state_to_pos [state] = pos;
-				pos++;
-				// push item into jsonObj.nodes
-				jsonObj.nodes.push(item);
-			}
-		}
-		// TODO: conditional -- only add *halt* if user has defined a state with *halt*
-		// TODO: add *error* state
-		// TODO: conditional -- only add *error* if user has defined a state with *error*
-		// add *halt* as a state
-		jsonObj.nodes.push({"name":"*halt*", "group": pos});
-		state_to_pos ["*halt*"] = pos;
-		// get all the links
-		for (key in parsedDict.action) {
-			if (parsedDict.action.hasOwnProperty(key)) {
-				var action = parsedDict.action[key].args;
-				var start_state = action[0];
-				var end_state = action[2];
-
-				item = {};
-				item ["source"] = state_to_pos[start_state];
-				item ["target"] = state_to_pos[end_state];
-				item ["value"] = 1;
-
-				jsonObj.links.push(item);
-			}
-		}
-	 	return jsonObj; // {"nodes":[{...},...], "links":[{...},...]}
-	}
-
-	var obj = createObj(parsedDict);
-	console.log(obj);
-
-	// Define Force Directed Diagram using d3
-	// Example taken from: http://www.d3noob.org/2013/03/d3js-force-directed-graph-example-basic.html
 
 	var force = d3.layout.force()
 	    .nodes(obj.nodes)
 	    .links(obj.links)
 	    .size([width, height])
-	    .linkDistance(300) //150
+	    .linkDistance(150) //150
 	    .charge(-300)
 	    // .on("tick", tick)
 	    .start();
 
-	var svg = d3.select("#holder").append("svg")
+	var svg = d3.select(container).append("svg")
 	    .attr("width", width)
 	    .attr("height", height);
 
@@ -90,7 +31,11 @@ var assembleD3 = function(container, parsedDict) {
 	    //.call(force.drag);
 
 	node.append("circle")
-    	.attr("r", 25);
+    	.attr("r", 25)
+    	.on('click', function(d, i) {
+  			console.log("node was clicked!");
+  			//TODO: create click listener function
+		});
 
    	node.append("text")
 	    .attr("x", -2) //12
@@ -112,7 +57,7 @@ var assembleD3 = function(container, parsedDict) {
 		// Of course, don't run too long—you'll hang the page!
 		// sourced from: http://bl.ocks.org/mbostock/1667139
 		force.start();
-		for (var i = 100 * 100; i > 0; --i) force.tick();
+		for (var i = 900 * 900; i > 0; --i) force.tick();
 		force.stop();
 
 		path
@@ -153,7 +98,11 @@ var assembleD3 = function(container, parsedDict) {
 					y2 = y2 + 1;
 				}
 				return "M" + x1 + "," + y1 + "A" + drx + "," + dry + " " + xRotation + "," + largeArc + "," + sweep + " " + x2 + "," + y2;
-	    	});
+	    	})
+		    .on('click', function(d, i) {
+  				console.log("path was clicked!");
+  				//TODO: add click listener for transition
+			});
 
 		node
 		    .attr("transform", function(d) { 
@@ -163,7 +112,8 @@ var assembleD3 = function(container, parsedDict) {
 		loading.remove();
 
 	}, 10);
-
+	
+	// add arrows to all of the links
 	svg.append("svg:defs").selectAll("marker")
 	    .data(["end"])
 	  .enter().append("svg:marker")    

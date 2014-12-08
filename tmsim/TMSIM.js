@@ -803,10 +803,7 @@ $(document).ready(function(){
                 var parsedDict = tsmparse.parse(file.data);
 
                 // GRAPHICS EDITOR
-                // assembleGraphicsEditor('#editor_graphics', parsedDict);
-                // assembleSpringyRaphael('#editor_graphics', parsedDict);
-                // assembleSpringySimple('#holder_springy_raphael', parsedDict);
-                assembleD3('#holder', parsedDict);
+                assembleFSMGraphicsPanel('#editor_graphics', parsedDict);
 
                 editor.clearErrors();
                 // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
