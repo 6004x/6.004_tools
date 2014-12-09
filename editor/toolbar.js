@@ -1,9 +1,9 @@
 var Toolbar = function(container) {
     var mContainer = $(container);
-    var mToolbarHolder = $('<div class="btn-toolbar">');
+    var mToolbarHolder = $('<div class="btn-toolbar" role="toolbar">');
 
     this.addButtonGroup = function(buttons) {
-        var group = $('<div class="btn-group">');
+        var group = $('<div class="btn-group" role="group">');
         _.each(buttons, function(button) {
             button.render(group);
         });
@@ -30,7 +30,7 @@ var ToolbarButton = function(icon, callback, tooltip, cls) {
             mElement.data('button', null);
             mElement = null;
         }
-        // Special case: if 'icon' is a string starting with 'icon-', assume they wanted a Bootstrap icon.
+        // Special case: if 'icon' is a string starting with 'glyphicon', assume they wanted a Bootstrap glyphicon
         // Otherwise it's whatever jQuery makes of it.
         mElement = $('<button class="btn">');
         if(cls) {
@@ -61,7 +61,7 @@ var ToolbarButton = function(icon, callback, tooltip, cls) {
 
     self.setLabel = function(label) {
         mIcon = label;
-        if(/^icon-/.test(label)) {
+        if(/^glyphicon/.test(label)) {
             label = $('<i>').addClass(label);
         }
         mElement.empty().append(label);

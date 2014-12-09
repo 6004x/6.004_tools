@@ -91,7 +91,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
 
     var beta_run_start = function() {
         mEditor.metadata_count('run');
-        mRunButton.setLabel('icon-pause');
+        mRunButton.setLabel('glyphicon glyphicon-pause');
         mStepButton.disable();
         mFastRunButton.disable();
         mUndoButton.disable();
@@ -101,7 +101,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
     };
 
     var beta_run_stop = function() {
-        mRunButton.setLabel('icon-play');
+        mRunButton.setLabel('glyphicon glyphicon-play');
         mStepButton.enable();
         mFastRunButton.enable();
         mUndoButton.enable();
@@ -161,14 +161,14 @@ BSim.Controls = function(container, beta, editor, schematic) {
     };
 
     var initialise = function() {
-        mResetButton = new ToolbarButton('icon-fast-backward', handle_reset, 'Reset Simulation');
-        mUndoButton = new ToolbarButton('icon-step-backward', handle_undo, 'Step Back');
-        mRunButton = new ToolbarButton('icon-play', toggle_run);
-        mFastRunButton = new ToolbarButton('icon-forward', handle_fast_run, 'Run Fast');
-        mStepButton = new ToolbarButton('icon-step-forward', handle_step, 'Step Forward');
+        mResetButton = new ToolbarButton('glyphicon glyphicon-backward', handle_reset, 'Reset Simulation');
+        mUndoButton = new ToolbarButton('glyphicon glyphicon-step-backward', handle_undo, 'Step Back');
+        mRunButton = new ToolbarButton('glyphicon glyphicon-play', toggle_run);
+        mFastRunButton = new ToolbarButton('glyphicon glyphicon-forward', handle_fast_run, 'Run Fast');
+        mStepButton = new ToolbarButton('glyphicon glyphicon-step-forward', handle_step, 'Step Forward');
         mVerifyButton = new ToolbarButton('Checkoff', handle_checkoff);
         mViewChange = new ToolbarButton(mContainer.parents('#schematic-view').length ? "Programmer's View" : 'Schematic View', change_view);
-        mSaveMemory = new ToolbarButton('icon-file', handle_save_memory, "Save memory contents");
+        mSaveMemory = new ToolbarButton('glyphicon glyphicon-file', handle_save_memory, "Save memory contents");
 
         mToolbar = new Toolbar(mContainer);
 

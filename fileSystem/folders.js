@@ -165,7 +165,7 @@ var Folders = (function(){
 
                 folderContentsDiv.append(collapser);
                 //add folder name and the arrow
-                var arrow = $('<i>').addClass("icon-chevron-down pull-left open_indicator").addClass(collapseName)
+                var arrow = $('<i>').addClass("glyphicon glyphicon-chevron-down pull-left open_indicator").addClass(collapseName)
                         .css('height', 16);
                 collapser.append(arrow)
                     if (level == 1 && user_list) {
@@ -192,9 +192,9 @@ var Folders = (function(){
                             });
                     } else collapser.append($('<span>').text(folderName));
 
-                var newFileButton = buildListButton('icon-file', newFile, 'folder_button', 'New File');
-                var newFolderButton = buildListButton('icon-folder-open', newFolder, 'folder_button', 'New Folder');
-                var deleteButton = buildListButton('icon-trash', deleteFile, 'folder_button', 'Delete Folder');
+                var newFileButton = buildListButton('glyphicon glyphicon-file', newFile, 'folder_button', 'New File');
+                var newFolderButton = buildListButton('glyphicon glyphicon-folder-open', newFolder, 'folder_button', 'New Folder');
+                var deleteButton = buildListButton('glyphicon glyphicon-trash', deleteFile, 'folder_button', 'Delete Folder');
 
                 var newButtonDiv = addDiv('folder_button_div');
                 newButtonDiv.append(newFileButton, newFolderButton);
@@ -218,12 +218,12 @@ var Folders = (function(){
                     subListUL.addClass('in');
 
                 } else {
-                    arrow.toggleClass('icon-chevron-down icon-chevron-right');
+                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
                 }
 
                 //when it is not collaped, change the arrow icon, mark the state
                 subListUL.on('show', function(e) {
-                    arrow.toggleClass('icon-chevron-down icon-chevron-right');
+                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
                     collapsedFolders[$(e.currentTarget).attr('id')] = false;
                     updatePrefs();
                     e.stopPropagation();
@@ -231,7 +231,7 @@ var Folders = (function(){
 
                 //when it is collapsed, change the arrow icon, mark the state
                 subListUL.on('hide', function(e){
-                    arrow.toggleClass('icon-chevron-down icon-chevron-right');
+                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
                     collapsedFolders[$(e.currentTarget).attr('id')] = true;
                     updatePrefs();
                     e.stopPropagation();
@@ -282,8 +282,8 @@ var Folders = (function(){
                         .attr('data-path', path)
                         .append($('<span>'+fileName+'</span>'));
 
-                var deleteButton = buildListButton('icon-trash', deleteFile, 'file_button', 'Delete');
-                var renameButton = buildListButton('icon-pencil', renameFile, 'file_button', 'Rename');
+                var deleteButton = buildListButton('glyphicon glyphicon-trash', deleteFile, 'file_button', 'Delete');
+                var renameButton = buildListButton('glyphicon glyphicon-pencil', renameFile, 'file_button', 'Rename');
                 // var downloadButton = buildListButton('icon-download-alt', null, 'file_button', 'Download');
 
                 var fileButtonDiv = addDiv('file_button_div');
@@ -371,7 +371,7 @@ var Folders = (function(){
                     collapser.addClass('shared_root_folder_name');
                 folderContentsDiv.append(collapser);
                 //add folder name and the arrow
-                var arrow = $('<i>').addClass("icon-chevron-down pull-left open_indicator").addClass(collapseName)
+                var arrow = $('<i>').addClass("glyphicon glyphicon-chevron-down pull-left open_indicator").addClass(collapseName)
                         .css('height', 16);
                 collapser.append(arrow).append($('<span>').text(folderName));
 
@@ -390,12 +390,12 @@ var Folders = (function(){
                 if(!collapsedFolders[collapseName]){
                     subListUL.addClass('in');
                 } else {
-                    arrow.toggleClass('icon-chevron-down icon-chevron-right');
+                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
                 }
 
                 //when it is not collaped, change the arrow icon, mark the state
                 subListUL.on('show', function(e) {
-                    arrow.toggleClass('icon-chevron-down icon-chevron-right');
+                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
                     collapsedFolders[$(e.currentTarget).attr('id')] = false;
                     updatePrefs();
                     e.stopPropagation();
@@ -403,7 +403,7 @@ var Folders = (function(){
 
                 //when it is collapsed, change the arrow icon, mark the state
                 subListUL.on('hide', function(e){
-                    arrow.toggleClass('icon-chevron-down icon-chevron-right');
+                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
                     collapsedFolders[$(e.currentTarget).attr('id')] = true;
                     updatePrefs();
                     e.stopPropagation();
@@ -778,14 +778,14 @@ var Folders = (function(){
     function addButtons(buttonDiv){
         var toolbar = new Toolbar(buttonDiv);
         toolbar.addButtonGroup([
-            new ToolbarButton('icon-refresh', function () { refresh(); }, 'Refresh')
+            new ToolbarButton('glyphicon glyphicon-refresh', function () { refresh(); }, 'Refresh')
         ]);
 
         // fake our own toolbar button, but make it a link so that clicking will let
         // browser process the server response
         var zip = new ToolbarButton('',undefined,'');
         zip.render = function(container) {
-            var mElement = $('<a class="btn" href="'+FileSystem.downloadZipURL()+'"><i class="icon-download"></i></a>');
+            var mElement = $('<a class="btn" href="'+FileSystem.downloadZipURL()+'"><i class="glyphicon glyphicon-download"></i></a>');
             mElement.tooltip({title: 'Download Zip archive', placement: 'top', delay: 100, container: 'body'});
             container.append(mElement);
         };

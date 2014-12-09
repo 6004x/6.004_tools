@@ -177,19 +177,19 @@
                 
             var playButton = $('<button>').addClass('btn play_button tape_button')
             .attr('title', 'Run')
-            .append('<i class = "icon-play">');
+            .append('<span class = "glyphicon glyphicon-play">');
             var pauseButton = $('<button>').addClass('btn pause_button tape_button')
             .attr('title', 'Pause')
-            .append('<i class = "icon-pause">');
+            .append('<span class = "glyphicon glyphicon-pause">');
             var stepButton = $('<button>').addClass('btn step_button tape_button')
             .attr('title', 'Step Forward')
-            .append('<i class = "icon-step-forward">');
+            .append('<span class = "glyphicon glyphicon-step-forward">');
             var prevStepButton = $('<button>').addClass('btn prev_step_button tape_button')
             .attr('title', 'Step Backward')
-            .append('<i class = "icon-step-backward">');
+            .append('<span class = "glyphicon glyphicon-step-backward">');
             var resetButton = $('<button>').addClass('btn reset_button tape_button')
             .attr('title', 'Reset')
-            .append('<i class = "icon-fast-backward">');
+            .append('<span class = "glyphicon glyphicon-fast-backward">');
                         
             $('.tape_button').each(function(i, button){
                     $(button).attr({
@@ -268,7 +268,7 @@
 
             var nextButton = $('<button>').addClass('btn btn-warning next_button tape_button')
             .attr('title', 'Next Tape')
-            .append('<i class = "icon-arrow-right">')
+            .append('<span class = "glyphicon glyphicon-arrow-right">')
             .css('visibility', 'hidden');
 
             nextButton.on('click', function(){
@@ -803,7 +803,7 @@ $(document).ready(function(){
                 var parsedDict = tsmparse.parse(file.data);
 
                 // GRAPHICS EDITOR
-                assembleFSMGraphicsPanel('#editor_graphics', parsedDict);
+                assembleFSMGraphicsPanel('#editor_graphics_diagram', parsedDict);
 
                 editor.clearErrors();
                 // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
