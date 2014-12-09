@@ -42,6 +42,7 @@
     <!-- build:css tmsim_min.css -->
     <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
     <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="../libs/bootstrap-theme.css">
     <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
     <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
     <link rel="stylesheet" type="text/css" href="../editor/common.css">
@@ -58,7 +59,12 @@
         <div id="folders_div"></div>
         <div id="editor_div">
           <div id="tmsim_div"></div>
-          <div id="editor_graphics"></div>
+          <div class="container">
+            <div id="editor_graphics" class="row">
+              <div id="editor_graphics_diagram" class="col-md-8"></div>
+              <div id="editor_graphics_panel" class="col-md-4">HERE IS THE PANEL</div>
+            </div>
+          </div>
           <div id="editor"></div>
         </div>
       </div>
