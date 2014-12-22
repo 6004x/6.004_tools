@@ -218,12 +218,12 @@ var Folders = (function(){
                     subListUL.addClass('in');
 
                 } else {
-                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
+                    arrow.toggleClass('glyphicon-chevron-down glyphicon-chevron-right');
                 }
 
                 //when it is not collaped, change the arrow icon, mark the state
                 subListUL.on('show', function(e) {
-                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
+                    arrow.toggleClass('glyphicon-chevron-down glyphicon-chevron-right');
                     collapsedFolders[$(e.currentTarget).attr('id')] = false;
                     updatePrefs();
                     e.stopPropagation();
@@ -231,7 +231,7 @@ var Folders = (function(){
 
                 //when it is collapsed, change the arrow icon, mark the state
                 subListUL.on('hide', function(e){
-                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
+                    arrow.toggleClass('glyphicon-chevron-down glyphicon-chevron-right');
                     collapsedFolders[$(e.currentTarget).attr('id')] = true;
                     updatePrefs();
                     e.stopPropagation();
@@ -390,12 +390,12 @@ var Folders = (function(){
                 if(!collapsedFolders[collapseName]){
                     subListUL.addClass('in');
                 } else {
-                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
+                    arrow.toggleClass('glyphicon-chevron-down glyphicon-chevron-right');
                 }
 
                 //when it is not collaped, change the arrow icon, mark the state
                 subListUL.on('show', function(e) {
-                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
+                    arrow.toggleClass('glyphicon-chevron-down glyphicon-chevron-right');
                     collapsedFolders[$(e.currentTarget).attr('id')] = false;
                     updatePrefs();
                     e.stopPropagation();
@@ -403,7 +403,7 @@ var Folders = (function(){
 
                 //when it is collapsed, change the arrow icon, mark the state
                 subListUL.on('hide', function(e){
-                    arrow.toggleClass('glyphicon glyphicon-chevron-down glyphicon glyphicon-chevron-right');
+                    arrow.toggleClass('glyphicon-chevron-down glyphicon-chevron-right');
                     collapsedFolders[$(e.currentTarget).attr('id')] = true;
                     updatePrefs();
                     e.stopPropagation();
@@ -785,7 +785,7 @@ var Folders = (function(){
         // browser process the server response
         var zip = new ToolbarButton('',undefined,'');
         zip.render = function(container) {
-            var mElement = $('<a class="btn" href="'+FileSystem.downloadZipURL()+'"><i class="glyphicon glyphicon-download"></i></a>');
+            var mElement = $('<button class="btn btn-default" href="'+FileSystem.downloadZipURL()+'"><span class="glyphicon glyphicon-download"></span></button>');
             mElement.tooltip({title: 'Download Zip archive', placement: 'top', delay: 100, container: 'body'});
             container.append(mElement);
         };

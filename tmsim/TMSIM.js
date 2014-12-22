@@ -150,44 +150,24 @@
                 })
             .html('State: <span class = "curr_state"></span>'); //<br/><span class = "move_dir"></>');
             machineDiv.append(labelDiv);
-            //transition div, shows the previous and current transition
-            /*
-              var transitionsDiv = $('<div>').addClass('transitions');
-              var transitionDiv = $('<div>').addClass('transition_div').html(
-              '( <span class = "curr_state"></span>, \
-              <span class = "read_symbol"></span> ) &rarr;\
-              ( <span class = "new_state"></span>,  \
-              <span class = "write_symbol"></span>,  \
-              <span class = "move_dir"></span> )'
-              );
-              var oldTransitionDiv = $('<div>').addClass('old_transition_div muted').html(
-              '( <span class = "old_curr_state"></span>, \
-              <span class = "old_read_symbol"></span> ) &rarr;\
-              ( <span class = "old_new_state"></span>,  \
-              <span class = "old_write_symbol"></span>,  \
-              <span class = "old_move_dir"></span> )'
-              );
-              transitionsDiv.append(transitionDiv, oldTransitionDiv);
-              machineDiv.append(transitionsDiv);
-            */
-
+            
             //appending control buttons
-            var actionDiv = $('<div>').addClass('pull-center btn-toolbar action_button_div');
+            var actionDiv = $('<div>').addClass('center-block btn-toolbar action_button_div');
             var actionButtonDiv = $('<div>').addClass('btn-group');
                 
-            var playButton = $('<button>').addClass('btn play_button tape_button')
+            var playButton = $('<button>').addClass('btn btn-default play_button tape_button')
             .attr('title', 'Run')
-            .append('<span class = "glyphicon glyphicon-play">');
-            var pauseButton = $('<button>').addClass('btn pause_button tape_button')
+            .append('<span class = "glyphicon glyphicon-play" aria-hidden="true">');
+            var pauseButton = $('<button>').addClass('btn btn-default pause_button tape_button')
             .attr('title', 'Pause')
             .append('<span class = "glyphicon glyphicon-pause">');
-            var stepButton = $('<button>').addClass('btn step_button tape_button')
+            var stepButton = $('<button>').addClass('btn btn-default step_button tape_button')
             .attr('title', 'Step Forward')
             .append('<span class = "glyphicon glyphicon-step-forward">');
-            var prevStepButton = $('<button>').addClass('btn prev_step_button tape_button')
+            var prevStepButton = $('<button>').addClass('btn btn-default prev_step_button tape_button')
             .attr('title', 'Step Backward')
             .append('<span class = "glyphicon glyphicon-step-backward">');
-            var resetButton = $('<button>').addClass('btn reset_button tape_button')
+            var resetButton = $('<button>').addClass('btn btn-default reset_button tape_button')
             .attr('title', 'Reset')
             .append('<span class = "glyphicon glyphicon-fast-backward">');
                         
@@ -201,16 +181,13 @@
             var lastClick = (new Date()).getTime();
             var tempSpeed = slider_speed;
             stepButton.on('click', function(){
-                    //console.log('step forward');
                     if(!$(this).hasClass('disabled')){
                         //fastclicking on the step button will ignore animation. 
                         // but still step thruogh the machine
                         var d = new Date();
                         var t = d.getTime();
                         if(t - lastClick < 1000) {
-                            //console.log(t-lastClick);
                             mContainer.find('.tape_div').finish();
-                            //mContainer.find('.transition_div').finish();
                             preventAnimate = true;
                         } else {
                             preventAnimate = false;
@@ -230,7 +207,6 @@
                         mTSM.setCurrentState(undoAction.stepObject.old_state.name);
                         mCurrentTape = undoAction.tape;
                         var peekStepObject = mTSM.stepPeek(mCurrentTape);
-                        //console.log(peekStepObject);
                         updateGUI(peekStepObject, mCurrentTape.peek());
                         self.listToTape();
                         if(undoStack.length === 0)
@@ -242,9 +218,7 @@
                         playButton.addClass('disabled');
                         stepButton.addClass('disabled');
                         prevStepButton.addClass('disabled');
-                        self.play(function(){
-                                //console.log('play callback');
-                            });
+                        self.play(function(){ });
                     }
                 })
             resetButton.on('click', function(){
@@ -274,46 +248,48 @@
             nextButton.on('click', function(){
                     if(!$(this).hasClass('disabled')){
                         var nextTape = mContainer.find('.test_radio_buttons .active').attr('id');
-                        //console.log(nextTape);
                         var nextNum = parseInt(nextTape.slice(4)) +1;
                         if(mContainer.find('.test_radio_buttons #tape'+nextNum).length > 0)
                             self.toggleTape(mContainer.find('.test_radio_buttons #tape'+nextNum));
-                        else {
-                            //console.log('no next tape');
-                        }
                     }
                 })
 
             //speed radio button indicators
-            var speedDiv = $('<div><label class="radio inline">Run speed:</label></div>').addClass('speed_div');
-            var label1 = $('<label>').addClass('speed_options radio inline radio-inline').append('Slow');
-            var label2 = $('<label>').addClass('speed_options radio inline radio-inline').append('Medium');
-            var label3 = $('<label>').addClass('speed_options radio inline radio-inline').append('Fast');
-            var label4 = $('<label>').addClass('speed_options radio inline radio-inline').append('Instant');
+            var speedDiv = $('<div><label class="radio-inline">Run speed:</label></div>').addClass('speed_div');
+
+            var speed1 = $('<label>');
+            var speed2 = $('<label>');
+            var speed3 = $('<label>');
+            var speed4 = $('<label>');
+
+            var label1 = $('<label>').addClass('speed_options radio-inline').append('Slow');
+            var label2 = $('<label>').addClass('speed_options radio-inline').append('Medium');
+            var label3 = $('<label>').addClass('speed_options radio-inline').append('Fast');
+            var label4 = $('<label>').addClass('speed_options radio-inline').append('Instant');
             var radio1 = $('<input>').attr({
                     type : 'radio',
                     id : 'inlineRadio1',
                     value : '300',
                     name : 'speed_options',
-                }).addClass('speed_options');
+                }).addClass('speed_options radio-inline');
             var radio2 = $('<input>').attr({
                     type : 'radio',
                     id : 'inlineRadio2',
                     value : '100',
                     name : 'speed_options',
-                }).addClass('speed_options');
+                }).addClass('speed_options radio-inline');
             var radio3 = $('<input>').attr({
                     type : 'radio',
                     id : 'inlineRadio3',
                     value : '0',
                     name : 'speed_options',
-                }).addClass('speed_options');
+                }).addClass('speed_options radio-inline');
             var radio4 = $('<input>').attr({
                     type : 'radio',
                     id : 'inlineRadio4',
                     value : '-100000',
                     name : 'speed_options',
-                }).addClass('speed_options');
+                }).addClass('speed_options radio-inline');
             switch(old_speed){
             case 300 : radio1.attr('checked', ''); break;
             case 100 : radio2.attr('checked', ''); break;
@@ -321,17 +297,25 @@
             case -100000 : radio4.attr('checked', ''); break;
             default : radio1.attr('checked', '');
             }
-            label1.append(radio1);
-            label2.append(radio2);
-            label3.append(radio3);
-            label4.append(radio4);
-            speedDiv.append(label1);
-            speedDiv.append(label2);
-            speedDiv.append(label3);
-            speedDiv.append(label4);
+
+            //append the labels
+            speed1.append(label1);
+            speed2.append(label2);
+            speed3.append(label3);
+            speed4.append(label4);
+            //append the radio buttons
+            speed1.append(radio1);
+            speed2.append(radio2);
+            speed3.append(radio3);
+            speed4.append(radio4);
+            //attach to speedDiv
+            speedDiv.append(speed1);
+            speedDiv.append(speed2);
+            speedDiv.append(speed3);
+            speedDiv.append(speed4);
+
             //update the speed when a radio button is clicked
             speedDiv.on('click', function (e) {
-                    //console.log('radio click');
                     var speed = $('.speed_options:checked').attr('value');
                     slider_speed = parseInt(speed);
                     if(slider_speed <= 0)
@@ -343,25 +327,6 @@
 
             actionButtonDiv.append(resetButton, prevStepButton, playButton, pauseButton, stepButton);
             actionDiv.append(actionButtonDiv, nextButton, speedDiv);
-
-            /*
-              var feedbackDiv = $('<div>').addClass('feedback_div').css({
-              'position' : 'relative',
-              'margin' : '5px',
-              })
-              var legendDiv = $('<div>').addClass('legend_div').css({
-              'position' : 'absolute',
-              'right': 0,
-              'margin' : '5px',
-              'font-family' : 'sans-serif',
-              'font-size' : 'smaller',
-              })
-              var greenDiv = $('<div>').append('<span class = "curr_state">RED</span> marks the current state');
-              var redDiv = $('<div>').append('<span class = "read_symbol">GREEN</span> marks the current read symbol');
-              var blueDiv = $('<div>').append('<span class = "current_write">BLUE</span> marks the previous written symbol');
-              legendDiv.append(greenDiv, redDiv, blueDiv)
-            */
-
             mContainer.append(actionDiv, tapeWrapper, stepsDiv, machineDiv, testRadioButtons);
                         
         }
@@ -422,7 +387,6 @@
                     }
 
                     if(stepObject.transition.new_state === '*halt*'){
-                        //console.log('halt');
                         halt(_.identity);
                     }
                     self.listToTape();
@@ -532,8 +496,6 @@
                     } else {
                         var dialog = new ModalDialog();
                         dialog.setTitle("Submit Lab");
-                        //dialog.inputBox({label: "Username", callback: complete_checkoff});
-                        //dialog.inputBox({label: "Password", type: 'password', callback: complete_checkoff});
                         dialog.inputBox({label: "Collaborators", callback: complete_checkoff});
                         dialog.addButton("Dismiss", "dismiss");
                         dialog.addButton("Submit", function(){complete_checkoff(dialog)}, 'btn-primary');
@@ -586,7 +548,6 @@
                     }
                 }
                 else {
-                    //console.log('return '+new_state_name);
                     halt(callback);
                     self.listToTape();
                     simulation_done = true;
@@ -621,9 +582,6 @@
                     else{
                         passedTest = result === mCurrentTape.peek();
                     }
-                    //console.log(passedTest);
-                    //console.log(result.toString());
-                    //console.log(mCurrentTape.toString());
                     feedback = passedTest ? 'pass' : "fail, expected '"+result+"'";
                     color = passedTest ? 'green' : 'red';
                     /*mContainer.find*/$('.feedback_div').text("Results for tape '"+name+"': "+feedback).css('color', color);
@@ -648,7 +606,6 @@
             steps = 0;
             $('.steps_count').text(steps);
             undoStack = [];
-            //console.log('toggle tape ' + mCurrentTape.toString());
             self.listToTape();
             mContainer.find('.test_radio_buttons .active').toggleClass('active')
             tapeButton.toggleClass('active');
@@ -662,7 +619,6 @@
         var currentNumberOfSegments = 0;
 
         function initTape(){
-            //console.log('initTape');
             var tapeDiv = $('.tape_div');
             tapeDiv.html('');
             tapeDiv.css('left',0);
@@ -803,7 +759,7 @@ $(document).ready(function(){
                 var parsedDict = tsmparse.parse(file.data);
 
                 // GRAPHICS EDITOR
-                assembleFSMGraphicsPanel('#editor_graphics_diagram', parsedDict);
+                assembleFSMGraphicsPanel('#editor_graphics_diagram', '#editor_graphics_panel', parsedDict);
 
                 editor.clearErrors();
                 // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);

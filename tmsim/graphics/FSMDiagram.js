@@ -1,13 +1,13 @@
 // Define Force Directed Diagram using d3
 // Example taken from: http://www.d3noob.org/2013/03/d3js-force-directed-graph-example-basic.html
-var drawFSM = function(obj, container) {
+var drawFSM = function(fsmObj, container) {
 
-	var width = 960;	//original: 960
-	var height = 400;	//original: 500
+	var width = 600;
+	var height = 300;
 
 	var force = d3.layout.force()
-	    .nodes(obj.nodes)
-	    .links(obj.links)
+	    .nodes(fsmObj.nodes)
+	    .links(fsmObj.links)
 	    .size([width, height])
 	    .linkDistance(150) //150
 	    .charge(-300)

@@ -25,6 +25,8 @@ var Editor = function(container, mode) {
 
     // Given a list of ToolbarButtons, adds a button group.
     this.addButtonGroup = function(buttons) {
+        console.log("addButtonGroup");
+        
         return mToolbar.addButtonGroup(buttons);
     };
 

@@ -49,9 +49,6 @@
 // TODO: clean up function to use _Underscore JS
 var createForceDirectedObj = function(tmsim_dict) {
 
-	console.log("initial data:");
-	console.log(tmsim_dict);
-
 	// jsonObj = {nodes: [], links: []}
 	var jsonObj = {};	
 	jsonObj.nodes = [];
@@ -106,9 +103,6 @@ var createForceDirectedObj = function(tmsim_dict) {
 			jsonObj.links.push(item);
 		}
 	}
-
-	console.log("final data");
-	console.log(jsonObj);
 
  	return jsonObj; // {"nodes":[{...},...], "links":[{...},...]}
 }

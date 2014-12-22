@@ -32,7 +32,7 @@ var ToolbarButton = function(icon, callback, tooltip, cls) {
         }
         // Special case: if 'icon' is a string starting with 'glyphicon', assume they wanted a Bootstrap glyphicon
         // Otherwise it's whatever jQuery makes of it.
-        mElement = $('<button class="btn">');
+        mElement = $('<button type="button" class="btn btn-default">');
         if(cls) {
             mElement.addClass(cls);
         }
@@ -60,6 +60,9 @@ var ToolbarButton = function(icon, callback, tooltip, cls) {
     };
 
     self.setLabel = function(label) {
+
+        console.log("setLabel: " + label);
+
         mIcon = label;
         if(/^glyphicon/.test(label)) {
             label = $('<i>').addClass(label);
