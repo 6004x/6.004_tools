@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>6.004 Queue</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
+<style>
+    .qentry {
+        margin-bottom: 3px;
+    }
+    .location {
+        margin-left: 5px;
+        color: grey;
+    }
+    .help-btn {
+        margin-left: 3px;
+    }
+    .staff-tool {
+        margin-right: 3px;
+    }
+</style>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<script>
+var queue = new function() {
+    var user_info;    // {username: , name: [first,family], section: }
+    var signed_in = false;
+
+    var signoff_url = "https://6004.mit.edu/staff/ta_meeting.doit?username=USERNAME&course_dir=/afs/csail.mit.edu/proj/courses/6.004/Spring15/records/course";
+
+    var socket = io();
+
+    // update queue display
+    socket.on('update', function (json) {
+        //$('#update').text(JSON.stringify(json));
+
+        // update title with queue length
+        $('title').text('('+json.queue.length+') 6.004 Queue');
+
+        // update viewing stats
+        var time = new Date(json.time);
+        $('#update-time').text(time.toLocaleTimeString());
+        $('#viewers').text(json.connections.toString());
+
+        // update on-duty panel
+        $('#on-duty').empty();
+        $.each(json.on_duty,function (index,info) {
+            $('#on-duty').append(info.name);
+        });
+
+        function is_staff() {
+            return signed_in && user_info !== undefined && user_info.section == 'staff';
+        }
+
+        // format user name from user_info
+        function format_name(entry) {
+            return 
+        }
+
+        // format entry for queue panel
+        function format_entry(entry) {
+            var result = $('<div class="qentry"></div>');
+            result.append(entry.name[0]);
+            if (!entry.being_helped) result.append(' '+entry.name[1]);
+            if (entry.location) {
+                locn = $('<span class="location"></span>')
+                locn.text('['+(entry.being_helped ? entry.being_helped.name[0] : entry.location)+']');
+                result.append(locn);
+            }
+            // add various tools for the staff to use
+            if (is_staff()) {
+                if (entry.being_helped) {
+                    var b1,b2,b3;
+                    b1 = $('<button class="btn btn-sm btn-danger staff-tool"></button>')
+                        .append('<span class="glyphicon glyphicon-trash"></span>')
+                        .on('click',function(){
+                            socket.emit('help',entry.username,user_info,'remove');
+                        });
+                    b2 = $('<button class="btn btn-sm btn-default staff-tool"></button>')
+                        .append('<span class="glyphicon glyphicon-share-alt"></span>')
+                        .on('click',function(){
+                            socket.emit('help',entry.username,user_info,'requeue');
+                        });
+                    b3 = $('<button class="btn btn-sm btn-success staff-tool"></button>')
+                        .append('<span class="glyphicon glyphicon-ok"></span>');
+                    b3 = $('<a target="_blank"></a>')
+                        .attr('href',signoff_url.replace('USERNAME',entry.username))
+                        .append(b3);
+                    result.append($('<div></div').append(b1,b2,b3));
+                } else {
+                    b1 = $('<button class="btn btn-xs help-btn"></button>')
+                        .text(entry.request == 'helpq' ? 'Help' : 'Checkoff')
+                        .addClass(entry.request == 'helpq' ? 'btn-primary' : 'btn-success')
+                        .on('click',function(){
+                            socket.emit('help',entry.username,user_info,'help');
+                        });
+                    result.append(b1);
+                }
+            }
+            return result;
+        }
+
+        // process the queue
+        var my_queue;   // my entry, if any, on the queue
+        $('#helpq').empty();
+        $('#checkoffq').empty();
+        $('#being-helped').empty();
+        $.each(json.queue,function (qindex,entry) {
+            // keep track of our entry in the queue
+            if (signed_in && user_info && entry.username == user_info.username)
+                my_queue = entry;
+
+            // display in correct panel
+            var e = format_entry(entry);
+            if (entry.being_helped) $('#being-helped').append(e);
+            else $('#'+entry.request).append(e)
+        });
+        
+        // non-staff can make/remove requests
+        if (signed_in && !is_staff()) {
+            // request buttons
+            $('#help').toggle(signed_in && my_queue == undefined);
+            $('#checkoff').toggle(signed_in && my_queue == undefined);
+
+            // remove buttons
+            $('#rhelp').toggle(my_queue !== undefined && my_queue.request=='helpq');
+            $('#rcheckoff').toggle(my_queue !== undefined && my_queue.request=='checkoffq');
+        }
+
+        // update message of the day
+        if (json.motd) {
+            $('#motd-message').html(json.motd);
+            $('#motd').show();
+        } else {
+            $('#motd').hide();
+        }
+    });
+
+    function post_alert(msg) {
+        var a = $('<div class="alert alert-danger alert-dismissible" role="alert"></div>')
+            .append('<button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>')
+            .append(msg);
+        $('#alerts').append(a);
+    }
+
+    function sign_in_okay(location) {
+        user_info.location = location;
+        $('#location').hide();
+        $('#sign-in').text('Sign out');
+        $('#user-id').text('signed in as '+user_info.username);
+        signed_in = true;
+        socket.emit('set-user',user_info);
+    }
+
+    // see if server can tell who we are, otherwise we'll
+    // need a dialog with the user
+    this.sign_inout = function () {
+        var username = $('#username').val().split('@')[0];
+        var password = $('#password').val();
+        var location = $('#location').val();
+
+        if (signed_in) {
+            $('#user-id').empty();
+            $('#location').show();
+            $('#help').hide();
+            $('#checkoff').hide();
+            $('#sign-in').text('Sign in');
+            signed_in = false;
+            socket.emit('sign-out');
+        } else {
+            if (!location) {
+                post_alert('Please enter a location so you can be found!');
+                return false;
+            }
+
+            if (!user_info) {
+                if (!username) {
+                    post_alert('Please enter your Athena username.');
+                    return false;
+                }
+                if (!password) {
+                    post_alert('Please enter your 6.004 password.');
+                    return false;
+                }
+                $.ajax({
+                    url: '/validate?username='+encodeURIComponent(username)+'&password='+encodeURIComponent(password),
+                    dataType: 'json',
+                    success: function (data, status, jqXHR) {
+                        user_info = data;
+                        $('#username').hide();
+                        $('#password').hide();
+                        sign_in_okay(location);
+                    },
+                    error: function (jqXHR,status,error) {
+                        post_alert(error);
+                    }
+                });
+            } else sign_in_okay(location);
+        }
+        return false;
+    }
+
+    // queue requests
+    this.request = function (request) {
+        socket.emit('request',user_info,request);
+    };
+
+    // see if server can figure out who we are from certificate, if any
+    this.setup = function () {
+        $.ajax({
+            url: '/validate',
+            dataType: 'json',
+            success: function (data, status, jqXHR) {
+                if (data && data.username) user_info = data;
+                else {
+                    $('#username').show();
+                    $('#password').show();
+                }
+            },
+            error: function () {
+                $('#username').show();
+                $('#password').show();
+            }
+        });
+    };
+}
+
+$(document).ready(function () {
+    queue.setup();
+});
+
+</script>
+<style>
+body {
+    padding-top: 50px;   /* navbar is 50px tall */
+    padding-bottom: 20px;
+}
+</style>
+</head>
+<body>
+
+    <nav class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">6.004 Queue</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <form class="navbar-form navbar-right" role="form" onsubmit="return queue.sign_inout();">
+            <div class="form-group">
+              <input id="username" type="text" placeholder="Username" class="form-control" size="10" style="display:none;">
+            </div>
+            <div class="form-group">
+              <input id="password" type="password" placeholder="Password" class="form-control" size="10" style="display:none;">
+            </div>
+            <div class="form-group">
+              <input id="location" type="text" placeholder="Location" class="form-control" size="10">
+            </div>
+            <button id="sign-in" type="submit" class="btn btn-success">Sign in</button>
+          </form>
+          <p id="user-id" class="navbar-text navbar-right"></p>
+        </div><!--/.navbar-collapse -->
+      </div>
+    </nav>
+
+<p>
+<div class="container">
+  <div class="row">
+    <div id="alerts" class="col-md-12">
+    </div>
+  </div>
+  <div class="row" style="text-align:center;margin-bottom: 10px;">
+    Last update: <span id="update-time" style="margin-right:10px;"></span>
+    Viewers: <span id="viewers"></span>
+  </div>
+  <div class="row">
+    <div class="col-md-3">
+      <div class="panel panel-default">
+         <div class="panel-heading">
+           Help Queue
+           <button id="help" class="btn btn-xs btn-primary" style="display:none; margin-left:5px;" onclick="queue.request('helpq');">Request</button>
+           <button id="rhelp" class="btn btn-xs btn-warning" style="display:none; margin-left:5px;" onclick="queue.request('remove');">Remove</button>
+         </div>
+         <div id="helpq" class="panel-body"></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="panel panel-default">
+         <div class="panel-heading">
+           Checkoff Queue
+           <button id="checkoff" class="btn btn-xs btn-success" style="display:none; margin-left:5px;" onclick="queue.request('checkoffq');">Request</button>
+           <button id="rcheckoff" class="btn btn-xs btn-warning" style="display:none; margin-left:5px;" onclick="queue.request('remove');">Remove</button>
+         </div>
+         <div id="checkoffq" class="panel-body"></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="panel panel-default">
+         <div class="panel-heading">Being helped</div>
+         <div id="being-helped" class="panel-body"></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="panel panel-default">
+         <div class="panel-heading">On duty</div>
+         <div id="on-duty" class="panel-body"></div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+    <div id="motd" class="panel panel-info" style="display:none; margin-top: 10px;">
+      <div class="panel-heading">A message from the staff</div>
+      <div id="motd-message" class="panel-body"></div>
+    </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -16,8 +16,8 @@ var FileSystem= (function(){
     var local_shared_url = 'http://localhost/6.004x/server/';
 
     // used when access is from scripts deployed on 6004.mit.edu
-    var mit_server_url = 'https://6004.mit.edu/coursewarex/cgibin_file_serverx.py';
-    var mit_shared_url = 'https://6004.mit.edu/coursewarex';
+    var mit_server_url = 'https://6004.mit.edu/xcoursewarex/cgibin_file_serverx.py';
+    var mit_shared_url = 'https://6004.mit.edu/xcoursewarex';
     //var mit_server_url = 'https://6004.mit.edu/file-server';    // wsgi server
     //var mit_shared_url = 'https://6004.mit.edu/coursewarex';
 
@@ -54,6 +54,7 @@ var FileSystem= (function(){
         else if (host == '6004.mit.edu') {
             data['_path'] = url;   // add path info to request data
             url = mit_server_url; // cgi bin script
+            data['_requester'] = sessionStorage.getItem('user') || '???';
             //url = mit_server_url + url;
         }
         else {
@@ -134,7 +135,7 @@ var FileSystem= (function(){
         }
 
         var host = $(location).attr('host');
-        if (host == '6004.mit.edu' || host == 'localhost' || xblock_unique_id !== undefined) {
+        if (/*host == '6004.mit.edu' ||*/ host == 'localhost' || xblock_unique_id !== undefined) {
             // server will use certificate to determine who user is
             server_request('/user/validate',{},
                            function (response) {
@@ -168,14 +169,25 @@ var FileSystem= (function(){
                            });
         }
 
-        // pop up dialog to let user sign in
-        var dialog = new ModalDialog();
-        dialog.setTitle("Sign In");
-        dialog.inputBox({label: "Email", type: 'email', callback: complete_signin});
-        dialog.inputBox({label: "Password", type: 'password', callback: complete_signin});
-        dialog.addButton("Dismiss", "dismiss");
-        dialog.addButton("Submit", function(){complete_signin(dialog);}, 'btn-primary');
-        dialog.show();
+        // see if server gets a certificate from us
+        server_request('/user/validate',{},
+                       function (response) {
+                           if (response._error === undefined) {
+                               sessionStorage.setItem('user',response._user);
+                               sessionStorage.setItem('username',response._username);
+                               callback(response._user);
+                           } else {
+                               // pop up dialog to let user sign in
+                               var dialog = new ModalDialog();
+                               dialog.setTitle("Sign In");
+                               dialog.setText("Your account has been initialized using information provided by the registrar. Your Username is your Athena account name and your initial Password is your MIT ID number.  You can change your password on your Online assignments page.");
+                               dialog.inputBox({label: "Username", type: 'text', callback: complete_signin});
+                               dialog.inputBox({label: "Password", type: 'password', callback: complete_signin});
+                               dialog.addButton("Dismiss", "dismiss");
+                               dialog.addButton("Submit", function(){complete_signin(dialog);}, 'btn-primary');
+                               dialog.show();
+                           }
+                       });
     }
 
     // build required tree from list of filenames

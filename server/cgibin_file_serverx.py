@@ -4,13 +4,13 @@
 # cgi-bin file server for 6.004 tools
 
 import sys,os,os.path,shutil,cgi,cgitb,json
-import zipfile,io,time,glob
+import zipfile,io,time,glob,crypt
 
 # staff get privileges to look at any user's files
-staff_list = [ 'cjt', 'ward', 'dnl', 'silvina', 'elg', 'haiiro', 'ciara', 'gkurian', 'phurst' ]
+staff_list = [ 'cjt', 'ward', 'dnl', 'silvina', 'ciara', 'mgersh', 'pschiff', 'sobel']
 
 # where to find user files for the term
-students = '/afs/csail.mit.edu/proj/courses/6.004/CurrentTerm/records/course/students/'
+students = '/afs/csail.mit.edu/proj/courses/6.004/NextTerm/records/course/students/'
 
 # appended to file names for backups and autosaves
 backup_suffix = '_backup_'
@@ -50,12 +50,18 @@ def write_file_with_backup(fname,contents):
 
     write_file(fname,contents)
 
-def default_headers():
+def default_headers(content_type=None):
     # output response headers
     print 'Access-Control-Allow-Origin: 6004.mit.edu'
     print 'Access-Control-Allow-Credentials: true'
-    print 'Content-type: text/json'    # always give response in JSON format
+    print 'Cache-control: no-cache'
+    if content_type: print 'Content-type:',content_type
     print
+
+def report_error(msg):
+    default_headers('text/json')
+    print json.dumps({'_error': msg})
+    sys.exit()
 
 try:
     # all done when handling HEAD, OPTIONS request
@@ -66,18 +72,32 @@ try:
     # set up response
     response = {}
 
-    # validate user by checking to see if course knows who they are
+    # process request
+    args = cgi.FieldStorage()
+
+    # validate user -- first try certificate
     requester = os.environ.get('SSL_CLIENT_S_DN_Email','???')
     requester_name = os.environ.get('SSL_CLIENT_S_DN_CN','???')
     if requester == '???':
-        default_headers()
-        print json.dumps({'_error': 'Unable to process request because your MIT certificate was invalid or was not sent by your browser.'});
-        sys.exit()
+        # see if tool knows who we are
+        requester = args.getvalue('_requester','???')
+        if requester == '???':
+            # see if user is logging in -- verify password
+            requester = args.getvalue('_user','???').split('@')[0].lower()
+            password = crypt.crypt(args.getvalue('_password','???'),'x4')
+            user_dir = os.path.join(students,requester)
+            if not os.path.exists(user_dir):
+                report_error('Bad username or password')
+            # read in user's status file
+            import xml.etree.ElementTree as ET
+            status = ET.parse(os.path.join(user_dir,'status.xml'))
+            # grab the encrypted password
+            spassword = ''.join([t for t in status.find('encrypted_password').itertext()]).strip()
+            if password != spassword:
+                report_error('Bad username or password')
+        requester_name = requester
     else:
         requester = requester.lower()
-
-    # process request
-    args = cgi.FieldStorage()
 
     user = requester
     username = requester_name
@@ -88,14 +108,12 @@ try:
         staff = True
         user = args.getvalue('user',requester)
 
-    response['_user'] = user  # let requester know user's id
+    response['_user'] = requester  # let tool know requester's id
 
     # find user's files, creating a 'files' directory if it doesn't exist
     user_dir = os.path.join(students,user.split('@')[0])
     if not os.path.exists(user_dir):
-        default_headers()
-        print json.dumps({'_error': 'Invalid user'})
-        sys.exit()
+        report_error('Invalid user')
     user_dir = os.path.join(user_dir,'files')
     if not os.path.exists(user_dir):
         os.mkdir(user_dir,0666)
@@ -216,29 +234,6 @@ try:
             elif os.path.isdir(fname):
                 shutil.rmtree(fname)
             else: os.remove(fname)
-            """
-            found = False
-            for root, dirnames, filenames in os.walk(user_dir):
-                # visit all user's files, removing those that match
-                for filename in filenames:
-                    fname = os.path.join(root, filename)  # full path to file
-                    # see if path relative to user_dir starts with specified prefix
-                    if fname[len(user_dir)+1:] == path:
-                        found = True
-                        os.remove(fname)
-                # remove entire trees if subdirectory matches prefix
-                # use copy of dirnames so we can delete from the real dirnames
-                # and prevent walk from descending to that subdirectory
-                for dirname in dirnames[:]:
-                    dname = os.path.join(root, dirname)  # full path to subdirectory
-                    # see if path relative to user_dir starts with specified prefix
-                    if dname[len(user_dir)+1:].startswith(path):
-                        found = True
-                        del dirnames[dirnames.index(dirname)]
-                        shutil.rmtree(dname)
-            if not found:
-                response['_error'] = "File not found on delete: "+path
-                """
 
         ###################################################################################
         ## rename file (along with backup and autosave)
@@ -306,7 +301,7 @@ try:
         response['_error'] = "Invalid request: '"+'/'.join(command)+"'"
 
     # all done, return response to user
-    default_headers()
+    default_headers('text/json')
     print json.dumps(response);
 
 except IOError as err:

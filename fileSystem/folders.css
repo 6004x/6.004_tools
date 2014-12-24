@@ -109,7 +109,7 @@ div.input_file_name button.add-on{
 }
 .root_folder_name select {
     width: 130px;
-    height: 20px;
+    /*height: 20px;*/
     margin: 0 0 2px 0;
     font-weight: bold;
 }
