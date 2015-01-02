@@ -357,6 +357,7 @@ var Checkoff = (function(){
             //username: username,
             //userpassword: password,
             //sender: username, // we can't actually figure this one out
+            _requester: sessionStorage.getItem('user') || '???',
             pcheckoff:assignment,
             collaboration: collaborators,
             checksum: checksum,

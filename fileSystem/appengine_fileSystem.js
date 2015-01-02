@@ -16,8 +16,8 @@ var FileSystem= (function(){
     var local_shared_url = 'http://localhost/6.004x/server/';
 
     // used when access is from scripts deployed on 6004.mit.edu
-    var mit_server_url = 'https://6004.mit.edu/xcoursewarex/cgibin_file_serverx.py';
-    var mit_shared_url = 'https://6004.mit.edu/xcoursewarex';
+    var mit_server_url = 'https://6004.mit.edu/coursewarex/cgibin_file_serverx.py';
+    var mit_shared_url = 'https://6004.mit.edu/coursewarex';
     //var mit_server_url = 'https://6004.mit.edu/file-server';    // wsgi server
     //var mit_shared_url = 'https://6004.mit.edu/coursewarex';
 

@@ -482,6 +482,7 @@
                 };
         
                 var args = {
+                    _requester: sessionStorage.getItem('user') || '???',
                     checkoff:assignment,
                     collaboration: collaborators,
                     checksum: checksum,
