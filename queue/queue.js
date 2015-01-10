@@ -5,7 +5,7 @@ var url = require('url');
 var crypt = require('apache-crypt');
 var xml2json = require('xml2json');
 
-var student_dir = '/afs/csail.mit.edu/proj/courses/6.004/Spring15/records/course/students/';
+var student_dir = '/afs/csail.mit.edu/proj/courses/6.004/CurrentTerm/records/course/students/';
 
 //////////////////////////////////////////////////
 //
@@ -14,10 +14,11 @@ var student_dir = '/afs/csail.mit.edu/proj/courses/6.004/Spring15/records/course
 //////////////////////////////////////////////////
 
 // set up https server listening on port 6004
+var crtdir = '/etc/apache2/ssl.crt';
 var options = {
-    key: fs.readFileSync(__dirname + '/6004.key'),
-    cert: fs.readFileSync(__dirname + '/6004.crt'),
-    ca: [fs.readFileSync(__dirname + '/mit-client.crt')],
+    key: fs.readFileSync(crtdir + '/6004.key'),
+    cert: fs.readFileSync(crtdir + '/6004.crt'),
+    ca: [fs.readFileSync(crtdir + '/mit-client.crt')],
     requestCert: true,
     rejectUnauthorized: false
 };

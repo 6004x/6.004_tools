@@ -1,0 +1,76 @@
+#!/usr/bin/pagsh
+# This init.d script is used to start the 6004 Q
+# install: copy to /etc/init.d, then "udpate-rc.d 6004q defaults 92 08"
+
+. /lib/lsb/init-functions
+
+QSERVER=/afs/csail.mit.edu/proj/courses/6.004/CurrentTerm/ssldocs/queue/queue.js
+
+q_start() {
+    if [ -x /usr/bin/k5start ] && [ -r /etc/apache2/keytab ]
+    then
+	log_progress_msg "qk5start"
+	start-stop-daemon --start --pidfile /var/run/qk5start.pid \
+	  --exec /usr/bin/k5start -- -K 60 -b -p /var/run/qk5start.pid -t -f /etc/apache2/keytab -U
+    fi
+
+    if [ -r $QSERVER ]
+    then
+	log_progress_msg "6.004 Q"
+        /sbin/start-stop-daemon --start --pidfile /var/run/6004q.pid --background \
+	  --exec /usr/bin/node -- $QSERVER
+     else
+        log_daemon_msg "Can't access $QSERVER"
+     fi
+}
+
+q_stop() {
+    if [ -r /var/run/6004q.pid ]
+    then
+        start-stop-daemon --stop --pidfile /var/run/6004q.pid
+	rm -f /var/run/6004q.pid
+	log_progress_msg "6.004 Q"
+    fi
+
+    if [ -r /var/run/qk5start.pid ]
+    then
+	start-stop-daemon --stop --pidfile /var/run/qk5start.pid
+	rm -f /var/run/qk5start.pid
+	log_progress_msg "qk5start"
+    fi
+}
+
+case $1 in
+	start)
+		log_daemon_msg "Starting 6.004 Q"
+		if q_start; then
+                        log_end_msg 0
+                else
+                        log_end_msg 1
+                fi
+	;;
+	stop)
+		log_daemon_msg "Stopping 6.004 Q"
+		if q_stop; then
+                        log_end_msg 0
+                else
+                        log_end_msg 1
+                fi
+	;;
+	restart)
+		log_daemon_msg "Restarting 6.004 Q"
+		if ! q_stop; then
+                        log_end_msg 1
+                fi
+		sleep 10
+		if q_start; then
+                        log_end_msg 0
+                else
+                        log_end_msg 1
+                fi
+	;;
+	*)
+		log_success_msg "Usage: /etc/init.d/6004q {start|stop|restart}"
+		exit 1
+	;;
+esac
