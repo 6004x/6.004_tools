@@ -1,7 +1,7 @@
 var tmsim;
 $(document).ready(function(){
     var mode = 'tsim';
-    var editor = new Editor('#editor',mode);
+    var editor = new Editor('#editor',mode,true);
     editor.openTab('Untitled', 'Now is the time...', true);
     $('.editor-file-control').hide();     // hide file buttons
     $('#editor .nav-tabs .close').hide();  // hide close button on tab(s)
@@ -77,9 +77,7 @@ $(document).ready(function(){
 
     // return JSON representation to be used by server-side grader
     tmsim.getGrade = function () {
-        var grade = {'required-tests': configuration['required-tests'] || [],
-                     'tests': configuration.tests || {}
-                    };
+        var grade = {'tests': configuration.tests || {}};
         return JSON.stringify(grade);
     };
 

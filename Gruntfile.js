@@ -11,6 +11,7 @@ module.exports = function(grunt) {
             jsim: {src: ['jsim/jsim.html', 'jsim/*.png'], dest: 'build/', flatten: true, expand: true},
             tmsim: {src: 'tmsim/tmsim.html', dest: 'build/tmsim.html'},
             tmsim_edx: {src: 'tmsim/tmsim_edx.html', dest: 'build/tmsim_edx.html'},
+            edx_deploy: {src: ['build/tmsim_edx*','build/glyphicons*.png'], dest: '../6.004_mitx/static/', flatten: true, expand: true},
             resources: {src: 'libs/*.png', dest: 'build/', flatten: true, expand: true},
             deploy: {src: 'build/*', dest: '../', flatten: true, expand: true },
             xblock: {src: 'build/*', dest: '../xblocks-6004x/mit6004/mit6004/public/', flatten: true, expand: true },
@@ -85,7 +86,7 @@ module.exports = function(grunt) {
     grunt.registerTask('bsim', ['copy:resources', 'copy:bsim', 'useminPrepare:bsim', 'concat', 'uglify', 'cssmin', 'usemin:bsim']);
     grunt.registerTask('jsim', ['copy:resources', 'copy:jsim', 'useminPrepare:jsim', 'concat', 'uglify', 'cssmin', 'usemin:jsim']);
     grunt.registerTask('tmsim', ['copy:resources', 'copy:tmsim', 'useminPrepare:tmsim', 'concat', 'uglify', 'cssmin', 'usemin:tmsim']);
-    grunt.registerTask('tmsim_edx', ['copy:resources', 'copy:tmsim_edx', 'useminPrepare:tmsim_edx', 'concat', 'uglify', 'cssmin', 'usemin:tmsim_edx']);
+    grunt.registerTask('tmsim_edx', ['copy:resources', 'copy:tmsim_edx', 'useminPrepare:tmsim_edx', 'concat', 'cssmin', 'usemin:tmsim_edx', 'copy:edx_deploy']);
     grunt.registerTask('deploy', ['copy:deploy']);
     grunt.registerTask('xblock', ['copy:xblock']);
     grunt.registerTask('cs', ['copy:cs']);

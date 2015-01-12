@@ -93,7 +93,7 @@ var TMSIM = function(editor,container,tests_complete_callback){
             i++;
         }
 
-        if (mCheckoff) {
+        if (true /*mCheckoff*/) {
             var checkoff_button = $('<li class="test_radio"><button title="Checkoff">Checkoff</button></li>');
             checkoff_button.find('button')
                 .addClass('btn checkoff_button tape_button')
@@ -548,7 +548,7 @@ var TMSIM = function(editor,container,tests_complete_callback){
 
         pauseSimulation = false;
         var new_state = mTSM.getCurrentState();
-        nextStep(new_state.name);
+        nextStep(new_state ? new_state.name : '*error*');
         function nextStep(new_state_name){
             if(pauseSimulation){
                 //console.log('pauseSimulationed');
@@ -652,7 +652,8 @@ var TMSIM = function(editor,container,tests_complete_callback){
         self.listToTape();
         mContainer.find('.test_radio_buttons .active').toggleClass('active');
         tapeButton.toggleClass('active');
-        mContainer.find('.curr_state').text(mTSM.getCurrentState().name);
+        var state = mTSM.getCurrentState();
+        mContainer.find('.curr_state').text(state ? state.name : '?');
         mark_state();
 
         mContainer.find('.next_button').css('visibility', 'hidden');

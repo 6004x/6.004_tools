@@ -1,7 +1,7 @@
 // Creates an editor in the given container for the given mode.
 // - `container` should be a DOM node or unique CSS selector
 // - `mode` should be one of 'uasm', 'tsim' or 'jsim' as appropriate.
-var Editor = function(container, mode) {
+var Editor = function(container, mode, no_file_buttons) {
     var AUTOSAVE_TRIGGER_EVENTS = 30; // Number of events to trigger an autosave.
     var self = this; // Tracking 'this' can be finicky; use 'self' instead.
     var mContainer = $(container);
@@ -300,16 +300,17 @@ var Editor = function(container, mode) {
         doc.cm.refresh();
         doc.cm.focus();
         mCurrentDocument = doc;
-        if(doc.autosaved && doc.autosaved.contents) {
-            mRestoreAutosaveButton.show();
-        } else {
-            mRestoreAutosaveButton.hide();
-        }
-        //cjt: user can't save or revert read-only buffers
-        if (doc.readonly) {
-            mSaveButtons.hide();
-        } else {
-            mSaveButtons.show();
+        if (!no_file_buttons) {
+            if(doc.autosaved && doc.autosaved.contents) {
+                mRestoreAutosaveButton.show();
+            } else {
+                mRestoreAutosaveButton.hide();
+            }
+            if (doc.readonly) {
+                mSaveButtons.hide();
+            } else {
+                mSaveButtons.show();
+            }
         }
     };
 
@@ -349,10 +350,10 @@ var Editor = function(container, mode) {
             if(new_doc) {
                 focusTab(new_doc); // Focus the document, assuming we found it.
             } else {
-                mRestoreAutosaveButton.hide();
+                if (!no_file_buttons) mRestoreAutosaveButton.hide();
             }
         } else {
-            mRestoreAutosaveButton.hide();
+            if (!no_file_buttons) mRestoreAutosaveButton.hide();
         }
         // Now get rid of this one.
         delete mOpenDocuments[doc.name];
@@ -480,7 +481,7 @@ var Editor = function(container, mode) {
     var clear_autosave = function(document) {
         document.autosaved = null;
         if(mCurrentDocument == document) {
-            mRestoreAutosaveButton.hide();
+            if (!no_file_buttons) mRestoreAutosaveButton.hide();
         }
     };
 
@@ -498,14 +499,16 @@ var Editor = function(container, mode) {
         mToolbar = new Toolbar(mToolbarHolder);
         // Add some basic button groups
         //cjt: save reference to this button grouop
-        mSaveButtons = self.addButtonGroup([
-            new ToolbarButton('Save', save_current_document, "Save current file"),
-            new ToolbarButton('Save All', save_all_documents, "Save all open buffers"),
-            new ToolbarButton('Revert', revert_current_document, "Revert the current buffer to an earlier state.")
-        ]).addClass('editor-file-control');
-        mRestoreAutosaveButton = self.addButtonGroup([
-            new ToolbarButton('Restore Autosave', restore_autosave, "There is an autosaved document more recent than your last save.", "btn-warning")
-        ]).hide().addClass('editor-file-control');
+        if (!no_file_buttons) {
+            mSaveButtons = self.addButtonGroup([
+                new ToolbarButton('Save', save_current_document, "Save current file"),
+                new ToolbarButton('Save All', save_all_documents, "Save all open buffers"),
+                new ToolbarButton('Revert', revert_current_document, "Revert the current buffer to an earlier state.")
+            ]);
+            mRestoreAutosaveButton = self.addButtonGroup([
+                new ToolbarButton('Restore Autosave', restore_autosave, "There is an autosaved document more recent than your last save.", "btn-warning")
+            ]).hide();
+        }
         mContainer.append(mToolbarHolder);
         mContainer.css('position', 'relative');
 
