@@ -2,7 +2,7 @@
 <html lang="en" style="height: 100%;">
   <head>
     <title>TMSim 2.0.8</title>
-    <!-- build:js tmsim.min.js -->
+    <!-- build:js tmsim_edx.min.js -->
     <script src="../libs/jquery.js"></script>
     <script src="../libs/underscore.js"></script>
     <script src="../libs/backbone.js"></script>
@@ -18,8 +18,6 @@
     <script src="../editor/split_pane.js"></script>
     <script src="../editor/autocomplete.js"></script>
     <script src="../editor/browser_check.js"></script>
-    <script src="../fileSystem/appengine_fileSystem.js"></script>
-    <script src="../fileSystem/folders.js"></script>
 
     <script src="../editor/modes/tsim.js"></script>
     <script src="TapeList.js"></script>
@@ -28,39 +26,25 @@
     <script src="TMSIM.js"></script>
     <!-- endbuild -->
 
-    <!-- build:css tmsim.min.css -->
+    <!-- build:css tmsim_edx.min.css -->
     <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
     <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
     <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
     <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
     <link rel="stylesheet" type="text/css" href="../editor/common.css">
-    <link rel="stylesheet" type="text/css" href="../fileSystem/folders.css">
 
     <link rel="stylesheet" type="text/css" href="TMSIM.css">   
     <!-- endbuild -->
 <script>
 var tmsim;
 $(document).ready(function(){
-    var split = new SplitPane('#main_wrapper', ['#folders_div', '#editor_div']);
-
-    // initial configuration
-    split.setPaneWidth(0, 200);
-    split.setPaneWidth(1, split.window_width() - 200);
-
     var timer;
-    split.on('resize', function(widths) {
-        clearTimeout(timer);
-        if(tmsim){
-            timer = setTimeout(tmsim.listToTape, 100);
-        }
-    });
     $(window).resize(function() {
         clearTimeout(timer);
         if(tmsim)
             timer = setTimeout(tmsim.listToTape, 100);
     });
     var mode = 'tsim';
-
     var editor = new Editor('#editor',mode);
 
     function window_height() {
@@ -72,10 +56,6 @@ $(document).ready(function(){
     set_height();
     $(window).resize(set_height); // Update the height whenever the browser window changes size.
 
-    split.on('resize', _.throttle(editor.redraw, 50));
-
-    Folders.setup('#folders_div', editor, mode);
-    Folders.refresh();
     editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')]);
 
     tmsim = new TMSIM(editor,'#tmsim_div');
@@ -101,9 +81,6 @@ $(document).ready(function(){
             valid = false;
         }
         if(valid){
-            if(!$('#split_pane').hasClass('active'))
-                $('#split_pane').click();
-
             if(!tmsim){
                 // tmsim = new TMSIM('#tmsim_div');
             }
@@ -119,12 +96,9 @@ $(document).ready(function(){
       <div class="masthead">
         <div id="header-alert-holder" class="feedback_div"></div>
       </div>
-      <div id="split-container">
-        <div id="folders_div"></div>
-        <div id="editor_div">
-          <div id="tmsim_div"></div>
-          <div id="editor"></div>
-        </div>
+      <div id="editor_div">
+        <div id="tmsim_div"></div>
+        <div id="editor"></div>
       </div>
     </div>
   </body>
