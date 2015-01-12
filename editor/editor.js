@@ -55,7 +55,7 @@ var Editor = function(container, mode) {
         var document = try_get_document(filename);
         if (document) 
             document.metadata[which] = (document.metadata[which] || 0) + 1;
-    }
+    };
 
     // These are convenience functions to save on fiddling with CodeMirror directly.
 
@@ -502,10 +502,10 @@ var Editor = function(container, mode) {
             new ToolbarButton('Save', save_current_document, "Save current file"),
             new ToolbarButton('Save All', save_all_documents, "Save all open buffers"),
             new ToolbarButton('Revert', revert_current_document, "Revert the current buffer to an earlier state.")
-        ]);
+        ]).addClass('editor-file-control');
         mRestoreAutosaveButton = self.addButtonGroup([
             new ToolbarButton('Restore Autosave', restore_autosave, "There is an autosaved document more recent than your last save.", "btn-warning")
-        ]).hide();
+        ]).hide().addClass('editor-file-control');
         mContainer.append(mToolbarHolder);
         mContainer.css('position', 'relative');
 

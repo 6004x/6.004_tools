@@ -10,7 +10,7 @@ module.exports = function(grunt) {
             bsim: {src: 'bsim/bsim.html', dest: 'build/bsim.html'},
             jsim: {src: ['jsim/jsim.html', 'jsim/*.png'], dest: 'build/', flatten: true, expand: true},
             tmsim: {src: 'tmsim/tmsim.html', dest: 'build/tmsim.html'},
-            jade: {src: 'jade/jade.html', dest: 'build/jade.html'},
+            tmsim_edx: {src: 'tmsim/tmsim_edx.html', dest: 'build/tmsim_edx.html'},
             resources: {src: 'libs/*.png', dest: 'build/', flatten: true, expand: true},
             deploy: {src: 'build/*', dest: '../', flatten: true, expand: true },
             xblock: {src: 'build/*', dest: '../xblocks-6004x/mit6004/mit6004/public/', flatten: true, expand: true },
@@ -28,7 +28,7 @@ module.exports = function(grunt) {
             bsim: 'bsim/bsim.html',
             jsim: 'jsim/jsim.html',
             tmsim: 'tmsim/tmsim.html',
-            jade: 'jade/jade.html',
+            tmsim_edx: 'tmsim/tmsim_edx.html',
             options: {
                 dest: 'build'
             }
@@ -46,8 +46,8 @@ module.exports = function(grunt) {
                 src: 'build/tmsim.html',
                 options: {type: 'html'}
             },
-            jade: {
-                src: 'build/jade.html',
+            tmsim_edx: {
+                src: 'build/tmsim_edx.html',
                 options: {type: 'html'}
             },
             options: {
@@ -82,16 +82,16 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-qunit');
     grunt.loadNpmTasks('grunt-contrib-connect');
 
-    grunt.registerTask('bsim', ['copy:resources', 'copy:bsim', 'useminPrepare:bsim', 'concat', 'uglify', 'cssmin', 'usemin:bsim'])
-    grunt.registerTask('jsim', ['copy:resources', 'copy:jsim', 'useminPrepare:jsim', 'concat', 'uglify', 'cssmin', 'usemin:jsim'])
-    grunt.registerTask('tmsim', ['copy:resources', 'copy:tmsim', 'useminPrepare:tmsim', 'concat', 'uglify', 'cssmin', 'usemin:tmsim'])
-    grunt.registerTask('jade', ['copy:resources', 'copy:jade', 'useminPrepare:jade', 'concat', 'uglify', 'cssmin', 'usemin:jade'])
-    grunt.registerTask('deploy', ['copy:deploy'])
-    grunt.registerTask('xblock', ['copy:xblock'])
-    grunt.registerTask('cs', ['copy:cs'])
+    grunt.registerTask('bsim', ['copy:resources', 'copy:bsim', 'useminPrepare:bsim', 'concat', 'uglify', 'cssmin', 'usemin:bsim']);
+    grunt.registerTask('jsim', ['copy:resources', 'copy:jsim', 'useminPrepare:jsim', 'concat', 'uglify', 'cssmin', 'usemin:jsim']);
+    grunt.registerTask('tmsim', ['copy:resources', 'copy:tmsim', 'useminPrepare:tmsim', 'concat', 'uglify', 'cssmin', 'usemin:tmsim']);
+    grunt.registerTask('tmsim_edx', ['copy:resources', 'copy:tmsim_edx', 'useminPrepare:tmsim_edx', 'concat', 'uglify', 'cssmin', 'usemin:tmsim_edx']);
+    grunt.registerTask('deploy', ['copy:deploy']);
+    grunt.registerTask('xblock', ['copy:xblock']);
+    grunt.registerTask('cs', ['copy:cs']);
 
     //grunt.registerTask('test', ['connect', 'qunit:all'])
 
     // Builds everything if just called as 'grunt'
-    grunt.registerTask('default', ['bsim','jsim','tmsim','jade'])
+    grunt.registerTask('default', ['bsim','jsim','tmsim']);
 }

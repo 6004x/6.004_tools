@@ -17,13 +17,12 @@
     <script src="../editor/passive_alert.js"></script>
     <script src="../editor/split_pane.js"></script>
     <script src="../editor/autocomplete.js"></script>
-    <script src="../editor/browser_check.js"></script>
-
     <script src="../editor/modes/tsim.js"></script>
     <script src="TapeList.js"></script>
     <script src="TSM.js"></script>
     <script src="TSMParser.js"></script>
     <script src="TMSIM.js"></script>
+    <script src="tmsim_edx.js"></script>
     <!-- endbuild -->
 
     <!-- build:css tmsim_edx.min.css -->
@@ -32,64 +31,8 @@
     <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
     <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
     <link rel="stylesheet" type="text/css" href="../editor/common.css">
-
     <link rel="stylesheet" type="text/css" href="TMSIM.css">   
     <!-- endbuild -->
-<script>
-var tmsim;
-$(document).ready(function(){
-    var timer;
-    $(window).resize(function() {
-        clearTimeout(timer);
-        if(tmsim)
-            timer = setTimeout(tmsim.listToTape, 100);
-    });
-    var mode = 'tsim';
-    var editor = new Editor('#editor',mode);
-
-    function window_height() {
-        return $('.xblock-6004').innerHeight();
-    };
-    var set_height = function() {
-        editor.setHeight(window_height() - $('.btn-toolbar').height() - $('.nav-tabs').height() - 190);
-    };
-    set_height();
-    $(window).resize(set_height); // Update the height whenever the browser window changes size.
-
-    editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')]);
-
-    tmsim = new TMSIM(editor,'#tmsim_div');
-    var tsmparse = new TSMparser();
-    function tmsimAssemble(){
-        var file = new Object();
-        file.name=editor.currentTab();
-        file.data=editor.content('assemble');
-        
-        var valid = true;
-        var tmsimObj;
-
-        try{
-            var parsedDict = tsmparse.parse(file.data);
-            editor.clearErrors();
-            // editor.openTab(file.name+'parsed', JSON.stringify(parsedDict), true);
-            tmsimObj = tsmparse.flattenMachine(parsedDict);
-            // editor.openTab(file.name+'done', tsmparse.getResults(), true);
-        } catch(e){
-            console.log(e.stack );
-            for (var i = 0; i < e.length; i++)
-                editor.markErrorLine(file.name, e[i].message, e[i].lineNumber - 1);
-            valid = false;
-        }
-        if(valid){
-            if(!tmsim){
-                // tmsim = new TMSIM('#tmsim_div');
-            }
-            tmsim.restartTSM(file, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists, tmsimObj.checkoff );
-        }
-    }
-    
-});
-</script>
   </head>
   <body style="height: 100%;">
     <div class="xblock-6004" style="width: 100%; height: 99%; margin:5px;">

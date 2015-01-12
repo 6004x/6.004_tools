@@ -1,4 +1,4 @@
-var TMSIM = function(editor,container){
+var TMSIM = function(editor,container,tests_complete_callback){
     //Default values, and external storage
     var TAPE_HEIGHT = 50;
     var DIV_HEIGHT = 50;
@@ -520,7 +520,9 @@ var TMSIM = function(editor,container){
             } else {
                 slider_speed = save_slider_speed;
                 // all tests passed complete checkoff
-                if (mCheckoff.checksum != checksum) {
+                if (tests_complete_callback) {
+                    tests_complete_callback(mFileName,mFileContents,checksum,mTSM.nStates());
+                } else if (mCheckoff.checksum != checksum) {
                     var failedModal = new ModalDialog();
                     var msg = "<font size=5>Verification error...</font><p><p>It appears that the checkoff information has been modified in some way.  Please verify that you are using the official checkoff tests; contact the course staff if you can't resolve the problem.<p>"+checksum;
                     failedModal.setTitle("Checkoff Failed!");
@@ -534,7 +536,7 @@ var TMSIM = function(editor,container){
                     //dialog.inputBox({label: "Password", type: 'password', callback: complete_checkoff});
                     dialog.inputBox({label: "Collaborators", callback: complete_checkoff});
                     dialog.addButton("Dismiss", "dismiss");
-                    dialog.addButton("Submit", function(){complete_checkoff(dialog)}, 'btn-primary');
+                    dialog.addButton("Submit", function(){complete_checkoff(dialog);}, 'btn-primary');
                     dialog.show();
                 }
             }
