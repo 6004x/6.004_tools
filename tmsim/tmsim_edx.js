@@ -13,7 +13,7 @@ $(document).ready(function(){
             timer = setTimeout(tmsim.listToTape, 100);
     });
     function window_height() {
-        return $('.xblock-6004').innerHeight();
+        return $(window).innerHeight();
     };
     var set_height = function() {
         editor.setHeight(window_height() - $('.btn-toolbar').height() - $('.nav-tabs').height() - 190);
