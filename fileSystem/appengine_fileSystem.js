@@ -7,17 +7,17 @@ var xblock_unique_id;   // filled in by iframe parent on MITx, otherwise undefin
 var FileSystem= (function(){
     // used when access is from scripts deployed on computationstructures.org
     var server_url = 'https://mit-6004x.appspot.com';
-    var shared_url = 'http://computationstructures.org/labs';
+    var shared_url = 'http://computationstructures.org/labs/';
 
     // used when access is from scripts deployed on localhost
     //var local_server_url = 'http://localhost:6004';
     //var local_shared_url = 'http://localhost/6.004x/server';
-    var local_server_url = 'http://localhost/6.004x/server/local_file_server.py';
-    var local_shared_url = 'http://localhost/6.004x/server/';
+    var local_server_url = 'cgibin_file_serverx.py';
+    var local_shared_url = '';
 
     // used when access is from scripts deployed on 6004.mit.edu
     var mit_server_url = 'https://6004.mit.edu/coursewarex/cgibin_file_serverx.py';
-    var mit_shared_url = 'https://6004.mit.edu/coursewarex';
+    var mit_shared_url = 'https://6004.mit.edu/coursewarex/';
     //var mit_server_url = 'https://6004.mit.edu/file-server';    // wsgi server
     //var mit_shared_url = 'https://6004.mit.edu/coursewarex';
 
@@ -50,6 +50,7 @@ var FileSystem= (function(){
 
             data['_path'] = url;   // add path info to request data
             url = local_server_url; // cgi bin script
+            data['_requester'] = sessionStorage.getItem('user') || '???';
         }
         else if (host == '6004.mit.edu') {
             data['_path'] = url;   // add path info to request data
@@ -135,7 +136,7 @@ var FileSystem= (function(){
         }
 
         var host = $(location).attr('host');
-        if (/*host == '6004.mit.edu' ||*/ host == 'localhost' || xblock_unique_id !== undefined) {
+        if (/*host == '6004.mit.edu' || host == 'localhost' ||*/ xblock_unique_id !== undefined) {
             // server will use certificate to determine who user is
             server_request('/user/validate',{},
                            function (response) {
@@ -247,7 +248,7 @@ var FileSystem= (function(){
     }
 
     function getSharedFileList(succeed,fail) {
-        shared_request('/shared.json','json',
+        shared_request('shared.json','json',
                        function(response) { succeed(build_tree(response.list,'shared')); },fail);
     }
 
@@ -358,7 +359,7 @@ var FileSystem= (function(){
 
     function getFile(filename,succeed,fail) {
         if (filename.match(/^\/shared/))
-            shared_request(filename,'text',function(response) {
+            shared_request(filename.substr(1),'text',function(response) {
                 succeed({name: filename, data: response, shared: true});
             },fail);
         else server_request('/file/'+filename,
@@ -441,7 +442,7 @@ var FileSystem= (function(){
             return mit_server_url+'?_path=/file&action=zip';
         }
         else {
-            return server_url+'/file?action=zip'
+            return server_url+'/file?action=zip';
         }
     }
 
