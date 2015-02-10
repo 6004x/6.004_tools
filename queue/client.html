@@ -48,7 +48,7 @@ var queue = new function() {
         // update on-duty panel
         $('#on-duty').empty();
         $.each(json.on_duty,function (index,info) {
-            $('#on-duty').append(info.name);
+            $('#on-duty').append(info.name,'<br>');
         });
 
         function is_staff() {
