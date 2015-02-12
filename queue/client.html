@@ -29,16 +29,13 @@ var queue = new function() {
     var user_info;    // {username: , name: [first,family], section: }
     var signed_in = false;
 
-    var signoff_url = "https://6004.mit.edu/staff/ta_meeting.doit?username=USERNAME&course_dir=/afs/csail.mit.edu/proj/courses/6.004/Spring15/records/course";
+    var signoff_url = "https://6004.mit.edu/lab/ta_meeting.doit?username=USERNAME&course_dir=/afs/csail.mit.edu/proj/courses/6.004/Spring15/records/course";
 
     var socket = io();
 
     // update queue display
     socket.on('update', function (json) {
         //$('#update').text(JSON.stringify(json));
-
-        // update title with queue length
-        $('title').text('('+json.queue.length+') 6.004 Queue');
 
         // update viewing stats
         var time = new Date(json.time);
@@ -108,6 +105,7 @@ var queue = new function() {
         $('#helpq').empty();
         $('#checkoffq').empty();
         $('#being-helped').empty();
+        var waiting = 0
         $.each(json.queue,function (qindex,entry) {
             // keep track of our entry in the queue
             if (signed_in && user_info && entry.username == user_info.username)
@@ -116,9 +114,15 @@ var queue = new function() {
             // display in correct panel
             var e = format_entry(entry);
             if (entry.being_helped) $('#being-helped').append(e);
-            else $('#'+entry.request).append(e)
+            else {
+                $('#'+entry.request).append(e);
+                waiting += 1;
+            }
         });
         
+        // update title with number of students waiting on help & checkoff queue
+        $('title').text('('+waiting+') 6.004 Queue');
+
         // non-staff can make/remove requests
         if (signed_in && !is_staff()) {
             // request buttons
@@ -251,7 +255,7 @@ body {
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">6.004 Queue</a>
+          <a class="navbar-brand" href="#">6.004 Queue (v1.2) </a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <form class="navbar-form navbar-right" role="form" onsubmit="return queue.sign_inout();">
