@@ -58,7 +58,7 @@ var queue = new function() {
         }
 
         // format entry for queue panel
-        function format_entry(entry) {
+        function format_entry(entry,qindex) {
             var result = $('<div class="qentry"></div>');
             result.append(entry.name[0]);
             if (!entry.being_helped) result.append(' '+entry.name[1]);
@@ -69,6 +69,7 @@ var queue = new function() {
             }
             // add various tools for the staff to use
             if (is_staff()) {
+                result.prepend(qindex.toString() + '. ');
                 if (entry.being_helped) {
                     var b1,b2,b3;
                     b1 = $('<button class="btn btn-sm btn-danger staff-tool"></button>')
@@ -112,7 +113,7 @@ var queue = new function() {
                 my_queue = entry;
 
             // display in correct panel
-            var e = format_entry(entry);
+            var e = format_entry(entry,qindex+1);
             if (entry.being_helped) $('#being-helped').append(e);
             else {
                 $('#'+entry.request).append(e);
