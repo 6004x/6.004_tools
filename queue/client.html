@@ -131,8 +131,8 @@ var queue = new function() {
             $('#checkoff').toggle(signed_in && my_queue == undefined);
 
             // remove buttons
-            $('#rhelp').toggle(my_queue !== undefined && my_queue.request=='helpq');
-            $('#rcheckoff').toggle(my_queue !== undefined && my_queue.request=='checkoffq');
+            $('#rhelp').toggle(my_queue !== undefined && my_queue.request=='helpq' && !my_queue.being_helped);
+            $('#rcheckoff').toggle(my_queue !== undefined && my_queue.request=='checkoffq' && !my_queue.being_helped);
         }
 
         // update message of the day
@@ -256,7 +256,7 @@ body {
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">6.004 Queue (v1.2) </a>
+          <a class="navbar-brand" href="#">6.004 Queue (v1.3) </a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <form class="navbar-form navbar-right" role="form" onsubmit="return queue.sign_inout();">

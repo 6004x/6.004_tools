@@ -155,9 +155,12 @@ var queue_events = new events.EventEmitter();
 queue_events.setMaxListeners(0);  // allow many listeners
 
 // remove any pending requests for  user
-function remove_requests(username) {
+function remove_requests(username,staff) {
     for (var i = queue.length-1; i >= 0; i--) {
-        if (queue[i].username == username) queue.splice(i,1);
+        // don't remove queue entries if they are being helped,
+        // let TA take care of it!
+        if (queue[i].username == username && (staff || !queue[i].being_helped))
+            queue.splice(i,1);
     }
 }
 
@@ -190,6 +193,16 @@ io.sockets.on('connection', function(socket) {
     }
     queue_events.on('update',update);
 
+    // clean-up when user leaves
+    function clean_up() {
+        if (user_info) {
+            if (on_duty[user_info.username])
+                delete on_duty[user_info.username];
+            remove_requests(user_info.username);
+        }
+        queue_events.emit('update');
+    }
+
     // socket events
     
     // client determined user from cert info
@@ -204,11 +217,7 @@ io.sockets.on('connection', function(socket) {
     });
 
     // user wants to add themselves to queue
-    socket.on('sign-out', function (json) {
-        if (user_info && on_duty[user_info.username])
-            delete on_duty[user_info.username];
-        queue_events.emit('update');
-    });
+    socket.on('sign-out', clean_up);
 
     // user queue request
     socket.on('request', function (uinfo,request) {
@@ -222,7 +231,7 @@ io.sockets.on('connection', function(socket) {
 
     // staff helping request
     socket.on('help', function (username,sinfo,request) {
-        if (request == 'remove') remove_requests(username);
+        if (request == 'remove') remove_requests(username,true);
         else if (request == 'help' || request == 'requeue') {
             // find entry for username on the queue
             for (var i = 0; i < queue.length; i += 1) {
@@ -241,12 +250,7 @@ io.sockets.on('connection', function(socket) {
         // remove our listeners, let everyone know
         queue_events.removeListener('update',update);
         connections -= 1;
-        if (user_info) {
-            if (on_duty[user_info.username])
-                delete on_duty[user_info.username];
-            remove_requests(user_info.username);
-        }
-        queue_events.emit('update');
+        clean_up();
     });
 
     // send everyone an update on the new arrival
