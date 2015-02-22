@@ -286,7 +286,7 @@ var TMSIM = function(editor,container,tests_complete_callback){
         var label1 = $('<label>').addClass('speed_options radio inline radio-inline').append('Slow');
         var label2 = $('<label>').addClass('speed_options radio inline radio-inline').append('Medium');
         var label3 = $('<label>').addClass('speed_options radio inline radio-inline').append('Fast');
-        var label4 = $('<label>').addClass('speed_options radio inline radio-inline').append('Instant');
+        //var label4 = $('<label>').addClass('speed_options radio inline radio-inline').append('Instant');
         var radio1 = $('<input>').attr({
             type : 'radio',
             id : 'inlineRadio1',
@@ -302,30 +302,32 @@ var TMSIM = function(editor,container,tests_complete_callback){
         var radio3 = $('<input>').attr({
             type : 'radio',
             id : 'inlineRadio3',
-            value : '0',
+            value : '1',
             name : 'speed_options'
         }).addClass('speed_options');
+        /*
         var radio4 = $('<input>').attr({
             type : 'radio',
             id : 'inlineRadio4',
-            value : '-100000',
+            value : '0',
             name : 'speed_options'
         }).addClass('speed_options');
+         */
         switch(old_speed){
         case 300 : radio1.attr('checked', ''); break;
         case 100 : radio2.attr('checked', ''); break;
-        case 0 : radio3.attr('checked', ''); break;
-        case -100000 : radio4.attr('checked', ''); break;
+        case 1 : radio3.attr('checked', ''); break;
+        //case -100000 : radio4.attr('checked', ''); break;
         default : radio1.attr('checked', '');
         }
         label1.append(radio1);
         label2.append(radio2);
         label3.append(radio3);
-        label4.append(radio4);
+        //label4.append(radio4);
         speedDiv.append(label1);
         speedDiv.append(label2);
         speedDiv.append(label3);
-        speedDiv.append(label4);
+        //speedDiv.append(label4);
         //update the speed when a radio button is clicked
         speedDiv.on('click', function (e) {
             //console.log('radio click');
@@ -441,7 +443,7 @@ var TMSIM = function(editor,container,tests_complete_callback){
         var count = 0;
         var checksum = 0;
         var save_slider_speed = slider_speed;
-        slider_speed = -100000;
+        slider_speed = 0; //-100000;
 
         nextTest();
 
