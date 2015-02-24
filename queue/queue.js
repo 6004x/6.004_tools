@@ -149,6 +149,9 @@ function handler(req, res) {
 var queue = [];
 var on_duty = {};
 
+// timeouts pending keyed by username
+var pending_timeouts = {};
+
 // communicate with clients via events
 var connections = 0;
 var queue_events = new events.EventEmitter();
@@ -199,6 +202,7 @@ io.sockets.on('connection', function(socket) {
             if (on_duty[user_info.username])
                 delete on_duty[user_info.username];
             remove_requests(user_info.username);
+            user_info = undefined;
         }
         queue_events.emit('update');
     }
@@ -208,6 +212,17 @@ io.sockets.on('connection', function(socket) {
     // client determined user from cert info
     socket.on('set-user', function (json) {
         user_info = json;
+
+        // if there are any pending timeouts for this user, cancel them.
+        // this will solve the problem of dropped connections causing users
+        // to get wiped from the queue, assuming they log back in quickly 
+        // enough
+        var timeout = pending_timeouts[user_info.username];
+        if (timeout) {
+            clearTimeout(timeout);
+            pending_timeouts[user_info.username] = undefined;
+        }
+
         if (user_info.section == 'staff') {
             on_duty[user_info.username] = {name: user_info.name[0]+' '+user_info.name[1],
                                            location:user_info.location
@@ -216,7 +231,7 @@ io.sockets.on('connection', function(socket) {
         queue_events.emit('update');
     });
 
-    // user wants to add themselves to queue
+    // user is signing-off, so clean up any pending requests
     socket.on('sign-out', clean_up);
 
     // user queue request
@@ -250,10 +265,19 @@ io.sockets.on('connection', function(socket) {
         // remove our listeners, let everyone know
         queue_events.removeListener('update',update);
         connections -= 1;
-        clean_up();
+        if (user_info) {
+            // not sure if we need to worry about this, but...
+            var timeout = pending_timeouts[user_info.username];
+            if (timeout) clearTimeout(timeout);
+
+            // clean up any pending requests if we don't hear
+            // back from the user in one minute.  Keep track
+            // of timeout so we cancel it if user reconnects
+            // and signs in again before a minute has passed.
+            pending_timeouts[user_info.username] = setTimeout(clean_up,60*1000);
+        }
     });
 
     // send everyone an update on the new arrival
     queue_events.emit('update');
 });
-
