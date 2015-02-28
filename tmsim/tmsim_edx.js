@@ -23,8 +23,7 @@ $(document).ready(function(){
 
     var configuration = {};  // all state saved by edX server
     function tests_complete(filename,contents,checksum,nstates) {
-        if (configuration.tests === undefined)
-            configuration.tests = {};
+        configuration.tests = {};
         configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
     }
 

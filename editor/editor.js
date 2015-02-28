@@ -456,6 +456,12 @@ var Editor = function(container, mode, no_file_buttons) {
             if(!_.has(mOpenDocuments, name)) continue;
             var doc = mOpenDocuments[name];
             result[name] = doc.cm.getValue();
+
+            // mark document as clean
+            doc.generation = doc.cm.changeGeneration();
+            doc.autosaveGeneration = doc.generation;
+            clear_autosave(doc);
+            handle_change_tab_icon(doc);
         }
         return result;
     };
@@ -552,17 +558,19 @@ var Editor = function(container, mode, no_file_buttons) {
     };
 
     var do_autosave = function(document) {
-        if(document.cm.isClean(document.autosaveGeneration) || document.isAutosaving) return;
-        document.isAutosaving = true;
-        clear_autosave(document);
-        var generation = document.cm.changeGeneration();
-        FileSystem.makeAutoSave(document.name, document.cm.getValue(), function() {
+        if (typeof FileSystem !== "undefined") {
+            if(document.cm.isClean(document.autosaveGeneration) || document.isAutosaving) return;
+            document.isAutosaving = true;
+            clear_autosave(document);
+            var generation = document.cm.changeGeneration();
+            FileSystem.makeAutoSave(document.name, document.cm.getValue(), function() {
                 document.isAutosaving = false;
                 document.autosaveGeneration = generation;
             }, function() {
                 document.isAutosaving = false;
                 console.warn("Autosave failed.");
             }, document.metadata);
+        }
     };
 
     var handle_page_unload = function() {
