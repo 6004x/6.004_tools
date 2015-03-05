@@ -232,11 +232,11 @@ function TSMparser(){
                         else if (!_.contains(validStates, transition.new_state))
                             message = 'your new_state argument,'+transition.new_state+', is invalid, you should declare your states with the states command';
                         else if (!_.contains(validSymbols, read_symbol))
-                            message = 'your read_symbol, '+read_symbol+', is invalid, declare it with the states command';
+                            message = 'your read_symbol, '+read_symbol+', is invalid, declare it with the symbols command';
                         else if(!_.contains(validSymbols, transition.write))
-                            message = 'your write_symbol, '+transition.write+', is invalid, declare it with the states command';
+                            message = 'your write_symbol, '+transition.write+', is invalid, declare it with the symbols command';
                         else if(!_.contains(validMoves, transition.move))
-                            message = 'your move symbol, '+transition.move+', is invalid, declare it with the states command';
+                            message = 'your move symbol, '+transition.move+', is invalid, declare it with the symbols command';
 			
                         exceptions.push({
                             message:message,
