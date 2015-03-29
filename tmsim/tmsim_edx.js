@@ -44,7 +44,6 @@ $(document).ready(function(){
             tmsimObj = tsmparse.flattenMachine(parsedDict);
             // editor.openTab(file.name+'done', tsmparse.getResults(), true);
         } catch(e){
-            console.log(e.stack );
             for (var i = 0; i < e.length; i++)
                 editor.markErrorLine(file.name, e[i].message, e[i].lineNumber - 1);
             valid = false;
@@ -111,6 +110,10 @@ $(document).ready(function(){
                        editor.openTab(name,contents,first);
                        first = false;
                    });
+
+            if (configuration.assemble) {
+                tmsim.assemble();
+            }
 
             $('.editor-file-control').hide();     // hide file buttons
             $('#editor .nav-tabs .close').hide();  // hide close button on tab(s)
