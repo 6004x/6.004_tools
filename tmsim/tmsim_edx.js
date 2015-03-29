@@ -29,7 +29,7 @@ $(document).ready(function(){
 
     tmsim = new TMSIM(editor,'#tmsim_div',tests_complete);
     var tsmparse = new TSMparser();
-    function tmsimAssemble(){
+    tmsim.assemble = function () {
         var file = new Object();
         file.name=editor.currentTab();
         file.data=editor.content('assemble');
@@ -52,8 +52,8 @@ $(document).ready(function(){
         if(valid){
             tmsim.restartTSM(file, '#tmsim_div', tmsimObj.tsm, tmsimObj.lists, tmsimObj.checkoff );
         }
-    }
-    editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsimAssemble, '')]);
+    };
+    editor.addButtonGroup([new ToolbarButton('TMSim assemble', tmsim.assemble, '')]);
 
     function start_over() {
         var dialog = new ModalDialog();
