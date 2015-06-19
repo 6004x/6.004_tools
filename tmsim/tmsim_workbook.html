@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%;">
+  <head>
+    <title>TMSim 2.0.8</title>
+    <!-- build:js tmsim_workbook.min.js -->
+    <script src="../libs/jquery.js"></script>
+    <script src="../libs/underscore.js"></script>
+    <script src="../libs/backbone.js"></script>
+    <script src="../libs/bootstrap.js"></script>
+    <script src="../fileSystem/external/jquery-ui.js"></script>
+    <script src="../editor/external/codemirror.js"></script>
+    <script src="../editor/external/radix.js"></script>
+    <script src="../editor/external/codemirror-extensions.js"></script>
+    <script src="../editor/toolbar.js"></script>
+    <script src="../editor/editor.js"></script>
+    <script src="../editor/prompt.js"></script>
+    <script src="../editor/passive_alert.js"></script>
+    <script src="../editor/split_pane.js"></script>
+    <script src="../editor/autocomplete.js"></script>
+    <script src="../editor/modes/tsim.js"></script>
+    <script src="TapeList.js"></script>
+    <script src="TSM.js"></script>
+    <script src="TSMParser.js"></script>
+    <script src="TMSIM.js"></script>
+    <script src="tmsim_workbook.js"></script>
+    <!-- endbuild -->
+
+    <!-- build:css tmsim_workbook.min.css -->
+    <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
+    <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+    <link rel="stylesheet" type="text/css" href="../editor/common.css">
+    <link rel="stylesheet" type="text/css" href="TMSIM.css">   
+    <!-- endbuild -->
+  </head>
+  <body>
+    <div class="xblock-6004" style="padding:5px; border: 1px solid black">
+      <div class="masthead">
+        <div id="header-alert-holder" class="feedback_div"></div>
+      </div>
+      <div id="editor_div">
+        <div id="tmsim_div"></div>
+        <div id="editor"></div>
+      </div>
+    </div>
+  </body>
+</html>
