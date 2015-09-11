@@ -450,11 +450,13 @@ var Editor = function(container, mode, no_file_buttons) {
         });
     };
 
-    this.get_all_documents = function() {
+    this.get_all_documents = function(ignore_read_only) {
         var result = {};
         for(var name in mOpenDocuments) {
             if(!_.has(mOpenDocuments, name)) continue;
             var doc = mOpenDocuments[name];
+            if (ignore_read_only && doc.read_only) continue;
+
             result[name] = doc.cm.getValue();
 
             // mark document as clean

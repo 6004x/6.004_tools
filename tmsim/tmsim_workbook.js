@@ -21,10 +21,11 @@ $(document).ready(function(){
     set_height();
     $(window).resize(set_height); // Update the height whenever the browser window changes size.
 
-    var configuration = {};  // all state saved by edX server
+    var configuration = {};  // all state saved by server
     function tests_complete(filename,contents,checksum,nstates) {
         configuration.tests = {};
         configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
+        save_to_server(configuration);
     }
 
     tmsim = new TMSIM(editor,'#tmsim_div',tests_complete);
@@ -73,34 +74,67 @@ $(document).ready(function(){
     //  workbook interface
     //////////////////////////////////////////////////    
 
-    // return JSON representation to be used by server-side grader
-    tmsim.getGrade = function () {
-        var grade = {'tests': configuration.tests || {}};
-        return JSON.stringify(grade);
+    var configuration = {};  // all state saved by edX server
+    function tests_complete(filename,contents,checksum,nstates) {
+        configuration.tests = {};
+        configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
+    }
+
+    var save_to_server = function () {
     };
 
-    // return JSON representation of persistent state
-    tmsim.getState = function () {
-        // start with all the ancillary information
-        var state = $.extend({},configuration);
+    // accept initialization message from host, remember where
+    // to send update messages when local state changes
+    $(window).on('message',function (event) {
+        event = event.originalEvent;
+        if (event.origin != window.location.origin) return;
 
-        // gather up contents of editor buffers
-        state.state = editor.get_all_documents();
+        var host = event.source;
+        // {value: {buffer_name: "contents",...}, check: , message: , id: }
+        var answer = JSON.parse(event.data);
 
-        return JSON.stringify(state);
-    };
+        // change save_to_server to communicate with host
+        if (answer.id) {
+            save_to_server = function (callback) {
+                // update answer object
+                // start with all the ancillary information
+                var state = $.extend({},configuration);
 
-    // process incoming state from jsinput framework
-    // This function will be called with 1 argument when JSChannel is not used,
-    // 2 otherwise. In the latter case, the first argument is a transaction 
-    // object that will not be used here (see http://mozilla.github.io/jschannel/docs/)
-    tmsim.setState = function () {
-        var stateStr = arguments.length === 1 ? arguments[0] : arguments[1];
+                // gather up contents of editor buffers
+                state.state = editor.get_all_documents();
 
-        // jsinput gets anxious if we don't respond quickly, so come back to
-        // initialization after we've returned and made jsinput happy.
-        setTimeout(function () {
-            configuration = JSON.parse(stateStr);
+                answer.value = JSON.stringify(state);
+
+                answer.message = undefined;
+                answer.check = undefined;
+                
+                // if there are tests, see if they've been run
+                var completed_tests = state['tests'];
+                if (completed_tests) {
+                    // make sure all required tests passed
+                    answer.check = 'right';
+                    $.each(state['required-tests'] || [],function (index,test) {
+                        // test results: {filename: , contents: , nstates: }
+                        var result = (completed_tests[test] || 'Test has not be run: '+test);
+                        if (result === undefined) {
+                            answer.message = 'Test failed';
+                            answer.check = 'wrong';
+                        }
+                    });
+                }
+
+                // send it to our host
+                host.postMessage(JSON.stringify(answer),window.location.origin);
+                
+                // done...
+                if (callback) callback();
+            };
+        }
+
+        if (answer.value) {
+            // configuration includes state, initial_state, required-tests, tests
+            // state and initial_state are objects mapping buffer_name -> contents
+            configuration = JSON.parse(answer.value);
 
             // open editor tabs for each of the available designs
             editor.closeAllTabs();
@@ -111,30 +145,12 @@ $(document).ready(function(){
                        first = false;
                    });
 
-            if (configuration.assemble) {
-                tmsim.assemble();
-            }
-
             $('.editor-file-control').hide();     // hide file buttons
             $('#editor .nav-tabs .close').hide();  // hide close button on tab(s)
-        },1);
-    };
+        }
+    });
 
-    // Establish a channel only if this application is embedded in an iframe.
-    // This will let the parent window communicate with this application using
-    // RPC and bypass SOP restrictions.
-    var channel;
-    if (window.parent !== window && channel === undefined) {
-        channel = Channel.build({
-            window: window.parent,
-            origin: "*",
-            scope: "JSInput"
-        });
-
-        channel.bind("getGrade", tmsim.getGrade);
-        channel.bind("getState", tmsim.getState);
-        channel.bind("setState", tmsim.setState);
-
+    if (window.parent !== window) {
         // make iframe resizable if we can.  This may fail if we don't have
         // access to our parent...
         try {
