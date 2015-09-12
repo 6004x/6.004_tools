@@ -9,9 +9,9 @@ BSim.Controls = function(container, beta, editor, schematic) {
     var mRunButton = null;
     var mFastRunButton = null;
     var mStepButton = null;
-    var mVerifyButton = null;
+    //var mVerifyButton = null;
     var mViewChange = null;
-    var mSaveMemory = null;
+    //var mSaveMemory = null;
 
     var mToolbar = null;
 
@@ -32,7 +32,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
         mBeta.executeCycle();
         mUndoButton.enable();
         if(mBeta.verifier()) {
-            mVerifyButton.enable();
+            //mVerifyButton.enable();
         }
     };
 
@@ -89,6 +89,16 @@ BSim.Controls = function(container, beta, editor, schematic) {
         dialog.show();
     };
 
+    this.get_checkoff = function() {
+        var verifier = mBeta.verifier();
+        if(!verifier) return "No verification statements found.";
+        if(!verifier.verify()) {
+            return verifier.getMessage();
+        } else {
+            return 'passed ' + verifier.getChecksum().toString();
+        }
+    };
+    
     var beta_run_start = function() {
         mEditor.metadata_count('run');
         mRunButton.setLabel('icon-pause');
@@ -96,7 +106,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
         mFastRunButton.disable();
         mUndoButton.disable();
         if(mBeta.verifier()) {
-            mVerifyButton.enable();
+            //mVerifyButton.enable();
         }
     };
 
@@ -112,7 +122,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
             mRunButton.disable();
             mFastRunButton.disable();
             mStepButton.disable();
-            mVerifyButton.disable();
+            //mVerifyButton.disable();
             mUndoButton.disable();
             mResetButton.disable();
         } else {
@@ -166,16 +176,16 @@ BSim.Controls = function(container, beta, editor, schematic) {
         mRunButton = new ToolbarButton('icon-play', toggle_run);
         mFastRunButton = new ToolbarButton('icon-forward', handle_fast_run, 'Run Fast');
         mStepButton = new ToolbarButton('icon-step-forward', handle_step, 'Step Forward');
-        mVerifyButton = new ToolbarButton('Checkoff', handle_checkoff);
+        //mVerifyButton = new ToolbarButton('Checkoff', handle_checkoff);
         mViewChange = new ToolbarButton(mContainer.parents('#schematic-view').length ? "Programmer's View" : 'Schematic View', change_view);
-        mSaveMemory = new ToolbarButton('icon-file', handle_save_memory, "Save memory contents");
+        //mSaveMemory = new ToolbarButton('icon-file', handle_save_memory, "Save memory contents");
 
         mToolbar = new Toolbar(mContainer);
 
         mToolbar.addButtonGroup([mResetButton, mUndoButton, mStepButton, mRunButton, mFastRunButton]);
-        mToolbar.addButtonGroup([mVerifyButton]);
+        //mToolbar.addButtonGroup([mVerifyButton]);
         mToolbar.addButtonGroup([mViewChange]);
-        mToolbar.addButtonGroup([mSaveMemory]);
+        //mToolbar.addButtonGroup([mSaveMemory]);
 
         mBeta.on('run:start', beta_run_start);
         mBeta.on('run:stop', beta_run_stop);

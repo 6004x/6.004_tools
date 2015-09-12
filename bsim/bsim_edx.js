@@ -80,7 +80,7 @@ $(function() {
                 } else {
                     beta.setVerifier(null);
                 }
-                if(split.currentState()[2] === 0) {
+                if(split.currentState()[1] === 0) {
                     $('#maximise_simulation').click();
                 }
             }
@@ -198,6 +198,7 @@ $(function() {
     BSim.getState = function () {
         // start with all the ancillary information
         var state = $.extend({},configuration);
+        delete state.initial_state;
 
         // gather up contents of editor buffers
         state.state = editor.get_all_documents(true);
@@ -222,8 +223,7 @@ $(function() {
             var first = true;
             $.each(configuration.initial_state || {},
                    function (name,contents) {
-                       editor.openTab(name,contents,first,null,true);
-                       first = false;
+                       editor.openTab(name,contents,false,null,true);
                    });
             $.each(configuration.state || {},
                    function (name,contents) {

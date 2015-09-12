@@ -207,7 +207,7 @@ var Editor = function(container, mode, no_file_buttons) {
         tab.append(a);
 
         //cjt: let user know this file is read-only!
-        if (is_readonly) a.append('<span style="color:red"> (read only)</span>');
+        if (is_readonly) a.append('<span class="icon-ban-circle"></span>');
 
         // Build us a 'close' button. It uses an X when the document is clean and a circle when dirty, except
         // when hovered over.
@@ -237,7 +237,7 @@ var Editor = function(container, mode, no_file_buttons) {
         // Append all that stuff
         a.append(close);
 
-        mTabHolder.append(tab);
+        mTabHolder.prepend(tab);
 
         // Make sure we aren't still showing initial tips.
         clear_initial_tips();
@@ -455,7 +455,7 @@ var Editor = function(container, mode, no_file_buttons) {
         for(var name in mOpenDocuments) {
             if(!_.has(mOpenDocuments, name)) continue;
             var doc = mOpenDocuments[name];
-            if (ignore_read_only && doc.read_only) continue;
+            if (ignore_read_only && doc.readonly) continue;
 
             result[name] = doc.cm.getValue();
 

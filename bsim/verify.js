@@ -37,6 +37,10 @@ BSim.TextVerifier = function(beta, checkoff) {
     this.checkoff = function() {
         return mCheckoff;
     };
+
+    this.getChecksum = function () {
+        return mChecksum;
+    };
 };
 
 BSim.MemoryVerifier = function(beta, checkoff) {
@@ -72,6 +76,10 @@ BSim.MemoryVerifier = function(beta, checkoff) {
 
     this.checkoff = function() {
         return mCheckoff;
+    };
+
+    this.getChecksum = function () {
+        return checkoff.checksum;
     };
 };
 
