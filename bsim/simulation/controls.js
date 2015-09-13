@@ -91,11 +91,11 @@ BSim.Controls = function(container, beta, editor, schematic) {
 
     this.get_checkoff = function() {
         var verifier = mBeta.verifier();
-        if(!verifier) return "No verification statements found.";
+        if(!verifier) return undefined;
         if(!verifier.verify()) {
-            return verifier.getMessage();
+            return undefined;
         } else {
-            return 'passed ' + verifier.getChecksum().toString();
+            return verifier.getChecksum().toString();
         }
     };
     

@@ -143,7 +143,7 @@ $(function() {
     $(window).resize(BSim.SchematicView.Scale);
 
     $('.program-controls').each(function() {
-        new BSim.Controls(this, beta, editor, schematic);
+        controls = new BSim.Controls(this, beta, editor, schematic);
     });
 
     // Work around weird sizing bug.
@@ -187,15 +187,32 @@ $(function() {
     //////////////////////////////////////////////////    
 
     var configuration = {};  // all state saved by edX server
+    var controls;
+
+    function update_tests() {
+        try {
+            configuration.tests = {};
+            var checkoff = controls.get_checkoff();
+            if (checkoff !== undefined) {
+                // key is checksum
+                configuration.tests[checkoff] = 'passed';
+            }
+        } catch(e) {
+            // do nothing...
+        }
+    }
 
     // return JSON representation to be used by server-side grader
     BSim.getGrade = function () {
+        update_tests();
         var grade = {'tests': configuration.tests || {}};
         return JSON.stringify(grade);
     };
 
     // return JSON representation of persistent state
     BSim.getState = function () {
+        update_tests();
+
         // start with all the ancillary information
         var state = $.extend({},configuration);
         delete state.initial_state;
