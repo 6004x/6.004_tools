@@ -62,7 +62,7 @@ $(document).ready(function(){
             dialog.dismiss();
             delete configuration.state;
             delete configuration.tests;
-            tmsim.setState(JSON.stringify(configuration));
+            tmsim.setStateSync(JSON.stringify(configuration));
         }, 'btn-primary');
         dialog.addButton("Cancel", "dismiss");
         dialog.show();
@@ -96,28 +96,28 @@ $(document).ready(function(){
     // object that will not be used here (see http://mozilla.github.io/jschannel/docs/)
     tmsim.setState = function () {
         var stateStr = arguments.length === 1 ? arguments[0] : arguments[1];
+        setTimeout(function () { tmsim.setStateSync(stateStr); },1);
+    };
 
-        // jsinput gets anxious if we don't respond quickly, so come back to
-        // initialization after we've returned and made jsinput happy.
-        setTimeout(function () {
-            configuration = JSON.parse(stateStr);
+    // synchronous version for 6.004
+    tmsim.setStateSync = function (stateStr) {
+        configuration = JSON.parse(stateStr);
 
-            // open editor tabs for each of the available designs
-            editor.closeAllTabs();
-            var first = true;
-            $.each(configuration.state || configuration.initial_state || {},
-                   function (name,contents) {
-                       editor.openTab(name,contents,first);
-                       first = false;
-                   });
+        // open editor tabs for each of the available designs
+        editor.closeAllTabs();
+        var first = true;
+        $.each(configuration.state || configuration.initial_state || {},
+               function (name,contents) {
+                   editor.openTab(name,contents,first);
+                   first = false;
+               });
 
-            if (configuration.assemble) {
-                tmsim.assemble();
-            }
+        if (configuration.assemble) {
+            tmsim.assemble();
+        }
 
-            $('.editor-file-control').hide();     // hide file buttons
-            $('#editor .nav-tabs .close').hide();  // hide close button on tab(s)
-        },1);
+        $('.editor-file-control').hide();     // hide file buttons
+        $('#editor .nav-tabs .close').hide();  // hide close button on tab(s)
     };
 
     // Establish a channel only if this application is embedded in an iframe.

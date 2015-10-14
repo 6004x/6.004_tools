@@ -229,30 +229,30 @@ $(function() {
     // object that will not be used here (see http://mozilla.github.io/jschannel/docs/)
     BSim.setState = function () {
         var stateStr = arguments.length === 1 ? arguments[0] : arguments[1];
-
-        // jsinput gets anxious if we don't respond quickly, so come back to
-        // initialization after we've returned and made jsinput happy.
-        setTimeout(function () {
-            configuration = JSON.parse(stateStr);
-
-            // open editor tabs for each saved buffer
-            editor.closeAllTabs();
-            var first = true;
-            $.each(configuration.initial_state || {},
-                   function (name,contents) {
-                       editor.openTab(name,contents,false,null,true);
-                   });
-            $.each(configuration.state || {},
-                   function (name,contents) {
-                       editor.openTab(name,contents,first);
-                       first = false;
-                   });
-
-            $('.editor-file-control').hide();     // hide file buttons
-            $('#editor .nav-tabs .close').hide();  // hide close button on tab(s)
-        },1);
+        setTimeout(function () { BSim.setStateSync(stateStr); },1);
     };
 
+    // 6.004 uses synchronous version...
+    BSim.setStateSync = function (stateStr) {
+        configuration = JSON.parse(stateStr);
+
+        // open editor tabs for each saved buffer
+        editor.closeAllTabs();
+        var first = true;
+        $.each(configuration.initial_state || {},
+               function (name,contents) {
+                   editor.openTab(name,contents,false,null,true);
+               });
+        $.each(configuration.state || {},
+               function (name,contents) {
+                   editor.openTab(name,contents,first);
+                   first = false;
+               });
+
+        $('.editor-file-control').hide();     // hide file buttons
+        $('#editor .nav-tabs .close').hide();  // hide close button on tab(s)
+    };
+    
     // Establish a channel only if this application is embedded in an iframe.
     // This will let the parent window communicate with this application using
     // RPC and bypass SOP restrictions.
