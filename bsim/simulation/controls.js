@@ -92,11 +92,9 @@ BSim.Controls = function(container, beta, editor, schematic) {
     this.get_checkoff = function() {
         var verifier = mBeta.verifier();
         if(!verifier) return undefined;
-        if(!verifier.verify()) {
-            return undefined;
-        } else {
-            return verifier.getChecksum().toString();
-        }
+        var result = {};
+        result[verifier.getChecksum().toString()] = verifier.verify() ? "passed" : verifier.getMessage() || '';
+        return result;
     };
     
     var beta_run_start = function() {
