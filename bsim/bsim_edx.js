@@ -206,6 +206,8 @@ $(function() {
     BSim.getGrade = function () {
         update_tests();
         var grade = {'tests': configuration.tests || {}};
+        if (configuration.required_tests)
+          grade.required_tests = configuration.required_tests;
         return JSON.stringify(grade);
     };
 
