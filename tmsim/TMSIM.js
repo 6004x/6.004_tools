@@ -445,6 +445,9 @@ var TMSIM = function(editor,container,tests_complete_callback){
         var save_slider_speed = slider_speed;
         slider_speed = 0; //-100000;
 
+        if (tests_complete_callback) {
+            tests_complete_callback();  // with no args, clears tests from saved state
+        }
         nextTest();
 
         // The checkoffs use the result of this non-standard hash function.

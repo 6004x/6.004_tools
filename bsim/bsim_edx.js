@@ -195,7 +195,7 @@ $(function() {
             var checkoff = controls.get_checkoff();
             if (checkoff !== undefined) {
                 // key is checksum
-                configuration.tests[checkoff] = 'passed';
+                configuration.tests = checkoff;
             }
         } catch(e) {
             // do nothing...

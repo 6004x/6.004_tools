@@ -24,7 +24,8 @@ $(document).ready(function(){
     var configuration = {};  // all state saved by edX server
     function tests_complete(filename,contents,checksum,nstates) {
         configuration.tests = {};
-        configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
+        if (filename)
+           configuration.tests[checksum] = 'passed ' + JSON.stringify({filename: filename,contents:contents,nstates:nstates});
     }
 
     tmsim = new TMSIM(editor,'#tmsim_div',tests_complete);
