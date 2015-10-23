@@ -191,7 +191,6 @@ $(function() {
 
     function update_tests() {
         try {
-            configuration.tests = {};
             var checkoff = controls.get_checkoff();
             if (checkoff !== undefined) {
                 // key is checksum
