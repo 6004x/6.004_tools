@@ -142,7 +142,7 @@ module.exports = function(grunt) {
     grunt.registerTask('workbook', ['bsim_workbook','tmsim_workbook']);
     grunt.registerTask('edx', ['bsim_edx','tmsim_edx']);
 
-    //grunt.registerTask('test', ['connect', 'qunit:all'])
+    grunt.registerTask('test', ['connect', 'qunit:all'])
 
     // Builds everything if just called as 'grunt'
     grunt.registerTask('default', ['bsim','jsim','tmsim']);

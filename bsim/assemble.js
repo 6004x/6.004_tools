@@ -1116,6 +1116,12 @@
             //var can_succeed = true;
             var errors = [];
 
+            // metadata is optional
+            if(callback === undefined) {
+                callback = metadata;
+                metadata = null;
+            }
+
             sources = [];  // initialize list of sources
             parse_file(file, content, function(syntax) {
                 var code;
