@@ -84,6 +84,7 @@ $(document).ready(function(){
     tmsim.getState = function () {
         // start with all the ancillary information
         var state = $.extend({},configuration);
+        delete state.initial_state;
 
         // gather up contents of editor buffers
         state.state = editor.get_all_documents();

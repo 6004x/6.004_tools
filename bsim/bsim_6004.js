@@ -254,21 +254,8 @@ $(function() {
         $('#editor .nav-tabs .close').hide();  // hide close button on tab(s)
     };
     
-    // Establish a channel only if this application is embedded in an iframe.
-    // This will let the parent window communicate with this application using
-    // RPC and bypass SOP restrictions.
-    var channel;
-    if (window.parent !== window && channel === undefined) {
-        channel = Channel.build({
-            window: window.parent,
-            origin: "*",
-            scope: "JSInput"
-        });
-
-        channel.bind("getGrade", BSim.getGrade);
-        channel.bind("getState", BSim.getState);
-        channel.bind("setState", BSim.setState);
-
+    // if we're in an iframe...
+    if (window.parent !== window) {
         // make iframe resizable if we can.  This may fail if we don't have
         // access to our parent...
         try {
@@ -278,6 +265,26 @@ $(function() {
                 if (this.contentWindow == window) {
                     // yes! so add css to enable resizing
                     $(this).css({resize:'both', overflow:'auto'});
+
+                    // initial state is JSON stored as text child of <iframe>
+                    var state = JSON.parse($(this).text() || '{}');
+
+                    // grab our server-side state from the appropriate input field
+                    var id = $(this).attr('data-id');
+                    if (id) {
+                        var input = $("[name='"+id+"']",window.parent.document);
+                        if (input) {
+                            // overwrite with user's state from server
+                            input = input.val();
+                            if (input.length > 0) {
+                                var args = JSON.parse(input);
+                                args.student_id = window.parent.anonymous_student_id;
+                                $.extend(state,args);
+                            }
+                        }
+                    }
+
+                    BSim.setStateSync(JSON.stringify(state));
                 }
             });
         } catch (e) {
