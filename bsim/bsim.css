@@ -58,7 +58,7 @@ pre.tty-output {
 
 div.stack-holder {
     position: absolute;
-    left: 500px;
+    left: 460px;
     top: 0px;
     width: 170px;
     /*display: none;*/
@@ -78,7 +78,7 @@ div.stack {
 div.memory-holder {
     position: absolute;
     top: 0px;
-    left: 700px;
+    left: 640px;
     width: 140px;
 }
 
