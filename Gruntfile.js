@@ -10,7 +10,7 @@ module.exports = function(grunt) {
             bsim: {src: 'bsim/bsim.html', dest: 'build/bsim.html'},
 
             bsim_edx: {src: 'bsim/bsim_edx.html', dest: 'build/bsim_edx.html'},
-            bsim_edx_deploy: {src: ['build/bsim_edx*','build/glyphicons*'], dest: '../6.004_mitx/static/', flatten: true, expand: true },
+            bsim_edx_deploy: {src: 'build/bsim_edx*', dest: '../6.004_mitx/static/labs/', flatten: true, expand: true },
 
             bsim_6004: {src: 'bsim/bsim_6004.html', dest: 'build/bsim_6004.html'},
             bsim_6004_deploy: {src: ['build/bsim_6004*','build/glyphicons*'], dest: '../6.004_labs/ssldocs/coursewarex/', flatten: true, expand: true },
