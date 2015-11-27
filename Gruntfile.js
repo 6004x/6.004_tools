@@ -131,7 +131,7 @@ module.exports = function(grunt) {
     grunt.registerTask('tmsim', ['copy:resources', 'copy:tmsim', 'useminPrepare:tmsim', 'concat', 'uglify', 'cssmin', 'usemin:tmsim']);
     grunt.registerTask('tmsim_edx', ['copy:resources', 'copy:tmsim_edx', 'useminPrepare:tmsim_edx', 'concat', 'uglify', 'cssmin', 'usemin:tmsim_edx', 'copy:tmsim_edx_deploy']);
     grunt.registerTask('tmsim_6004', ['copy:resources', 'copy:tmsim_6004', 'useminPrepare:tmsim_6004', 'concat', 'uglify', 'cssmin', 'usemin:tmsim_6004', 'copy:tmsim_6004_deploy']);
-    grunt.registerTask('tmsim_workbook', ['copy:resources', 'copy:tmsim_workbook', 'useminPrepare:tmsim_workbook', 'concat', 'cssmin', 'usemin:tmsim_workbook', 'copy:tmsim_workbook_deploy']);
+    grunt.registerTask('tmsim_workbook', ['copy:resources', 'copy:tmsim_workbook', 'useminPrepare:tmsim_workbook', 'concat', 'uglify', 'cssmin', 'usemin:tmsim_workbook', 'copy:tmsim_workbook_deploy']);
 
     grunt.registerTask('jsim', ['copy:resources', 'copy:jsim', 'useminPrepare:jsim', 'concat', 'uglify', 'cssmin', 'usemin:jsim']);
     grunt.registerTask('deploy', ['copy:deploy']);

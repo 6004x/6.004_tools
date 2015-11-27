@@ -74,12 +74,6 @@ $(document).ready(function(){
     //  workbook interface
     //////////////////////////////////////////////////    
 
-    var configuration = {};  // all state saved by edX server
-    function tests_complete(filename,contents,checksum,nstates) {
-        configuration.tests = {};
-        configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
-    }
-
     editor.save_to_server = function () {
     };
 
