@@ -99,7 +99,7 @@ $(document).ready(function(){
                 // update answer object
                 var state = {
                     tests: configuration.tests,
-                    'required-tests': configuration['required-tests'],
+                    required_tests: configuration.required_tests,
                     state: editor.get_all_documents(true),
                     last_saved: Date.now()
                 };
@@ -114,7 +114,7 @@ $(document).ready(function(){
                 if (completed_tests) {
                     // make sure all required tests passed
                     answer.check = 'right';
-                    $.each(state['required-tests'] || [],function (index,test) {
+                    $.each(state.required_tests || [],function (index,test) {
                         // test results: {filename: , contents: , nstates: }
                         var result = (completed_tests[test] || 'Test has not been run: '+test);
                         if (result === undefined) {
