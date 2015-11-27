@@ -24,7 +24,9 @@ $(document).ready(function(){
     var configuration = {};  // all state saved by server
     function tests_complete(filename,contents,checksum,nstates) {
         configuration.tests = {};
-        configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
+        if (checksum) {
+            configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
+        }
         editor.save_to_server();
     }
 
@@ -127,7 +129,7 @@ $(document).ready(function(){
         }
 
         if (answer.value) {
-            // configuration includes state, initial_state, required-tests, tests
+            // configuration includes state, initial_state, required_tests, tests
             // state and initial_state are objects mapping buffer_name -> contents
             configuration = JSON.parse(answer.value);
 
