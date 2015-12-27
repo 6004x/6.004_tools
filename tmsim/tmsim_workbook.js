@@ -24,8 +24,10 @@ $(document).ready(function(){
     var configuration = {};  // all state saved by server
     function tests_complete(filename,contents,checksum,nstates) {
         configuration.tests = {};
-        configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
-        save_to_server(configuration);
+        if (checksum) {
+            configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
+        }
+        editor.save_to_server();
     }
 
     tmsim = new TMSIM(editor,'#tmsim_div',tests_complete);
@@ -74,13 +76,7 @@ $(document).ready(function(){
     //  workbook interface
     //////////////////////////////////////////////////    
 
-    var configuration = {};  // all state saved by edX server
-    function tests_complete(filename,contents,checksum,nstates) {
-        configuration.tests = {};
-        configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
-    }
-
-    var save_to_server = function () {
+    editor.save_to_server = function () {
     };
 
     // accept initialization message from host, remember where
@@ -95,13 +91,14 @@ $(document).ready(function(){
 
         // change save_to_server to communicate with host
         if (answer.id) {
-            save_to_server = function (callback) {
+            editor.save_to_server = function (callback) {
                 // update answer object
-                // start with all the ancillary information
-                var state = $.extend({},configuration);
-
-                // gather up contents of editor buffers
-                state.state = editor.get_all_documents();
+                var state = {
+                    tests: configuration.tests,
+                    required_tests: configuration.required_tests,
+                    state: editor.get_all_documents(true),
+                    last_saved: Date.now()
+                };
 
                 answer.value = JSON.stringify(state);
 
@@ -113,9 +110,9 @@ $(document).ready(function(){
                 if (completed_tests) {
                     // make sure all required tests passed
                     answer.check = 'right';
-                    $.each(state['required-tests'] || [],function (index,test) {
+                    $.each(state.required_tests || [],function (index,test) {
                         // test results: {filename: , contents: , nstates: }
-                        var result = (completed_tests[test] || 'Test has not be run: '+test);
+                        var result = (completed_tests[test] || 'Test has not been run: '+test);
                         if (result === undefined) {
                             answer.message = 'Test failed';
                             answer.check = 'wrong';
@@ -132,14 +129,18 @@ $(document).ready(function(){
         }
 
         if (answer.value) {
-            // configuration includes state, initial_state, required-tests, tests
+            // configuration includes state, initial_state, required_tests, tests
             // state and initial_state are objects mapping buffer_name -> contents
             configuration = JSON.parse(answer.value);
 
-            // open editor tabs for each of the available designs
+            // open editor tabs for each saved buffer
             editor.closeAllTabs();
             var first = true;
-            $.each(configuration.state || configuration.initial_state || {},
+            $.each(configuration.initial_state || {},
+                   function (name,contents) {
+                       editor.openTab(name,contents,false,null,true);
+                   });
+            $.each(configuration.state || {},
                    function (name,contents) {
                        editor.openTab(name,contents,first);
                        first = false;

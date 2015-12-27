@@ -2,7 +2,7 @@
 // - `container` should be a DOM node or unique CSS selector
 // - `mode` should be one of 'uasm', 'tsim' or 'jsim' as appropriate.
 var Editor = function(container, mode, no_file_buttons) {
-    var AUTOSAVE_TRIGGER_EVENTS = 30; // Number of events to trigger an autosave.
+    this.AUTOSAVE_TRIGGER_EVENTS = 30; // Number of events to trigger an autosave.
     var self = this; // Tracking 'this' can be finicky; use 'self' instead.
     var mContainer = $(container);
     var mToolbarHolder; // Element holding the toolbar
@@ -229,7 +229,7 @@ var Editor = function(container, mode, no_file_buttons) {
         // Handle autosaving as appropriate.
         cm.on('cursorActivity', function() {
             doc.n++;
-            if(doc.n >= AUTOSAVE_TRIGGER_EVENTS) {
+            if(doc.n >= self.AUTOSAVE_TRIGGER_EVENTS) {
                 doc.n = 0;
                 do_autosave(doc);
             }
@@ -572,6 +572,11 @@ var Editor = function(container, mode, no_file_buttons) {
                 document.isAutosaving = false;
                 console.warn("Autosave failed.");
             }, document.metadata);
+            return;
+        }
+        if (self.save_to_server) {
+            self.save_to_server();
+            return;
         }
     };
 
