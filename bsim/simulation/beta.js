@@ -480,6 +480,8 @@ BSim.Beta = function() {
             mTTYContent = step.tty;
             self.trigger('text:replace', mTTYContent);
         }
+        mCycleCount = (mCycleCount - 1) % 0x7FFFFFFF;
+        if(!mRunning) this.trigger('change:cycle_count',mCycleCount);
         return true;
     };
 
