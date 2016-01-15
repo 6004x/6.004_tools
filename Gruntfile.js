@@ -21,7 +21,7 @@ module.exports = function(grunt) {
             tmsim: {src: 'tmsim/tmsim.html', dest: 'build/tmsim.html'},
 
             tmsim_edx: {src: 'tmsim/tmsim_edx.html', dest: 'build/tmsim_edx.html'},
-            tmsim_edx_deploy: {src: ['build/tmsim_edx*','build/glyphicons*'], dest: '../6.004_mitx/static/', flatten: true, expand: true },
+            tmsim_edx_deploy: {src: ['build/tmsim_edx*','build/glyphicons*'], dest: '../6.004_mitx/static/labs/', flatten: true, expand: true },
 
             tmsim_6004: {src: 'tmsim/tmsim_6004.html', dest: 'build/tmsim_6004.html'},
             tmsim_6004_deploy: {src: ['build/tmsim_6004*','build/glyphicons*'], dest: '../6.004_labs/ssldocs/coursewarex/', flatten: true, expand: true },

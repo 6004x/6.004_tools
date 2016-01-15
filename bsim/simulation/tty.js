@@ -44,7 +44,8 @@ BSim.TTY = function(container, beta) {
             beta.keyboardInterrupt(e.which);
         });
 
-        mTextHolder.click(function(e) {
+        mTextHolder.mousedown(function(e) {
+            //console.log('click: '+mHasFocus.toString()+' '+mJustFocused.toString());
             if(!mHasFocus || mJustFocused) return; // Ignore clicks just as we're focused.
             var offset = mTextHolder.offset();
             var x = e.pageX - offset.left;
@@ -55,6 +56,7 @@ BSim.TTY = function(container, beta) {
         });
 
         mTextHolder.focus(function(e) {
+            //console.log('focus: '+mHasFocus.toString()+' '+mJustFocused.toString());
             // Ignore any click events that come in the immediate future.
             mJustFocused = true;
             mHasFocus = true;
