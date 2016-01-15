@@ -25,7 +25,8 @@ $(document).ready(function(){
     function tests_complete(filename,contents,checksum,nstates) {
         configuration.tests = {};
         if (checksum) {
-            configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
+            //configuration.tests[checksum] = {filename: filename,contents:contents,nstates:nstates};
+            configuration.tests[filename] = "passed "+checksum.toString()+" "+nstates.toString();
         }
         editor.save_to_server();
     }
@@ -63,9 +64,11 @@ $(document).ready(function(){
         dialog.setContent("Click OK to discard all work on this problem and start over again.");
         dialog.addButton("OK", function(){
             dialog.dismiss();
-            delete configuration.state;
-            delete configuration.tests;
-            tmsim.setState(JSON.stringify(configuration));
+            //delete configuration.state;
+            //delete configuration.tests;
+            //tmsim.setState(JSON.stringify(configuration));
+            host.postMessage(JSON.stringify({id: answer.id}),window.location.origin);
+            window.close();
         }, 'btn-primary');
         dialog.addButton("Cancel", "dismiss");
         dialog.show();
@@ -79,15 +82,18 @@ $(document).ready(function(){
     editor.save_to_server = function () {
     };
 
+    var host;
+    var answer;
+
     // accept initialization message from host, remember where
     // to send update messages when local state changes
     $(window).on('message',function (event) {
         event = event.originalEvent;
         if (event.origin != window.location.origin) return;
 
-        var host = event.source;
+        host = event.source;
         // {value: {buffer_name: "contents",...}, check: , message: , id: }
-        var answer = JSON.parse(event.data);
+        answer = JSON.parse(event.data);
 
         // change save_to_server to communicate with host
         if (answer.id) {
