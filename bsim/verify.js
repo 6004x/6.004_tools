@@ -22,7 +22,8 @@ BSim.TextVerifier = function(beta, checkoff) {
         var hash = checkoffHashCode(content);
 
         if(hash !== mChecksum) {
-            mMessage = "The test program did not print out the expected result. Please check the lab writeup to see what result is expected. ("+hash+")";
+            mMessage = "The test program did not print out the expected result. Please check the lab writeup to see what result is expected.";
+            BSim.hash = hash;   // useful when we need hash during development...
             return false;
         } else {
             mMessage = null;

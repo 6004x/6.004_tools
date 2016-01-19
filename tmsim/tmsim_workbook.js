@@ -102,12 +102,10 @@ $(document).ready(function(){
                 var state = {
                     tests: configuration.tests,
                     required_tests: configuration.required_tests,
-                    state: editor.get_all_documents(true),
-                    last_saved: Date.now()
+                    state: editor.get_all_documents(true)
                 };
 
                 answer.value = JSON.stringify(state);
-
                 answer.message = undefined;
                 answer.check = undefined;
                 
