@@ -173,6 +173,8 @@ BSim.Controls = function(container, beta, editor, schematic) {
 
     var handle_cache = function () {
         $('.cache-information').toggle();
+
+        // resize here
     };
 
     var initialise = function() {
