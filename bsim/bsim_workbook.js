@@ -194,7 +194,10 @@ $(function() {
             var checkoff = controls.get_checkoff();
             if (checkoff !== undefined) {
                 // key is checksum
-                configuration.tests = checkoff;
+                configuration.tests = {};
+                $.each(checkoff,function(test,cksum) {
+                    configuration.tests.passed = 'passed '+cksum;
+                });
             }
         } catch(e) {
             // do nothing...

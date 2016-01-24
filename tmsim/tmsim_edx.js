@@ -98,6 +98,18 @@ $(document).ready(function(){
     // object that will not be used here (see http://mozilla.github.io/jschannel/docs/)
     tmsim.setState = function () {
         var stateStr = arguments.length === 1 ? arguments[0] : arguments[1];
+
+        // use text from iframe body, if any
+        var text = $('#initial-state').html();
+        if (text) {
+            // start with state specified by iframe body
+            var s = JSON.parse(text);
+            // extend with state received from server
+            $.extend(s,JSON.parse(stateStr));
+            // make result the updated state
+            stateStr = JSON.stringify(s);
+        }
+
         setTimeout(function () { tmsim.setStateSync(stateStr); },1);
     };
 
