@@ -107,8 +107,10 @@ $(function() {
     // Stuff for the simulator
     var do_resize = function(holder, view, difference) {
         if(holder.parents('#programmer-view').length) {
-            $(window).resize(function() {
+            var cinfo = $('.cache-information');
+            $(window).on('resize cache-resize',function() {
                 var height = window_height() - difference;
+                if (cinfo.is(':visible')) height -= cinfo.outerHeight();
                 view.resize(height);
                 holder.css({height: height});
             });
