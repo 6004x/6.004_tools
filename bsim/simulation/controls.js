@@ -12,6 +12,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
     //var mVerifyButton = null;
     var mViewChange = null;
     //var mSaveMemory = null;
+    var mCacheButton = null;
 
     var mToolbar = null;
 
@@ -170,6 +171,10 @@ BSim.Controls = function(container, beta, editor, schematic) {
         FileSystem.saveFile('memory.contents',text,function () {});
     };
 
+    var handle_cache = function () {
+        $('.cache-information').toggle();
+    };
+
     var initialise = function() {
         mResetButton = new ToolbarButton('icon-fast-backward', handle_reset, 'Reset Simulation');
         mUndoButton = new ToolbarButton('icon-step-backward', handle_undo, 'Step Back');
@@ -179,6 +184,8 @@ BSim.Controls = function(container, beta, editor, schematic) {
         //mVerifyButton = new ToolbarButton('Checkoff', handle_checkoff);
         mViewChange = new ToolbarButton(mContainer.parents('#schematic-view').length ? "Programmer's View" : 'Schematic View', change_view);
         //mSaveMemory = new ToolbarButton('icon-file', handle_save_memory, "Save memory contents");
+        mCacheButton = new ToolbarButton('Cache', handle_cache);
+
 
         mToolbar = new Toolbar(mContainer);
 
@@ -186,6 +193,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
         //mToolbar.addButtonGroup([mVerifyButton]);
         mToolbar.addButtonGroup([mViewChange]);
         //mToolbar.addButtonGroup([mSaveMemory]);
+        mToolbar.addButtonGroup([mCacheButton]);
 
         mBeta.on('run:start', beta_run_start);
         mBeta.on('run:stop', beta_run_stop);

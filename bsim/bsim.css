@@ -254,5 +254,35 @@ div.disassembly {
 }
 
 .highlight-line{
-	background-color : yellow; 
+    background-color : yellow; 
+}
+
+.cache-information {
+    border: 1px solid black;
+    padding: 5px;
+    display: none;
+}
+
+.cache-column {
+    padding-left: 10px;
+    text-align: right;
+}
+
+.cache-stats {
+    padding: 5px 0 0 0;
+}
+
+.cache-span {
+    font-size: 12px;
+    min-width: 50px;
+    background-color: white;
+}
+
+.cache-select {
+    padding: 0;
+    margin: 5px 0 0 0;
+    font-size: 12px;
+    height: auto;
+    width: 120px;
+    line-height: 1;
 }
