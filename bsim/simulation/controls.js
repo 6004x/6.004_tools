@@ -113,6 +113,8 @@ BSim.Controls = function(container, beta, editor, schematic) {
         mStepButton.enable();
         mFastRunButton.enable();
         mUndoButton.enable();
+
+        if (mEditor && mEditor.save_to_server) mEditor.save_to_server();
     };
 
     var beta_resize_memory = function(size) {

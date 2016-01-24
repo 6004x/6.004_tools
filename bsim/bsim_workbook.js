@@ -49,6 +49,9 @@ $(function() {
         var metadata = editor.metadata();
         var assembler = new BetaAssembler(editor);
         editor.clearErrors();
+
+        if (editor.save_to_server) editor.save_to_server();
+
         assembler.assemble(filename, content, metadata, function(success, result) {
             if(!success) {
                 PassiveAlert("Assembly failed.", "error");
@@ -194,9 +197,8 @@ $(function() {
             var checkoff = controls.get_checkoff();
             if (checkoff !== undefined) {
                 // key is checksum
-                configuration.tests = {};
-                $.each(checkoff,function(test,cksum) {
-                    configuration.tests.passed = 'passed '+cksum;
+                $.each(checkoff,function(cksum,result) {
+                    configuration.tests = {'test': result=='passed' ? cksum : result};
                 });
             }
         } catch(e) {
@@ -216,14 +218,13 @@ $(function() {
 
         // change save_to_server to communicate with host
         if (answer.id) {
-            editor.AUTOSAVE_TRIGGER_EVENTS = 1; // Number of events to trigger an autosave.
+            //editor.AUTOSAVE_TRIGGER_EVENTS = 1; // Number of events to trigger an autosave.
             editor.save_to_server = function (callback) {
                 // update answer object
                 var state = {
                     tests: configuration.tests,
                     required_tests: configuration.required_tests,
-                    state: editor.get_all_documents(true),
-                    last_saved: Date.now()
+                    state: editor.get_all_documents(true)
                 };
 
                 answer.value = JSON.stringify(state);
