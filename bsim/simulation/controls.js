@@ -194,7 +194,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
         //mToolbar.addButtonGroup([mVerifyButton]);
         mToolbar.addButtonGroup([mViewChange]);
         //mToolbar.addButtonGroup([mSaveMemory]);
-        //mToolbar.addButtonGroup([mCacheButton]);
+        mToolbar.addButtonGroup([mCacheButton]);
 
         mBeta.on('run:start', beta_run_start);
         mBeta.on('run:stop', beta_run_stop);

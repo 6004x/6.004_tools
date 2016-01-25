@@ -11,11 +11,11 @@ BSim.Beta.Memory = function() {
 
     // cache parameters
     var cache = false;      // is cache on?
-    var lineSize;           // number of words/line (must be 2**N)
-    var totalLines;         // total number of lines in the entire cache
-    var nWays;              // number of lines/set
-    var replacementStrategy;    // how to choose replacement line on miss
-    var writeBack;          // use write back instead of write thru?
+    var lineSize = 1;           // number of words/line (must be 2**N)
+    var totalLines = 1;         // total number of lines in the entire cache
+    var nWays = 1;              // number of lines/set
+    var replacementStrategy = LRU;    // how to choose replacement line on miss
+    var writeBack = false;          // use write back instead of write thru?
     var rWay;               // select which subcache will get replacement
     var readCycleCount;     // cycles for main memory read
     var writeCycleCount;    // cycles for main memory write
@@ -27,10 +27,10 @@ BSim.Beta.Memory = function() {
     var tagMask;
     
     // cache state -- one entry for each cache line
-    var dirty;            // dirty bit for each line
-    var valid;            // valid bit for each line
-    var tag;              // tag for each line
-    var age;              // pseudo-time since last use
+    var dirty = new Uint8Array(0);      // dirty bit for each line
+    var valid = new Uint8Array(0);      // valid bit for each line
+    var tag = new Uint32Array(0);       // tag for each line
+    var age = new Uint32Array(0);       // pseudo-time since last use
 
     // cache statistics
     var cycles;
@@ -57,9 +57,7 @@ BSim.Beta.Memory = function() {
         mOriginalMemory = new Uint32Array(mMemory);
     };
 
-    this.reset = function() {
-        mMemory = new Uint32Array(mOriginalMemory);
-
+    function cache_reset() {
         // cache statistics
         cycles = 0;
         readMisses = 0;
@@ -75,17 +73,102 @@ BSim.Beta.Memory = function() {
         // cache state
         if (cache) {
             for (var i = 0; i < dirty.length; i += 1) {
-                dirty[i] = false;
-                valid[i] = false;
+                dirty[i] = 0;
+                valid[i] = 0;
                 tag[i] = 0;
                 age[i] = 0;
             }
         }
     };
 
+    this.reset = function() {
+        mMemory = new Uint32Array(mOriginalMemory);
+        cache_reset();
+    };
+    
     this.contents = function() {
         return mMemory;
     };
+
+    function log2(n) {
+        var log = 0;
+        var v = 1;
+
+        while (log < 32) {
+            if (v >= n) break;
+            v <<= 1;
+            log += 1;
+        }
+        return log;
+    }
+            
+    function mask(n) {
+        var log = log2(n);
+        if (log == 32) return 0xFFFFFFFF;
+        else return (1 << log) - 1;
+    }
+
+    function process_cache_parameters() {
+        if (cache) {
+            dirty = new Uint8Array(totalLines);  // boolean
+            valid = new Uint8Array(totalLines);  // boolean
+            tag = new Uint32Array(totalLines);
+            age = new Uint32Array(totalLines);
+
+            nLines = totalLines / nWays;
+            lineShift = log2(lineSize)+2;
+            lineMask = mask(nLines);
+            tagShift = lineShift + log2(nLines);
+            tagMask = (1 << (32 - tagShift)) - 1;
+
+            var ntagbits = 32 - tagShift;
+            //stat_address.setValueAt(new Integer(ntagbits),toffset+0,1);
+            //stat_address.setValueAt(new Integer(tagShift - lineShift),toffset+1,1);
+            //stat_address.setValueAt(new Integer(lineShift),toffset+2,1);
+
+            var nbits = 32*lineSize + ntagbits + 1 + (writeBack ? 1 : 0);
+            var cost_sram = (nLines == 1) ? totalLines*nbits*50 :   // registers
+                            totalLines*nbits*6 +        // ram bits
+                            (tagShift - lineShift)*20 + // address buffers
+                            nLines*20 +                 // address decode for each row
+                            nbits*nWays*30;             // sense amp + output drivers
+            var ncomparators = nWays*(32 - tagShift);
+            var cost_comparators = ncomparators * 20;
+            var nmuxes = nWays*32*(lineSize - 1);       // tree of 2:1 32-bit muxes
+            var cost_muxes = nmuxes * 8;
+
+            // update display
+            var txt = 'tag=[31:'+tagShift.toString()+']';
+            if (nLines > 1) txt += ', index=['+(tagShift-1).toString()+':'+lineShift.toString()+']';
+            else txt += ', index=N/A';
+            txt += ', offset=['+(lineShift-1).toString()+':0]';
+            $('#address-bits').text(txt);
+            txt = nLines.toString()+'x'+(nWays*nbits).toString();
+            $('#mem-size').text(txt);
+            txt = ncomparators.toString();
+            $('#comparator-bits').text(txt);
+            txt = nmuxes.toString();
+            $('#mux-bits').text(txt);
+            txt = cost_sram + cost_comparators + cost_muxes;
+            $('#total-cost').text(txt);
+
+            $('#line-size').prop('disabled',false);
+            $('#total-lines').prop('disabled',false);
+            $('#associativity').prop('disabled',false);
+            $('#replacement-strategy').prop('disabled',nWays == 1);
+            $('#write-strategy').prop('disabled',false);
+        } else {
+            $('#line-size').prop('disabled',true);
+            $('#total-lines').prop('disabled',true);
+            $('#associativity').prop('disabled',true);
+            $('#replacement-strategy').prop('disabled',true);
+            $('#write-strategy').prop('disabled',true);
+        }
+
+        cache_reset();
+    };
+
+
 
     // choose replacement line according to current strategy
     function replace(addr,aline,atag,makeDirty) {
@@ -123,15 +206,15 @@ BSim.Beta.Memory = function() {
             validReplacements += 1;
             // writeback line if dirty
             if (dirty[aline]) {
-                dirty[aline] = false;
+                dirty[aline] = 0;
                 dirtyReplacements += 1;
                 cycles += writeCycleCount + lineSize - 1;
             }
         }
 
         // refill line with new data
-        valid[aline] = true;
-        dirty[aline] = makeDirty;
+        valid[aline] = 1;
+        dirty[aline] = makeDirty ? 1 : 0;
         tag[aline] = atag;
         cycles += readCycleCount + lineSize - 1;
         age[aline] = cycles;
@@ -191,7 +274,7 @@ BSim.Beta.Memory = function() {
                 if (valid[index] && tag[index] == atag) {
                     // hit!
                     writeHits += 1;
-                    if (writeBack) dirty[index] = true;
+                    if (writeBack) dirty[index] = 1;
                     else cycles += writeCycleCount;
                     if (replacementStrategy == LRU) age[index] = cycles;
                     return;
@@ -227,4 +310,46 @@ BSim.Beta.Memory = function() {
     this.isProtected = function(address) {
         return !!mMemoryFlags[address >> 2];
     };
+
+    // set up change event handlers for cache controls
+    $('#cache-status').on('change',function (e) {
+        cache = $(this).val() == 'on';
+        process_cache_parameters();
+    });
+    $('#line-size').on('change',function (e) {
+        lineSize = parseInt($(this).val());
+        process_cache_parameters();
+    });
+    $('#total-lines').on('change',function (e) {
+        totalLines = parseInt($(this).val());
+        if ($('#associativity').val() == 'fully associative')
+            nWays = totalLines;
+        process_cache_parameters();
+    });
+    $('#associativity').on('change',function (e) {
+        switch ($(this).val()) {
+        case 'direct mapped': nWays = 1; break;
+        case '2-way': nWays = 2 ; break;
+        case '4-way': nWays = 4 ; break;
+        case '8-way': nWays = 8; break;
+        case 'fully associative': nWays = totalLines; break;
+        }
+        process_cache_parameters();
+    });
+    $('#replacement-strategy').on('change',function (e) {
+        switch ($(this).val()) {
+        case 'LRU': replacementStrategy = LRU; break;
+        case 'FIFO': replacementStrategy = FIFO; break;
+        case 'Random': replacementStrategy = RANDOM; break;
+        case 'Cycle': replacementStrategy = Cycle; break;
+        }
+        process_cache_parameters();
+    });
+    $('#write-strategy').on('change',function (e) {
+        switch ($(this).val()) {
+        case 'write-through': writeBack = false; break;
+        case 'write-back': writeBack = true; break;
+        }
+    });
+    process_cache_parameters();  // initially use default values
 };
