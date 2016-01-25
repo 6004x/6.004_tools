@@ -1,8 +1,0 @@
-{
-    "name": "6.004x-fileserver",
-    "version": "1.0.0",
-    "dependencies": {
-        "connect": ">= 2.8",
-        "rimraf": ""
-    }
-}

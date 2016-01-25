@@ -1,9 +1,0 @@
-// set up power supply node and logic thresholds
-.global vdd
-VDD vdd gnd 1.0v
-.options vil=0.2 vih=0.8
-
-.include "/shared/jsim/stdcell.jsim"
-.include "/shared/jsim/lab3checkoff_6.jsim"
-
-.include "alu.jsim"
