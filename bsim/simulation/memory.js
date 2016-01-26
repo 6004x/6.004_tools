@@ -1,4 +1,4 @@
-BSim.Beta.Memory = function() {
+BSim.Beta.Memory = function(mBeta) {
     var self = this;
     var mMemory = new Uint32Array(0);
     var mMemoryFlags = new Uint8Array(0);
@@ -17,8 +17,8 @@ BSim.Beta.Memory = function() {
     var replacementStrategy = LRU;    // how to choose replacement line on miss
     var writeBack = false;          // use write back instead of write thru?
     var rWay;               // select which subcache will get replacement
-    var readCycleCount;     // cycles for main memory read
-    var writeCycleCount;    // cycles for main memory write
+    var readCycleCount = 10;     // latency for main memory read
+    var writeCycleCount = 10;    // latency for main memory write
 
     var nLines;             // number of lines in each subcache
     var lineShift;          // shift/mask info to retrieve line #
@@ -33,14 +33,14 @@ BSim.Beta.Memory = function() {
     var age = new Uint32Array(0);       // pseudo-time since last use
 
     // cache statistics
-    var cycles;
-    var readHits;
-    var readMisses;
-    var writeHits;
-    var writeMisses;
-    var dirtyReplacements;
-    var validReplacements;
-    var totalReplacements; 
+    var cycles = 0;
+    var readHits = 0;
+    var readMisses = 0;
+    var writeHits = 0;
+    var writeMisses = 0;
+    var dirtyReplacements = 0;
+    var validReplacements = 0;
+    var totalReplacements = 0; 
     //var random;
 
     this.loadBytes = function(bytes) {
@@ -57,6 +57,37 @@ BSim.Beta.Memory = function() {
         mOriginalMemory = new Uint32Array(mMemory);
     };
 
+    // update DOM with cache statistics
+    function update_cache_display() {
+        if (cache) {
+            var reads = readHits + readMisses;
+            var writes = writeHits + writeMisses;
+            var total = reads + writes;
+            var hits = readHits + writeHits;
+            var misses = readMisses + writeMisses;
+
+            $('#read-hits').text(readHits.toString());
+            $('#write-hits').text(writeHits.toString());
+            $('#total-hits').text(hits.toString());
+
+            $('#read-misses').text(readMisses.toString());
+            $('#write-misses').text(writeMisses.toString());
+            $('#total-misses').text(misses.toString());
+
+            $('#read-total').text(reads.toString());
+            $('#write-total').text(writes.toString());
+            $('#total-total').text(total.toString());
+
+            $('#read-pct').text(reads ? (100*readHits/reads).toFixed(1)+'%' : ' ');
+            $('#write-pct').text(writes ? (100*writeHits/writes).toFixed(1)+'%' : ' ');
+            $('#total-pct').text(total ? (100*hits/total).toFixed(1)+'%' : ' ');
+        
+            $('#total-cycles').text(cycles.toString());
+        } else {
+            $('.cache-span').text(' ');
+        }
+    }
+
     function cache_reset() {
         // cache statistics
         cycles = 0;
@@ -71,14 +102,14 @@ BSim.Beta.Memory = function() {
         rWay = 0;                       // reset replacement pointer
 
         // cache state
-        if (cache) {
-            for (var i = 0; i < dirty.length; i += 1) {
-                dirty[i] = 0;
-                valid[i] = 0;
-                tag[i] = 0;
-                age[i] = 0;
-            }
+        for (var i = 0; i < dirty.length; i += 1) {
+            dirty[i] = 0;
+            valid[i] = 0;
+            tag[i] = 0;
+            age[i] = 0;
         }
+
+        update_cache_display();
     };
 
     this.reset = function() {
@@ -122,10 +153,6 @@ BSim.Beta.Memory = function() {
             tagMask = (1 << (32 - tagShift)) - 1;
 
             var ntagbits = 32 - tagShift;
-            //stat_address.setValueAt(new Integer(ntagbits),toffset+0,1);
-            //stat_address.setValueAt(new Integer(tagShift - lineShift),toffset+1,1);
-            //stat_address.setValueAt(new Integer(lineShift),toffset+2,1);
-
             var nbits = 32*lineSize + ntagbits + 1 + (writeBack ? 1 : 0);
             var cost_sram = (nLines == 1) ? totalLines*nbits*50 :   // registers
                             totalLines*nbits*6 +        // ram bits
@@ -167,8 +194,6 @@ BSim.Beta.Memory = function() {
 
         cache_reset();
     };
-
-
 
     // choose replacement line according to current strategy
     function replace(addr,aline,atag,makeDirty) {
@@ -283,6 +308,7 @@ BSim.Beta.Memory = function() {
             }
 
             // miss -- select replacement and refill
+            writeMisses += 1;  // ???
             replace(addr,aline,atag,writeBack);
 
             // write-through cache also write word to memory
@@ -351,5 +377,8 @@ BSim.Beta.Memory = function() {
         case 'write-back': writeBack = true; break;
         }
     });
+
     process_cache_parameters();  // initially use default values
+
+    mBeta.on('read:register', update_cache_display);  // update cache stats 
 };

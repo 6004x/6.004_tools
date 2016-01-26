@@ -101,6 +101,10 @@
                   </td>
                   <td class="cache-column">Mem size:</td>
                   <td class="cache-stats"><span class="cache-span" id="mem-size"><span></td>
+                  <td class="cache-column">hits<span></td>
+                  <td class="cache-stats"><span class="cache-span" id="read-hits"><span></td>
+                  <td class="cache-stats"><span class="cache-span" id="write-hits"><span></td>
+                  <td class="cache-stats"><span class="cache-span" id="total-hits"><span></td>
                 </tr>
                 <tr>
                   <td align="right">Total lines:</td>
@@ -123,6 +127,10 @@
                   </td>
                   <td class="cache-column">Comparator bits:</td>
                   <td class="cache-stats"><span class="cache-span" id="comparator-bits"><span></td>
+                  <td class="cache-column">misses<span></td>
+                  <td class="cache-stats"><span class="cache-span" id="read-misses"><span></td>
+                  <td class="cache-stats"><span class="cache-span" id="write-misses"><span></td>
+                  <td class="cache-stats"><span class="cache-span" id="total-misses"><span></td>
                 </tr>
                 <tr>
                   <td align="right">Associativity:</td>
@@ -137,9 +145,13 @@
                   </td>
                   <td class="cache-column">2-to-1 MUX bits:</td>
                   <td class="cache-stats"><span class="cache-span" id="mux-bits"><span></td>
+                  <td class="cache-column">totals<span></td>
+                  <td class="cache-stats"><span class="cache-span" id="read-total"><span></td>
+                  <td class="cache-stats"><span class="cache-span" id="write-total"><span></td>
+                  <td class="cache-stats"><span class="cache-span" id="total-total"><span></td>
                 </tr>
                 <tr>
-                  <td align="right">Replacement strategy:</td>
+                  <td align="right">Replacement:</td>
                   <td>
                     <select class="cache-select" id="replacement-strategy" disabled>
                       <option>LRU</option>
@@ -150,6 +162,10 @@
                   </td>
                   <td class="cache-column">Total cost:</td>
                   <td class="cache-stats"><span class="cache-span" id="total-cost"><span></td>
+                  <td class="cache-column">hit %<span></td>
+                  <td class="cache-stats"><span class="cache-span" id="read-pct"><span></td>
+                  <td class="cache-stats"><span class="cache-span" id="write-pct"><span></td>
+                  <td class="cache-stats"><span class="cache-span" id="total-pct"><span></td>
                 </tr>
                 <tr>
                   <td align="right">Write strategy:</td>
@@ -159,6 +175,12 @@
                       <option>write-back</option>
                     </select>
                   </td>
+                  <td class="cache-column">&nbsp;</td>
+                  <td class="cache-column">&nbsp;</td>
+                  <td class="cache-column">cycles<span></td>
+                  <td class="cache-column">&nbsp;</td>
+                  <td class="cache-column">&nbsp;</td>
+                  <td class="cache-stats"><span class="cache-span" id="total-cycles"><span></td>
                 </tr>
               </table>
             </div>

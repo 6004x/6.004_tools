@@ -1,7 +1,9 @@
 BSim.Beta = function() {
     "use strict";
     var self = this;
-    var mMemory = new BSim.Beta.Memory(); // TODO: it might make sense to use an Int32Array here.
+    _.extend(this, Backbone.Events);
+
+    var mMemory = new BSim.Beta.Memory(this); // TODO: it might make sense to use an Int32Array here.
     var mSourceMap = [];  // file & line number for source of each assembled byte
     var mRegisters = new Int32Array(32);
     var mRunning = false; // Only true when calling run(); not executeCycle().
@@ -71,8 +73,6 @@ BSim.Beta = function() {
         this.pc = pc;
         this.tty = null;
     };
-
-    _.extend(this, Backbone.Events);
 
     var set_defaults = function() {
         mOptions = {
