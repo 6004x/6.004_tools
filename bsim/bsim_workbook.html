@@ -90,15 +90,22 @@
                   <td class="cache-column"><i>total</i></td>
                 </tr>
                 <tr>
-                  <td align="right">Words/line:</td>
+                  <td align="right">Total words:</td>
                   <td>
-                    <select class="cache-select" id="line-size" disabled>
-                      <option>1</option>
-                      <option>2</option>
-                      <option>4</option>
+                    <select class="cache-select" id="total-words" disabled>
+                      <option >4</option>
                       <option>8</option>
                       <option>16</option>
                       <option>32</option>
+                      <option selected>64</option>
+                      <option>128</option>
+                      <option>256</option>
+                      <option>512</option>
+                      <option>1024</option>
+                      <option>2048</option>
+                      <option>4096</option>
+                      <option>8192</option>
+                      <option>16384</option>
                     </select>
                   </td>
                   <td class="cache-column cache-sep">Address bits:</td>
@@ -111,22 +118,15 @@
                   <td class="cache-stats"><span class="cache-num" id="total-hits"></span></td>
                 </tr>
                 <tr>
-                  <td align="right">Total lines:</td>
+                  <td align="right">Words/line:</td>
                   <td>
-                    <select class="cache-select" id="total-lines" disabled>
-                      <option>1</option>
+                    <select class="cache-select" id="line-size" disabled>
+                      <option selected>1</option>
                       <option>2</option>
                       <option>4</option>
                       <option>8</option>
                       <option>16</option>
                       <option>32</option>
-                      <option>64</option>
-                      <option>128</option>
-                      <option>256</option>
-                      <option>512</option>
-                      <option>1024</option>
-                      <option>2048</option>
-                      <option>4096</option>
                     </select>
                   </td>
                   <td class="cache-column cache-sep">Mem size:</td>
@@ -140,7 +140,7 @@
                   <td align="right">Associativity:</td>
                   <td>
                     <select class="cache-select" id="associativity" disabled>
-                      <option>direct mapped</option>
+                      <option selected>direct mapped</option>
                       <option>2-way</option>
                       <option>4-way</option>
                       <option>8-way</option>
@@ -158,7 +158,7 @@
                   <td align="right">Replacement:</td>
                   <td>
                     <select class="cache-select" id="replacement-strategy" disabled>
-                      <option>LRU</option>
+                      <option selected>LRU</option>
                       <option>FIFO</option>
                       <option>Random</option>
                       <option>Cycle</option>
@@ -175,7 +175,7 @@
                   <td align="right">Write strategy:</td>
                   <td>
                     <select class="cache-select" id="write-strategy" disabled>
-                      <option>write-back</option>
+                      <option selected>write-back</option>
                       <option>write-through</option>
                     </select>
                   </td>

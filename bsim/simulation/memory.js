@@ -11,8 +11,9 @@ BSim.Beta.Memory = function(mBeta) {
 
     // cache parameters
     var cache = false;      // is cache on?
-    var lineSize = 1;           // number of words/line (must be 2**N)
-    var totalLines = 1;         // total number of lines in the entire cache
+    var totalWords = 64;     // total number of words in the cache
+    var lineSize = 1;       // number of words/line (must be 2**N)
+    var totalLines = 64;     // totalWords/lineSize
     var nWays = 1;              // number of lines/set
     var replacementStrategy = LRU;    // how to choose replacement line on miss
     var writeBack = true;          // use write back instead of write thru?
@@ -183,14 +184,14 @@ BSim.Beta.Memory = function(mBeta) {
             txt = cost_sram + cost_comparators + cost_muxes;
             $('#total-cost').text(txt);
 
+            $('#total-words').prop('disabled',false);
             $('#line-size').prop('disabled',false);
-            $('#total-lines').prop('disabled',false);
             $('#associativity').prop('disabled',false);
             $('#replacement-strategy').prop('disabled',nWays == 1);
             $('#write-strategy').prop('disabled',false);
         } else {
+            $('#total-words').prop('disabled',true);
             $('#line-size').prop('disabled',true);
-            $('#total-lines').prop('disabled',true);
             $('#associativity').prop('disabled',true);
             $('#replacement-strategy').prop('disabled',true);
             $('#write-strategy').prop('disabled',true);
@@ -354,14 +355,58 @@ BSim.Beta.Memory = function(mBeta) {
         cache = $(this).val() == 'on';
         process_cache_parameters();
     });
-    $('#line-size').on('change',function (e) {
-        lineSize = parseInt($(this).val());
+    $('#total-words').on('change',function (e) {
+        totalWords = parseInt($(this).val());
+
+        // lineSize <= totalWords
+        lineSize = Math.min(totalWords,lineSize);
+        $('select#line-size option').each(function () {
+            var size = parseInt($(this).text());
+            $(this).prop('disabled',size > totalWords);
+            $(this).prop('selected',size == lineSize);
+        });
+        totalLines = totalWords/lineSize;
+
+        // nWays <= totalLines
+        if (nWays > totalLines) nWays = 1;
+        $('select#associativity option').each(function () {
+            var nw;
+            switch ($(this).text()) {
+            case 'direct mapped': nw = 1; break;
+            case '2-way': nw = 2; break;
+            case '4-way': nw = 4; break;
+            case '8-way': nw = 8; break;
+            case 'fully associative': nw = totalLines; break;
+            }
+            $(this).prop('disabled',nw > totalLines);
+            $(this).prop('selected',nw == nWays);
+        });
+
+        if ($('#associativity').val() == 'fully associative') nWays = totalLines;
+
         process_cache_parameters();
     });
-    $('#total-lines').on('change',function (e) {
-        totalLines = parseInt($(this).val());
-        if ($('#associativity').val() == 'fully associative')
-            nWays = totalLines;
+    $('#line-size').on('change',function (e) {
+        lineSize = parseInt($(this).val());
+        totalLines = totalWords/lineSize;
+
+        // nWays <= totalLines
+        if (nWays > totalLines) nWays = 1;
+        $('select#associativity option').each(function () {
+            var nw;
+            switch ($(this).text()) {
+            case 'direct mapped': nw = 1; break;
+            case '2-way': nw = 2; break;
+            case '4-way': nw = 4; break;
+            case '8-way': nw = 8; break;
+            case 'fully associative': nw = totalLines; break;
+            }
+            $(this).prop('disabled',nw > totalLines);
+            $(this).prop('selected',nw == nWays);
+        });
+
+        if ($('#associativity').val() == 'fully associative') nWays = totalLines;
+
         process_cache_parameters();
     });
     $('#associativity').on('change',function (e) {
