@@ -59,10 +59,11 @@ BSim.MemoryVerifier = function(beta, checkoff) {
         for(var address in mAddresses) {
             // if(!_.has(mAddresses, address)) continue;
             var value = mAddresses[address];
-            if(mBeta.readWord(address) != value) {
+            var mvalue = mBeta.memory.readWord(address);
+            if(mvalue != value) {
                 mMessage = "<p><strong>Checkoff failed.</strong></p><table><tr><td>Memory location:</td><td><code>0x" + BSim.Common.FormatWord(parseInt(address,10)) +
                 "</code></td></tr><tr><td>Expected value:</td><td><code>0x" + BSim.Common.FormatWord(value) +
-                "</code></td></tr><tr><td>Actual value:</td><td><code>0x" + BSim.Common.FormatWord(mBeta.readWord(address)) +
+                "</code></td></tr><tr><td>Actual value:</td><td><code>0x" + BSim.Common.FormatWord(mvalue) +
                 "</code></td></tr></table>";
                 return false;
             }

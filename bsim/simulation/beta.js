@@ -4,6 +4,7 @@ BSim.Beta = function() {
     _.extend(this, Backbone.Events);
 
     var mMemory = new BSim.Beta.Memory(this); // TODO: it might make sense to use an Int32Array here.
+    this.memory = mMemory;
     var mSourceMap = [];  // file & line number for source of each assembled byte
     var mRegisters = new Int32Array(32);
     var mRunning = false; // Only true when calling run(); not executeCycle().
@@ -103,7 +104,7 @@ BSim.Beta = function() {
         // This trigger is redundant to the reset performed by this.reset()
         // this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
         var r = _.range(0, mMemory.size(), 4);
-        this.trigger('change:bulk:word', _.object(r, _.map(r, function(i) { return self.readWord(i); } )));
+        this.trigger('change:bulk:word', _.object(r, _.map(r, function(i) { return mMemory.readWord(i); } )));
 
         this.clearBreakpoints();
         this.setLabels({});
@@ -171,7 +172,7 @@ BSim.Beta = function() {
             }
         }
 
-        return mMemory.readWord(address);
+        return mMemory.readWordCached(address);
     };
 
     this.writeWord = function(address, value, notify) {
@@ -182,7 +183,7 @@ BSim.Beta = function() {
         // Implement undo
          mCurrentStepWords.push([address, mMemory.readWord(address)]);
 
-        mMemory.writeWord(address, value);
+        mMemory.writeWordCached(address, value);
 
         if(!mRunning) this.trigger('change:word', address, value);
         if(notify) {
@@ -289,7 +290,7 @@ BSim.Beta = function() {
         this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
         if(!no_update_memory) {
             var r = _.range(0, mMemory.size(), 4);
-            this.trigger('change:bulk:word', _.object(r, _.map(r, function(v) { return self.readWord(v, false); })));
+            this.trigger('change:bulk:word', _.object(r, _.map(r, function(v) { return mMemory.readWord(v); })));
         }
     };
 
@@ -473,7 +474,8 @@ BSim.Beta = function() {
             var address = tuple[0], value = tuple[1];
             if(done[address]) return;
             done[address] = true;
-            self.writeWord(address, value);
+            mMemory.writeWord(address, value);
+            this.trigger('change:word', address, value);
         });
         self.setPC(step.pc, true);
         if(step.tty) {

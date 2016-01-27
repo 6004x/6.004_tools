@@ -79,7 +79,7 @@ BSim.StackView = function(container, beta) {
         annotate(--row, 'oldLP');
 
         try {
-            var return_instruction = mBeta.readWord(mBeta.readWord(bp - 8));
+            var return_instruction = mBeta.memory.readWord(mBeta.memory.readWord(bp - 8));
             // If this instruction looks like DEALLOCATE (ie, SUBC), assume we have a
             // number of arguments equal to however many words we allocated.
             if(BSim.Common.FixUint(return_instruction & 0xFFFF0000) == 0xC7BD0000) {
@@ -89,7 +89,7 @@ BSim.StackView = function(container, beta) {
                 }
 
                 // Continue recursively.
-                annotate_stack(mBeta.readWord(bp - 4), false);
+                annotate_stack(mBeta.memory.readWord(bp - 4), false);
                 }
         } catch (e) {
             // if readWord fails, we're done with annotations

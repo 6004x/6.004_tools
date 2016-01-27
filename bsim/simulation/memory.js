@@ -15,7 +15,7 @@ BSim.Beta.Memory = function(mBeta) {
     var totalLines = 1;         // total number of lines in the entire cache
     var nWays = 1;              // number of lines/set
     var replacementStrategy = LRU;    // how to choose replacement line on miss
-    var writeBack = false;          // use write back instead of write thru?
+    var writeBack = true;          // use write back instead of write thru?
     var rWay;               // select which subcache will get replacement
     var readCycleCount = 10;     // latency for main memory read
     var writeCycleCount = 10;    // latency for main memory write
@@ -78,9 +78,9 @@ BSim.Beta.Memory = function(mBeta) {
             $('#write-total').text(writes.toString());
             $('#total-total').text(total.toString());
 
-            $('#read-pct').text(reads ? (100*readHits/reads).toFixed(1)+'%' : ' ');
-            $('#write-pct').text(writes ? (100*writeHits/writes).toFixed(1)+'%' : ' ');
-            $('#total-pct').text(total ? (100*hits/total).toFixed(1)+'%' : ' ');
+            $('#read-pct').text(reads ? (100*readHits/reads).toFixed(1) : ' ');
+            $('#write-pct').text(writes ? (100*writeHits/writes).toFixed(1) : ' ');
+            $('#total-pct').text(total ? (100*hits/total).toFixed(1) : ' ');
         
             $('#total-cycles').text(cycles.toString());
         } else {
@@ -165,12 +165,16 @@ BSim.Beta.Memory = function(mBeta) {
             var cost_muxes = nmuxes * 8;
 
             // update display
-            var txt = 'tag=[31:'+tagShift.toString()+']';
-            if (nLines > 1) txt += ', index=['+(tagShift-1).toString()+':'+lineShift.toString()+']';
-            else txt += ', index=N/A';
-            txt += ', offset=['+(lineShift-1).toString()+':0]';
-            $('#address-bits').text(txt);
-            txt = nLines.toString()+'x'+(nWays*nbits).toString();
+            var txt = '[31:'+tagShift.toString()+']';
+            $('#tag-bits').text(txt);
+            if (nLines > 1) txt = '['+(tagShift-1).toString()+':'+lineShift.toString()+']';
+            else txt = 'N/A';
+            $('#index-bits').text(txt);
+            txt = '['+(lineShift-1).toString()+':0]';
+            $('#offset-bits').text(txt);
+            txt = nWays > 1 ? nWays.toString()+'x(' : '';
+            txt += nLines.toString()+'x'+nbits.toString();
+            if (nWays > 1) txt += ')';
             $('#mem-size').text(txt);
             txt = ncomparators.toString();
             $('#comparator-bits').text(txt);
@@ -196,7 +200,7 @@ BSim.Beta.Memory = function(mBeta) {
     };
 
     // choose replacement line according to current strategy
-    function replace(addr,aline,atag,makeDirty) {
+    function replace(aline,atag,makeDirty) {
         if (nWays > 1) {
             switch (replacementStrategy) {
             case LRU:
@@ -251,6 +255,12 @@ BSim.Beta.Memory = function(mBeta) {
             throw new BSim.Beta.RuntimeError("Attempted to read out of bounds address 0x" + BSim.Common.FormatWord(address));
         }
 
+        return mMemory[addr];
+    };
+
+    this.readWordCached = function(address) {
+        var v = this.readWord(address);
+
         if (cache) {
             cycles += 1;   // cache lookup takes one cycle
 
@@ -263,17 +273,17 @@ BSim.Beta.Memory = function(mBeta) {
                     // hit!
                     readHits += 1;
                     if (replacementStrategy == LRU) age[index] = cycles;
-                    return mMemory[addr];
+                    return v;
                 }
                 index += nLines;
             }
 
             // miss -- select replacement and refill
-            replace(addr,aline,atag,false);
+            replace(aline,atag,false);
         } else cycles += readCycleCount;
 
         readMisses += 1;
-        return mMemory[addr];
+        return v;
     };
 
     this.writeWord = function(address, value) {
@@ -287,6 +297,10 @@ BSim.Beta.Memory = function(mBeta) {
         }
 
         mMemory[addr] = value;
+    };
+
+    this.writeWordCached = function(address, value) {
+        this.writeWord(address,value);
 
         if (cache) {
             cycles += 1;   // cache lookup takes one cycle
@@ -308,15 +322,13 @@ BSim.Beta.Memory = function(mBeta) {
             }
 
             // miss -- select replacement and refill
-            writeMisses += 1;  // ???
-            replace(addr,aline,atag,writeBack);
+            replace(aline,atag,writeBack);
 
             // write-through cache also write word to memory
             if (!writeBack) cycles += writeCycleCount;
-        } else {
-            cycles += writeCycleCount;
-            writeMisses += 1;
-        }
+        } else cycles += writeCycleCount;
+
+        writeMisses += 1;
     };
 
     this.size = function() {
@@ -376,6 +388,7 @@ BSim.Beta.Memory = function(mBeta) {
         case 'write-through': writeBack = false; break;
         case 'write-back': writeBack = true; break;
         }
+        process_cache_parameters();
     });
 
     process_cache_parameters();  // initially use default values

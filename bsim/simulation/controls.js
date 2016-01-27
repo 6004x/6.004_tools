@@ -172,7 +172,7 @@ BSim.Controls = function(container, beta, editor, schematic) {
     };
 
     var handle_cache = function () {
-        $('.cache-information').toggle();
+        $('.cache-wrapper').toggle();
         $(window).trigger('cache-resize');
     };
 

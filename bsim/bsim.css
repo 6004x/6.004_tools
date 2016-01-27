@@ -257,10 +257,14 @@ div.disassembly {
     background-color : yellow; 
 }
 
+.cache-wrapper {
+    display: none;
+}
+
 .cache-information {
+    display: inline-block;
     border: 1px solid black;
     padding: 5px;
-    display: none;
 }
 
 .cache-column {
@@ -269,13 +273,17 @@ div.disassembly {
 }
 
 .cache-stats {
-    padding: 5px 0 0 0;
+    padding-left: 5px;
+    text-align: right;
 }
 
-.cache-span {
-    font-size: 12px;
-    min-width: 50px;
-    background-color: white;
+.cache-num {
+    color: blue;
+}
+
+.cache-val {
+    color: blue;
+    text-align: left;
 }
 
 .cache-select {
@@ -285,4 +293,9 @@ div.disassembly {
     height: auto;
     width: 120px;
     line-height: 1;
+}
+
+.cache-sep {
+    border-left: 1px solid black;
+    margin-left: 5px;
 }
