@@ -161,7 +161,7 @@ BSim.Beta = function() {
         return this.mVerifier;
     };
 
-    this.readWord = function(address, notify) {
+    this.readWord = function(address, notify, fetch) {
         address &= (~SUPERVISOR_BIT) & 0xFFFFFFFC;
         if(notify) {
             if(!mRunning) {
@@ -172,7 +172,7 @@ BSim.Beta = function() {
             }
         }
 
-        return mMemory.readWordCached(address);
+        return mMemory.readWordCached(address, fetch);
     };
 
     this.writeWord = function(address, value, notify) {
@@ -413,7 +413,7 @@ BSim.Beta = function() {
             if(!mRunning) this.trigger('change:cycle_count',mCycleCount);
 
             // Continue on with instructions as planned.
-            var instruction = this.readWord(mPC);
+            var instruction = this.readWord(mPC, false, true);
             var old_pc = mPC;
             mPC += 4; // Increment this early so that we have the right reference for exceptions.
             if(instruction === 0) {

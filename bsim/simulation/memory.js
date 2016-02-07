@@ -35,6 +35,8 @@ BSim.Beta.Memory = function(mBeta) {
 
     // cache statistics
     var cycles = 0;
+    var fetchHits = 0;
+    var fetchMisses = 0;
     var readHits = 0;
     var readMisses = 0;
     var writeHits = 0;
@@ -61,24 +63,29 @@ BSim.Beta.Memory = function(mBeta) {
     // update DOM with cache statistics
     function update_cache_display() {
         if (cache) {
+            var fetches = fetchHits + fetchMisses;
             var reads = readHits + readMisses;
             var writes = writeHits + writeMisses;
-            var total = reads + writes;
-            var hits = readHits + writeHits;
-            var misses = readMisses + writeMisses;
+            var total = reads + writes + fetches;
+            var hits = readHits + writeHits + fetchHits;
+            var misses = readMisses + writeMisses + fetchMisses;
 
+            $('#fetch-hits').text(fetchHits.toString());
             $('#read-hits').text(readHits.toString());
             $('#write-hits').text(writeHits.toString());
             $('#total-hits').text(hits.toString());
 
+            $('#fetch-misses').text(fetchMisses.toString());
             $('#read-misses').text(readMisses.toString());
             $('#write-misses').text(writeMisses.toString());
             $('#total-misses').text(misses.toString());
 
+            $('#fetch-total').text(fetches.toString());
             $('#read-total').text(reads.toString());
             $('#write-total').text(writes.toString());
             $('#total-total').text(total.toString());
 
+            $('#fetch-pct').text(fetches ? (100*fetchHits/fetches).toFixed(1) : ' ');
             $('#read-pct').text(reads ? (100*readHits/reads).toFixed(1) : ' ');
             $('#write-pct').text(writes ? (100*writeHits/writes).toFixed(1) : ' ');
             $('#total-pct').text(total ? (100*hits/total).toFixed(1) : ' ');
@@ -92,8 +99,10 @@ BSim.Beta.Memory = function(mBeta) {
     function cache_reset() {
         // cache statistics
         cycles = 0;
+        fetchMisses = 0;
         readMisses = 0;
         writeMisses = 0;
+        fetchHits = 0;
         readHits = 0;
         writeHits = 0;
         dirtyReplacements = 0;
@@ -259,7 +268,7 @@ BSim.Beta.Memory = function(mBeta) {
         return mMemory[addr];
     };
 
-    this.readWordCached = function(address) {
+    this.readWordCached = function(address,fetch) {
         var v = this.readWord(address);
 
         if (cache) {
@@ -272,7 +281,8 @@ BSim.Beta.Memory = function(mBeta) {
             for (var way = 0; way < nWays; way += 1) {
                 if (valid[index] && tag[index] == atag) {
                     // hit!
-                    readHits += 1;
+                    if (fetch) fetchHits += 1
+                    else readHits += 1;
                     if (replacementStrategy == LRU) age[index] = cycles;
                     return v;
                 }
@@ -283,7 +293,8 @@ BSim.Beta.Memory = function(mBeta) {
             replace(aline,atag,false);
         } else cycles += readCycleCount;
 
-        readMisses += 1;
+        if (fetch) fetchMisses += 1;
+        else readMisses += 1;
         return v;
     };
 

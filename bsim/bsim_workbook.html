@@ -85,8 +85,9 @@
                   <td class="cache-column">index</td>
                   <td class="cache-column">offset</td>
                   <td class="cache-column cache-sep"><i>event</i></td>
-                  <td class="cache-column"><i>read</i></td>
-                  <td class="cache-column"><i>write</i></td>
+                  <td class="cache-column"><i>Ifetch</i></td>
+                  <td class="cache-column"><i>Dread</i></td>
+                  <td class="cache-column"><i>Dwrite</i></td>
                   <td class="cache-column"><i>total</i></td>
                 </tr>
                 <tr>
@@ -113,6 +114,7 @@
                   <td class="cache-stats"><span class="cache-num" id="index-bits"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="offset-bits"></span></td>
                   <td class="cache-column cache-sep">hits</td>
+                  <td class="cache-stats"><span class="cache-num" id="fetch-hits"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="read-hits"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="write-hits"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="total-hits"></span></td>
@@ -132,6 +134,7 @@
                   <td class="cache-column cache-sep">Mem size:</td>
                   <td class="cache-stats" colspan="3"><span class="cache-val" id="mem-size"></span></td>
                   <td class="cache-column cache-sep">misses</td>
+                  <td class="cache-stats"><span class="cache-num" id="fetch-misses"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="read-misses"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="write-misses"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="total-misses"></span></td>
@@ -150,6 +153,7 @@
                   <td class="cache-column cache-sep">Comparator bits:</td>
                   <td class="cache-stats" colspan="3"><span class="cache-val" id="comparator-bits"></span></td>
                   <td class="cache-column cache-sep">totals</td>
+                  <td class="cache-stats"><span class="cache-num" id="fetch-total"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="read-total"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="write-total"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="total-total"></span></td>
@@ -167,6 +171,7 @@
                   <td class="cache-column cache-sep">2-to-1 MUX bits:</td>
                   <td class="cache-stats" colspan="3"><span class="cache-val" id="mux-bits"></span></td>
                   <td class="cache-column cache-sep">hit %</td>
+                  <td class="cache-stats"><span class="cache-num" id="fetch-pct"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="read-pct"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="write-pct"></span></td>
                   <td class="cache-stats"><span class="cache-num" id="total-pct"></span></td>
@@ -182,6 +187,7 @@
                   <td class="cache-column cache-sep">Total cost:</td>
                   <td class="cache-stats" colspan="3"><span class="cache-val" id="total-cost"></span></td>
                   <td class="cache-column cache-sep">cycles</td>
+                  <td class="cache-column">&nbsp;</td>
                   <td class="cache-column">&nbsp;</td>
                   <td class="cache-column">&nbsp;</td>
                   <td class="cache-stats"><span class="cache-num" id="total-cycles"></span></td>
