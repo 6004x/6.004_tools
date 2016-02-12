@@ -73,7 +73,7 @@ var Editor = function(container, mode, no_file_buttons) {
         var document = try_get_document(filename);
         if(!document) return null;
         return document.metadata;
-    }
+    };
 
     // Marks the given line in the given file as having an error, and displays it to the user.
     this.markErrorLine = function(filename, message, line, column) {
@@ -145,7 +145,7 @@ var Editor = function(container, mode, no_file_buttons) {
                      autosave: undefined,
                      shared: false});
         else FileSystem.getFile(filename,succeed,fail);
-    }
+    };
 
     // Opens the file at the given path.
     // filename: absolute path to th efile.
@@ -171,9 +171,11 @@ var Editor = function(container, mode, no_file_buttons) {
     // no other documents currently open.
     this.openTab = function(filename, content, activate, autosaved_content, is_readonly, metadata) {
         // We can't open a file if we already have one at the same path (it wouldn't make sense and breaks things)
+        var doc;
         if(_.has(mOpenDocuments, filename)) {
-            focusTab(mOpenDocuments[filename]);
-            return;
+            doc  = mOpenDocuments[filename];
+            focusTab(doc);
+            return doc;
         }
         var has_location = true;
         // If no filename is given, invent one. We'll need to prompt later.
@@ -186,7 +188,7 @@ var Editor = function(container, mode, no_file_buttons) {
         var cm = create_cm_instance(editPane, content, !!is_readonly);
         var tab = $('<li>');
 
-        var doc = {
+        doc = {
             el: editPane, // jQuery element holding the editor
             tab: tab, // jQuery tab element
             cm: cm, // Editor instance
@@ -257,6 +259,14 @@ var Editor = function(container, mode, no_file_buttons) {
         if(mExpectedHeight) self.setHeight(mExpectedHeight);
         // HACK: make sure something understands our window size.
         $(window).resize();
+
+        return doc;
+    };
+
+    this.load_initial_contents = function (doc,data) {
+        doc.cm.setValue(data);
+        doc.generation = doc.cm.changeGeneration();
+        doc.autosaveGeneration = doc.cm.changeGeneration();
     };
 
     // Returns the filename of the currently focused document. If there is no such document, returns null.

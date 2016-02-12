@@ -265,15 +265,31 @@ $(function() {
             // open editor tabs for each saved buffer
             editor.closeAllTabs();
             var first = true;
-            $.each(configuration.initial_state || {},
-                   function (name,contents) {
-                       editor.openTab(name,contents,false,null,true);
-                   });
-            $.each(configuration.state || {},
-                   function (name,contents) {
-                       editor.openTab(name,contents,first);
-                       first = false;
-                   });
+
+            function setup_tab(name,contents,select,read_only) {
+                // if initial contents looks like a URL, load it!
+                var load = contents.lastIndexOf('url:',0) === 0;
+                var doc = editor.openTab(name,load ? 'Loading '+contents : contents,select,null,read_only);
+                if (load) {
+                    $.ajax(contents.substr(4),{
+                        dataType: 'text',
+                        error: function(jqXHR,textStatus,errorThrown) {
+                            editor.load_initial_contents(doc,'Oops, error loading '+contents);
+                        },
+                        success: function(data,jqXHR,textStatus,errorThrown) {
+                            editor.load_initial_contents(doc,data);
+                        }
+                    });
+                }
+            }
+
+            $.each(configuration.initial_state || {},function (name,contents) {
+                setup_tab(name,contents,false,true);
+            });
+            $.each(configuration.state || {},function (name,contents) {
+                setup_tab(name,contents,first,false);
+                first = false;
+            });
 
             $('.editor-file-control').hide();     // hide file buttons
             $('#editor .nav-tabs .close').hide();  // hide close button on tab(s)
