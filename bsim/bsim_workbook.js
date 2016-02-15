@@ -239,10 +239,9 @@ $(function() {
                 if (completed_tests) {
                     // make sure all required tests passed
                     answer.check = 'right';
+                    var cksum = configuration.tests.test;  // simulation cksum
                     $.each(state.required_tests || [],function (index,test) {
-                        // test results: {filename: , contents: , nstates: }
-                        var result = (completed_tests[test] || 'Test has not been run: '+test);
-                        if (result === undefined) {
+                        if (test != cksum) {
                             answer.message = 'Test failed';
                             answer.check = 'wrong';
                         }

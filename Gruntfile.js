@@ -12,11 +12,11 @@ module.exports = function(grunt) {
             bsim_edx: {src: 'bsim/bsim_edx.html', dest: 'build/bsim_edx.html'},
             bsim_edx_deploy: {src: 'build/bsim_edx*', dest: '../6.004_mitx/static/labs/', flatten: true, expand: true },
 
-            bsim_6004: {src: 'bsim/bsim_6004.html', dest: 'build/bsim_6004.html'},
-            bsim_6004_deploy: {src: ['build/bsim_6004*','build/glyphicons*'], dest: '../6.004_labs/ssldocs/coursewarex/', flatten: true, expand: true },
+            bsim_6004: {src: 'bsim/bsim_workbook.html', dest: 'build/bsim_workbook.html'},
+            bsim_6004_deploy: {src: ['build/bsim_workbook*','build/glyphicons*'], dest: '../6.004_server/labs/tools/', flatten: true, expand: true },
 
             bsim_workbook: {src: 'bsim/bsim_workbook.html', dest: 'build/bsim_workbook.html'},
-            bsim_workbook_deploy: {src: ['build/bsim_workbook*','build/glyphicons*'], dest: '../6.004_server/labs/tools/', flatten: true, expand: true },
+            bsim_workbook_deploy: {src: ['build/bsim_workbook*','build/glyphicons*'], dest: '../6004x.github.io/tools/', flatten: true, expand: true },
 
             tmsim: {src: 'tmsim/tmsim.html', dest: 'build/tmsim.html'},
 
@@ -43,7 +43,7 @@ module.exports = function(grunt) {
         useminPrepare: {
             bsim: 'bsim/bsim.html',
             bsim_edx: 'bsim/bsim_edx.html',
-            bsim_6004: 'bsim/bsim_6004.html',
+            bsim_6004: 'bsim/bsim_workbook.html',
             bsim_workbook: 'bsim/bsim_workbook.html',
             jsim: 'jsim/jsim.html',
             tmsim: 'tmsim/tmsim.html',
@@ -64,7 +64,7 @@ module.exports = function(grunt) {
                 options: {type: 'html'}
             },
             bsim_6004: {
-                src: 'build/bsim_6004.html',
+                src: 'build/bsim_workbook.html',
                 options: {type: 'html'}
             },
             bsim_workbook: {
@@ -125,7 +125,8 @@ module.exports = function(grunt) {
 
     grunt.registerTask('bsim', ['copy:resources', 'copy:bsim', 'useminPrepare:bsim', 'concat', 'uglify', 'cssmin', 'usemin:bsim']);
     grunt.registerTask('bsim_edx', ['copy:resources', 'copy:bsim_edx', 'useminPrepare:bsim_edx', 'concat', 'uglify', 'cssmin', 'usemin:bsim_edx', 'copy:bsim_edx_deploy']);
-    grunt.registerTask('bsim_6004', ['copy:resources', 'copy:bsim_6004', 'useminPrepare:bsim_6004', 'concat', 'uglify', 'cssmin', 'usemin:bsim_6004', 'copy:bsim_6004_deploy']);
+    //grunt.registerTask('bsim_6004', ['copy:resources', 'copy:bsim_6004', 'useminPrepare:bsim_6004', 'concat', 'uglify', 'cssmin', 'usemin:bsim_6004', 'copy:bsim_6004_deploy']);
+    grunt.registerTask('bsim_6004', ['copy:resources', 'copy:bsim_workbook', 'useminPrepare:bsim_workbook', 'concat', 'uglify', 'cssmin', 'usemin:bsim_workbook', 'copy:bsim_6004_deploy']);
     grunt.registerTask('bsim_workbook', ['copy:resources', 'copy:bsim_workbook', 'useminPrepare:bsim_workbook', 'concat', 'uglify', 'cssmin', 'usemin:bsim_workbook', 'copy:bsim_workbook_deploy']);
 
     grunt.registerTask('tmsim', ['copy:resources', 'copy:tmsim', 'useminPrepare:tmsim', 'concat', 'uglify', 'cssmin', 'usemin:tmsim']);
