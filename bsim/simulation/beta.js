@@ -93,7 +93,7 @@ BSim.Beta = function() {
 
     this.loadBytes = function(bytes,source_map) {
         this.stop();
-        this.reset(true);
+        this.reset();
 
         mMemory.loadBytes(bytes);
         mSourceMap = source_map;

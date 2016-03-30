@@ -37,7 +37,7 @@ BSim.DisassembledView = function(container, beta) {
             if(labels[address]) {
                 mTable.updateCell(i, 2, labels[address] + ":");
             }
-            mTable.updateCell(i, 3, disassemble_value(address, mBeta.readWord(address)));
+            mTable.updateCell(i, 3, disassemble_value(address, mBeta.memory.readWord(address)));
         }
         mTable.endBatch();
     };
