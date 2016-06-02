@@ -208,6 +208,45 @@ $(function() {
         }
     }
 
+    function setup_tab(name,contents,select,read_only) {
+        // if initial contents looks like a URL, load it!
+        var load = contents.lastIndexOf('url:',0) === 0;
+        var doc = editor.openTab(name,load ? 'Loading '+contents : contents,select,null,read_only);
+        if (load) {
+            $.ajax(contents.substr(4),{
+                dataType: 'text',
+                error: function(jqXHR,textStatus,errorThrown) {
+                    editor.load_initial_contents(doc,'Oops, error loading '+contents);
+                },
+                success: function(data,jqXHR,textStatus,errorThrown) {
+                    editor.load_initial_contents(doc,data);
+                }
+            });
+        }
+    }
+
+
+    // see if URL has specified buffers to load
+    if (window.location.search) {
+        var args = {};
+        $.each(window.location.search.substr(1).split('&'),function(index,arg) {
+            arg = arg.split('=');
+            args[arg[0]] = arg[1];
+        });
+
+        editor.closeAllTabs();
+        var first = true;
+        $.each(args,function(bname,url) {
+            var read_only = false;
+            if (bname[0] == '*') {
+                read_only = true;
+                bname = bname.substr(1);
+            }
+            setup_tab(bname,'url:'+url,first,read_only);
+            first = false;
+        });
+    }
+
     // accept initialization message from host, remember where
     // to send update messages when local state changes
     $(window).on('message',function (event) {
@@ -264,23 +303,6 @@ $(function() {
             // open editor tabs for each saved buffer
             editor.closeAllTabs();
             var first = true;
-
-            function setup_tab(name,contents,select,read_only) {
-                // if initial contents looks like a URL, load it!
-                var load = contents.lastIndexOf('url:',0) === 0;
-                var doc = editor.openTab(name,load ? 'Loading '+contents : contents,select,null,read_only);
-                if (load) {
-                    $.ajax(contents.substr(4),{
-                        dataType: 'text',
-                        error: function(jqXHR,textStatus,errorThrown) {
-                            editor.load_initial_contents(doc,'Oops, error loading '+contents);
-                        },
-                        success: function(data,jqXHR,textStatus,errorThrown) {
-                            editor.load_initial_contents(doc,data);
-                        }
-                    });
-                }
-            }
 
             $.each(configuration.initial_state || {},function (name,contents) {
                 setup_tab(name,contents,false,true);

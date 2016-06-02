@@ -85,10 +85,10 @@ BSim.Beta.Memory = function(mBeta) {
             $('#write-total').text(writes.toString());
             $('#total-total').text(total.toString());
 
-            $('#fetch-pct').text(fetches ? (100*fetchHits/fetches).toFixed(1) : ' ');
-            $('#read-pct').text(reads ? (100*readHits/reads).toFixed(1) : ' ');
-            $('#write-pct').text(writes ? (100*writeHits/writes).toFixed(1) : ' ');
-            $('#total-pct').text(total ? (100*hits/total).toFixed(1) : ' ');
+            $('#fetch-ratio').text(fetches ? (fetchHits/fetches).toFixed(3) : ' ');
+            $('#read-ratio').text(reads ? (readHits/reads).toFixed(3) : ' ');
+            $('#write-ratio').text(writes ? (writeHits/writes).toFixed(3) : ' ');
+            $('#total-ratio').text(total ? (hits/total).toFixed(3) : ' ');
         
             $('#total-cycles').text(cycles.toString());
         } else {
