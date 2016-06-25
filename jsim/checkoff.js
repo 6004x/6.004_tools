@@ -77,7 +77,7 @@ var Checkoff = (function(){
         report.buffers = JSON.stringify(buffer_list());
         report.assignment = mCheckoffStatement.assignment.name;
         // best-efforts post: don't care about reply or success...
-        $.post("https://6004.mit.edu/coursewarex/report_error.py", report);
+        $.post("https://gmap.csail.mit.edu/coursewarex/report_error.py", report);
     }
 
     /**************************

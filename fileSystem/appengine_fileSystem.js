@@ -16,8 +16,8 @@ var FileSystem= (function(){
     var local_shared_url = '';
 
     // used when access is from scripts deployed on 6004.mit.edu
-    var mit_server_url = 'https://6004.mit.edu/coursewarex/cgibin_file_serverx.py';
-    var mit_shared_url = 'https://6004.mit.edu/coursewarex/';
+    var mit_server_url = 'https://gmap.csail.mit.edu/coursewarex/cgibin_file_serverx.py';
+    var mit_shared_url = 'https://gmap.csail.mit.edu/coursewarex/';
     //var mit_server_url = 'https://6004.mit.edu/file-server';    // wsgi server
     //var mit_shared_url = 'https://6004.mit.edu/coursewarex';
 
@@ -52,7 +52,7 @@ var FileSystem= (function(){
             url = local_server_url; // cgi bin script
             data['_requester'] = sessionStorage.getItem('user') || '???';
         }
-        else if (host == '6004.mit.edu') {
+        else if (host == 'gmap.csail.mit.edu') {
             data['_path'] = url;   // add path info to request data
             url = mit_server_url; // cgi bin script
             data['_requester'] = sessionStorage.getItem('user') || '???';
@@ -101,7 +101,7 @@ var FileSystem= (function(){
 
         var host = $(location).attr('host');
         if (host == 'localhost') host = local_shared_url;
-        else if (host == '6004.mit.edu') host = mit_shared_url;
+        else if (host == 'gmap.csail.mit.edu') host = mit_shared_url;
         else host = shared_url;
 
         $.ajax(host+url, {
@@ -438,7 +438,7 @@ var FileSystem= (function(){
             //return local_server_url+'/file?action=zip'
             return local_server_url+'?_path=/file&action=zip';
         }
-        else if (host == '6004.mit.edu') {
+        else if (host == 'gmap.csail.mit.edu') {
             return mit_server_url+'?_path=/file&action=zip';
         }
         else {
