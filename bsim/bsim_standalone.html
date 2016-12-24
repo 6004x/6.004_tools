@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html style="height: 100%;">
+  <head>
+    <title>BSim 2.2.6</title>
+    <!-- build:js bsim_standalone.min.js -->
+    <script src="../libs/jquery.js"></script>
+    <script src="../libs/underscore.js"></script>
+    <script src="../libs/backbone.js"></script>
+    <script src="../libs/bootstrap.js"></script>
+    <script src="../fileSystem/external/jquery-ui.js"></script>
+    <script src="../editor/external/codemirror.js"></script>
+    <script src="../editor/external/radix.js"></script>
+    <script src="../editor/external/codemirror-extensions.js"></script>
+    <script src="../editor/toolbar.js"></script>
+    <script src="../editor/editor.js"></script>
+    <script src="../editor/prompt.js"></script>
+    <script src="../editor/passive_alert.js"></script>
+    <script src="../editor/split_pane.js"></script>
+    <script src="../editor/autocomplete.js"></script>
+    <script src="../editor/browser_check.js"></script>
+
+    <script src="../editor/modes/uasm.js"></script>
+    <script src="external/sstream.js"></script>
+    <script src="external/dequeue.js"></script>
+    <script src="assemble.js"></script>
+    <script src="bsim_standalone.js"></script>
+    <script src="simulation/bsim_common.js"></script>
+    <script src="simulation/big_table.js"></script>
+    <script src="simulation/beta.js"></script>
+    <script src="simulation/memory.js"></script>
+    <script src="simulation/beta_instructions.js"></script>
+    <script src="simulation/regfile_view.js"></script>
+    <script src="simulation/controls.js"></script>
+    <script src="simulation/tty.js"></script>
+    <script src="simulation/disassembled_view.js"></script>
+    <script src="simulation/memory_view.js"></script>
+    <script src="simulation/stack_view.js"></script>
+    <script src="simulation/error_handler.js"></script>
+    <script src="simulation/schematic_view.js"></script>
+    <script src="verify.js"></script>
+    <!-- endbuild -->
+
+    <!-- build:css bsim_standalone.min.css -->
+    <link rel="stylesheet" type="text/css" href="../libs/codemirror.css">
+    <link rel="stylesheet" type="text/css" href="../libs/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="../fileSystem/external/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="../editor/external/codemirror-extensions.css">
+    <link rel="stylesheet" type="text/css" href="../editor/common.css">
+
+    <link rel="stylesheet" type="text/css" href="bsim.css">
+    <link rel="stylesheet" type="text/css" href="schematic.css">
+    <!-- endbuild -->
+  </head>
+  <body>
+    <!-- place initial state in body of following div -->
+    <div class="bsim"></div>
+  </body>
+</html>
