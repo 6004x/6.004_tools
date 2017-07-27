@@ -9,6 +9,8 @@ BSim.Beta = function() {
     var mRegisters = new Int32Array(32);
     var mRunning = false; // Only true when calling run(); not executeCycle().
     var mPC = 0x80000000;
+    var mBase = 0x00000000;     // segmentation base register
+    var mBounds = 0xFFFFFFFF;     // segmentation bounds register
     var mPendingInterrupts = 0; // Used to store any pending interrupt.
     var mCycleCount = 0;
     var mClockCounter = 0;
@@ -82,7 +84,8 @@ BSim.Beta = function() {
             mul: true,
             kalways: false,
             tty: false,
-            annotate: false
+            annotate: false,
+            segmentation: false
         };
     };
     set_defaults();

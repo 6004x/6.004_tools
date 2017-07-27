@@ -675,6 +675,12 @@
                 case "nokalways":
                     options.kalways = false;
                     break;
+                case "segmentation":
+                    options.segmentation = true;
+                    break;
+                case "nosegmentation":
+                    options.segmentation = false;
+                    break;
                 case "div":
                     options.div = true;
                     break;
