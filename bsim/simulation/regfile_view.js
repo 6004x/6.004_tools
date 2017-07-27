@@ -6,7 +6,11 @@ BSim.RegfileView = function(container, beta) {
     var mBeta = beta;
 
     var update_register = function(register, value) {
-        mRegisterValueCells[register].text(BSim.Common.FormatWord(value));
+        var txt = BSim.Common.FormatWord(value);
+
+        if (register == 'base') $('.base').text(txt);
+        else if (register == 'bounds') $('.bounds').text(txt);
+        else mRegisterValueCells[register].text(txt);
     };
 
     var bulk_update_registers = function(registers) {

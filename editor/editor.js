@@ -144,7 +144,9 @@ var Editor = function(container, mode, no_file_buttons) {
                      metadata: mOpenDocuments[filename].metadata,
                      autosave: undefined,
                      shared: false});
-        else FileSystem.getFile(filename,succeed,fail);
+        else if (typeof FileSystem !== 'undefined')
+            FileSystem.getFile(filename,succeed,fail);
+        else fail();
     };
 
     // Opens the file at the given path.
@@ -156,6 +158,11 @@ var Editor = function(container, mode, no_file_buttons) {
             focusTab(mOpenDocuments[filename]);
             return;
         }
+        if (typeof FileSystem === 'undefined') {
+            PassiveAlert("Failed to open " + filename);
+            return;
+        }
+            
         FileSystem.getFile(filename, function(content) {
                 self.openTab(content.name, content.data, activate, content.autosave, content.shared, content.metadata);
             if(callback)
@@ -481,6 +488,10 @@ var Editor = function(container, mode, no_file_buttons) {
     var revert_current_document = function() {
         if(!mCurrentDocument) return;
         var document = mCurrentDocument; // we don't want to dump this in the wrong buffer!
+        if (typeof FileSystem === 'undefined') {
+            PassiveAlert("Revert failed; unable to load old version.", 'error');
+            return;
+        }
         FileSystem.getBackup(document.name, function(content) {
             document.cm.setValue(content.data);
             document.metadata = content.metadata;
@@ -560,6 +571,10 @@ var Editor = function(container, mode, no_file_buttons) {
     var do_save = function(document) {
         if(!document) document = mCurrentDocument;
         if(!document) return false;
+        if(typeof FileSystem === 'undefined') {
+            if (self.save_to_server) self.save_to_server();
+            return;
+        }
         FileSystem.saveFile(document.name, document.cm.getValue(), function() {
             // Mark the file as clean.
             document.generation = document.cm.changeGeneration();

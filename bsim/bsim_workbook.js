@@ -25,7 +25,7 @@ $(function() {
           <div id="programmer-view">\
             <div class="program-controls"></div>\
             <div class="content">\
-              Registers\
+              Registers <span class="segmentation">[<span class="segreg">base:</span> <span class="segreg base">xxx</span>, <span class="segreg">bounds:</span> <span class="segreg bounds">yyy</span>]</span>\
               <div class="regfile"></div>\
               Disassembly [cycle: <span id="cycle_count">0</span>]\
               <div class="disassembly"></div>\

@@ -48,8 +48,13 @@ BSim.DisassembledView = function(container, beta) {
 
     var beta_change_pc = function(new_pc) {
         mTable.startBatch();
-        var word = (new_pc & ~0x80000000) / 4;
-        mTable.removeRowClass(mCurrentPC/4, 'current-instruction');
+        try {
+            var word = mBeta.physicalAddr(new_pc) / 4;
+            mTable.removeRowClass(mCurrentPC/4, 'current-instruction');
+        } catch (e) {
+            word = 0;
+        };
+
         mTable.addRowClass(word, 'current-instruction');
         if(new_pc & 0x80000000) {
             if(!mInSupervisorMode) {
@@ -63,7 +68,7 @@ BSim.DisassembledView = function(container, beta) {
             }
         }
         mTable.scrollTo(word);
-        mCurrentPC = new_pc & ~0x80000000;
+        mCurrentPC = word*4;  //new_pc & ~0x80000000;
         mTable.endBatch();
 
         mBeta.highlightSource(mCurrentPC);

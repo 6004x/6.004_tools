@@ -62,9 +62,10 @@ BSim.Beta = function() {
     var XP = 30;
     var VEC_RESET = 0;
     var VEC_II = 4;
-    var VEC_CLK = 8;
-    var VEC_KBD = 12;
-    var VEC_MOUSE = 16;
+    var VEC_SEGFAULT = 8;
+    var VEC_CLK = 12;
+    var VEC_KBD = 16;
+    var VEC_MOUSE = 20;
 
     var INTERRUPT_CLOCK = 0x02;
     var INTERRUPT_KEYBOARD = 0x04;
@@ -116,6 +117,8 @@ BSim.Beta = function() {
 
     this.setOption = function(option, enabled) {
         mOptions[option] = enabled;
+
+        if (option == 'segmentation') $('.segmentation').toggle(enabled);
     };
 
     this.isOptionSet = function(option) {
@@ -164,40 +167,74 @@ BSim.Beta = function() {
         return this.mVerifier;
     };
 
+    this.physicalAddr = function(address) {
+        var addr = address & (~SUPERVISOR_BIT) & 0xFFFFFFFC;
+
+        // implement segmentation is user mode
+        if (self.isOptionSet('segmentation') && !self.inSupervisorMode()) {
+            if (addr > mBounds)
+                throw new BSim.Beta.SegmentationFault('Address exceeds segment bounds: '+BSim.Common.FormatWord(addr));
+
+            addr = (addr + mBase) & (~SUPERVISOR_BIT) & 0xFFFFFFFC;
+        }
+        
+        return addr;
+    };
+
     this.readWord = function(address, notify, fetch) {
-        address &= (~SUPERVISOR_BIT) & 0xFFFFFFFC;
+        var addr = self.physicalAddr(address);
+
+        if (self.isOptionSet('segmentation') && self.inSupervisorMode()) {
+            // check for reads of base and bounds values
+            if (address == -4) return mBase;
+            if (address == -8) return mBounds;
+        }
+
         if(notify) {
             if(!mRunning) {
-                self.trigger('read:word', address);
+                self.trigger('read:word', addr);
             } else {
-                mLastReads.push(address);
+                mLastReads.push(addr);
                 if(mLastReads.length > 5) mLastReads.shift();
             }
         }
 
-        return mMemory.readWordCached(address, fetch);
+        return mMemory.readWordCached(addr, fetch);
     };
 
     this.writeWord = function(address, value, notify) {
         value |= 0; // force to int.
-        address &= ~SUPERVISOR_BIT;
-        address &= 0xFFFFFFFC; // Force multiples of four.
+        var addr = self.physicalAddr(address);
+
+        if (self.isOptionSet('segmentation') && self.inSupervisorMode()) {
+            // but check for writes of base and bounds values
+            if (address == -4) {
+                self.trackRegisterChanges('base', mBase, value);
+                mBase = value;
+                return;
+            }
+            if (address == -8) {
+                self.trackRegisterChanges('bounds', mBounds, value);
+                mBounds = value;
+                return;
+            }
+        }
 
         // Implement undo
-         mCurrentStepWords.push([address, mMemory.readWord(address)]);
+        mCurrentStepWords.push([address, mMemory.readWord(addr)]);
 
-        mMemory.writeWordCached(address, value);
+        mMemory.writeWordCached(addr, value);
 
-        if(!mRunning) this.trigger('change:word', address, value);
+        if(!mRunning) self.trigger('change:word', addr, value);
         if(notify) {
             if(!mRunning) {
-                this.trigger('write:word', address);
+                self.trigger('write:word', addr);
             } else {
-                mLastWrites.push(address);
+                mLastWrites.push(addr);
                 if(mLastWrites.length > 5) mLastWrites.shift();
             }
         }
-        mChangedWords[address] = value;
+        mChangedWords[addr] = value;
     };
 
     this.readRegister = function(register) {
@@ -208,6 +245,15 @@ BSim.Beta = function() {
         return mRegisters[register];
     };
 
+    this.trackRegisterChanges = function(register, oldv, value) {
+        // Implement undo
+        if(!_.has(mCurrentStepRegisters, register))
+            mCurrentStepRegisters[register] = oldv;
+
+        if(!mRunning) self.trigger('change:register', register, value);
+        else mChangedRegisters[register] = value;
+    };
+
     this.writeRegister = function(register, value) {
         value |= 0; // force to int.
         if(register == 31) return;
@@ -215,15 +261,10 @@ BSim.Beta = function() {
         if(register < 0 || register > 31) {
             throw new BSim.Beta.RuntimeError("Attempted to write invalid register r" + register);
         }
-
-        // Implement undo
-        if(!_.has(mCurrentStepRegisters, register))
-            mCurrentStepRegisters[register] = mRegisters[register];
-
+        var oldv = mRegisters[register];
         mRegisters[register] = value;
 
-        if(!mRunning) this.trigger('change:register', register, value);
-        else mChangedRegisters[register] = value;
+        this.trackRegisterChanges(register, oldv, value);
     };
 
     // This differs from readRegister in that it also logs the access.
@@ -278,6 +319,8 @@ BSim.Beta = function() {
     this.reset = function(no_update_memory) {
         this.setPC(SUPERVISOR_BIT | VEC_RESET, true);
         mRegisters = new Int32Array(32);
+        mBase = 0x00000000;
+        mBounds = 0xFFFFFFFF;
         mPendingInterrupts = 0;
         mCycleCount = 0;
         this.trigger('change:cycle_count',0);
@@ -291,6 +334,8 @@ BSim.Beta = function() {
         // Tell the world.
         this.trigger('text:clear');
         this.trigger('change:bulk:register', _.object(_.range(32), mRegisters));
+        this.trigger('change:register', 'base', mBase);
+        this.trigger('change:register', 'bounds', mBounds);
         if(!no_update_memory) {
             var r = _.range(0, mMemory.size(), 4);
             this.trigger('change:bulk:word', _.object(r, _.map(r, function(v) { return mMemory.readWord(v); })));
@@ -453,7 +498,11 @@ BSim.Beta = function() {
             if(mHistory.length() > 50) mHistory.shift();
             return ret;
         } catch(e) {
-            if(e instanceof BSim.Beta.RuntimeError) {
+            if (e instanceof BSim.Beta.SegmentationFault) {
+                this.writeRegister(XP, mPC);
+                this.setPC(SUPERVISOR_BIT | VEC_SEGFAULT, true);
+                return false;
+            } else if (e instanceof BSim.Beta.RuntimeError) {
                 e.message += ' [PC = 0x'+BSim.Common.FormatWord(mPC)+']';
                 this.trigger('error', e);
                 this.setPC(old_pc, true);
@@ -581,4 +630,8 @@ BSim.Beta.RuntimeError = function(message) {
 };
 BSim.Beta.RuntimeError.prototype.toString = function() {
     return this.message;
+};
+
+BSim.Beta.SegmentationFault = function(message) {
+    this.message = message;
 };

@@ -35,7 +35,7 @@ table.regfile {
     width: 358px;
 }
 
-.regfile, .disassembly, .tty, .memory, .stack, .pc-value, .pc-label {
+.regfile, .disassembly, .tty, .memory, .stack, .pc-value, .pc-label, .segreg {
     font-family: Menlo, Monaco, monospace;
     font-size: 12px;
     line-height: 1.7;
@@ -43,6 +43,10 @@ table.regfile {
 
 .pc-label {
     color: gray;
+}
+
+.segmentation {
+    display: none;
 }
 
 pre.tty-output {

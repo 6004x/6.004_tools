@@ -134,7 +134,7 @@ module.exports = function(grunt) {
     grunt.registerTask('bsim_edx', ['copy:resources', 'copy:bsim_edx', 'useminPrepare:bsim_edx', 'concat', 'uglify', 'cssmin', 'usemin:bsim_edx', 'copy:bsim_edx_deploy']);
     //grunt.registerTask('bsim_6004', ['copy:resources', 'copy:bsim_6004', 'useminPrepare:bsim_6004', 'concat', 'uglify', 'cssmin', 'usemin:bsim_6004', 'copy:bsim_6004_deploy']);
     grunt.registerTask('bsim_6004', ['copy:resources', 'copy:bsim_workbook', 'useminPrepare:bsim_workbook', 'concat', 'uglify', 'cssmin', 'usemin:bsim_workbook', 'copy:bsim_6004_deploy']);
-    grunt.registerTask('bsim_workbook', ['copy:resources', 'copy:bsim_workbook', 'useminPrepare:bsim_workbook', 'concat', 'uglify', 'cssmin', 'usemin:bsim_workbook', 'copy:bsim_workbook_deploy']);
+    grunt.registerTask('bsim_workbook', ['copy:resources', 'copy:bsim_workbook', 'useminPrepare:bsim_workbook', 'concat', /*'uglify',*/ 'cssmin', 'usemin:bsim_workbook', 'copy:bsim_workbook_deploy']);
     grunt.registerTask('bsim_standalone', ['copy:resources', 'copy:bsim_standalone', 'useminPrepare:bsim_standalone', 'concat', 'uglify', 'cssmin', 'usemin:bsim_standalone']);
 
     grunt.registerTask('tmsim', ['copy:resources', 'copy:tmsim', 'useminPrepare:tmsim', 'concat', 'uglify', 'cssmin', 'usemin:tmsim']);
