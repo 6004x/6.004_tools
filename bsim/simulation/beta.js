@@ -71,11 +71,12 @@ BSim.Beta = function() {
     var INTERRUPT_KEYBOARD = 0x04;
     var INTERRUPT_MOUSE = 0x08;
 
-    var UndoStep = function(pc) {
+    var UndoStep = function(pc,cycle) {
         this.registers = {};
         this.words = {};
         this.pc = pc;
         this.tty = null;
+        this.cycle = cycle;
     };
 
     var set_defaults = function() {
@@ -221,7 +222,7 @@ BSim.Beta = function() {
         }
 
         // Implement undo
-        mCurrentStepWords.push([address, mMemory.readWord(addr)]);
+        mCurrentStepWords.push([addr, mMemory.readWord(addr)]);
 
         mMemory.writeWordCached(addr, value);
 
@@ -451,7 +452,7 @@ BSim.Beta = function() {
             }
         }
         // Prepare undo
-        mCurrentStep = new UndoStep(mPC);
+        mCurrentStep = new UndoStep(mPC,mCycleCount);
         mCurrentStepWords = [];
         mCurrentStepRegisters = {};
 
@@ -501,7 +502,7 @@ BSim.Beta = function() {
             if (e instanceof BSim.Beta.SegmentationFault) {
                 this.writeRegister(XP, mPC);
                 this.setPC(SUPERVISOR_BIT | VEC_SEGFAULT, true);
-                return false;
+                return;
             } else if (e instanceof BSim.Beta.RuntimeError) {
                 e.message += ' [PC = 0x'+BSim.Common.FormatWord(mPC)+']';
                 this.trigger('error', e);
@@ -527,14 +528,14 @@ BSim.Beta = function() {
             if(done[address]) return;
             done[address] = true;
             mMemory.writeWord(address, value);
-            this.trigger('change:word', address, value);
+            self.trigger('change:word', address, value);
         });
         self.setPC(step.pc, true);
         if(step.tty) {
             mTTYContent = step.tty;
             self.trigger('text:replace', mTTYContent);
         }
-        mCycleCount = (mCycleCount - 1) % 0x7FFFFFFF;
+        mCycleCount = step.cycle;
         if(!mRunning) this.trigger('change:cycle_count',mCycleCount);
         return true;
     };
