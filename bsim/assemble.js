@@ -451,8 +451,8 @@
                 }
                 var value = context.symbols[t];
                 if(value === undefined) {
-                    // look in default segment if not in current segment
-                    value = context.segments['default'][t];
+                    // look in kernel segment if not in current segment
+                    value = context.segments['kernel'][t];
                 }
                 if(value === undefined && strict) {
                     throw new SyntaxError("Symbol '" + t + "' is undefined.", self.file, self.line);
@@ -587,7 +587,9 @@
     }
     Segment.parse = function(stream) {
         var segname = readSymbol(stream);
-        if (segname == null) segname = 'default';
+        if (segname == null) {
+            throw new SyntaxError("Missing segment name", this.file, this.line);
+        }
         return new Segment(segname, stream.file(), stream.line_number());
     };
     Segment.prototype.assemble = function(context, out, source_map) {
@@ -604,11 +606,11 @@
         } else {
             // first pass
             // remember virtual extent of previous segment in default segment symbol table
-            context.segments['default'][context.current_segment + '_bounds'] = context.vdot;
+            context.segments['kernel'][context.current_segment + '_bounds'] = context.vdot;
 
             // remember physical base address of new segment in default segment symbol table
             context.current_segment = this.segname;
-            context.segments['default'][this.segname + '_base'] = context.pdot;
+            context.segments['kernel'][this.segname + '_base'] = context.pdot;
 
             // first pass, so create new symbol table
             context.symbols = {};   // new symbol table
@@ -1129,7 +1131,7 @@
         var run_assembly = function(syntax,sources) {
             var context = {
                 segments: {},  // name => symbols
-                current_segment: 'default',
+                current_segment: 'kernel',
                 symbols: {},
                 macros: {},
                 pdot: 0,      // physical address for dot
@@ -1141,21 +1143,21 @@
                 protection: [],
                 checkoff: null
             };
-            context.segments['default'] = context.symbols;   // remember symbols from default segment
+            context.segments['kernel'] = context.symbols;   // remember symbols from default segment
 
             // First pass: figure out where everything goes.
              _.each(syntax, function(item) {
                 item.assemble(context);
             });
             // remember bounds for last segment
-            context.segments['default'][context.current_segment + '_bounds'] = context.vdot;
+            context.segments['kernel'][context.current_segment + '_bounds'] = context.vdot;
 
             // Reset our start position, but keep the values defined.
             var size = context.pdot;
             context.pdot = 0;
             context.vdot = 0;
-            context.symbols = context.segments['default'];
-            context.current_segment = 'default';
+            context.symbols = context.segments['kernel'];
+            context.current_segment = 'kernel';
             var memory = new Uint8Array(size);
             // keep track of file & line for each output byte
             var source_map = new Array(size);
