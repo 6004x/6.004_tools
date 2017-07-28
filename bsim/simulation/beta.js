@@ -157,7 +157,8 @@ BSim.Beta = function() {
     };
 
     this.getLabel = function(address) {
-        return mLabels[address & ~SUPERVISOR_BIT] || null;
+        var addr = self.physicalAddr(address);
+        return mLabels[addr] || null;
     };
 
     this.setVerifier = function(verifier) {
@@ -173,7 +174,7 @@ BSim.Beta = function() {
 
         // implement segmentation is user mode
         if (self.isOptionSet('segmentation') && !self.inSupervisorMode()) {
-            if (addr > mBounds)
+            if (addr >= mBounds)
                 throw new BSim.Beta.SegmentationFault('Address exceeds segment bounds: '+BSim.Common.FormatWord(addr));
 
             addr = (addr + mBase) & (~SUPERVISOR_BIT) & 0xFFFFFFFC;

@@ -150,8 +150,9 @@ BSim.Beta.Opcodes = {};
             this.realWriteRegister(c, pc);
         },
         disassemble: function(op, pc) {
+            var offset = op.literal * 4;
             var target = ((op.literal * 4) + (pc + 4)) & ~0x80000000;
-            var label = this.getLabel(target) || target;
+            var label = this.getLabel(target) || (offset < 0 ? '.-'+(-offset).toString() : '.+'+offset.toString());
             if(op.ra == 31) {
                 if(op.rc == 31) {
                     return "BR(" + label + ")";
@@ -184,8 +185,9 @@ BSim.Beta.Opcodes = {};
             this.realWriteRegister(c, pc);
         },
         disassemble: function(op, pc) {
+            var offset = op.literal * 4;
             var target = ((op.literal * 4) + (pc + 4)) & ~0x80000000;
-            var label = this.getLabel(target) || target;
+            var label = this.getLabel(target) || (offset < 0 ? '.-'+(-offset).toString() : '.+'+offset.toString());
             return "BNE(" + name_register(op.ra) + ", " + label + ", " + name_register(op.rc) + ")";
         }
     });
@@ -330,8 +332,9 @@ BSim.Beta.Opcodes = {};
             this.realWriteRegister(c, this.readWord(this.getPC() + 4*literal, true));
         },
         disassemble: function(op, pc) {
-            var target = op.literal*4 + pc;
-            var label = this.getLabel(target) || target;
+            var offset = op.literal * 4;
+            var target = ((op.literal * 4) + (pc + 4)) & ~0x80000000;
+            var label = this.getLabel(target) || (offset < 0 ? '.-'+(-offset).toString() : '.+'+offset.toString());
             return "LDR(" + label + ", " + name_register(op.rc) + ")";
         }
     });
