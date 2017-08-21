@@ -21,7 +21,7 @@ Once you're set up, you can run any of the following commands:
 - `grunt tmsim` to generate tmsim
 - `grunt` to generate all of the above.
 
-In any of the above cases, they will appear in a folder called `built`.
+In any of the above cases, they will appear in a folder called `build`.
 
 Additionally, if you have [PhantomJS](http://phantomjs.org) installed, you can run
 `grunt test` to run all tests (which currently only test BSim).
