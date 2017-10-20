@@ -240,7 +240,7 @@
             // ensure that we only complain about this on the second iteration.
             if(out) {
                 if(dot < context.vdot) {
-                    throw new SyntaxError("It is illegal to set . to a value lower than its current value (current value: " + context.dot + "; new value: " + dot + ")", this.file, this.line);
+                    throw new SyntaxError("It is illegal to set . to a value lower than its current value (current value: " + context.vdot + "; new value: " + dot + ")", this.file, this.line);
                 }
             }
             context.pdot += dot - context.vdot;
@@ -634,7 +634,10 @@
                 context.pdot += 1;
                 context.vdot += 1;
             }
-            if(this.null_terminated) out[context.dot++] = 0;
+            if(this.null_terminated) {
+                out[context.pdot++] = 0;
+                context.vdot += 1;
+            }
         } else {
             context.pdot += this.text.length;
             context.vdot += this.text.length;
