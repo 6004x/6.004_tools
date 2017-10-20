@@ -24,6 +24,130 @@ $(function() {
         <div id="simulation-pane">\
           <div id="programmer-view">\
             <div class="program-controls"></div>\
+            <div class="cache-wrapper"><div class="cache-information">\
+              <table style="border-collapse: separate; border-spacing: 3px 0px;">\
+                <tr>\
+                  <td align="right">Cache:</td>\
+                  <td>\
+                    <select class="cache-select" id="cache-status">\
+                      <option>on</option>\
+                      <option selected>off</option>\
+                    </select>\
+                  </td>\
+                  <td class="cache-column cache-sep">&nbsp;</td>\
+                  <td class="cache-column">tag</td>\
+                  <td class="cache-column">index</td>\
+                  <td class="cache-column">offset</td>\
+                  <td class="cache-column cache-sep"><i>event</i></td>\
+                  <td class="cache-column"><i>Ifetch</i></td>\
+                  <td class="cache-column"><i>Dread</i></td>\
+                  <td class="cache-column"><i>Dwrite</i></td>\
+                  <td class="cache-column"><i>total</i></td>\
+                </tr>\
+                <tr>\
+                  <td align="right">Total words:</td>\
+                  <td>\
+                    <select class="cache-select" id="total-words" disabled>\
+                      <option >4</option>\
+                      <option>8</option>\
+                      <option>16</option>\
+                      <option>32</option>\
+                      <option selected>64</option>\
+                      <option>128</option>\
+                      <option>256</option>\
+                      <option>512</option>\
+                      <option>1024</option>\
+                      <option>2048</option>\
+                      <option>4096</option>\
+                      <option>8192</option>\
+                      <option>16384</option>\
+                    </select>\
+                  </td>\
+                  <td class="cache-column cache-sep">Address bits:</td>\
+                  <td class="cache-stats"><span class="cache-num" id="tag-bits"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="index-bits"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="offset-bits"></span></td>\
+                  <td class="cache-column cache-sep">hits</td>\
+                  <td class="cache-stats"><span class="cache-num" id="fetch-hits"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="read-hits"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="write-hits"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="total-hits"></span></td>\
+                </tr>\
+                <tr>\
+                  <td align="right">Words/line:</td>\
+                  <td>\
+                    <select class="cache-select" id="line-size" disabled>\
+                      <option selected>1</option>\
+                      <option>2</option>\
+                      <option>4</option>\
+                      <option>8</option>\
+                      <option>16</option>\
+                      <option>32</option>\
+                    </select>\
+                  </td>\
+                  <td class="cache-column cache-sep">Mem size:</td>\
+                  <td class="cache-stats" colspan="3"><span class="cache-val" id="mem-size"></span></td>\
+                  <td class="cache-column cache-sep">misses</td>\
+                  <td class="cache-stats"><span class="cache-num" id="fetch-misses"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="read-misses"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="write-misses"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="total-misses"></span></td>\
+                </tr>\
+                <tr>\
+                  <td align="right">Associativity:</td>\
+                  <td>\
+                    <select class="cache-select" id="associativity" disabled>\
+                      <option selected>direct mapped</option>\
+                      <option>2-way</option>\
+                      <option>4-way</option>\
+                      <option>8-way</option>\
+                      <option>fully associative</option>\
+                    </select>\
+                  </td>\
+                  <td class="cache-column cache-sep">Comparator bits:</td>\
+                  <td class="cache-stats" colspan="3"><span class="cache-val" id="comparator-bits"></span></td>\
+                  <td class="cache-column cache-sep">totals</td>\
+                  <td class="cache-stats"><span class="cache-num" id="fetch-total"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="read-total"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="write-total"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="total-total"></span></td>\
+                </tr>\
+                <tr>\
+                  <td align="right">Replacement:</td>\
+                  <td>\
+                    <select class="cache-select" id="replacement-strategy" disabled>\
+                      <option selected>LRU</option>\
+                      <option>FIFO</option>\
+                      <option>Random</option>\
+                      <option>Cycle</option>\
+                    </select>\
+                  </td>\
+                  <td class="cache-column cache-sep">2-to-1 MUX bits:</td>\
+                  <td class="cache-stats" colspan="3"><span class="cache-val" id="mux-bits"></span></td>\
+                  <td class="cache-column cache-sep">hit ratio</td>\
+                  <td class="cache-stats"><span class="cache-num" id="fetch-ratio"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="read-ratio"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="write-ratio"></span></td>\
+                  <td class="cache-stats"><span class="cache-num" id="total-ratio"></span></td>\
+                </tr>\
+                <tr>\
+                  <td align="right">Write strategy:</td>\
+                  <td>\
+                    <select class="cache-select" id="write-strategy" disabled>\
+                      <option selected>write-back</option>\
+                      <option>write-through</option>\
+                    </select>\
+                  </td>\
+                  <td class="cache-column cache-sep">Total cost:</td>\
+                  <td class="cache-stats" colspan="3"><span class="cache-val" id="total-cost"></span></td>\
+                  <td class="cache-column cache-sep">cycles</td>\
+                  <td class="cache-column">&nbsp;</td>\
+                  <td class="cache-column">&nbsp;</td>\
+                  <td class="cache-column">&nbsp;</td>\
+                  <td class="cache-stats"><span class="cache-num" id="total-cycles"></span></td>\
+                </tr>\
+              </table>\
+            </div></div>\
             <div class="content">\
               Registers <span class="segmentation">[<span class="segreg">base:</span> <span class="segreg base">xxx</span>, <span class="segreg">bounds:</span> <span class="segreg bounds">yyy</span>]</span>\
               <div class="regfile"></div>\
