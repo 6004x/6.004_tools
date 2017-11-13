@@ -423,8 +423,10 @@ BSim.Beta = function() {
     // value is undefined (but may well be 'undefined').
     // Use ===.
     this.executeCycle = function() {
-        if(mBreakpoints[mPC & ~SUPERVISOR_BIT] === false) {
-            mBreakpoints[mPC & ~SUPERVISOR_BIT] = true;
+        // restore any breakpoint cleared temporarily
+        var real_pc = self.physicalAddr(mPC);
+        if(mBreakpoints[real_pc] === false) {
+            mBreakpoints[real_pc] = true;
         }
 
         // Clean up records of read/written registers.
@@ -565,7 +567,7 @@ BSim.Beta = function() {
             // Execute quantum cycles, then yield for the UI.
             while(i--) {
                 // Check for a breakpoint
-                var real_pc = mPC & ~SUPERVISOR_BIT;
+                var real_pc = self.physicalAddr(mPC);
                 if(mBreakpoints[real_pc] === true) {
                     mBreakpoints[real_pc] = false;
                     mRunning = false;
