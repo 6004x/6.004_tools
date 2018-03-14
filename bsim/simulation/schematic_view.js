@@ -47,7 +47,7 @@ BSim.SchematicView = function(schematic, beta) {
         if(!mUpdating) return;
         var word;
         try {
-            word = mBeta.memory.readWord(pc);
+            word = mBeta.readWord(pc);
         } catch(e) {
             return;
         }
@@ -97,7 +97,7 @@ BSim.SchematicView = function(schematic, beta) {
                 reg_write_value = alu_out;
                 break;
             case 2:
-                reg_write_value = mBeta.memory.readWord(alu_out);
+                reg_write_value = mBeta.readWord(alu_out);
                 break;
         }
         var pcsel_out;
