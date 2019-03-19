@@ -3,7 +3,7 @@ module("Verifiers");
 test("TextVerifier", function() {
     var beta = new FakeBeta();
 
-    var verifier = new BSim.TextVerifier(beta, {checksum: -318887899});
+    var verifier = new BSim.TextVerifier(beta, {checksum: -318887901});
     ok(!verifier.verify(), "Verification fails on un-run beta.");
     ok(/no simulation results/i.test(verifier.getMessage()), "Failed with no simulation results message.");
     beta.setCycleCount(1);

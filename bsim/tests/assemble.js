@@ -685,6 +685,6 @@ test(".pcheckoff works", function() {
     });
 
     assembler.assemble("t.uasm", '.pcheckoff "some url" "some name" 42\n.verify 0x20 8 0x73657420 0x2e2e2e74 0xa 0x20000000 0x73ff0143 0xc15f04e0 0x42ff04e1 0xd2370056', function(success, result) {
-        equal(result.checkoff.running_checksum, -2102874770, "Negative checksum is calculated correctly.");
+        equal(result.checkoff.running_checksum, -2102874768, "Negative checksum is calculated correctly.");
     });
 });

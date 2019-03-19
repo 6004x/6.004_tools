@@ -869,6 +869,13 @@
         var mParsedFiles = {};
         var mPendingIncludes = [];
 
+        // allow an assembler to be constructed independantly of an editor
+        if (editor === undefined) {
+            editor = {
+                getFile: function() { return FileSystem.getFile.apply(FileSystem, arguments); }
+            }
+        }
+
         // Parses a macro definition
         var parse_macro = function(stream) {
             var macro_name = readSymbol(stream);
@@ -1190,6 +1197,12 @@
             //var stream = new StringStream(new FileStream(content, file));
             //var can_succeed = true;
             var errors = [];
+
+            // metadata is optional
+            if(callback === undefined) {
+                callback = metadata;
+                metadata = null;
+            }
 
             sources = [];  // initialize list of sources
             parse_file(file, content, function(syntax) {
