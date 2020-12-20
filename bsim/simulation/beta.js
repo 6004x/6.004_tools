@@ -424,9 +424,15 @@ BSim.Beta = function() {
     // Use ===.
     this.executeCycle = function() {
         // restore any breakpoint cleared temporarily
-        var real_pc = self.physicalAddr(mPC);
-        if(mBreakpoints[real_pc] === false) {
-            mBreakpoints[real_pc] = true;
+        var err;
+        try {
+            var real_pc = self.physicalAddr(mPC);
+            if(mBreakpoints[real_pc] === false) {
+                mBreakpoints[real_pc] = true;
+            }
+        }
+        catch (err) {
+            // ignore segmenation faults when checking breakpoint
         }
 
         // Clean up records of read/written registers.
@@ -554,6 +560,7 @@ BSim.Beta = function() {
     // (even if nothing actually changed).
     // This function is non-blocking.
     this.run = function(quantum) {
+        var err;
         this.trigger('run:start');
         mRunning = true;
         _.defer(function run_inner() {
@@ -567,11 +574,16 @@ BSim.Beta = function() {
             // Execute quantum cycles, then yield for the UI.
             while(i--) {
                 // Check for a breakpoint
-                var real_pc = self.physicalAddr(mPC);
-                if(mBreakpoints[real_pc] === true) {
-                    mBreakpoints[real_pc] = false;
-                    mRunning = false;
-                    break;
+                try {
+                    var real_pc = self.physicalAddr(mPC);
+                    if(mBreakpoints[real_pc] === true) {
+                        mBreakpoints[real_pc] = false;
+                        mRunning = false;
+                        break;
+                    }
+                }
+                catch (err) {
+                    // ignore segmentation fault when checking for breakpoints
                 }
                 // This means we should terminate.
                 if(self.executeCycle() === false) {
